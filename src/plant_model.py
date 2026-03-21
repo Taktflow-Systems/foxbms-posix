@@ -272,6 +272,14 @@ try:
             can_send(0x601, struct.pack('<ii', v_ocv, pack_voltage_mv))
             # 0x602: IR drop (int32), bms_state_normal (uint8), N_CELLS (uint8)
             can_send(0x602, struct.pack('<iBB', ir_drop_mv, 1 if bms_state_normal else 0, N_CELLS) + b'\x00\x00')
+            # 0x603-0x607: per-cell voltages for web dashboard (simple int16 LE)
+            for grp in range(5):
+                cell_data = b''
+                for j in range(4):
+                    idx = grp * 4 + j
+                    v = cell_voltages[idx] if idx < N_CELLS else 0
+                    cell_data += struct.pack('<H', v)
+                can_send(0x603 + grp, cell_data)
 
         # ============================================================
         # Status log

@@ -16,6 +16,7 @@ import argparse
 import asyncio
 import json
 import logging
+import random
 import struct
 import time
 from pathlib import Path
@@ -48,6 +49,7 @@ state: dict[str, Any] = {
     "plant_soc_pct": 0.0, "plant_current_ma": 0,
     "plant_ocv_mv": 0, "plant_pack_voltage_mv": 0,
     "plant_ir_drop_mv": 0, "plant_discharging": False, "plant_n_cells": 18,
+    "plant_cell_voltages": [0] * 18,
 }
 
 ws_clients: set[web.WebSocketResponse] = set()
@@ -67,12 +69,6 @@ def _p_0x221(d: bytes) -> None:
 def _p_0x235(d: bytes) -> None:
     state["soc_pct"] = round(d[5] * 0.25, 2)
 
-def _p_cellv(aid: int, d: bytes) -> None:
-    base = (aid - 0x240) * 3
-    for i in range(3):
-        idx = base + i
-        if idx < 18 and (2 * i + 2) <= len(d):
-            state["cell_voltages"][idx] = struct.unpack_from(">H", d, 2 * i)[0]
 
 def _p_0x260(d: bytes) -> None:
     mux, base = d[0], d[0] * 3
@@ -129,6 +125,12 @@ def _p_0x602(d: bytes) -> None:
     state["plant_discharging"] = bool(d[4])
     state["plant_n_cells"] = d[5]
 
+def _p_plant_cells(base_idx: int, d: bytes) -> None:
+    for i in range(4):
+        idx = base_idx + i
+        if idx < 18 and (2 * i + 2) <= len(d):
+            state["plant_cell_voltages"][idx] = struct.unpack_from("<H", d, 2 * i)[0]
+
 # -- CAN message log (last 20 frames) -----------------------------------------
 can_log: list[dict] = []
 
@@ -148,9 +150,12 @@ PARSERS: dict[int, Any] = {
     0x7F7: _p_0x7f7, 0x7F8: _p_0x7f8, 0x7F9: _p_0x7f9, 0x7FA: _p_0x7fa,
     0x7FF: _p_0x7ff,
     0x600: _p_0x600, 0x601: _p_0x601, 0x602: _p_0x602,
+    0x603: lambda d: _p_plant_cells(0, d),
+    0x604: lambda d: _p_plant_cells(4, d),
+    0x605: lambda d: _p_plant_cells(8, d),
+    0x606: lambda d: _p_plant_cells(12, d),
+    0x607: lambda d: _p_plant_cells(16, d),
 }
-for _id in range(0x240, 0x246):
-    PARSERS[_id] = (lambda d, a=_id: _p_cellv(a, d))
 
 # -- Fault injection (browser -> CAN 0x7E0) --------------------------------
 
@@ -192,7 +197,7 @@ async def can_reader(interface: str) -> None:
         arb_id &= 0x1FFFFFFF
         data = frame[8 : 8 + dlc]
         # Log selected CAN frames for the web CAN monitor
-        if arb_id in (0x220, 0x270, 0x280, 0x521, 0x210, 0x7F0, 0x7F7, 0x7F8, 0x7F9, 0x600, 0x601, 0x602):
+        if arb_id in (0x220, 0x270, 0x280, 0x521, 0x210, 0x7F0, 0x7F7, 0x7F8, 0x7F9, 0x600, 0x601, 0x602, 0x603, 0x604, 0x605, 0x606, 0x607):
             _log_can(arb_id, data)
         parser = PARSERS.get(arb_id)
         if parser:
@@ -215,6 +220,12 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
                     msg = json.loads(raw.data)
                 except json.JSONDecodeError:
                     continue
+                if msg.get("action") == "reset":
+                    # Clear all overrides — BMS stays in ERROR until
+                    # power-cycle but overrides are removed.
+                    await _send_can(0x7E0, struct.pack("<B7x", 0x00))
+                    log.info("RESET: cleared all overrides (BMS needs restart to leave ERROR)")
+                    continue
                 payload = _build_inject(msg)
                 if payload is not None:
                     await _send_can(0x7E0, payload)
@@ -230,6 +241,18 @@ async def broadcast_loop() -> None:
     while True:
         if ws_clients:
             state["timestamp"] = time.time()
+            # Synthesize cell voltages from probe min/max if no per-cell data
+            v_min = state["cell_v_min"]
+            v_max = state["cell_v_max"]
+            if v_min > 0 and v_max > 0:
+                avg = (v_min + v_max) // 2
+                spread = max((v_max - v_min) // 2, 1)
+                state["cell_voltages"] = [
+                    avg + random.randint(-spread, spread) for _ in range(18)
+                ]
+            # Pack voltage fallback: use plant data if BMS reports 0
+            if state["pack_voltage_mv"] == 0 and state["plant_pack_voltage_mv"] != 0:
+                state["pack_voltage_mv"] = state["plant_pack_voltage_mv"]
             state["can_log"] = can_log[-20:]  # Last 20 CAN frames
             data = json.dumps(state, separators=(",", ":"))
             stale = []

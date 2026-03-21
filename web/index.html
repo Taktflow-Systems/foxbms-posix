@@ -19,7 +19,6 @@ header h1 span{color:var(--accent2);font-weight:400}
 .main{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;min-height:0}
 .panel{background:var(--panel);border:1px solid var(--border);padding:14px;overflow-y:auto;display:flex;flex-direction:column}
 .panel-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent2);margin-bottom:10px}
-/* Battery grid */
 .cell-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
 .cell{background:#12122A;border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;position:relative;transition:border-color .3s,box-shadow .3s}
 .cell.ok{border-color:#1a4a2a}.cell.warn{border-color:#4a3a0a;box-shadow:inset 0 0 8px rgba(234,179,8,.15)}
@@ -29,7 +28,6 @@ header h1 span{color:var(--accent2);font-weight:400}
 .cell-v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 .cell-v.ok{color:var(--ok)}.cell-v.warn{color:var(--warn)}.cell-v.fault{color:var(--err)}
 .temp-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;transition:background .5s}
-/* Plant model */
 .plant-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .plant-row .lbl{color:var(--dim)}.plant-row .val{font-weight:600;font-variant-numeric:tabular-nums}
 .plant-bar-track{height:10px;background:#12122A;border-radius:5px;overflow:hidden;border:1px solid var(--border);margin:4px 0 8px}
@@ -38,14 +36,18 @@ header h1 span{color:var(--accent2);font-weight:400}
 .plant-status.dis{background:rgba(34,197,94,.15);color:var(--ok)}
 .plant-status.idle{background:rgba(136,136,170,.15);color:var(--dim)}
 .plant-status.chg{background:rgba(59,130,246,.15);color:var(--cold)}
-/* State machine */
+/* BMS perception mini-panel */
+.bms-perc{background:#12122A;border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:10px}
+.bms-perc .panel-title{margin-bottom:6px;font-size:11px}
+.perc-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.perc-row .lbl{color:var(--dim)}.perc-row .val{font-weight:600;font-variant-numeric:tabular-nums}
+.perc-indicator{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .state-list{list-style:none;display:flex;flex-direction:column;gap:4px}
 .state-item{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-size:13px;font-weight:500;transition:all .4s;letter-spacing:.3px}
 .state-item .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);transition:all .4s;flex-shrink:0}
 .state-item.active{background:rgba(139,92,246,.12)}.state-item.active .dot{border-color:var(--accent);background:var(--accent);box-shadow:0 0 8px var(--accent)}
 .state-item.active.error-state{background:rgba(239,68,68,.12)}.state-item.active.error-state .dot{border-color:var(--err);background:var(--err);box-shadow:0 0 8px var(--err)}
 .state-item.active.normal-state{background:rgba(34,197,94,.1)}.state-item.active.normal-state .dot{border-color:var(--ok);background:var(--ok);box-shadow:0 0 8px var(--ok)}
-/* Contactors schematic */
 .contactor-schematic{margin-top:8px}
 .ctr-row{display:flex;align-items:center;gap:0;height:28px;margin-bottom:4px}
 .ctr-label{width:64px;font-size:11px;color:var(--dim);text-align:right;padding-right:8px;flex-shrink:0}
@@ -57,7 +59,6 @@ header h1 span{color:var(--accent2);font-weight:400}
 .ctr-box.closed{border-color:var(--ok);background:rgba(34,197,94,.25);color:var(--ok)}
 .ctr-box.open{border-color:var(--err);background:transparent;color:var(--err)}
 .ctr-state{width:52px;font-size:10px;font-weight:600;padding-left:6px;flex-shrink:0}
-/* Fault injection */
 .inject-group{margin-bottom:8px}
 .inject-group label{font-size:11px;color:var(--dim);display:block;margin-bottom:3px}
 .inject-row{display:flex;gap:4px;align-items:center}
@@ -68,11 +69,9 @@ header h1 span{color:var(--accent2);font-weight:400}
 .btn-inject:hover{background:rgba(139,92,246,.35)}
 .btn-clear{background:rgba(239,68,68,.15);color:var(--err);border:1px solid rgba(239,68,68,.3);width:100%;margin-top:8px;padding:7px}
 .btn-clear:hover{background:rgba(239,68,68,.3)}
-/* Diagnostics */
 .diag{margin-top:auto;padding-top:8px;border-top:1px solid var(--border)}
 .diag-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
 .diag-row .val{font-variant-numeric:tabular-nums;color:var(--accent2)}
-/* Footer */
 footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:24px;font-size:13px;flex-wrap:wrap}
 .soc-bar{display:flex;align-items:center;gap:8px;flex:1;max-width:320px}
 .soc-track{flex:1;height:14px;background:#12122A;border-radius:7px;overflow:hidden;border:1px solid var(--border)}
@@ -81,7 +80,6 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
 .stat{display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
 .stat .label{color:var(--dim);font-size:11px}.stat .val{font-weight:600}
 .sub{font-size:10px;color:var(--dim);margin-left:auto}
-/* CAN monitor */
 .can-monitor{background:var(--panel);border-top:1px solid var(--border);padding:4px 12px}
 .can-monitor .panel-title{margin-bottom:4px}
 .can-log{height:120px;overflow-y:auto;background:#0A0A14;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;line-height:1.5}
@@ -97,12 +95,12 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
   <div style="display:flex;align-items:center"><span class="status-dot err" id="connDot"></span><span id="connLabel">Disconnected</span></div>
 </header>
 <div class="main">
-  <!-- Col 1: Battery Pack -->
+  <!-- Col 1: Battery Physical (Plant Reality) -->
   <div class="panel">
-    <div class="panel-title">Battery Pack — 18s1p</div>
+    <div class="panel-title">Battery — Physical (Plant Model)</div>
     <div class="cell-grid" id="cellGrid"></div>
   </div>
-  <!-- Col 2: Plant Model -->
+  <!-- Col 2: Plant Model + BMS Perception -->
   <div class="panel">
     <div class="panel-title">Plant Model — Physics</div>
     <div class="plant-row"><span class="lbl">SOC</span><span class="val" id="plSoc">---%</span></div>
@@ -113,6 +111,15 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
     <div class="plant-row"><span class="lbl">Current</span><span class="val" id="plI">--- A</span></div>
     <div class="plant-row"><span class="lbl">Cells</span><span class="val" id="plCells">--</span></div>
     <div style="margin-top:10px"><span class="plant-status idle" id="plStatus">IDLE</span></div>
+    <!-- BMS Perception mini-panel -->
+    <div class="bms-perc">
+      <div class="panel-title"><span class="perc-indicator" id="percDot" style="background:var(--dim)"></span>BMS Perception</div>
+      <div class="perc-row"><span class="lbl">V min</span><span class="val" id="percVmin">--- mV</span></div>
+      <div class="perc-row"><span class="lbl">V max</span><span class="val" id="percVmax">--- mV</span></div>
+      <div class="perc-row"><span class="lbl">V delta</span><span class="val" id="percVdelta">--- mV</span></div>
+      <div class="perc-row"><span class="lbl">T min</span><span class="val" id="percTmin">---</span></div>
+      <div class="perc-row"><span class="lbl">T max</span><span class="val" id="percTmax">---</span></div>
+    </div>
   </div>
   <!-- Col 3: BMS State + Contactors -->
   <div class="panel">
@@ -131,6 +138,7 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
     <div class="inject-group"><label>Overtemperature</label><div class="inject-row"><select id="otSens"></select><button class="btn btn-inject" onclick="inject('ot')">Inject</button></div></div>
     <div class="inject-group"><label>Overcurrent</label><div class="inject-row"><span style="font-size:12px;color:var(--dim)">Fixed 200 A</span><button class="btn btn-inject" onclick="inject('oc')">Inject</button></div></div>
     <button class="btn btn-clear" onclick="clearAll()">Clear All Faults</button>
+    <button class="btn" onclick="resetVecu()" style="background:rgba(234,179,8,.15);color:var(--warn);border:1px solid rgba(234,179,8,.3);width:100%;margin-top:6px;padding:7px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer" title="Clears overrides. BMS needs process restart to leave ERROR state.">Reset (clear overrides)</button>
     <div class="diag" id="diag">
       <div class="panel-title">Diagnostics</div>
       <div class="diag-row"><span>Fault count</span><span class="val" id="dFaults">0</span></div>
@@ -145,7 +153,7 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
   <div class="stat"><span class="label">Pack</span><span class="val" id="fPackV">---V</span></div>
   <div class="stat"><span class="label">Current</span><span class="val" id="fCurr">---A</span></div>
   <div class="stat"><span class="label">Cell V</span><span class="val" id="fCellV">---mV</span></div>
-  <div class="stat"><span class="label">Temp</span><span class="val" id="fTemp">---°C</span></div>
+  <div class="stat"><span class="label">Temp</span><span class="val" id="fTemp">---</span></div>
   <div class="stat"><span class="label">Uptime</span><span class="val" id="fUptime">0.0s</span></div>
   <span class="sub">foxBMS 2 POSIX vECU &middot; Taktflow Systems</span>
 </footer>
@@ -162,21 +170,18 @@ const MAX_CAN=15;
 let canFrames=[];
 
 (function init(){
-  // Build cell grid
   const grid=document.getElementById("cellGrid");
   for(let i=0;i<18;i++){
     const d=document.createElement("div");d.className="cell ok";d.id="cell"+i;
     d.innerHTML=`<span class="temp-dot" id="td${i}"></span><span class="cell-id">C${i}</span><span class="cell-v ok" id="cv${i}">0</span>`;
     grid.appendChild(d);
   }
-  // Build state list
   const sl=document.getElementById("stateList");
   STATES.forEach((s,i)=>{
     const li=document.createElement("li");
     li.className="state-item"+(s==="ERROR"?" error-state":"")+(s==="NORMAL"?" normal-state":"");
     li.id="st"+i;li.innerHTML=`<span class="dot"></span>${s}`;sl.appendChild(li);
   });
-  // Build contactor schematic
   const cr=document.getElementById("contactors");
   CTRS.forEach(c=>{
     const row=document.createElement("div");row.className="ctr-row";
@@ -188,7 +193,6 @@ let canFrames=[];
       `<span class="ctr-state" id="cs_${c.id}" style="color:var(--err)">OPEN</span>`;
     cr.appendChild(row);
   });
-  // Populate selects
   for(let i=0;i<18;i++){addOpt("ovCell",i,"C"+i);addOpt("uvCell",i,"C"+i);}
   for(let i=0;i<8;i++)addOpt("otSens",i,"S"+i);
   connect();
@@ -208,14 +212,18 @@ function connect(){
 
 function setConn(cls,txt){document.getElementById("connDot").className="status-dot "+cls;document.getElementById("connLabel").textContent=txt;}
 
+function cellClass(mv){
+  if(mv>4250||mv<2500)return "fault";
+  if(mv>4150||mv<2700)return "warn";
+  return "ok";
+}
+
 function update(d){
-  // Cells
-  const cvs=d.cell_voltages||[],temps=d.cell_temps_ddegc||[];
+  // Battery cells — use plant_cell_voltages (physical reality)
+  const pcv=d.plant_cell_voltages||[],temps=d.cell_temps_ddegc||[];
   for(let i=0;i<18;i++){
-    const mv=cvs[i]||0,el=document.getElementById("cell"+i),vEl=document.getElementById("cv"+i);
-    let cls="ok";
-    if(mv>4100||mv<2800)cls="fault";else if(mv>3800||mv<3400)cls="warn";
-    if(activeFaults.has("ov_"+i)||activeFaults.has("uv_"+i))cls="fault";
+    const mv=pcv[i]||0,el=document.getElementById("cell"+i),vEl=document.getElementById("cv"+i);
+    const cls=cellClass(mv);
     el.className="cell "+cls;vEl.className="cell-v "+cls;vEl.textContent=mv;
     const si=Math.min(Math.floor(i/2.25),7),t=(temps[si]||0)/10;
     document.getElementById("td"+i).style.background=t<15?"var(--cold)":t>45?"var(--err)":"var(--ok)";
@@ -228,13 +236,30 @@ function update(d){
   document.getElementById("plVpack").textContent=((d.plant_pack_voltage_mv??0)/1000).toFixed(1)+" V";
   document.getElementById("plIR").textContent=((d.plant_ir_drop_mv??0)/1000).toFixed(1)+" V";
   const pI=(d.plant_current_ma??0)/1000;
-  const iLabel=Math.abs(pI)<0.1?"idle":pI>0?"chg":"dis";
+  const iLabel=Math.abs(pI)<0.1?"idle":pI>0?"dis":"chg";
   document.getElementById("plI").textContent=Math.abs(pI).toFixed(1)+" A "+iLabel;
   document.getElementById("plCells").textContent=(d.plant_n_cells??18)+"S";
   const stEl=document.getElementById("plStatus");
-  if(d.plant_discharging){stEl.textContent="DISCHARGING";stEl.className="plant-status dis";}
-  else if(pI>0.1){stEl.textContent="CHARGING";stEl.className="plant-status chg";}
+  if(pI>0.1){stEl.textContent="DISCHARGING";stEl.className="plant-status dis";}
+  else if(pI<-0.1){stEl.textContent="CHARGING";stEl.className="plant-status chg";}
   else{stEl.textContent="IDLE";stEl.className="plant-status idle";}
+  // BMS perception (from probe data 0x7F4/0x7F6)
+  const mn=d.cell_v_min??0,mx=d.cell_v_max??0,delta=d.cell_v_delta??0;
+  const tMin=(d.cell_t_min??0)/10,tMax=(d.cell_t_max??0)/10;
+  document.getElementById("percVmin").textContent=mn+" mV";
+  document.getElementById("percVmax").textContent=mx+" mV";
+  document.getElementById("percVdelta").textContent=delta+" mV";
+  document.getElementById("percTmin").textContent=tMin.toFixed(1)+"\u00B0C";
+  document.getElementById("percTmax").textContent=tMax.toFixed(1)+"\u00B0C";
+  // Color BMS perception values
+  const vOk=mn>=2500&&mx<=4250;
+  const tOk=tMin>=-20&&tMax<=55;
+  const percOk=vOk&&tOk;
+  document.getElementById("percDot").style.background=percOk?"var(--ok)":"var(--err)";
+  document.getElementById("percVmin").style.color=mn<2500?"var(--err)":"var(--ok)";
+  document.getElementById("percVmax").style.color=mx>4250?"var(--err)":"var(--ok)";
+  document.getElementById("percTmin").style.color=tMin<-20?"var(--cold)":"var(--ok)";
+  document.getElementById("percTmax").style.color=tMax>55?"var(--err)":"var(--ok)";
   // State machine
   const bst=d.bms_state??0;
   STATES.forEach((_,i)=>{document.getElementById("st"+i).classList.toggle("active",i===bst);});
@@ -255,42 +280,33 @@ function update(d){
   document.getElementById("dLastId").textContent=d.diag_last_id?"0x"+d.diag_last_id.toString(16).toUpperCase().padStart(2,"0"):"--";
   document.getElementById("dLastEv").textContent=d.diag_last_event??"--";
   document.getElementById("dBitmap").textContent="0x"+(d.diag_bitmap??0).toString(16).toUpperCase().padStart(16,"0");
-  // Footer
-  const soc=d.soc_pct??0;
+  // Footer (uses BMS probe data)
+  const soc=(d.soc_pct&&d.soc_pct!==50)?d.soc_pct:(d.plant_soc_pct??0);
   document.getElementById("socFill").style.width=Math.min(soc,100)+"%";
   document.getElementById("socPct").textContent=soc.toFixed(1)+"%";
-  document.getElementById("fPackV").textContent=((d.pack_voltage_mv??0)/1000).toFixed(1)+" V";
-  const curr=(d.pack_current_ma??0)/1000;
-  document.getElementById("fCurr").textContent=(curr>=0?"+":"")+curr.toFixed(1)+" A";
-  const mn=d.cell_v_min??0,mx=d.cell_v_max??0,delta=d.cell_v_delta??0;
+  const packV=(d.pack_voltage_mv??0)||(d.plant_pack_voltage_mv??0);
+  document.getElementById("fPackV").textContent=(packV/1000).toFixed(1)+" V";
+  const curr=((d.pack_current_ma||d.plant_current_ma)??0)/1000;
+  document.getElementById("fCurr").textContent=(curr>0?"+":"")+curr.toFixed(1)+" A";
   document.getElementById("fCellV").textContent=mn+"\u2013"+mx+" mV (\u0394"+delta+")";
-  const tMin=(d.cell_t_min??0)/10,tMax=(d.cell_t_max??0)/10;
   document.getElementById("fTemp").textContent=tMin.toFixed(1)+"\u2013"+tMax.toFixed(1)+" \u00B0C";
   document.getElementById("fUptime").textContent=((d.uptime_ms??0)/1000).toFixed(1)+" s";
   // CAN log
-  if(d.can_log&&d.can_log.length){
-    d.can_log.forEach(f=>addCanFrame(f));
-  }
-}
-
-function addCanFrame(f){
-  canFrames.push(f);
-  if(canFrames.length>MAX_CAN)canFrames.shift();
-  renderCanLog();
+  if(d.can_log&&d.can_log.length){canFrames=d.can_log.slice(-MAX_CAN);renderCanLog();}
 }
 
 function renderCanLog(){
   const el=document.getElementById("canLog");
   el.innerHTML=canFrames.map(f=>{
-    const id=f.id??0;const data=f.data||[];const t=f.t??0;
-    const ts=new Date(t).toTimeString().slice(0,8)+"."+String(t%1000).padStart(3,"0");
-    const hex=data.map(b=>(b&0xFF).toString(16).toUpperCase().padStart(2,"0")).join(" ");
-    const idHex="0x"+id.toString(16).toUpperCase().padStart(3,"0");
+    const idStr=f.id||"0x000";const data=f.data||"";const t=f.t??0;
+    const ts=new Date(t*1000).toTimeString().slice(0,8)+"."+String(Math.floor((t*1000)%1000)).padStart(3,"0");
+    const hex=data.replace(/(..)/g,"$1 ").trim();
+    const idNum=parseInt(idStr,16);
     let cls="can-other";
-    if(id>=0x200&&id<0x300)cls="can-bms";
-    else if(id>=0x600&&id<0x700)cls="can-plant";
-    else if(id>=0x7F0&&id<=0x7FF)cls="can-probe";
-    return `<div class="can-frame ${cls}">${ts}  ${idHex} [${data.length}] ${hex}</div>`;
+    if(idNum>=0x200&&idNum<0x300)cls="can-bms";
+    else if(idNum>=0x600&&idNum<0x700)cls="can-plant";
+    else if(idNum>=0x7F0&&idNum<=0x7FF)cls="can-probe";
+    return `<div class="can-frame ${cls}">${ts}  ${idStr} [${data.length/2}] ${hex}</div>`;
   }).join("");
   el.scrollTop=el.scrollHeight;
 }
@@ -307,6 +323,11 @@ function inject(type){
 function clearAll(){
   if(!ws||ws.readyState!==1)return;
   ws.send(JSON.stringify({action:"clear"}));activeFaults.clear();
+}
+
+function resetVecu(){
+  if(!ws||ws.readyState!==1)return;
+  ws.send(JSON.stringify({action:"reset"}));activeFaults.clear();
 }
 </script>
 </body>
