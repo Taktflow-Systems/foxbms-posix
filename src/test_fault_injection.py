@@ -1097,17 +1097,13 @@ class TestExecutor:
                     category=tc.category, priority=tc.priority,
                 )
 
-            # For discharge-direction TEMP tests, inject current to ensure BMS_DISCHARGING.
+            # For discharge-direction TEMP tests, wait for plant to be discharging.
             # SOA_CheckTemperatures gates on current direction:
             #   BMS_DISCHARGING → checks OT_DIS/UT_DIS thresholds
             #   else (rest/charge) → checks OT_CHG/UT_CHG thresholds
-            # Without current, foxBMS defaults to charge thresholds.
+            # Plant starts discharge after detecting NORMAL via CAN feedback (~100ms).
             if tc.category == "TEMP" and ("DIS" in tc.signal):
-                # Inject 5000mA discharge (well above REST_CURRENT 200mA)
-                self.injector.inject(SIL_PACK_CURRENT, 0, 5000)
-            elif tc.category == "TEMP" and ("CHG" in tc.signal):
-                # Inject -5000mA charge for charge-direction tests
-                self.injector.inject(SIL_PACK_CURRENT, 0, -5000)
+                time.sleep(0.5)  # Wait for plant to start discharging
 
             # Standard injection dispatch by expected reaction
             if tc.expected_reaction == "CONTACTOR_OPEN":
