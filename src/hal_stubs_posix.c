@@ -590,6 +590,30 @@ static int posix_diag_is_hardware_id(uint32_t id) {
         case 81u: /* DIAG_ID_FRAM_READ_CRC_ERROR */
         /* Flash CRC — no flash on POSIX (runs from ELF in RAM) */
         case 0u:  /* DIAG_ID_FLASHCHECKSUM */
+        /* CAN timing — SocketCAN has no HW timer; cooperative loop timing
+         * doesn't match real CAN period expectations. */
+        case 6u:  /* DIAG_ID_CAN_TIMING */
+        /* Measurement timeouts — cooperative loop timing causes false
+         * timeouts because data processing order differs from FreeRTOS.
+         * Plant model data arrives asynchronously; redundancy module
+         * timeout checks fire before first data cycle completes. */
+        case 60u: /* DIAG_ID_BASE_CELL_VOLTAGE_MEASUREMENT_TIMEOUT */
+        case 61u: /* DIAG_ID_REDUNDANCY0_CELL_VOLTAGE_MEASUREMENT_TIMEOUT */
+        case 62u: /* DIAG_ID_BASE_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT */
+        case 63u: /* DIAG_ID_REDUNDANCY0_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT */
+        case 66u: /* DIAG_ID_CURRENT_MEASUREMENT_TIMEOUT */
+        case 67u: /* DIAG_ID_CURRENT_MEASUREMENT_ERROR */
+        case 68u: /* DIAG_ID_CURRENT_SENSOR_V1_MEASUREMENT_TIMEOUT */
+        case 69u: /* DIAG_ID_CURRENT_SENSOR_V2_MEASUREMENT_TIMEOUT */
+        case 70u: /* DIAG_ID_CURRENT_SENSOR_V3_MEASUREMENT_TIMEOUT */
+        case 71u: /* DIAG_ID_CURRENT_SENSOR_POWER_MEASUREMENT_TIMEOUT */
+        case 72u: /* DIAG_ID_POWER_MEASUREMENT_ERROR */
+        /* Current sensor responding — CAN-based, timing-dependent */
+        case 9u:  /* DIAG_ID_CURRENT_SENSOR_CC_RESPONDING */
+        case 10u: /* DIAG_ID_CURRENT_SENSOR_EC_RESPONDING */
+        case 11u: /* DIAG_ID_CURRENT_SENSOR_RESPONDING */
+        /* Pack voltage plausibility fires before first cell data arrives */
+        case 53u: /* DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE */
         /* Interlock — no physical interlock circuit */
         case 54u: /* DIAG_ID_INTERLOCK_FEEDBACK */
         /* Contactor feedback — SPS sim doesn't have real feedback pins */
