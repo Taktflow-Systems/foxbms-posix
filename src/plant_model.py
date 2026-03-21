@@ -38,7 +38,7 @@ Q_CELL_MAH = 3000.0        # Cell capacity (mAh)
 R_CELL_MOHM = 50.0          # Internal resistance per cell (mΩ)
 R_TOTAL_MOHM = R_CELL_MOHM * N_CELLS  # Total string resistance (mΩ)
 I_DISCHARGE_MA = 10000      # Discharge current when NORMAL (10 A)
-DT_S = 0.1                  # Loop period (100 ms)
+DT_S = 0.001                # Loop period (1 ms) — SIL rate, synced with foxBMS cycle
 
 # OCV(SOC) lookup — linear approximation (mV)
 # 3400 mV @ 0% SOC → 4200 mV @ 100% SOC
@@ -201,12 +201,12 @@ try:
         # ============================================================
         # BMS State Request (0x210)
         # ============================================================
-        if tick < 30:
+        if tick < 3000:  # 3 seconds at 1ms
             can_send(0x210, bytes([0x00, 0, 0, 0, 0, 0, 0, 0]))  # STANDBY
         else:
             can_send(0x210, bytes([0x02, 0, 0, 0, 0, 0, 0, 0]))  # NORMAL
 
-        if tick == 30:
+        if tick == 3000:
             print("[plant] Switching to NORMAL request")
 
         # ============================================================
@@ -229,7 +229,7 @@ try:
         # ============================================================
         # Status log
         # ============================================================
-        if tick % 50 == 0:  # Every 5 seconds
+        if tick % 5000 == 0:  # Every 5 seconds at 1ms
             print(f"[plant] tick={tick} SOC={soc_pct:.1f}% I={current_ma/1000:.1f}A "
                   f"Vcell={v_ocv}mV Vpack={pack_voltage_mv}mV IR={ir_drop_mv}mV "
                   f"{'NORMAL' if bms_state_normal else 'idle'}")

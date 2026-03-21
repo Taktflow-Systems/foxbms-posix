@@ -15,9 +15,9 @@ SENTINEL = "/* SIL probe: update DIAG state for probe bus */"
 
 STARTUP_CODE = '''
 #ifdef FOXBMS_SIL_PROBES
-    /* SIL: startup grace period — suppress faults until plant data arrives.
-       Uses OS_GetTickCount (ms) for time-based grace, not call count.
-       10 seconds covers startup + precharge + NORMAL transition. */
+    /* SIL: startup grace period — suppress faults for first 2 seconds.
+       With 1ms plant model, data arrives within 1ms, but database
+       starts at 0mV and needs a few cycles to propagate. */
     {
         extern uint32_t OS_GetTickCount(void);
         static uint32_t sil_diag_first_tick = 0u;
@@ -27,7 +27,7 @@ STARTUP_CODE = '''
             sil_diag_initialized = 1u;
         }
         uint32_t elapsed_ms = OS_GetTickCount() - sil_diag_first_tick;
-        if (elapsed_ms < 10000u) {  /* 10 seconds */
+        if (elapsed_ms < 2000u) {  /* 2 seconds — enough for DB propagation */
             if (event == DIAG_EVENT_NOT_OK) {
                 return DIAG_HANDLER_RETURN_OK;
             }

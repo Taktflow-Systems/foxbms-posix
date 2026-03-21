@@ -155,10 +155,11 @@ def can_send(can_id, data):
 # ================================================================
 # Main replay loop
 # ================================================================
-# Playback at 100ms intervals (10 samples per second from CSV at 10Hz)
-# With --speed N, advance N rows per 100ms tick
-rows_per_tick = max(1, int(SPEED))
-tick_interval_s = 0.1  # 100ms
+# Playback at 1ms intervals (SIL rate, synced with foxBMS cycle)
+# CSV data is at 10Hz (100ms intervals). At 1ms, advance 1 row every 100 ticks.
+# With --speed N, advance N rows per 100 ticks.
+rows_per_100_ticks = max(1, int(SPEED))
+tick_interval_s = 0.001  # 1ms
 
 data_idx = 0
 tick = 0
@@ -178,7 +179,9 @@ try:
                 break
 
         bmw_v, bmw_i, bmw_t, bmw_soc = trip_data[data_idx]
-        data_idx += rows_per_tick
+        # Advance CSV row every 100 ticks (100ms of real time at 1ms tick)
+        if tick % 100 == 0:
+            data_idx += rows_per_100_ticks
 
         # ========================================================
         # Closed-loop: read foxBMS 0x220 for contactor state
@@ -217,8 +220,10 @@ try:
 
         # Current: only flow when contactors are closed (NORMAL state)
         # Before NORMAL: 0A (contactors open — no physical current path)
+        # foxBMS: BS_POSITIVE_DISCHARGE_CURRENT=true (positive = discharge)
+        # BMW CSV: negative = discharge → negate for foxBMS
         if bms_state_normal:
-            current_fox_ma = int(bmw_i * CAPACITY_RATIO * 1000.0)
+            current_fox_ma = int(-bmw_i * CAPACITY_RATIO * 1000.0)
         else:
             current_fox_ma = 0
 
@@ -231,7 +236,7 @@ try:
         # ========================================================
         msg_counter = (tick & 0x3F) << 2
 
-        # IVT Current (0x521) — negative = discharge (IVT convention)
+        # IVT Current (0x521) — foxBMS: positive = discharge
         can_send(0x521, struct.pack(">BBi", msg_counter & 0xFF, 0, current_fox_ma)[:6])
 
         # IVT Voltage 1/2/3 (0x522-0x524)
@@ -245,12 +250,12 @@ try:
         # ========================================================
         # BMS State Request (0x210)
         # ========================================================
-        if tick < 30:
+        if tick < 3000:  # 3 seconds at 1ms
             can_send(0x210, bytes([0x00, 0, 0, 0, 0, 0, 0, 0]))  # STANDBY
         else:
             can_send(0x210, bytes([0x02, 0, 0, 0, 0, 0, 0, 0]))  # NORMAL
 
-        if tick == 30:
+        if tick == 3000:
             print(f"[replay] Switching to NORMAL request")
 
         # ========================================================
@@ -283,7 +288,7 @@ try:
         # ========================================================
         # Status log
         # ========================================================
-        if tick % 50 == 0:
+        if tick % 5000 == 0:  # Every 5 seconds at 1ms
             c_rate = abs(bmw_i) / BMW_CAPACITY_AH
             print(f"[replay] t={data_idx/10:.0f}s Vcell={v_cell_mv}mV "
                   f"I_bmw={bmw_i:.1f}A I_fox={current_fox_ma/1000:.2f}A "
