@@ -290,15 +290,19 @@ int main(int argc, char *argv[])
             /* SIL probes — 100ms rate */
 #ifdef FOXBMS_SIL_PROBES
             {
-                /* State machine probe: SYS state + BMS state */
+                /* State machine probe: SYS state + BMS state
+                 * Read BMS state from the last CAN 0x220 TX frame
+                 * (foxBMS encodes state in byte 0 lower nibble) */
                 extern volatile uint8_t os_boot;
-                extern uint8_t posix_sil_bms_state;
-                extern uint8_t posix_sil_bms_substate;
+                static uint8_t last_bms_state_byte = 0u;
+                /* Snoop 0x220 from CAN TX — the canTransmit stub tracks this */
+                extern uint8_t posix_last_can_tx_220[8];
+                last_bms_state_byte = posix_last_can_tx_220[0];
                 uint8_t sm_buf[8] = {0};
-                sm_buf[0] = os_boot;       /* SYS state */
-                sm_buf[1] = 0;             /* SYS substate */
-                sm_buf[4] = posix_sil_bms_state;
-                sm_buf[5] = posix_sil_bms_substate;
+                sm_buf[0] = os_boot;                       /* SYS state */
+                sm_buf[1] = 0;
+                sm_buf[4] = last_bms_state_byte & 0x0Fu;   /* BMS state */
+                sm_buf[5] = (last_bms_state_byte >> 4) & 0x0Fu;  /* connected strings */
                 sil_probe_raw(SIL_PROBE_STATE_MACHINE, sm_buf, 8);
 
                 /* SOC probe — read from DB via extern */
@@ -312,15 +316,16 @@ int main(int argc, char *argv[])
                 memcpy(&soc_buf[0], &soc, 4);
                 sil_probe_raw(SIL_PROBE_SOC, soc_buf, 8);
 
-                /* Cell voltage summary probe */
+                /* Cell voltage summary probe — check all cell overrides */
                 extern uint16_t posix_sil_cell_v_min, posix_sil_cell_v_max;
                 uint16_t v_min = posix_sil_cell_v_min;
                 uint16_t v_max = posix_sil_cell_v_max;
-                /* Override cell voltage if active (check cell 0 as indicator) */
-                if (sil_override_active(SIL_CELL_VOLTAGE, 0)) {
-                    int32_t ov = sil_override_get_i32(SIL_CELL_VOLTAGE, 0);
-                    if ((uint16_t)ov > v_max) v_max = (uint16_t)ov;
-                    if ((uint16_t)ov < v_min) v_min = (uint16_t)ov;
+                for (uint8_t ci = 0; ci < 18; ci++) {
+                    if (sil_override_active(SIL_CELL_VOLTAGE, ci)) {
+                        uint16_t ov = (uint16_t)sil_override_get_i32(SIL_CELL_VOLTAGE, ci);
+                        if (ov > v_max) v_max = ov;
+                        if (ov < v_min) v_min = ov;
+                    }
                 }
                 uint16_t v_avg = (v_min + v_max) / 2u;
                 uint16_t v_delta = v_max - v_min;
@@ -332,14 +337,16 @@ int main(int argc, char *argv[])
                 sil_probe_2i32(SIL_PROBE_PACK_V,
                     posix_sil_string_voltage_mv, posix_sil_bus_voltage_mv);
 
-                /* Cell temperature summary probe */
+                /* Cell temperature summary probe — check all sensor overrides */
                 extern int16_t posix_sil_cell_t_min, posix_sil_cell_t_max;
                 int16_t tmin = posix_sil_cell_t_min;
                 int16_t tmax = posix_sil_cell_t_max;
-                if (sil_override_active(SIL_CELL_TEMP, 0)) {
-                    int32_t ot = sil_override_get_i32(SIL_CELL_TEMP, 0);
-                    if ((int16_t)ot > tmax) tmax = (int16_t)ot;
-                    if ((int16_t)ot < tmin) tmin = (int16_t)ot;
+                for (uint8_t ti = 0; ti < 18; ti++) {
+                    if (sil_override_active(SIL_CELL_TEMP, ti)) {
+                        int16_t ot = (int16_t)sil_override_get_i32(SIL_CELL_TEMP, ti);
+                        if (ot > tmax) tmax = ot;
+                        if (ot < tmin) tmin = ot;
+                    }
                 }
                 int16_t tavg = (tmin + tmax) / 2;
                 int16_t tdelta = tmax - tmin;
@@ -365,8 +372,8 @@ int main(int argc, char *argv[])
 #endif
         }
 
-        /* SIL probes — heartbeat every 1s, timing every 1s */
-        if (tick > 0 && tick % 1000 == 0) {
+        /* SIL probes — heartbeat + timing every 100ms */
+        if (tick > 0 && tick % 100 == 0) {
             uint32_t uptime_ms = (uint32_t)((now - start_us) / 1000ULL);
             sil_probe_heartbeat(tick, uptime_ms);
             sil_probe_4u16(SIL_PROBE_TIMING,

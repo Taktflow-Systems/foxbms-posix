@@ -105,6 +105,12 @@ void systemInit(void) {}
 extern int posix_can_send(uint32_t id, const uint8_t *data, uint8_t dlc);
 
 static uint32_t can_tx_count = 0u;
+
+/* SIL probe: capture last TX data for key CAN IDs */
+#ifdef FOXBMS_SIL_PROBES
+uint8_t posix_last_can_tx_220[8] = {0};
+#endif
+
 uint32_t canTransmit(void *node, uint32_t messageBox, const uint8_t *data)
 {
     (void)node;
@@ -112,10 +118,23 @@ uint32_t canTransmit(void *node, uint32_t messageBox, const uint8_t *data)
     if (messageBox > 0u && messageBox <= CAN_MAX_MAILBOXES) {
         id = can_mailbox_id[messageBox - 1u];
     }
-    /* DLC is hardcoded to 8 because the HAL canTransmit() API does not pass DLC
-     * explicitly — it is embedded in the mailbox configuration register (Message
-     * Control Field / MCF) which we do not fully simulate on POSIX. All foxBMS
-     * CAN messages are fixed 8-byte frames, so this is safe for the current use case. */
+
+#ifdef FOXBMS_SIL_PROBES
+    /* Capture TX data for probe snooping */
+    if (id == 0x220u && data != NULL) {
+        memcpy(posix_last_can_tx_220, data, 8u);
+    }
+    /* Update SIL state from CAN TX */
+    if (id == 0x521u && data != NULL && !sil_override_active(SIL_PACK_CURRENT, 0)) {
+        /* IVT current: bytes 2-5 big-endian — only update if not overridden */
+        int32_t cur;
+        uint8_t tmp[4] = {data[5], data[4], data[3], data[2]};  /* swap to LE */
+        memcpy(&cur, tmp, 4);
+        posix_sil_current_ma = cur;
+    }
+#endif
+
+    /* DLC hardcoded to 8 — see comment in plan */
     int ret = posix_can_send(id, data, 8u);
     can_tx_count++;
     if (can_tx_count <= 5u) {
@@ -389,14 +408,20 @@ OS_STD_RETURN_e OS_ReceiveFromQueue(void *xQueue, void *pvBuffer, uint32_t ticks
     extern void *ftsk_canToAfeCellVoltagesQueue;
     extern void *ftsk_canToAfeCellTemperaturesQueue;
     if (xQueue == ftsk_canToAfeCellVoltagesQueue && posix_afe_volt_head != posix_afe_volt_tail) {
-        memcpy(pvBuffer, posix_afe_volt_buf[posix_afe_volt_tail], 16); /* ~13 bytes */
+        memcpy(pvBuffer, posix_afe_volt_buf[posix_afe_volt_tail], 16);
         posix_afe_volt_tail = (posix_afe_volt_tail + 1) % POSIX_AFE_QUEUE_SIZE;
+#ifdef FOXBMS_SIL_PROBES
+        posix_sil_db_read_count++;
+#endif
         return OS_SUCCESS;
     }
     /* AFE cell temperature queue */
     if (xQueue == ftsk_canToAfeCellTemperaturesQueue && posix_afe_temp_head != posix_afe_temp_tail) {
-        memcpy(pvBuffer, posix_afe_temp_buf[posix_afe_temp_tail], 16); /* ~13 bytes */
+        memcpy(pvBuffer, posix_afe_temp_buf[posix_afe_temp_tail], 16);
         posix_afe_temp_tail = (posix_afe_temp_tail + 1) % POSIX_AFE_QUEUE_SIZE;
+#ifdef FOXBMS_SIL_PROBES
+        posix_sil_db_read_count++;
+#endif
         return OS_SUCCESS;
     }
     /* CAN RX queue */
