@@ -7,6 +7,12 @@
  * application code can compile and run on Linux x86_64.
  */
 
+/* @satisfies SW-REQ-034 POSIX port suppresses 42 HW-absent DIAG IDs */
+/* @satisfies SW-REQ-035 POSIX port retains 43 SW-checkable DIAG IDs */
+/* @satisfies SW-REQ-044 ERROR opens all contactors (SPS simulation) */
+/* @satisfies SW-REQ-060 Database queue passthrough */
+/* @satisfies SW-REQ-100 CAN RX processing via SocketCAN */
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>

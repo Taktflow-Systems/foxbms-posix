@@ -14,10 +14,17 @@ Usage:
 # @verifies SW-REQ-001
 # @verifies SW-REQ-002
 # @verifies SW-REQ-010
+# @verifies SW-REQ-011
 # @verifies SW-REQ-020
+# @verifies SW-REQ-021
+# @verifies SW-REQ-022
+# @verifies SW-REQ-023
 # @verifies SW-REQ-030
+# @verifies SW-REQ-031
+# @verifies SW-REQ-033
 # @verifies SW-REQ-043
 # @verifies SW-REQ-044
+# @verifies SW-REQ-045
 # @verifies SSR-001
 # @verifies SSR-002
 # @verifies SSR-005

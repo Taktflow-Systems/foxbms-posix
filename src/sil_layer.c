@@ -4,6 +4,8 @@
  *
  * Only compiled when -DFOXBMS_SIL_PROBES is set.
  */
+/* @satisfies SW-REQ-031 DIAG threshold counting (SIL probe instrumentation) */
+/* @satisfies SW-REQ-070 Contactor feedback simulation */
 
 #ifdef FOXBMS_SIL_PROBES
 

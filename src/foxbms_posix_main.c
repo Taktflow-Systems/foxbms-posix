@@ -7,6 +7,11 @@
  * cyclic tasks in a simple while loop instead of FreeRTOS scheduler.
  */
 
+/* @satisfies SW-REQ-040 BMS state machine */
+/* @satisfies SW-REQ-050 SYS startup sequence */
+/* @satisfies SW-REQ-060 Database passthrough */
+/* @satisfies SW-REQ-090 CAN TX periodic */
+
 #define _GNU_SOURCE
 #include <stdint.h>
 #include <stdbool.h>

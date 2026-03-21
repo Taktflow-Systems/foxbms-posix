@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """foxBMS POSIX vECU — Dynamic Battery Plant Model with override protocol (0x6E0)."""
+# @satisfies SW-REQ-091 IVT current sensor simulation
+# @satisfies SW-REQ-092 Cell voltage simulation (OCV + noise + averaging)
+# @satisfies SW-REQ-093 Cell temperature simulation
+# @satisfies SW-REQ-101 IVT voltage simulation
+# @satisfies SW-REQ-102 AFE cell voltage via CAN 0x270
+# @satisfies SW-REQ-103 AFE cell temperature via CAN 0x280
 import socket, struct, time, sys, random, fcntl, os
 
 CAN_INTERFACE = sys.argv[1] if len(sys.argv) > 1 else "vcan1"

@@ -81,7 +81,7 @@ ALL_ID_RE = re.compile(
 )
 
 # Source code tag patterns
-SAFETY_REQ_RE = re.compile(r"@safety_req\s+((?:SSR|SW-REQ|SYS-REQ|STKH-REQ|FSR|TSR)-\d+)")
+SAFETY_REQ_RE = re.compile(r"@(?:safety_req|satisfies)\s+((?:SSR|SW-REQ|SYS-REQ|STKH-REQ|FSR|TSR)-\d+)")
 VERIFIES_RE = re.compile(r"@verifies\s+((?:SW-REQ|SYS-REQ|SSR|STKH-REQ|UT|IT|QT)-\d+)")
 
 # Level hierarchy (top to bottom in the V-model)
@@ -568,7 +568,12 @@ def parse_source_files(graph, src_dir):
 
         for m in VERIFIES_RE.finditer(content):
             rid = normalize_id(m.group(1))
-            graph.add_verification(f"code:{rel_path}", rid, source_file=rel_path)
+            if fpath.suffix == ".py":
+                # Python test file — use filename as test identifier
+                graph.add_verification(rel_path, rid, source_file=rel_path)
+            else:
+                # C source file — mark as code implementation
+                graph.add_verification(f"code:{rel_path}", rid, source_file=rel_path)
             graph.code_tags.append((rel_path, "@verifies", rid))
 
 

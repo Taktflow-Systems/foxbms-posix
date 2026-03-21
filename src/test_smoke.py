@@ -14,10 +14,18 @@ Exit codes:
     2 = ERROR (process startup failure)
 """
 # @verifies SW-REQ-040
+# @verifies SW-REQ-041
+# @verifies SW-REQ-042
+# @verifies SW-REQ-050
+# @verifies SW-REQ-051
+# @verifies SW-REQ-052
+# @verifies SW-REQ-053
 # @verifies SW-REQ-070
+# @verifies SW-REQ-129
 # @verifies SYS-REQ-090
 # @verifies SYS-REQ-130
-# @verifies SW-REQ-126# @verifies SW-REQ-128# @verifies SW-REQ-129
+# @verifies SW-REQ-126
+# @verifies SW-REQ-128
 
 import subprocess
 import sys
