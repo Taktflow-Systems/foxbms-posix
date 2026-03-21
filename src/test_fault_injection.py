@@ -82,7 +82,7 @@ def main() -> int:
     script_dir = Path(__file__).parent.resolve()
 
     if args.csv is None:
-        args.csv = str(script_dir.parent / "docs" / "fault-injection-test-matrix-asild.csv")
+        args.csv = str(script_dir.parent / "docs" / "test" / "fault-injection-test-matrix-asild.csv")
 
     if args.vecu is None:
         args.vecu = str(script_dir / "foxbms-vecu")
