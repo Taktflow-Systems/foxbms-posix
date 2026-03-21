@@ -350,6 +350,10 @@ async def main(args: argparse.Namespace) -> None:
     app = web.Application()
     app.router.add_get("/ws", ws_handler)
     app.router.add_get("/", lambda _r: web.FileResponse(WEB_DIR / "index.html"))
+    # Documentation portfolio (docs/site/*.html)
+    docs_dir = WEB_DIR.parent / "docs" / "site"
+    app.router.add_get("/docs/", lambda _r: web.FileResponse(docs_dir / "index.html"))
+    app.router.add_get("/docs/{name}", lambda r: _handle_docs(r, docs_dir))
     app.router.add_get("/{name}", _handle_static)
 
     runner = web.AppRunner(app)
@@ -358,6 +362,12 @@ async def main(args: argparse.Namespace) -> None:
     await site.start()
     log.info("Serving on http://%s:%d  (WS at /ws)", args.host, args.port)
     await asyncio.gather(can_reader(args.can), broadcast_loop())
+
+async def _handle_docs(req: web.Request, docs_dir: Path) -> web.FileResponse:
+    path = (docs_dir / req.match_info["name"]).resolve()
+    if not path.is_file() or not str(path).startswith(str(docs_dir)):
+        raise web.HTTPNotFound()
+    return web.FileResponse(path)
 
 async def _handle_static(req: web.Request) -> web.FileResponse:
     path = (WEB_DIR / req.match_info["name"]).resolve()

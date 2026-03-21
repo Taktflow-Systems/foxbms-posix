@@ -143,6 +143,39 @@ All fixed during Phase 3 session:
 
 ---
 
+## Phase 5: Web Demo & Portfolio
+
+**Goal**: Customer-facing BMS SIL demo with documentation portfolio.
+
+### Exit Criteria
+
+| # | Criterion | Test | Result |
+|---|-----------|------|--------|
+| 5.1 | Live web dashboard on Netcup | https://sil.taktflow-systems.com/bms/ accessible | **DONE** |
+| 5.2 | SWE.6 fault injection via web UI | Plant OV inject → BMS ERROR visible on dashboard | **DONE** |
+| 5.3 | SWE.5 fault injection via web UI | BMS DB override with 11 methods selectable | **DONE** |
+| 5.4 | Documentation portfolio (59 HTML pages) | All docs published at /bms-docs/ on Netcup | NOT DONE |
+| 5.5 | SIL demo guide written | docs/SIL-DEMO-GUIDE.md | **DONE** |
+| 5.6 | State machine walk-through on reset | Click Reset → see UNINIT→NORMAL transition | **DONE** |
+| 5.7 | Event log shows chain reaction | Inject → DIAG → state → contactor in log | **DONE** |
+
+### Status: 6/7 criteria met
+
+### Completed Work
+- Web dashboard: battery pack, plant physics, BMS inputs, state machine, contactors
+- Fault injection: Plant (SWE.6) + BMS (SWE.5) toggle with method selector
+- Cell/sensor range selector, discharge current slider
+- Event log with chain reaction (inject→DIAG→state→contactor)
+- CAN monitor with color-coded live traffic
+- SWE.5 verified test results table (29 PASS)
+- Deployed on Netcup behind Caddy HTTPS reverse proxy
+- SIL demo guide (docs/SIL-DEMO-GUIDE.md)
+
+### Remaining
+- 5.4: Publish 59 HTML documentation pages as portfolio on Netcup
+
+---
+
 ## Overall Progress
 
 | Phase | Criteria | Met | Status |
@@ -152,7 +185,8 @@ All fixed during Phase 3 session:
 | Phase 2.5: SIL Probes | 76 | **76/76** | **COMPLETE** ✓ |
 | Phase 3: Fault Injection | 11 | **10/11** | **COMPLETE** ✓ (1 SKIP: signal loss) |
 | Phase 4: Integration | 3 | **3/3** | **COMPLETE** ✓ |
-| **Total** | **108** | **107/108** | **99%** |
+| Phase 5: Web Demo & Portfolio | 7 | **6/7** | **IN PROGRESS** |
+| **Total** | **115** | **113/115** | **98%** |
 
 ### Test Suites
 

@@ -1,0 +1,549 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>foxBMS SIL Demo Guide</title><style>body{font-family:system-ui;max-width:900px;margin:40px auto;padding:0 20px;background:#0F0F1A;color:#E0E0F0;line-height:1.6}h1,h2,h3{color:#A78BFA}a{color:#8B5CF6}code{background:#1A1A2E;padding:2px 6px;border-radius:3px;font-size:0.9em}pre{background:#1A1A2E;padding:16px;border-radius:8px;overflow-x:auto;border:1px solid #2A2A4A}pre code{padding:0}table{border-collapse:collapse;width:100%}td,th{border:1px solid #2A2A4A;padding:8px;text-align:left}th{background:#1A1A2E;color:#A78BFA}</style></head><body><h1>foxBMS 2 — Battery Management System SIL Demo Guide</h1>
+<h2>What This Is</h2>
+<p>A complete Software-in-the-Loop (SIL) simulation of the foxBMS 2 open-source Battery Management System, running as a native Linux process with a web-based visualization dashboard. The foxBMS C source code (v1.10.0) compiles and runs on x86-64 with hardware abstracted — the same safety logic that runs on the TMS570 microcontroller executes here with full CAN communication via SocketCAN.</p>
+<p><strong>Key capabilities:</strong>
+- Live 18-cell battery pack visualization
+- Real foxBMS state machine (UNINITIALIZED → NORMAL → ERROR)
+- Real DIAG threshold counting (OV: 50 events, OT: 500 events, OC: 10 events)
+- Contactor control with welding/stuck-open detection
+- Fault injection at two levels:
+  - <strong>SWE.6 (Plant/Black-box)</strong>: change battery physics → BMS reacts via CAN
+  - <strong>SWE.5 (BMS/White-box)</strong>: override BMS internal database → bypass CAN path
+- 11 ISO 26262-5 fault injection methods (STUCK_AT, DRIFT, NOISE, etc.)
+- 2,005 automated test cases (ASIL-D fault injection matrix)
+- CAN monitor showing live bus traffic
+- Event log showing fault chain reaction</p>
+<hr />
+<h2>Prerequisites</h2>
+<h3>Hardware</h3>
+<ul>
+<li>Linux PC or laptop (Ubuntu 22.04+ recommended)</li>
+<li>4+ GB RAM, any modern x86-64 CPU</li>
+<li>No special hardware needed — everything runs in software</li>
+</ul>
+<h3>Software</h3>
+<pre><code class="language-bash">sudo apt-get install -y gcc make python3 python3-pip can-utils iproute2 git
+pip3 install --user aiohttp   # for web dashboard
+</code></pre>
+<h3>Network (for remote access)</h3>
+<ul>
+<li>Web dashboard accessible on port 8080</li>
+<li>If accessing from another machine, both must be on the same network</li>
+</ul>
+<hr />
+<h2>Quick Start (5 minutes)</h2>
+<h3>Step 1: Clone the repository</h3>
+<pre><code class="language-bash">git clone --recursive https://github.com/nhuvaoanh123/foxbms-posix.git
+cd foxbms-posix
+</code></pre>
+<h3>Step 2: Copy HALCoGen headers and apply patches</h3>
+<pre><code class="language-bash">mkdir -p foxbms-2/build/app_host_unit_test/include
+cp halcogen-headers/* foxbms-2/build/app_host_unit_test/include/
+
+# Copy FreeRTOS POSIX port
+mkdir -p foxbms-2/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix/utils
+cp freertos-posix-port/port.c freertos-posix-port/portmacro.h \
+   foxbms-2/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix/
+cp freertos-posix-port/utils/* \
+   foxbms-2/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix/utils/
+
+# Apply all foxBMS source patches
+bash patches/apply_all.sh
+</code></pre>
+<h3>Step 3: Build</h3>
+<pre><code class="language-bash">cd src
+make -j$(nproc)
+# Output: foxbms-vecu binary
+</code></pre>
+<h3>Step 4: Set up virtual CAN interface</h3>
+<pre><code class="language-bash">sudo modprobe vcan
+sudo ip link add vcan1 type vcan
+sudo ip link set vcan1 up
+</code></pre>
+<h3>Step 5: Run the SIL demo</h3>
+<p>Open three terminals (or use <code>&amp;</code> for background):</p>
+<p><strong>Terminal 1 — Plant model (battery simulator):</strong></p>
+<pre><code class="language-bash">python3 src/plant_model.py vcan1
+</code></pre>
+<p><strong>Terminal 2 — foxBMS vECU:</strong></p>
+<pre><code class="language-bash">FOXBMS_CAN_IF=vcan1 src/foxbms-vecu
+</code></pre>
+<p><strong>Terminal 3 — Web dashboard:</strong></p>
+<pre><code class="language-bash">python3 web/server.py --can vcan1 --port 8080 --host 0.0.0.0
+</code></pre>
+<h3>Step 6: Open the dashboard</h3>
+<p>Browse to: <strong>http://localhost:8080</strong></p>
+<p>(Or from another machine: <code>http://&lt;laptop-ip&gt;:8080</code>)</p>
+<p>You should see:
+- Battery pack with 18 green cells at ~3700mV
+- BMS state progressing: UNINITIALIZED → ... → NORMAL (takes ~7 seconds)
+- SOC slowly decreasing (1A discharge at 0.33C)
+- CAN monitor showing live traffic</p>
+<hr />
+<h2>One-Command Start</h2>
+<p>After building once, use this to start everything:</p>
+<pre><code class="language-bash">cd foxbms-posix
+python3 src/plant_model.py vcan1 &amp;&gt;/dev/null &amp;
+FOXBMS_CAN_IF=vcan1 src/foxbms-vecu &amp;&gt;/dev/null &amp;
+python3 web/server.py --can vcan1 --port 8080 --host 0.0.0.0
+</code></pre>
+<p>Stop everything:</p>
+<pre><code class="language-bash">killall foxbms-vecu python3
+</code></pre>
+<hr />
+<h2>Dashboard Guide</h2>
+<h3>Battery — Physical (Plant Model)</h3>
+<p>The left panel shows 18 battery cells in a 3×6 grid. These represent the <strong>physical reality</strong> — what the battery actually produces. Each cell shows:
+- Cell ID (C0–C17)
+- Voltage in mV
+- Temperature dot (blue=cold, green=normal, red=hot)
+- Color: green (normal), yellow (warning), red (fault)</p>
+<h3>Plant Model — Physics</h3>
+<p>Shows the battery simulation parameters:
+- <strong>SOC</strong>: State of Charge (decreases under discharge)
+- <strong>OCV</strong>: Open-circuit voltage from SOC lookup
+- <strong>Pack Voltage</strong>: Sum of cell voltages minus IR drop
+- <strong>IR Drop</strong>: Voltage loss due to internal resistance (I × R_total)
+- <strong>Current</strong>: Discharge current (positive = discharge)
+- <strong>Status</strong>: DISCHARGING / IDLE / CHARGING</p>
+<h3>BMS Inputs (What foxBMS Sees)</h3>
+<p>Shows what the BMS actually reads from the battery via CAN/SPI:
+- <strong>AFE</strong>: Cell voltage min/max/delta, cell temperature min/max
+- <strong>IVT</strong>: Pack current, pack voltage, pack power</p>
+<p>When you inject a fault via SWE.6 (Plant), these values change because the plant's CAN output changes. When you inject via SWE.5 (BMS), these values change because the internal database is overridden.</p>
+<h3>BMS State Machine</h3>
+<p>Shows the foxBMS state machine with the current state highlighted:
+- <strong>UNINITIALIZED</strong> → <strong>INITIALIZATION</strong> → <strong>INITIALIZED</strong> → <strong>IDLE</strong>
+- <strong>STANDBY</strong> → <strong>PRECHARGE</strong> → <strong>NORMAL</strong> (operating state)
+- <strong>ERROR</strong> (fault detected, contactors opened)</p>
+<p>State history shows timestamped transitions.</p>
+<h3>Contactors</h3>
+<p>Three contactors:
+- <strong>Main+</strong> (String Plus): connects positive terminal
+- <strong>Main-</strong> (String Minus): connects negative terminal
+- <strong>Precharge</strong>: pre-charges the bus capacitance (opens after precharge sequence)</p>
+<p>In NORMAL state: Main+ CLOSED, Main- CLOSED, Precharge OPEN.
+On fault: all three OPEN.</p>
+<h3>Fault Injection</h3>
+<p>Two modes:</p>
+<p><strong>Plant (SWE.6)</strong> — Black-box testing:
+- Changes the plant model's CAN output
+- foxBMS receives the fault through normal CAN path
+- Battery panel shows the changed values
+- Tests the complete data path: CAN RX → DECAN → Database → SOA → DIAG</p>
+<p><strong>BMS (SWE.5)</strong> — White-box testing:
+- Overrides the foxBMS internal database on READ
+- Battery panel stays unchanged (plant not affected)
+- Tests the safety logic: SOA → DIAG → State Machine → Contactor
+- Method selector with 11 ISO 26262-5 fault methods</p>
+<p>Inject types:
+- <strong>Overvoltage</strong>: Set cell voltage above OV MSL (4250mV). Range: C0 to C17.
+- <strong>Undervoltage</strong>: Set cell voltage below UV MSL (2500mV). Range: C0 to C17.
+- <strong>Overtemperature</strong>: Set sensor temperature above OT MSL (55°C). Range: S0 to S7.
+- <strong>Overcurrent</strong>: Set pack current above OC MSL (15A). Fixed 200A.</p>
+<h3>Event Log</h3>
+<p>Shows the fault chain reaction with timestamps:</p>
+<pre><code>22:15:00  ⚡ PLANT: cell_voltage [0] = 4500
+22:15:01  🔍 FAULT: OV_MSL (DIAG ID 18)
+22:15:01  🔄 NORMAL → ERROR
+22:15:01  🔓 Main+ OPENED
+22:15:01  🔓 Main- OPENED
+</code></pre>
+<h3>Diagnostics</h3>
+<ul>
+<li><strong>Fault count</strong>: Number of unique DIAG IDs that exceeded threshold</li>
+<li><strong>Last ID</strong>: Most recent DIAG event ID</li>
+<li><strong>Bitmap</strong>: Active fault IDs (e.g., "IDs: 18,19,20" for OV MSL/RSL/MOL)</li>
+</ul>
+<h3>CAN Monitor</h3>
+<p>Live CAN bus traffic, color-coded:
+- <strong>Green</strong> (0x2xx): foxBMS CAN TX (state, SOC, cell voltages)
+- <strong>Blue</strong> (0x6xx): Plant telemetry (SOC, OCV, IR drop)
+- <strong>Purple</strong> (0x7Fx): SIL probes (internal state)</p>
+<hr />
+<h2>Running Automated Tests</h2>
+<h3>Smoke test (15 seconds)</h3>
+<pre><code class="language-bash">python3 src/test_smoke.py vcan1
+</code></pre>
+<h3>Fault injection tests (P1, 10 tests, ~2 minutes)</h3>
+<pre><code class="language-bash">python3 src/test_fault_injection.py vcan1 --max 10 --priority P1 \
+  --csv docs/test/fault-injection-test-matrix-asild.csv --timeout 10000
+</code></pre>
+<h3>Full test suite (2,005 tests, ~5 hours)</h3>
+<pre><code class="language-bash">python3 src/test_fault_injection.py vcan1 \
+  --csv docs/test/fault-injection-test-matrix-asild.csv --timeout 15000
+</code></pre>
+<h3>Scenario tests (high-risk scenarios)</h3>
+<pre><code class="language-bash">python3 src/test_scenarios.py vcan1
+</code></pre>
+<hr />
+<h2>Architecture</h2>
+<pre><code>┌─────────────────┐     SocketCAN (vcan1)      ┌──────────────────┐
+│                 │                              │                  │
+│  Plant Model    │ ──── 0x270 Cell Voltages ──→ │                  │
+│  (Python)       │ ──── 0x280 Cell Temps    ──→ │  foxBMS vECU     │
+│                 │ ──── 0x521 IVT Current   ──→ │  (C binary)      │
+│  Battery +      │ ──── 0x210 State Request ──→ │                  │
+│  IVT Sensor     │                              │  Same C code as  │
+│  Simulation     │ ←── 0x220 BMS State      ─── │  TMS570 target   │
+│                 │ ←── 0x7F0 SIL Probes     ─── │                  │
+│                 │                              │  170+ source     │
+│  Reads 0x7F0    │     CAN 0x6E0 (plant cmd)    │  files compiled  │
+│  for contactor  │ ←────────────────────────── │  for x86-64      │
+│  feedback       │                              │                  │
+└─────────────────┘                              └──────────────────┘
+        │                                                │
+        │ CAN 0x600-0x607                    CAN 0x7F0-0x7FF
+        │ (plant telemetry)                  (SIL probes)
+        │                                                │
+        └──────────────────┐    ┌────────────────────────┘
+                           │    │
+                    ┌──────┴────┴──────┐
+                    │                  │
+                    │  Web Server      │
+                    │  (Python aiohttp)│
+                    │                  │
+                    │  HTTP :8080      │
+                    │  WebSocket /ws   │
+                    │                  │
+                    └──────────────────┘
+                           │
+                    ┌──────┴──────┐
+                    │             │
+                    │  Browser    │
+                    │  Dashboard  │
+                    │             │
+                    └─────────────┘
+</code></pre>
+<h3>CAN Message Map</h3>
+<table>
+<thead>
+<tr>
+<th>CAN ID</th>
+<th>Direction</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x210</td>
+<td>Plant → BMS</td>
+<td>State request (STANDBY/NORMAL)</td>
+</tr>
+<tr>
+<td>0x270</td>
+<td>Plant → BMS</td>
+<td>Cell voltages (18 cells, multiplexed)</td>
+</tr>
+<tr>
+<td>0x280</td>
+<td>Plant → BMS</td>
+<td>Cell temperatures (8 sensors, multiplexed)</td>
+</tr>
+<tr>
+<td>0x521</td>
+<td>Plant → BMS</td>
+<td>IVT current (mA)</td>
+</tr>
+<tr>
+<td>0x522-524</td>
+<td>Plant → BMS</td>
+<td>IVT voltage (mV)</td>
+</tr>
+<tr>
+<td>0x527</td>
+<td>Plant → BMS</td>
+<td>IVT temperature</td>
+</tr>
+<tr>
+<td>0x220</td>
+<td>BMS → all</td>
+<td>BMS state (multiplexed)</td>
+</tr>
+<tr>
+<td>0x600-602</td>
+<td>Plant → Web</td>
+<td>Plant telemetry (SOC, OCV, IR)</td>
+</tr>
+<tr>
+<td>0x603-607</td>
+<td>Plant → Web</td>
+<td>Per-cell voltages (for dashboard)</td>
+</tr>
+<tr>
+<td>0x6E0</td>
+<td>Web → Plant</td>
+<td>Plant override commands (SWE.6)</td>
+</tr>
+<tr>
+<td>0x7E0</td>
+<td>Web → BMS</td>
+<td>BMS DB override commands (SWE.5)</td>
+</tr>
+<tr>
+<td>0x7F0-7FF</td>
+<td>BMS → Web</td>
+<td>SIL probes (state, DIAG, contactor)</td>
+</tr>
+</tbody>
+</table>
+<h3>foxBMS Configuration (NMC Chemistry)</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>MSL</th>
+<th>RSL</th>
+<th>MOL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overvoltage</td>
+<td>4250 mV</td>
+<td>4200 mV</td>
+<td>4150 mV</td>
+</tr>
+<tr>
+<td>Undervoltage</td>
+<td>2500 mV</td>
+<td>2600 mV</td>
+<td>2700 mV</td>
+</tr>
+<tr>
+<td>OT Discharge</td>
+<td>55.0°C</td>
+<td>50.0°C</td>
+<td>45.0°C</td>
+</tr>
+<tr>
+<td>OT Charge</td>
+<td>45.0°C</td>
+<td>40.0°C</td>
+<td>35.0°C</td>
+</tr>
+<tr>
+<td>String Current</td>
+<td>15000 mA</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>OV threshold</td>
+<td>50 events + 200ms delay</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>OT threshold</td>
+<td>500 events + 1000ms delay</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>OC threshold</td>
+<td>10 events + 100ms delay</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>Battery Pack Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cells in series</td>
+<td>18</td>
+</tr>
+<tr>
+<td>Cell capacity</td>
+<td>3000 mAh (3 Ah)</td>
+</tr>
+<tr>
+<td>Cell resistance</td>
+<td>50 mΩ</td>
+</tr>
+<tr>
+<td>Discharge current</td>
+<td>1 A (0.33C)</td>
+</tr>
+<tr>
+<td>Nominal voltage</td>
+<td>3700 mV (50% SOC)</td>
+</tr>
+<tr>
+<td>OCV range</td>
+<td>3400 mV (0%) – 4200 mV (100%)</td>
+</tr>
+<tr>
+<td>AFE averaging</td>
+<td>16-sample moving average</td>
+</tr>
+<tr>
+<td>Measurement noise</td>
+<td>±3 mV Gaussian</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Patches Applied to foxBMS</h2>
+<p>The foxBMS source (v1.10.0) is unmodified in the submodule. All changes are applied at build time via Python patch scripts in <code>patches/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Patch</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>patch_all_regs.py</td>
+<td>Redirect TMS570 register bases to RAM</td>
+</tr>
+<tr>
+<td>patch_canreg.py</td>
+<td>CAN register redirect</td>
+</tr>
+<tr>
+<td>patch_sbc.py/sbc2.py</td>
+<td>SBC returns RUNNING (no physical SBC)</td>
+</tr>
+<tr>
+<td>patch_rtc.py</td>
+<td>RTC returns initialized</td>
+</tr>
+<tr>
+<td>patch_can_sensor.py</td>
+<td>Current sensor present = true</td>
+</tr>
+<tr>
+<td>patch_database.py</td>
+<td>DATA_IterateOverDatabaseEntries extern</td>
+</tr>
+<tr>
+<td>patch_database2.py</td>
+<td>Database trace</td>
+</tr>
+<tr>
+<td>patch_ftask.py</td>
+<td>Engine/precyclic trace</td>
+</tr>
+<tr>
+<td>patch_sys2.py</td>
+<td>SYS_Trigger trace</td>
+</tr>
+<tr>
+<td>patch_bms2.py</td>
+<td>BMS_Trigger trace</td>
+</tr>
+<tr>
+<td>patch_10ms2.py</td>
+<td>10ms task trace</td>
+</tr>
+<tr>
+<td>patch_precharge.py</td>
+<td>Precharge always OK</td>
+</tr>
+<tr>
+<td>patch_battery_cfg.py</td>
+<td>NMC voltage/current thresholds</td>
+</tr>
+<tr>
+<td>patch_diag_posix.py</td>
+<td>Disable 42 hardware-absent DIAG IDs</td>
+</tr>
+<tr>
+<td>patch_diag_probe.py</td>
+<td>SIL probe + startup grace period in DIAG</td>
+</tr>
+<tr>
+<td>patch_db_inject.py</td>
+<td>Deep fault injection at DB READ path</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>File Structure</h2>
+<pre><code>foxbms-posix/
+├── foxbms-2/              # foxBMS v1.10.0 submodule (unmodified)
+├── halcogen-headers/      # 91 HALCoGen generated headers (BSD)
+├── freertos-posix-port/   # FreeRTOS POSIX port (MIT)
+├── patches/               # 16 Python patch scripts
+│   └── apply_all.sh       # Apply all patches in order
+├── src/
+│   ├── foxbms_posix_main.c   # Main loop + SIL probes
+│   ├── hal_stubs_posix.c     # 80+ HAL stubs + SPS simulation
+│   ├── sil_layer.c/h         # SIL override + probe system
+│   ├── posix_overrides.h     # FAS_ASSERT + portmacro
+│   ├── plant_model.py        # Dynamic battery simulator
+│   ├── plant_model_replay.py # BMW i3 trip replay
+│   ├── Makefile              # Build system
+│   ├── test_smoke.py         # Smoke test
+│   ├── test_fault_injection.py # Automated FI test runner
+│   ├── test_scenarios.py     # High-risk scenario tests
+│   └── fi/                   # 17-module test framework
+├── web/
+│   ├── server.py             # CAN-to-WebSocket bridge
+│   └── index.html            # Dashboard (single file)
+├── docs/
+│   ├── test/                 # Test matrix (2,005 cases)
+│   ├── plans/                # Implementation plans
+│   ├── lessons-learned.md    # 9 lessons documented
+│   ├── test-progress.md      # Test execution results
+│   └── aspice-cl2/           # ASPICE folder structure
+│       ├── 11-SWE.4-.../test-results/  # Unit test report
+│       ├── 12-SWE.5-.../test-results/  # Integration test report
+│       └── 13-SWE.6-.../test-results/  # Qualification test report
+├── GAP-ANALYSIS.md           # 33/33 gaps closed
+├── PLAN.md                   # Phase 1-4 roadmap (96% complete)
+├── Dockerfile                # Docker build
+└── docker-compose.yml        # Docker compose
+</code></pre>
+<hr />
+<h2>Troubleshooting</h2>
+<h3>BMS doesn't reach NORMAL</h3>
+<ul>
+<li>Ensure plant_model.py is running BEFORE foxbms-vecu</li>
+<li>Check vcan1 is up: <code>ip link show vcan1</code></li>
+<li>Wait 8-10 seconds (startup + precharge takes time)</li>
+</ul>
+<h3>Web dashboard shows no data</h3>
+<ul>
+<li>Ensure all 3 processes are running: <code>ps aux | grep -E 'plant|foxbms|server'</code></li>
+<li>Check web server log: <code>cat /tmp/bms-web.log</code></li>
+<li>Verify CAN traffic: <code>candump vcan1 -n 5</code></li>
+</ul>
+<h3>Cell voltages all zero</h3>
+<ul>
+<li>The plant needs ~1 second to start sending data</li>
+<li>Hard refresh browser: Ctrl+Shift+R</li>
+</ul>
+<h3>Fault injection doesn't trigger BMS reaction</h3>
+<ul>
+<li><strong>SWE.6 (Plant)</strong>: For voltage, inject ALL cells (C0 to C17) — single cell gets rejected by plausibility check</li>
+<li><strong>SWE.5 (BMS)</strong>: Single cell works (bypasses plausibility)</li>
+<li>Temperature needs 500 events (~5.5s) — wait longer</li>
+<li>Check event log for DIAG events</li>
+</ul>
+<h3>Processes die after SSH disconnect</h3>
+<ul>
+<li>Use <code>nohup</code> or <code>screen</code>/<code>tmux</code>:
+  <code>bash
+  nohup python3 src/plant_model.py vcan1 &amp;&gt;/dev/null &amp;
+  nohup env FOXBMS_CAN_IF=vcan1 src/foxbms-vecu &amp;&gt;/dev/null &amp;
+  nohup python3 web/server.py --can vcan1 --port 8080 --host 0.0.0.0 &amp;&gt;/dev/null &amp;</code></li>
+</ul>
+<hr />
+<h2>License</h2>
+<ul>
+<li>foxBMS 2: BSD-3-Clause (Fraunhofer IISB)</li>
+<li>HALCoGen headers: BSD-3-Clause (Texas Instruments)</li>
+<li>FreeRTOS POSIX port: MIT (Amazon)</li>
+<li>foxbms-posix (our code): proprietary (Taktflow Systems)</li>
+</ul></body></html>
