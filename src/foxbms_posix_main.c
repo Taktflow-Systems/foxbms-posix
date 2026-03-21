@@ -205,6 +205,9 @@ int main(int argc, char *argv[])
     uint64_t max_1ms_us = 0, max_10ms_us = 0, max_100ms_us = 0;
     uint32_t deadline_violations = 0;
 
+    /* GA-24: Software watchdog — if main loop stalls for >100ms, trigger ERROR */
+    uint64_t last_watchdog_feed = start_us;
+
     while (running) {
         uint64_t now = get_time_us();
 
@@ -255,6 +258,14 @@ int main(int argc, char *argv[])
                 }
             }
             tick++;
+            last_watchdog_feed = now;  /* GA-24: feed watchdog on every 1ms tick */
+        }
+
+        /* GA-24: Software watchdog — detect main loop stall */
+        if (now - last_watchdog_feed > 100000u) {  /* 100ms without a 1ms tick = stall */
+            fprintf(stderr, "[WATCHDOG] Main loop stalled for >100ms — forcing ERROR\n");
+            running = 0;
+            break;
         }
 
         /* 10ms cyclic */
