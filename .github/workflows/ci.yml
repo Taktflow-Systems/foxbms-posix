@@ -43,6 +43,11 @@ jobs:
             python3 \
             can-utils iproute2 linux-modules-extra-$(uname -r)
 
+      - name: Copy HALCoGen headers
+        run: |
+          mkdir -p foxbms-2/build/app_host_unit_test/include
+          cp halcogen-headers/* foxbms-2/build/app_host_unit_test/include/
+
       - name: Apply POSIX patches
         run: bash patches/apply_all.sh --force
 
