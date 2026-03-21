@@ -611,158 +611,22 @@ uint32_t I2C_WriteReadDma(void *i2c, uint32_t addr, uint32_t wlen, uint8_t *wdat
 }
 
 /* ================================================================
- * GA-06: Selective DIAG_Handler
+ * Phase 3: SIL probe state variables for DIAG
  *
- * Hardware-absent IDs (24): return OK unconditionally — these would
- * false-fault because the physical IC/bus/pin doesn't exist on POSIX.
- *
- * Software-checkable IDs (61): log the event and return the appropriate
- * result. This enables fault detection for overvoltage, overcurrent,
- * overtemperature, plausibility, etc. when the plant model injects
- * out-of-range values.
- *
- * DIAG_ID_e values from diag_cfg.h (foxBMS v1.10.0, 85 total IDs).
+ * These are populated by the patched real diag.c (via patch_diag_probe.py)
+ * and read by the SIL probe system. They must NOT be static so the
+ * patched DIAG_Handler() in diag.c can reference them via extern.
  * ================================================================ */
+#ifdef FOXBMS_SIL_PROBES
+uint32_t posix_diag_fault_count = 0u;
+uint8_t  posix_diag_last_id = 0u;
+uint8_t  posix_diag_last_event = 0u;
+uint64_t posix_diag_bitmap = 0u;  /* bit per DIAG ID (up to 64) */
+#endif
 
-/* Hardware-absent DIAG IDs — suppress on POSIX.
- * Uses enum values from diag_cfg.h so this stays correct if foxBMS reorders them. */
-
-/* DIAG_ID_e enum values from diag_cfg.h (foxBMS v1.10.0).
- * hal_stubs_posix.c does not include foxBMS headers, so we use numeric
- * values with comments referencing the enum name. If foxBMS reorders
- * the enum, these must be updated — this is tracked as GA-15 (fragile patches). */
-
-static int posix_diag_is_hardware_id(uint32_t id) {
-    switch (id) {
-        /* AFE SPI/communication — no AFE IC on POSIX */
-        case 2u:  /* DIAG_ID_AFE_SPI */
-        case 3u:  /* DIAG_ID_AFE_COMMUNICATION_INTEGRITY */
-        case 4u:  /* DIAG_ID_AFE_MUX */
-        case 5u:  /* DIAG_ID_AFE_CONFIG */
-        case 52u: /* DIAG_ID_AFE_OPEN_WIRE */
-        /* SBC — no NXP FS85xx on POSIX */
-        case 58u: /* DIAG_ID_SBC_FIN_ERROR */
-        case 59u: /* DIAG_ID_SBC_RSTB_ERROR */
-        /* I2C peripherals — no I2C bus on POSIX */
-        case 77u: /* DIAG_ID_I2C_PEX_ERROR */
-        case 78u: /* DIAG_ID_I2C_RTC_ERROR */
-        case 79u: /* DIAG_ID_RTC_CLOCK_INTEGRITY_ERROR */
-        case 80u: /* DIAG_ID_RTC_BATTERY_LOW_ERROR */
-        /* FRAM — no SPI FRAM on POSIX */
-        case 81u: /* DIAG_ID_FRAM_READ_CRC_ERROR */
-        /* Flash CRC — no flash on POSIX (runs from ELF in RAM) */
-        case 0u:  /* DIAG_ID_FLASHCHECKSUM */
-        /* CAN timing — SocketCAN has no HW timer; cooperative loop timing
-         * doesn't match real CAN period expectations. */
-        case 6u:  /* DIAG_ID_CAN_TIMING */
-        /* Measurement timeouts — cooperative loop timing causes false
-         * timeouts because data processing order differs from FreeRTOS.
-         * Plant model data arrives asynchronously; redundancy module
-         * timeout checks fire before first data cycle completes. */
-        case 60u: /* DIAG_ID_BASE_CELL_VOLTAGE_MEASUREMENT_TIMEOUT */
-        case 61u: /* DIAG_ID_REDUNDANCY0_CELL_VOLTAGE_MEASUREMENT_TIMEOUT */
-        case 62u: /* DIAG_ID_BASE_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT */
-        case 63u: /* DIAG_ID_REDUNDANCY0_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT */
-        case 66u: /* DIAG_ID_CURRENT_MEASUREMENT_TIMEOUT */
-        case 67u: /* DIAG_ID_CURRENT_MEASUREMENT_ERROR */
-        case 68u: /* DIAG_ID_CURRENT_SENSOR_V1_MEASUREMENT_TIMEOUT */
-        case 69u: /* DIAG_ID_CURRENT_SENSOR_V2_MEASUREMENT_TIMEOUT */
-        case 70u: /* DIAG_ID_CURRENT_SENSOR_V3_MEASUREMENT_TIMEOUT */
-        case 71u: /* DIAG_ID_CURRENT_SENSOR_POWER_MEASUREMENT_TIMEOUT */
-        case 72u: /* DIAG_ID_POWER_MEASUREMENT_ERROR */
-        /* Current sensor responding — CAN-based, timing-dependent */
-        case 9u:  /* DIAG_ID_CURRENT_SENSOR_CC_RESPONDING */
-        case 10u: /* DIAG_ID_CURRENT_SENSOR_EC_RESPONDING */
-        case 11u: /* DIAG_ID_CURRENT_SENSOR_RESPONDING */
-        /* Pack voltage plausibility fires before first cell data arrives */
-        case 53u: /* DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE */
-        /* Interlock — no physical interlock circuit */
-        case 54u: /* DIAG_ID_INTERLOCK_FEEDBACK */
-        /* Contactor feedback — SPS sim doesn't have real feedback pins */
-        case 55u: /* DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK */
-        case 56u: /* DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK */
-        case 57u: /* DIAG_ID_PRECHARGE_CONTACTOR_FEEDBACK */
-        /* IMD — no insulation monitoring device */
-        case 73u: /* DIAG_ID_INSULATION_MEASUREMENT_VALID */
-        case 74u: /* DIAG_ID_LOW_INSULATION_RESISTANCE_ERROR */
-        case 75u: /* DIAG_ID_LOW_INSULATION_RESISTANCE_WARNING */
-        case 76u: /* DIAG_ID_INSULATION_GROUND_ERROR */
-        /* Other hardware */
-        case 82u: /* DIAG_ID_ALERT_MODE */
-        case 83u: /* DIAG_ID_AEROSOL_ALERT */
-        case 84u: /* DIAG_ID_SUPPLY_VOLTAGE_CLAMP_30C_LOST */
-            return 1;
-        default:
-            return 0;
-    }
-}
-
-static uint32_t posix_diag_fault_count = 0u;
-static uint8_t  posix_diag_last_id = 0u;
-static uint8_t  posix_diag_last_event = 0u;
-static uint64_t posix_diag_bitmap = 0u;  /* bit per DIAG ID (up to 64) */
-
-uint32_t DIAG_Handler(uint32_t id, uint32_t event, uint32_t impact, uint32_t data) {
-    (void)impact; (void)data;
-
-    /* Hardware-absent IDs: always OK */
-    if (posix_diag_is_hardware_id(id)) {
-        return 0u; /* DIAG_HANDLER_RETURN_OK */
-    }
-
-    /* Software-checkable IDs: log the event but return OK. */
-    if (event == 1u) { /* DIAG_EVENT_NOT_OK */
-        posix_diag_fault_count++;
-        posix_diag_last_id = (uint8_t)(id & 0xFFu);
-        posix_diag_last_event = 1u;
-        if (id < 64u) posix_diag_bitmap |= (1ULL << id);
-
-        if (posix_diag_fault_count <= 20u) {
-            fprintf(stderr, "[DIAG] FAULT #%u: diagId=%u event=NOT_OK impact=%u data=%u\n",
-                    posix_diag_fault_count, id, impact, data);
-            fflush(stderr);
-        } else if (posix_diag_fault_count == 21u) {
-            fprintf(stderr, "[DIAG] (suppressing further fault log messages)\n");
-            fflush(stderr);
-        }
-    } else if (event == 0u) { /* DIAG_EVENT_OK */
-        if (id < 64u) posix_diag_bitmap &= ~(1ULL << id);
-    }
-
-    /* SIL probe: DIAG status */
-    {
-        uint8_t buf[8];
-        memcpy(&buf[0], &posix_diag_fault_count, 4);
-        buf[4] = posix_diag_last_id;
-        buf[5] = posix_diag_last_event;
-        buf[6] = 0u;
-        buf[7] = 0u;
-        sil_probe_raw(SIL_PROBE_DIAG, buf, 8u);
-    }
-    /* SIL probe: DIAG bitmap */
-    sil_probe_raw(SIL_PROBE_DIAG_BITMAP, (const uint8_t *)&posix_diag_bitmap, 8u);
-
-    return 0u; /* DIAG_HANDLER_RETURN_OK */
-}
-
-uint32_t DIAG_Initialize(void *dev) { (void)dev; return 0u; }
-/* DIAG_UpdateFlags defined in diag_cfg.c */
-uint32_t DIAG_GetDiagnosisEntryState(uint32_t id) { (void)id; return 0u; }
-void DIAG_Reset(void) { posix_diag_fault_count = 0u; }
-uint32_t DIAG_CheckEvent(uint32_t r, uint32_t id, uint32_t impact, uint32_t data) {
-    if (r != 0u) { /* STD_NOT_OK */
-        return DIAG_Handler(id, 1u /* NOT_OK */, impact, data);
-    }
-    return DIAG_Handler(id, 0u /* OK */, impact, data);
-}
-uint32_t DIAG_GetDelay(uint32_t id) { (void)id; return 0u; }
-uint8_t DIAG_IsAnyFatalErrorSet(void) {
-    /* Always return false — the "fatal error" mechanism requires the full
-     * diag.c implementation with per-ID thresholds and error counting.
-     * Our selective DIAG_Handler logs faults but cannot determine which
-     * are truly fatal vs. transient. Returning true blocks SYS state machine. */
-    return 0u;
-}
+/* DIAG functions are now provided by the real foxBMS diag.c
+ * (included via Makefile, hardware-absent IDs disabled via patch_diag_posix.py,
+ *  SIL probe instrumentation added via patch_diag_probe.py) */
 
 /* ================================================================
  * GA-07: FAS_ASSERT crash handler

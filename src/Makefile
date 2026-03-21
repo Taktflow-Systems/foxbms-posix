@@ -45,7 +45,7 @@ APP_SRCS = $(shell find $(ROOT)/src/app -name '*.c' \
     ! -name 'spi.c' ! -name 'spi_cfg.c' ! -name 'dma.c' ! -name 'i2c.c' \
     ! -name 'fram.c' ! -name 'pex.c' ! -name 'pex_cfg.c' \
     ! -name 'htsensor.c' ! -name 'nxpfs85xx.c' ! -name 'fs8x_driver*' \
-    ! -path '*/sbc/*' ! -name 'diag.c' ! -name 'fassert.c' \
+    ! -path '*/sbc/*' ! -name 'fassert.c' \
     2>/dev/null)
 
 # foxBMS OS wrapper — exclude os_freertos.c (we provide our own OS stubs)
