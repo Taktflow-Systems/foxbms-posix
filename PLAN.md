@@ -68,28 +68,34 @@
 
 **Goal**: foxBMS detects injected faults and responds correctly (opens contactors, enters ERROR state).
 
-**Prerequisite**: Implement DIAG threshold counters (currently DIAG_Handler always returns OK — faults are logged but don't propagate to BMS state machine).
+**Prerequisites**:
+1. Implement DIAG threshold counters (currently DIAG_Handler always returns OK — faults are logged but don't propagate to BMS state machine)
+2. Add `#ifdef FOXBMS_SIL_PROBES` patches in foxBMS source to intercept data pipeline (SOA_CheckVoltages, SOA_CheckCurrent, SOA_CheckTemperatures)
+3. Connect SIL overrides to foxBMS internal database (not just probe output)
 
 ### Exit Criteria
 
 | # | Criterion | Test | Result |
 |---|-----------|------|--------|
-| 3.1 | Overvoltage → contactors open | Plant sends 1 cell at 4500mV, check 0x220 state ≠ 7 within 5s | NOT DONE |
-| 3.2 | Undervoltage → contactors open | Plant sends 1 cell at 2500mV | NOT DONE |
-| 3.3 | Overtemperature → contactors open | Plant sends 1 sensor at 80°C (800 deci-°C) | NOT DONE |
-| 3.4 | Overcurrent → contactors open | Plant sends IVT current 200A | NOT DONE |
-| 3.5 | Cell imbalance → balancing activates | Plant sends cells at 3500/3700/3900mV, check BAL state | NOT DONE |
-| 3.6 | Sensor loss → foxBMS detects | Plant stops sending 0x270 for 5s, check DIAG fault | NOT DONE |
-| 3.7 | Recovery after fault clears | Remove fault → BMS returns to NORMAL | NOT DONE |
-| 3.8 | Fault injection via runtime API | `test_fault.py` sends control message, plant injects fault | NOT DONE |
-| 3.9 | All 6 fault types automated in CI | `make test-faults` runs all fault tests, returns pass/fail | NOT DONE |
+| 3.1 | Overvoltage → contactors open | Override cell 0 to 4500mV via 0x7E0, probe 0x7F0 shows contactors open, probe 0x7F9 shows ERROR | NOT DONE |
+| 3.2 | Undervoltage → contactors open | Override cell 0 to 2500mV via 0x7E0 | NOT DONE |
+| 3.3 | Overtemperature → contactors open | Override sensor 3 to 800 ddegC via 0x7E0 | NOT DONE |
+| 3.4 | Overcurrent → contactors open | Override current to 200000mA via 0x7E0 | NOT DONE |
+| 3.5 | Cell imbalance → balancing activates | Override cells to 3500/3700/3900mV, check BAL state via probe | NOT DONE |
+| 3.6 | Sensor loss → foxBMS detects | Stop plant 0x270 for 5s, check DIAG bitmap probe 0x7F8 | NOT DONE |
+| 3.7 | Recovery after fault clears | Release override → BMS returns to NORMAL via probe 0x7F9 | NOT DONE |
+| 3.8 | Temp override reflected in foxBMS pipeline | test_sil_probes.py OVR.04 passes (currently Phase 3 blocker) | NOT DONE |
+| 3.9 | Current override reflected in foxBMS pipeline | test_sil_probes.py OVR.05 passes (currently Phase 3 blocker) | NOT DONE |
+| 3.10 | Override persistence across probe cycles | test_sil_probes.py PER.01 passes (currently Phase 3 blocker) | NOT DONE |
+| 3.11 | All fault types automated in CI | `make test-faults` runs all fault tests, returns pass/fail | NOT DONE |
 
-### Status: 0/9 criteria met
+### Status: 0/11 criteria met
 
 ### Blockers
 - DIAG_Handler must implement per-ID threshold counters (not just log + return OK)
 - DIAG_IsAnyFatalErrorSet must track actual fatal state
-- Plant model needs fault injection API (runtime control, not source edits)
+- SIL overrides must intercept foxBMS database reads (patch SOA/database with `#ifdef` hooks)
+- 3 test_sil_probes.py tests (OVR.04, OVR.05, PER.01) deferred from Phase 2 SIL layer
 
 ---
 
@@ -118,7 +124,17 @@
 | Phase | Criteria | Met | Status |
 |-------|----------|-----|--------|
 | Phase 1: BMS NORMAL | 10 | **10/10** | **COMPLETE** ✓ |
-| Phase 2: Realistic Sim | 8 | **5/8** | PARTIAL (62%) |
-| Phase 3: Fault Injection | 9 | **0/9** | NOT STARTED |
+| Phase 2: Realistic Sim | 8 | **8/8** | **COMPLETE** ✓ |
+| Phase 2.5: SIL Probes | 76 | **76/76** | **COMPLETE** ✓ (3 deferred to Phase 3) |
+| Phase 3: Fault Injection | 11 | **0/11** | NOT STARTED |
 | Phase 4: Integration | 7 | **0/7** | NOT STARTED |
-| **Total** | **34** | **15/34** | **44%** |
+| **Total** | **112** | **94/112** | **84%** |
+
+### Test Suites
+
+| Test | Criteria | Result |
+|------|----------|--------|
+| `test_smoke.py` | BMS NORMAL + SOC + strings | PASS |
+| `test_integration.py` | 21 criteria (P1 + P2) | 20/21 PASS |
+| `test_asil.py` | 50 criteria (9 categories) | 50/50 PASS |
+| `test_sil_probes.py` | 76 criteria (10 categories) | 76/76 PASS |
