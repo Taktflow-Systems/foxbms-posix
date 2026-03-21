@@ -55,6 +55,7 @@ static uint32_t can_mailbox_id[CAN_MAX_MAILBOXES] = {0};
 /* SocketCAN integration */
 extern int posix_can_open(const char *ifname);
 
+// HITL-LOCK START:HAL-EARLY-INIT
 /* Constructor: runs before main() */
 __attribute__((constructor)) void posix_early_init(void) {
     fprintf(stderr, "[POSIX] Binary started. Entering main()...\n");
@@ -64,6 +65,7 @@ __attribute__((constructor)) void posix_early_init(void) {
     if (!can_if) can_if = "vcan1";
     posix_can_open(can_if);
 }
+// HITL-LOCK END:HAL-EARLY-INIT
 
 /* Force SBC state to RUNNING after main() init but before tasks check it.
  * Called from a POSIX-specific hook. We use a byte offset approach since
@@ -84,6 +86,7 @@ void spiInit(void) { fprintf(stderr, "[POSIX] spiInit()\n"); fflush(stderr); }
 extern int posix_can_open(const char *ifname);
 extern int posix_can_send(uint32_t id, const uint8_t *data, uint8_t dlc);
 
+// HITL-LOCK START:HAL-CAN-INIT
 static int can_initialized_posix = 0;
 void canInit(void) {
     const char *can_if = getenv("FOXBMS_CAN_IF");
@@ -93,6 +96,7 @@ void canInit(void) {
     fprintf(stderr, "[POSIX] canInit() → SocketCAN '%s' ret=%d\n", can_if, ret);
     fflush(stderr);
 }
+// HITL-LOCK END:HAL-CAN-INIT
 void i2cInit(void) {}
 void systemInit(void) {}
 
@@ -417,7 +421,7 @@ OS_STD_RETURN_e OS_ReceiveFromQueue(void *xQueue, void *pvBuffer, uint32_t ticks
     }
     /* AFE cell temperature queue */
     if (xQueue == ftsk_canToAfeCellTemperaturesQueue && posix_afe_temp_head != posix_afe_temp_tail) {
-        memcpy(pvBuffer, posix_afe_temp_buf[posix_afe_temp_tail], 16);
+        memcpy(pvBuffer, posix_afe_temp_buf[posix_afe_temp_tail], 32);  /* temp struct ~19 bytes */
         posix_afe_temp_tail = (posix_afe_temp_tail + 1) % POSIX_AFE_QUEUE_SIZE;
 #ifdef FOXBMS_SIL_PROBES
         posix_sil_db_read_count++;
@@ -460,7 +464,7 @@ OS_STD_RETURN_e OS_SendToBackOfQueue(void *xQueue, const void *pvItem, uint32_t 
     if (xQueue == ftsk_canToAfeCellTemperaturesQueue && pvItem != NULL) {
         uint32_t next = (posix_afe_temp_head + 1) % POSIX_AFE_QUEUE_SIZE;
         if (next != posix_afe_temp_tail) {
-            memcpy(posix_afe_temp_buf[posix_afe_temp_head], pvItem, 16);
+            memcpy(posix_afe_temp_buf[posix_afe_temp_head], pvItem, 32);  /* temp struct ~19 bytes */
             posix_afe_temp_head = next;
         }
     }
@@ -689,6 +693,7 @@ REG_BUF(posix_vimreg);
 REG_BUF(posix_ecapreg1);
 #undef REG_BUF
 
+// HITL-LOCK START:HAL-SBC-STATE
 /* SBC stubs (sbc.c + nxpfs85xx.c excluded) */
 typedef enum { SBC_OK = 0 } SBC_RETURN_TYPE_e;
 typedef enum { SBC_STATEMACHINE_RUNNING = 2 } SBC_STATEMACHINE_e;
@@ -697,6 +702,7 @@ SBC_STATE_s sbc_stateMcuSupervisor = {0};
 SBC_RETURN_TYPE_e SBC_SetStateRequest(SBC_STATE_s *p, uint8_t req) { (void)p; (void)req; return SBC_OK; }
 SBC_STATEMACHINE_e SBC_GetState(SBC_STATE_s *p) { (void)p; return SBC_STATEMACHINE_RUNNING; }
 void SBC_Trigger(SBC_STATE_s *p) { (void)p; }
+// HITL-LOCK END:HAL-SBC-STATE
 
 /* ================================================================
  * PHY

@@ -237,6 +237,7 @@ int main(int argc, char *argv[])
             }
         }
 
+        // HITL-LOCK START:MAIN-LOOP-TIMING
         /* 1ms cyclic */
         if (now - last_1ms >= 1000) {
             uint64_t t0 = get_time_us();
@@ -297,6 +298,7 @@ int main(int argc, char *argv[])
                     fprintf(stderr, "[TIMING] 100ms task took %luus (deadline 100000us)\n", (unsigned long)dt);
                 }
             }
+        // HITL-LOCK END:MAIN-LOOP-TIMING
 
             /* SIL probes — 100ms rate */
 #ifdef FOXBMS_SIL_PROBES

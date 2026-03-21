@@ -49,12 +49,14 @@ def ocv_mv(soc_pct):
 # ================================================================
 # foxBMS CAN big-endian encoding (same lookup table as foxBMS)
 # ================================================================
+# HITL-LOCK START:PLANT-BE-TABLE
 CAN_BIG_ENDIAN_TABLE = [
     56, 57, 58, 59, 60, 61, 62, 63, 48, 49, 50, 51, 52, 53, 54, 55,
     40, 41, 42, 43, 44, 45, 46, 47, 32, 33, 34, 35, 36, 37, 38, 39,
     24, 25, 26, 27, 28, 29, 30, 31, 16, 17, 18, 19, 20, 21, 22, 23,
      8,  9, 10, 11, 12, 13, 14, 15,  0,  1,  2,  3,  4,  5,  6,  7,
 ]
+# HITL-LOCK END:PLANT-BE-TABLE
 
 def foxbms_encode_signal(msg_data, start_bit, bit_length, value):
     """Encode a CAN signal using foxBMS's big-endian bit numbering."""
@@ -73,10 +75,13 @@ def encode_cell_voltage_msg(mux, voltages_mv):
     """Encode foxBMS cell voltage message (0x270)."""
     d = 0
     d = foxbms_encode_signal(d, 7, 8, mux)
+    # HITL-LOCK START:PLANT-DECAN-VALID
+    # DECAN_DATA_IS_VALID = 1 (not 0) — verified by roundtrip testing
     d = foxbms_encode_signal(d, 12, 1, 1)   # Invalid flag 0: 1=VALID
     d = foxbms_encode_signal(d, 13, 1, 1)   # Invalid flag 1: 1=VALID
     d = foxbms_encode_signal(d, 14, 1, 1)   # Invalid flag 2: 1=VALID
     d = foxbms_encode_signal(d, 15, 1, 1)   # Invalid flag 3: 1=VALID
+    # HITL-LOCK END:PLANT-DECAN-VALID
     d = foxbms_encode_signal(d, 11, 13, voltages_mv[0])
     d = foxbms_encode_signal(d, 30, 13, voltages_mv[1])
     d = foxbms_encode_signal(d, 33, 13, voltages_mv[2])
@@ -84,15 +89,24 @@ def encode_cell_voltage_msg(mux, voltages_mv):
     return msg_data_to_bytes(d)
 
 def encode_cell_temp_msg(mux, temps_ddegc):
-    """Encode foxBMS cell temperature message (0x280)."""
+    """Encode foxBMS cell temperature message (0x280).
+
+    6 temperature slots per message, each 8-bit (unit: °C, not ddegC!).
+    foxBMS DECAN multiplies by 10 to get ddegC internally.
+    Invalid flags: bits 8-13 (1=VALID, same as voltage).
+    Temperature signals: bits 23,31,39,47,55,63 — 8 bits each.
+    """
     d = 0
-    d = foxbms_encode_signal(d, 7, 8, mux)
-    d = foxbms_encode_signal(d, 12, 1, 1)
-    d = foxbms_encode_signal(d, 13, 1, 1)
-    d = foxbms_encode_signal(d, 14, 1, 1)
-    d = foxbms_encode_signal(d, 11, 13, temps_ddegc[0] if len(temps_ddegc) > 0 else 0)
-    d = foxbms_encode_signal(d, 30, 13, temps_ddegc[1] if len(temps_ddegc) > 1 else 0)
-    d = foxbms_encode_signal(d, 33, 13, temps_ddegc[2] if len(temps_ddegc) > 2 else 0)
+    d = foxbms_encode_signal(d, 7, 8, mux)  # Mux value
+    # Invalid flags (bits 8-13): 1 = VALID
+    for i in range(6):
+        d = foxbms_encode_signal(d, 8 + i, 1, 1 if i < len(temps_ddegc) else 0)
+    # Temperature values (8-bit, unit: °C — DECAN multiplies by 10)
+    temp_bit_starts = [23, 31, 39, 47, 55, 63]
+    for i in range(6):
+        t_degc = temps_ddegc[i] // 10 if i < len(temps_ddegc) else 0  # ddegC → °C
+        t_degc = max(0, min(255, t_degc))  # clamp to uint8
+        d = foxbms_encode_signal(d, temp_bit_starts[i], 8, t_degc)
     return msg_data_to_bytes(d)
 
 # ================================================================
@@ -240,13 +254,11 @@ try:
                     volts.append(0)  # Unused slots
             can_send(0x270, encode_cell_voltage_msg(mux, volts))
 
-        # Cell Temperatures (0x280) — 3 mux groups × 3 sensors = 9 slots (8 sensors used)
-        for mux in range(3):  # mux 0,1,2 = sensors 0-2, 3-5, 6-8
-            n_sensors = min(3, 8 - mux * 3)  # 8 total sensors
-            temps = [250] * max(1, n_sensors)  # 25.0°C for all
-            if len(temps) < 3:
-                temps.extend([0] * (3 - len(temps)))
-            can_send(0x280, encode_cell_temp_msg(mux, temps[:3]))
+        # Cell Temperatures (0x280) — 2 mux groups × 6 sensors = 12 slots (8 sensors used)
+        for mux in range(2):  # mux 0 = sensors 0-5, mux 1 = sensors 6-7 + 4 unused
+            n_sensors = min(6, 8 - mux * 6)  # 8 total sensors
+            temps = [250] * max(1, n_sensors)  # 25.0°C (250 ddegC) for all
+            can_send(0x280, encode_cell_temp_msg(mux, temps))
 
         # ============================================================
         # Status log
