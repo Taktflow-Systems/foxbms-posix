@@ -23,12 +23,23 @@ def clear_all(s):
             data = struct.pack('<BBBi', cmd, idx, 0, 0)
             s.send(struct.pack('=IB3x8s', 0x7E0, 8, data))
 
-def check_reaction(s, timeout_s=8):
-    """Monitor for DIAG bitmap or BMS ERROR."""
+def check_reaction(s, timeout_s=8, reinject=None):
+    """Monitor for DIAG bitmap or BMS ERROR.
+
+    reinject: list of (cmd, idx, val) tuples to continuously re-inject
+              during monitoring (needed to survive redundancy module overwrite).
+    """
     t0 = time.monotonic()
     diag_bitmap = 0
     bms_error = False
+    last_reinject = 0
     while time.monotonic() - t0 < timeout_s:
+        # Re-inject every 10ms to keep override active
+        now = time.monotonic()
+        if reinject and now - last_reinject > 0.01:
+            for cmd, idx, val in reinject:
+                inject(s, cmd, idx, val)
+            last_reinject = now
         try:
             f = s.recv(16)
             cid = struct.unpack('=I', f[0:4])[0] & 0x7FF
@@ -126,20 +137,21 @@ print("NORMAL + stabilized\n")
 print("=== PER-CELL COVERAGE ===")
 
 inject(s, 0x01, 8, 5000)
-r = check_reaction(s, 5)
+r = check_reaction(s, 5, reinject=[(0x01, 8, 5000)])
 run_test("OV cell 8 (middle)", True, r)
 clear_all(s)
 plant, vecu = restart_and_stabilize(s, plant, vecu)
 
 inject(s, 0x01, 17, 5000)
-r = check_reaction(s, 5)
+r = check_reaction(s, 5, reinject=[(0x01, 17, 5000)])
 run_test("OV cell 17 (last)", True, r)
 clear_all(s)
 plant, vecu = restart_and_stabilize(s, plant, vecu)
 
+ri = [(0x01, c, 1000) for c in range(18)]
 for c in range(18):
     inject(s, 0x01, c, 1000)
-r = check_reaction(s, 5)
+r = check_reaction(s, 5, reinject=ri)
 run_test("UV ALL 18 cells", True, r)
 clear_all(s)
 plant, vecu = restart_and_stabilize(s, plant, vecu)
@@ -163,7 +175,7 @@ plant, vecu = restart_and_stabilize(s, plant, vecu)
 # Stuck-open: override feedback to OPEN while BMS has contactors closed
 inject(s, 0x05, 0, 0)  # feedback ch0 = OPEN
 inject(s, 0x05, 1, 0)  # feedback ch1 = OPEN
-r = check_reaction(s, 8)
+r = check_reaction(s, 8, reinject=[(0x05, 0, 0), (0x05, 1, 0)])
 run_test("Contactor STUCK-OPEN (feedback=OPEN while closed)", True, r)
 clear_all(s)
 plant, vecu = restart_and_stabilize(s, plant, vecu)
@@ -174,13 +186,12 @@ plant, vecu = restart_and_stabilize(s, plant, vecu)
 print("\n=== BOUNDARY VALUE ANALYSIS (OV MSL = 4250mV) ===")
 
 inject(s, 0x01, 0, 4249)
-r = check_reaction(s, 3)
+r = check_reaction(s, 3, reinject=[(0x01, 0, 4249)])
 run_test("BVA: 4249mV (MSL-1) — should NOT trip", False, r)
 clear_all(s)
 
 inject(s, 0x01, 0, 4250)
-r = check_reaction(s, 3)
-# foxBMS uses >= for MSL check, so 4250 should trip
+r = check_reaction(s, 3, reinject=[(0x01, 0, 4250)])
 tripped = r["diag"] != 0 or r["error"]
 print(f"  [INFO] BVA: 4250mV (exact MSL) — {'tripped' if tripped else 'no trip'} ({r['time_s']:.1f}s)")
 results.append(("BVA: 4250mV (exact MSL)", "INFO", r["time_s"], "tripped" if tripped else "no trip"))
@@ -189,7 +200,7 @@ if tripped:
     plant, vecu = restart_and_stabilize(s, plant, vecu)
 
 inject(s, 0x01, 0, 4251)
-r = check_reaction(s, 3)
+r = check_reaction(s, 3, reinject=[(0x01, 0, 4251)])
 run_test("BVA: 4251mV (MSL+1) — should trip", True, r)
 clear_all(s)
 plant, vecu = restart_and_stabilize(s, plant, vecu)
@@ -201,7 +212,7 @@ print("\n=== MULTI-CELL FAULTS ===")
 
 inject(s, 0x01, 0, 5000)   # OV on cell 0
 inject(s, 0x01, 17, 1000)  # UV on cell 17
-r = check_reaction(s, 5)
+r = check_reaction(s, 5, reinject=[(0x01, 0, 5000), (0x01, 17, 1000)])
 run_test("OV cell 0 + UV cell 17 simultaneously", True, r)
 clear_all(s)
 plant, vecu = restart_and_stabilize(s, plant, vecu)
@@ -212,7 +223,7 @@ plant, vecu = restart_and_stabilize(s, plant, vecu)
 print("\n=== THERMAL GRADIENT ===")
 
 inject(s, 0x02, 0, 600)  # 60°C on sensor 0 (above OT_DIS MSL 550)
-r = check_reaction(s, 10)
+r = check_reaction(s, 10, reinject=[(0x02, 0, 600)])
 run_test("Sensor 0 = 600ddegC (60C), others normal", True, r)
 clear_all(s)
 
