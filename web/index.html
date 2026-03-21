@@ -147,6 +147,19 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
       <label><input type="radio" name="injectTarget" value="plant" checked><span>Plant (SWE.6)</span></label>
       <label><input type="radio" name="injectTarget" value="bms"><span>BMS (SWE.5)</span></label>
     </div>
+    <div class="inject-group"><label>Method</label><div class="inject-row"><select id="faultMethod" style="flex:1">
+      <option value="step_max">STUCK_AT_MAX</option>
+      <option value="step_0">STUCK_AT_0</option>
+      <option value="oor_high">OUT_OF_RANGE_HIGH</option>
+      <option value="oor_low">OUT_OF_RANGE_LOW</option>
+      <option value="drift_up">DRIFT_UP</option>
+      <option value="drift_down">DRIFT_DOWN</option>
+      <option value="offset_pos">OFFSET +600mV</option>
+      <option value="offset_neg">OFFSET -1300mV</option>
+      <option value="noise">NOISE ±200mV</option>
+      <option value="inverted">INVERTED</option>
+      <option value="corrupted">CORRUPTED</option>
+    </select></div></div>
     <div class="inject-group"><label>Overvoltage</label><div class="inject-row"><select id="ovFrom"></select><span style="font-size:10px;color:var(--dim)">to</span><select id="ovTo"></select><button class="btn btn-inject" onclick="inject('ov')">Inject</button></div></div>
     <div class="inject-group"><label>Undervoltage</label><div class="inject-row"><select id="uvFrom"></select><span style="font-size:10px;color:var(--dim)">to</span><select id="uvTo"></select><button class="btn btn-inject" onclick="inject('uv')">Inject</button></div></div>
     <div class="inject-group"><label>Overtemperature</label><div class="inject-row"><select id="otFrom"></select><span style="font-size:10px;color:var(--dim)">to</span><select id="otTo"></select><button class="btn btn-inject" onclick="inject('ot')">Inject</button></div></div>
@@ -407,22 +420,41 @@ function inject(type){
   const target=getInjectTarget();
   const action=target==="plant"?"plant_inject":"bms_inject";
   let msg={action:action};
+  const method=document.getElementById("faultMethod").value;
+  // Value lookup: [OV value, UV value, OT value (ddegC)]
+  const VALUES={
+    step_max:  [5000, 0, 800],
+    step_0:    [0, 5000, -300],
+    oor_high:  [5500, 5500, 1000],
+    oor_low:   [-100, -100, -600],
+    drift_up:  [4300, 4300, 600],
+    drift_down:[2450, 2450, -250],
+    offset_pos:[4300, 4300, 600],
+    offset_neg:[2400, 2400, -250],
+    noise:     [4350, 2400, 600],
+    inverted:  [-3700, -3700, -250],
+    corrupted: [()=>Math.random()>0.5?5000:0, ()=>Math.random()>0.5?5000:0, ()=>Math.random()>0.5?800:-300],
+  };
+  const vals=VALUES[method]||VALUES.step_max;
   if(type==="ov"){
     const from=+document.getElementById("ovFrom").value, to=+document.getElementById("ovTo").value;
     const lo=Math.min(from,to), hi=Math.max(from,to);
-    for(let c=lo;c<=hi;c++){ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:c,value:4500}));activeFaults.add("ov_"+c);}
+    const v=typeof vals[0]==="function"?vals[0]():vals[0];
+    for(let c=lo;c<=hi;c++){ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:c,value:v}));activeFaults.add("ov_"+c);}
     return;
   }
   else if(type==="uv"){
     const from=+document.getElementById("uvFrom").value, to=+document.getElementById("uvTo").value;
     const lo=Math.min(from,to), hi=Math.max(from,to);
-    for(let c=lo;c<=hi;c++){ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:c,value:2000}));activeFaults.add("uv_"+c);}
+    const v=typeof vals[1]==="function"?vals[1]():vals[1];
+    for(let c=lo;c<=hi;c++){ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:c,value:v}));activeFaults.add("uv_"+c);}
     return;
   }
   else if(type==="ot"){
     const from=+document.getElementById("otFrom").value, to=+document.getElementById("otTo").value;
     const lo=Math.min(from,to), hi=Math.max(from,to);
-    for(let s=lo;s<=hi;s++){ws.send(JSON.stringify({action:action,type:"temperature",sensor:s,value:600}));activeFaults.add("ot_"+s);}
+    const v=typeof vals[2]==="function"?vals[2]():vals[2];
+    for(let s=lo;s<=hi;s++){ws.send(JSON.stringify({action:action,type:"temperature",sensor:s,value:v}));activeFaults.add("ot_"+s);}
     return;
   }
   else if(type==="oc"){msg.type="current";msg.value=200000;activeFaults.add("oc");}
