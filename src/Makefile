@@ -2,7 +2,7 @@
 # Usage: make -j4
 
 CC = gcc
-CFLAGS = -std=c11 -D_GNU_SOURCE -DFOXBMS_POSIX -DGNU_COMPILER -DFOXBMS_USES_FREERTOS=1
+CFLAGS = -std=c11 -D_GNU_SOURCE -DFOXBMS_POSIX -DGNU_COMPILER -DFOXBMS_USES_FREERTOS=1 -DFOXBMS_SIL_PROBES
 CFLAGS += -Wall -Wextra
 CFLAGS += -Wno-unused-parameter -Wno-attributes -Wno-enum-conversion
 CFLAGS += -Wno-address-of-packed-member -Wno-missing-braces -Wno-cpp
@@ -54,8 +54,8 @@ OS_SRCS = $(ROOT)/src/app/task/os/os.c
 # Version
 VERSION_SRCS = $(shell find $(ROOT)/src/opt -name '*.c' 2>/dev/null)
 
-# POSIX stubs
-POSIX_SRCS = hal_stubs_posix.c
+# POSIX stubs + SIL instrumentation layer
+POSIX_SRCS = hal_stubs_posix.c sil_layer.c
 
 # All sources
 ALL_SRCS = foxbms_posix_main.c $(POSIX_SRCS) $(FREERTOS_SRCS) $(APP_SRCS) $(OS_SRCS) $(VERSION_SRCS)

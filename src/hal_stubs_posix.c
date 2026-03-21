@@ -12,6 +12,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "sil_layer.h"
+
+/* ================================================================
+ * SIL probe state variables — populated by stubs, read by probes
+ * ================================================================ */
+#ifdef FOXBMS_SIL_PROBES
+uint8_t  posix_sil_bms_state = 0u;
+uint8_t  posix_sil_bms_substate = 0u;
+float    posix_sil_soc_pct = 50.0f;
+uint16_t posix_sil_cell_v_min = 3700u;
+uint16_t posix_sil_cell_v_max = 3700u;
+int32_t  posix_sil_string_voltage_mv = 66600;
+int32_t  posix_sil_bus_voltage_mv = 66600;
+int16_t  posix_sil_cell_t_min = 250;
+int16_t  posix_sil_cell_t_max = 250;
+int32_t  posix_sil_current_ma = 0;
+uint32_t posix_sil_db_write_count = 0u;
+uint32_t posix_sil_db_read_count = 0u;
+#endif
 
 /* Prevent HALCoGen type conflicts */
 typedef uint32_t uint32;
@@ -398,6 +417,9 @@ OS_STD_RETURN_e OS_SendToBackOfQueue(void *xQueue, const void *pvItem, uint32_t 
     extern void *ftsk_databaseQueue;
     if (xQueue == ftsk_databaseQueue && pvItem != NULL) {
         DATA_IterateOverDatabaseEntries(pvItem);
+#ifdef FOXBMS_SIL_PROBES
+        posix_sil_db_write_count++;
+#endif
     }
     /* AFE cell voltage queue */
     extern void *ftsk_canToAfeCellVoltagesQueue;
@@ -651,6 +673,9 @@ static int posix_diag_is_hardware_id(uint32_t id) {
 }
 
 static uint32_t posix_diag_fault_count = 0u;
+static uint8_t  posix_diag_last_id = 0u;
+static uint8_t  posix_diag_last_event = 0u;
+static uint64_t posix_diag_bitmap = 0u;  /* bit per DIAG ID (up to 64) */
 
 uint32_t DIAG_Handler(uint32_t id, uint32_t event, uint32_t impact, uint32_t data) {
     (void)impact; (void)data;
@@ -660,13 +685,13 @@ uint32_t DIAG_Handler(uint32_t id, uint32_t event, uint32_t impact, uint32_t dat
         return 0u; /* DIAG_HANDLER_RETURN_OK */
     }
 
-    /* Software-checkable IDs: log the event but return OK.
-     * The real diag.c has per-ID threshold counters (fault must persist N cycles
-     * before it's truly reported as error). Our stub doesn't have this mechanism,
-     * so returning ERR_OCCURRED immediately blocks the BMS state machine.
-     * Faults are logged to stderr for debugging — check the log for [DIAG] lines. */
+    /* Software-checkable IDs: log the event but return OK. */
     if (event == 1u) { /* DIAG_EVENT_NOT_OK */
         posix_diag_fault_count++;
+        posix_diag_last_id = (uint8_t)(id & 0xFFu);
+        posix_diag_last_event = 1u;
+        if (id < 64u) posix_diag_bitmap |= (1ULL << id);
+
         if (posix_diag_fault_count <= 20u) {
             fprintf(stderr, "[DIAG] FAULT #%u: diagId=%u event=NOT_OK impact=%u data=%u\n",
                     posix_diag_fault_count, id, impact, data);
@@ -675,9 +700,24 @@ uint32_t DIAG_Handler(uint32_t id, uint32_t event, uint32_t impact, uint32_t dat
             fprintf(stderr, "[DIAG] (suppressing further fault log messages)\n");
             fflush(stderr);
         }
+    } else if (event == 0u) { /* DIAG_EVENT_OK */
+        if (id < 64u) posix_diag_bitmap &= ~(1ULL << id);
     }
 
-    return 0u; /* DIAG_HANDLER_RETURN_OK — always, to not block state machine */
+    /* SIL probe: DIAG status */
+    {
+        uint8_t buf[8];
+        memcpy(&buf[0], &posix_diag_fault_count, 4);
+        buf[4] = posix_diag_last_id;
+        buf[5] = posix_diag_last_event;
+        buf[6] = 0u;
+        buf[7] = 0u;
+        sil_probe_raw(SIL_PROBE_DIAG, buf, 8u);
+    }
+    /* SIL probe: DIAG bitmap */
+    sil_probe_raw(SIL_PROBE_DIAG_BITMAP, (const uint8_t *)&posix_diag_bitmap, 8u);
+
+    return 0u; /* DIAG_HANDLER_RETURN_OK */
 }
 
 uint32_t DIAG_Initialize(void *dev) { (void)dev; return 0u; }
@@ -916,6 +956,12 @@ void SPS_Ctrl(void) {
     /* Per-channel: if a transition is pending, count down.
      * When counter expires, apply requested→actual and log. */
     for (uint8_t i = 0u; i < SPS_MAX_CHANNELS; i++) {
+        /* SIL override: force contactor state */
+        if (sil_override_active(SIL_SPS_FORCE, i)) {
+            sps_channel_actual_state[i] = (uint8_t)sil_override_get_i32(SIL_SPS_FORCE, i);
+            sps_channel_pending[i] = 0u;
+            continue;
+        }
         if (sps_channel_pending[i] != 0u) {
             sps_channel_delay_ctr[i]++;
             if (sps_channel_delay_ctr[i] >= SPS_CONTACTOR_DELAY_CYCLES) {
@@ -931,6 +977,18 @@ void SPS_Ctrl(void) {
                 fflush(stderr);
             }
         }
+    }
+
+    /* SIL probes: publish SPS state */
+    {
+        uint16_t actual = 0u, requested = 0u, pending = 0u;
+        for (uint8_t i = 0u; i < SPS_MAX_CHANNELS; i++) {
+            if (sps_channel_actual_state[i]) actual |= (1u << i);
+            if (sps_channel_requested_state[i]) requested |= (1u << i);
+            if (sps_channel_pending[i]) pending |= (1u << i);
+        }
+        sil_probe_4u16(SIL_PROBE_SPS_STATE, actual, requested, 0u, 0u);
+        sil_probe_4u16(SIL_PROBE_SPS_PENDING, pending, 0u, 0u, 0u);
     }
 }
 
