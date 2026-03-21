@@ -62,36 +62,64 @@ Plant Model (Python)  <-->  SocketCAN (vcan1)  <-->  foxBMS vECU (C binary)
 
 | Document | Description |
 |----------|-------------|
-| [STATUS.md](STATUS.md) | Full implementation history, 14 fixes, architecture details |
-| [PLAN.md](PLAN.md) | Roadmap: completed work + next phases |
-| [GAP-ANALYSIS.md](GAP-ANALYSIS.md) | 33 gaps identified, 17 fixed/accepted, 16 remaining |
-| [COVERAGE.md](COVERAGE.md) | Feature coverage matrix: 51 features across 7 categories |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 10 common failure modes with diagnosis + fixes |
-| [foxbms-posix-build-guide.md](foxbms-posix-build-guide.md) | Detailed build instructions, all patches listed |
+| [STATUS.md](STATUS.md) | Implementation history, 14 fixes, architecture details |
+| [PLAN.md](PLAN.md) | Roadmap: Phase 1-2.5 done, Phase 3-4 planned |
+| [docs/project/gap-analysis.md](docs/project/gap-analysis.md) | 33 gaps identified, 17 fixed, 3 accepted |
+| [docs/project/coverage.md](docs/project/coverage.md) | 51 features across 7 categories |
+| [docs/project/troubleshooting.md](docs/project/troubleshooting.md) | 10 failure modes with fixes |
+| [docs/project/build-guide.md](docs/project/build-guide.md) | Detailed build instructions |
+| [docs/project/audit-10-role.md](docs/project/audit-10-role.md) | 10-auditor review (1 CRITICAL, 9 HIGH findings) |
+| [docs/aspice-cl2/](docs/aspice-cl2/) | **27 ASPICE CL2 + ISO 26262 ASIL-D documents** |
+| [docs/foxbms-upstream/](docs/foxbms-upstream/) | 24 upstream foxBMS reference docs |
 
 ## Repository Structure
 
 ```
 foxbms-posix/
-├── foxbms-2/              ← Upstream foxBMS v1.10.0 (git submodule)
-├── src/                   ← POSIX port source files
-│   ├── Makefile                   Build system (auto-discovers 170+ sources)
-│   ├── foxbms_posix_main.c        Entry point + cooperative main loop
-│   ├── hal_stubs_posix.c          80+ HAL stubs + selective DIAG + SPS sim
-│   ├── posix_overrides.h          ARM asm + assert overrides
-│   ├── config_cpu_clock_hz.h      CPU clock for FreeRTOS config
-│   ├── plant_model.py             Python battery simulator
-│   ├── test_smoke.py              Automated smoke test (pass/fail)
-│   └── foxbms_signals.dbc         CAN signal definitions
-├── patches/               ← Python scripts to patch foxBMS source
-│   └── apply_all.sh               Apply all patches in correct order
-├── setup.sh               ← Single-command setup + build + test
-├── GAP-ANALYSIS.md        ← 33 gaps, 17 resolved
-├── COVERAGE.md            ← Feature coverage matrix
-├── TROUBLESHOOTING.md     ← 10 failure modes with fixes
-├── STATUS.md
-├── PLAN.md
-└── README.md
+├── README.md, STATUS.md, PLAN.md    ← Top-level project docs
+├── setup.sh                          ← Single-command setup + build + test
+├── foxbms-2/                         ← Upstream foxBMS v1.10.0 (submodule)
+├── src/                              ← POSIX port source + tests
+│   ├── foxbms_posix_main.c           Entry point + cooperative main loop
+│   ├── hal_stubs_posix.c             80+ HAL stubs + selective DIAG + SPS sim
+│   ├── sil_layer.c/h                 SIL probe + override instrumentation
+│   ├── posix_overrides.h             ARM asm + assert overrides
+│   ├── plant_model.py                Python battery simulator
+│   ├── test_smoke.py                 Smoke test (BMS NORMAL, SOC, strings)
+│   ├── test_integration.py           21 integration criteria
+│   ├── test_asil.py                  50 ASIL safety criteria
+│   └── test_sil_probes.py            76 SIL probe criteria
+├── patches/                          ← Python scripts to patch foxBMS source
+│   └── apply_all.sh                  Apply all patches in correct order
+├── scripts/
+│   └── trace-gen.py                  Traceability matrix generator (308 IDs)
+├── .github/workflows/ci.yml          ← CI: smoke test + traceability + tests
+├── halcogen-headers/                 ← Pre-generated TMS570 headers
+└── docs/
+    ├── aspice-cl2/                   27 ASPICE CL2 + ASIL-D documents
+    │   ├── 00-assessment/            Scope, CL2 gap assessment, traceability
+    │   ├── 01-MAN.3.../             Project management
+    │   ├── 03-SYS.1.../            Stakeholder requirements (20)
+    │   ├── 04-SYS.2.../            System requirements (36)
+    │   ├── 05-SYS.3.../            System architecture
+    │   ├── 06-SYS.4.../            System integration test
+    │   ├── 07-SYS.5.../            System qualification test
+    │   ├── 08-SWE.1.../            Software requirements (42)
+    │   ├── 09-SWE.2.../            Software architecture (18 modules)
+    │   ├── 10-SWE.3.../            Detailed design (85 DIAG entries)
+    │   ├── 11-SWE.4.../            Unit test spec (45 cases)
+    │   ├── 12-SWE.5.../            Integration test spec (34 cases)
+    │   ├── 13-SWE.6.../            Qualification test spec (8 scenarios)
+    │   ├── 14-SUP.1.../            Quality assurance plan
+    │   ├── 15-SUP.8.../            Configuration management
+    │   ├── 16-SUP.9.../            Problem resolution (33 gaps tracked)
+    │   ├── 17-SUP.10../            Change request process
+    │   └── 18-safety/               ISO 26262 (HARA, FSC, TSC, FMEA, FTTI, HSI)
+    ├── foxbms-upstream/              24 reference docs from docs.foxbms.org
+    ├── project/                      Gap analysis, coverage, troubleshooting
+    ├── business/                     ML integration, pipeline, service plans
+    ├── test/                         Fault injection test matrices
+    └── archive/                      Superseded plans and analyses
 ```
 
 ## Key Discoveries
