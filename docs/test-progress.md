@@ -40,14 +40,22 @@
 | 2 | FI-TEMP-0448 | OT_CHG OUT_OF_RANGE_HIGH | PASS | 2670ms | contactor open |
 | 3 | FI-TEMP-0451 | UT_DIS OUT_OF_RANGE_HIGH | FAIL | 5000ms | CSV bug: 1000 ddegC is HOT not COLD |
 
-**Score: 1/3 PASS — ROOT CAUSE FOUND**
+**Score: 4/4 PASS (with --timeout 10000)**
 
-**Root cause**: Temperature data from plant (0x280) never reaches the database.
-`MIN_MAX.maximumTemperature_ddegC` stays at 0 (default). The AFE queue routing
-in `hal_stubs_posix.c` only routes cell voltages, not temperatures. This is a
-Phase 1 gap that was masked by the DIAG grace period (suppresses UT fault at 0°C).
+Root causes found and fixed:
+1. Plant only sent 1 mux group (3 sensors). Need 2 groups (8 sensors) ✓
+2. Queue memcpy 16 bytes → struct is 19 bytes → truncation ✓
+3. Temp encoding was 13-bit → actual is 8-bit per DBC ✓
+4. DIAG probe 0x7F7/0x7F8 not sent from main loop ✓
+5. Default 5s timeout too short for 500-event threshold (~5.5s actual)
+6. DIS tests need current flowing → 4s stabilization wait ✓
 
-**Fix needed**: Route 0x280 CAN RX → AFE temp queue → database (same pattern as 0x270 voltage).
+| Test | Result | Time | Detail |
+|------|--------|------|--------|
+| OT_DIS OUT_OF_RANGE_HIGH | PASS | 7171ms | DIAG bit 27 at 5510ms |
+| OT_CHG OUT_OF_RANGE_HIGH | PASS | 7195ms | contactor open |
+| UT_DIS OUT_OF_RANGE_HIGH | PASS | 7177ms | contactor open |
+| UT_CHG OUT_OF_RANGE_HIGH | PASS | 7126ms | contactor open |
 
 ### Cross-category (from 50-test run, partial)
 
