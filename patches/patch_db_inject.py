@@ -60,8 +60,11 @@ INJECT_CODE = '''
                         /* Update probe variables from MIN_MAX (possibly overridden) */
                         {
                             extern uint16_t posix_sil_cell_v_min, posix_sil_cell_v_max;
-                            posix_sil_cell_v_min = (uint16_t)pMM->minimumCellVoltage_mV[s];
-                            posix_sil_cell_v_max = (uint16_t)pMM->maximumCellVoltage_mV[s];
+                            int16_t db_min = pMM->minimumCellVoltage_mV[s];
+                            int16_t db_max = pMM->maximumCellVoltage_mV[s];
+                            /* Skip sentinel values from invalid cells (32767/-32768) */
+                            if (db_min > 0 && db_min < 10000) posix_sil_cell_v_min = (uint16_t)db_min;
+                            if (db_max > 0 && db_max < 10000) posix_sil_cell_v_max = (uint16_t)db_max;
                         }
 
                         /* Temperature override */

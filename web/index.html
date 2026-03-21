@@ -347,8 +347,21 @@ function inject(type){
   const target=getInjectTarget();
   const action=target==="plant"?"plant_inject":"bms_inject";
   let msg={action:action};
-  if(type==="ov"){const c=+document.getElementById("ovCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=4500;activeFaults.add("ov_"+c);}
-  else if(type==="uv"){const c=+document.getElementById("uvCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=2000;activeFaults.add("uv_"+c);}
+  if(type==="ov"){
+    if(target==="plant"){
+      // SWE.6: inject ALL 18 cells (avoids plausibility spread rejection)
+      for(let i=0;i<18;i++) ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:i,value:4500}));
+      activeFaults.add("ov_all"); return;
+    }
+    const c=+document.getElementById("ovCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=4500;activeFaults.add("ov_"+c);
+  }
+  else if(type==="uv"){
+    if(target==="plant"){
+      for(let i=0;i<18;i++) ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:i,value:2000}));
+      activeFaults.add("uv_all"); return;
+    }
+    const c=+document.getElementById("uvCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=2000;activeFaults.add("uv_"+c);
+  }
   else if(type==="ot"){const s=+document.getElementById("otSens").value;msg.type="temperature";msg.sensor=s;msg.value=600;activeFaults.add("ot_"+s);}
   else if(type==="oc"){msg.type="current";msg.value=200000;activeFaults.add("oc");}
   ws.send(JSON.stringify(msg));
