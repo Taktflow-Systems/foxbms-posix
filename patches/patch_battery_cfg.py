@@ -37,6 +37,9 @@ SYSTEM_REPLACEMENTS = [
     # String current limit (mA) — 2.4A too low for 3Ah NMC
     # Set to 15A (~5C) for our simulation
     ("BS_MAXIMUM_STRING_CURRENT_mA", "2400u", "15000u"),
+    # Pack current limit (mA) — uses hardcoded 2400 * NR_STRINGS
+    # Set to 15A * NR_STRINGS for consistency
+    ("BS_MAXIMUM_PACK_CURRENT_mA", "2400u", "15000u"),
 ]
 
 
