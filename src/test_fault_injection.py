@@ -576,11 +576,14 @@ class VecuManager:
         time.sleep(0.2)  # Let plant settle
 
         print(f"[runner] Starting foxbms-vecu on {self.interface}...")
+        env = os.environ.copy()
+        env["FOXBMS_CAN_IF"] = self.interface
         self.vecu_proc = subprocess.Popen(
-            [self.vecu_path, self.interface],
+            [self.vecu_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             preexec_fn=os.setsid,
+            env=env,
         )
 
         return self.vecu_proc.poll() is None and self.plant_proc.poll() is None
