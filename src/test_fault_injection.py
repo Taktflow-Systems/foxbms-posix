@@ -286,10 +286,9 @@ class FaultInjector:
             index: Target index (cell 0-17, sensor 0-4, string 0)
             value: int32 value in native units (mV, mA, ddegC)
         """
-        # Pack: [cmd, index, value_i32_be]
-        data = struct.pack(">BBi", cmd, index, value)
-        # Pad to 8 bytes
-        data = data.ljust(8, b'\x00')
+        # sil_process_command expects: [cmd, index, active, value_i32_LE]
+        # active=1 to enable override
+        data = struct.pack("<BBBi", cmd, index, 1, value)
         self.bus.send(CAN_OVERRIDE_ID, data)
 
     def inject_multi(self, cmd: int, indices: List[int], value: int) -> None:
@@ -298,8 +297,12 @@ class FaultInjector:
             self.inject(cmd, idx, value)
 
     def clear(self) -> None:
-        """Clear all overrides."""
-        self.bus.send(CAN_OVERRIDE_ID, bytes([SIL_CLEAR_ALL, 0, 0, 0, 0, 0, 0, 0]))
+        """Clear all overrides by setting active=0 for all types and indices."""
+        for cmd in [SIL_CELL_VOLTAGE, SIL_CELL_TEMP, SIL_PACK_CURRENT]:
+            for idx in range(18):
+                # [cmd, index, active=0, value=0]
+                data = struct.pack("<BBBi", cmd, idx, 0, 0)
+                self.bus.send(CAN_OVERRIDE_ID, data)
 
     def monitor_and_update(self, monitor: ProbeMonitor, duration_s: float = 0.01) -> None:
         """Read CAN frames and update the probe monitor for a given duration."""
