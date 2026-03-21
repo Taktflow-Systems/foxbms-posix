@@ -240,8 +240,13 @@ try:
                     volts.append(0)  # Unused slots
             can_send(0x270, encode_cell_voltage_msg(mux, volts))
 
-        # Cell Temperatures (0x280)
-        can_send(0x280, encode_cell_temp_msg(0, [250, 250, 250]))
+        # Cell Temperatures (0x280) — 3 mux groups × 3 sensors = 9 slots (8 sensors used)
+        for mux in range(3):  # mux 0,1,2 = sensors 0-2, 3-5, 6-8
+            n_sensors = min(3, 8 - mux * 3)  # 8 total sensors
+            temps = [250] * max(1, n_sensors)  # 25.0°C for all
+            if len(temps) < 3:
+                temps.extend([0] * (3 - len(temps)))
+            can_send(0x280, encode_cell_temp_msg(mux, temps[:3]))
 
         # ============================================================
         # Status log

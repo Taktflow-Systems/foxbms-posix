@@ -609,6 +609,7 @@ Note: Flash checksum verification runs periodically (not every 1 ms — the CRC 
 
 ## 6  Summary Table — All FATAL DIAG Entries
 
+<!-- HITL-LOCK START:FTTI-SUMMARY -->
 | # | DIAG ID                                    | Thr | Period (ms) | Delay (ms) | T_det (ms) | T_react (ms) | T_act (ms) | FTTI (ms) | Process Time    | Verdict   |
 |---|---------------------------------------------|-----|-------------|------------|------------|--------------|------------|-----------|-----------------|-----------|
 | 1 | CELL_VOLTAGE_OVERVOLTAGE_MSL               | 50  | 10          | 200        | 500        | 200          | 50         | 750       | ~30 s           | ADEQUATE  |
@@ -647,9 +648,11 @@ Note: Flash checksum verification runs periodically (not every 1 ms — the CRC 
 | 34| ALERT_MODE                                | 1   | 1           | 0          | 1          | 0            | 50         | 51        | SBC health      | ADEQUATE  |
 
 \* FLASHCHECKSUM effective FTTI includes CRC computation period (~150–1050 ms total).
+<!-- HITL-LOCK END:FTTI-SUMMARY -->
 
 ---
 
+<!-- HITL-LOCK START:FTTI-CONCLUSION -->
 ## 7  FTTI Adequacy Conclusion
 
 All 34 FATAL diagnostic entries have calculated FTTI values that are significantly shorter than their corresponding physical process times. The safety margins range from:
@@ -661,6 +664,7 @@ All 34 FATAL diagnostic entries have calculated FTTI values that are significant
 The temperature-related diagnostics have the longest FTTI (6050 ms) due to high threshold counts (500) and long delays (1000 ms), but this is justified by the thermal inertia of battery cells, which prevents temperature changes faster than ~1 °C/s even under worst-case conditions.
 
 **Overall verdict: All FTTI values are ADEQUATE for the intended application.**
+<!-- HITL-LOCK END:FTTI-CONCLUSION -->
 
 ---
 

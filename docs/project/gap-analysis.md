@@ -25,7 +25,9 @@
 | Gap | Severity | What we claim | What's actually true |
 |-----|----------|---------------|---------------------|
 | GA-01 | ~~HIGH~~ **FIXED** | Cyclic tasks run at 1ms/10ms/100ms | **FIXED**: Cycle time measurement added. Each task execution is timed; warnings logged if deadline exceeded. Summary printed at exit showing max execution times and violation count. |
+<!-- HITL-LOCK START:GAP-ACCEPT-GA02 -->
 | GA-02 | HIGH (**ACCEPTED**) | foxBMS logic runs same as production | Single-threaded cooperative mode. Real foxBMS has 7 concurrent tasks. Data races and priority-dependent behavior won't surface. **Accepted**: FreeRTOS POSIX port proved unreliable for foxBMS. Cooperative mode is the only stable approach. Documented in COVERAGE.md. |
+<!-- HITL-LOCK END:GAP-ACCEPT-GA02 -->
 | GA-03 | MEDIUM | Database read/write works | `DATA_IterateOverDatabaseEntries` called synchronously inside `OS_SendToBackOfQueue`. In real foxBMS, write and read happen in different task contexts with queue buffering. Subtle ordering differences possible. |
 | GA-21 | LOW | Plant model and vECU start independently | No startup synchronization. If vECU starts before plant model, first ~3s of CAN RX data is missing. No `READY` barrier. |
 | GA-22 | ~~LOW~~ **FIXED** | vECU shuts down cleanly | **FIXED**: SIGINT handler sets `running=0`, main loop exits, calls `SPS_SwitchOffAllGeneralIoChannels()` to open all contactors, then prints timing summary. |
@@ -47,7 +49,9 @@
 |-----|----------|---------------|---------------------|
 | GA-06 | ~~CRITICAL~~ **FIXED** | BMS runs foxBMS safety logic | **FIXED**: Selective DIAG_Handler implemented. 24 hardware-absent IDs return OK. 61 software-checkable IDs (overvoltage, overcurrent, overtemperature, plausibility) log faults and return ERR_OCCURRED. |
 | GA-07 | ~~CRITICAL~~ **FIXED** | `FAS_ASSERT` is set to NO_OP | **FIXED**: `FAS_StoreAssertLocation()` overridden to log pc/line to stderr and call `exit(1)`. Assertions now crash visibly instead of silently continuing. |
+<!-- HITL-LOCK START:GAP-ACCEPT-GA08 -->
 | GA-08 | HIGH (**ACCEPTED**) | BMS reaches NORMAL state | BMS bypasses: SBC init (stubbed), RTC init (stubbed), current sensor presence (forced true). **Accepted**: These are POSIX-specific bypasses required because the hardware doesn't exist. Cannot be removed without the physical ICs. Documented in COVERAGE.md. |
+<!-- HITL-LOCK END:GAP-ACCEPT-GA08 -->
 | GA-23 | MEDIUM | Interlock chain functional | Interlock chain is hardcoded always-closed. Cannot simulate interlock-break → safe-state transition path. |
 | GA-24 | MEDIUM | Watchdog protects against hangs | SBC bypass (GA-08) also removes hardware watchdog. No timeout → safe-state transition possible. Real foxBMS has SBC watchdog that triggers ERROR if not serviced. |
 | GA-25 | MEDIUM | IVT current redundancy works | Real foxBMS cross-checks IVT primary and secondary current paths. Only primary is simulated. Cross-check code never exercises a mismatch scenario. |
@@ -98,7 +102,9 @@
 
 | Gap | Severity | What we claim | What's actually true |
 |-----|----------|---------------|---------------------|
+<!-- HITL-LOCK START:GAP-ACCEPT-GA17 -->
 | GA-17 | HIGH (**ACCEPTED**) | Same code as production | 18 source files excluded (spi.c, i2c.c, dma.c, sbc/*, diag.c, fassert.c). **Accepted**: These files contain TMS570-specific hardware access that cannot compile on x86. Stubs in hal_stubs_posix.c match function signatures. Documented in COVERAGE.md. |
+<!-- HITL-LOCK END:GAP-ACCEPT-GA17 -->
 | GA-18 | MEDIUM | Queue operations work | AFE queue copies 16 bytes. Actual `CAN_CAN2AFE_CELL_VOLTAGES_QUEUE_s` is ~13 bytes with compiler-dependent padding. Size mismatch risk on different compilers. |
 
 ---

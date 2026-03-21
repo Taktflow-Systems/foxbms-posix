@@ -22,9 +22,11 @@
 
 /* FreeRTOS port-optimized task selection macros for x86 POSIX.
  * The TMS570 port uses ARM CLZ instruction. On x86, use __builtin_clz. */
+// HITL-LOCK START:POSIX-HIGHEST-PRIO
 #undef portGET_HIGHEST_PRIORITY
 #define portGET_HIGHEST_PRIORITY(uxTopPriority, uxReadyPriorities) \
     (uxTopPriority) = ((uxReadyPriorities) ? (31UL - (uint32_t)__builtin_clz((uxReadyPriorities))) : 0UL)
+// HITL-LOCK END:POSIX-HIGHEST-PRIO
 
 #undef portRECORD_READY_PRIORITY
 #define portRECORD_READY_PRIORITY(uxPriority, uxReadyPriorities) \
@@ -37,8 +39,10 @@
 /* GA-07: Override FAS_ASSERT to log location and exit instead of silently
  * continuing (level 2 NO_OP) or spinning forever (level 0/1).
  * This captures __FILE__ and __LINE__ which the original macro does not. */
+// HITL-LOCK START:POSIX-FAS-ASSERT
 #undef FAS_ASSERT_LEVEL
 #define FAS_ASSERT_LEVEL (2u)  /* FAS_ASSERT_LEVEL_NO_OPERATION — keeps FAS_InfiniteLoop as no-op */
+// HITL-LOCK END:POSIX-FAS-ASSERT
 
 #include <stdio.h>
 #include <stdlib.h>

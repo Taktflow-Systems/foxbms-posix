@@ -99,6 +99,7 @@ Sends on SocketCAN every 100ms:
 | 0x280 | Cell Temperatures | 3 sensors × 25.0C |
 | 0x210 | BMS State Request | STANDBY (first 3s), then NORMAL |
 
+<!-- HITL-LOCK START:STATUS-DISCOVERIES -->
 ### CAN Signal Encoding
 Uses foxBMS's exact big-endian bit numbering table:
 ```python
@@ -107,7 +108,9 @@ CAN_BIG_ENDIAN_TABLE = [56,57,58,59,60,61,62,63, 48,49,50,51,52,53,54,55, ...]
 Verified with roundtrip test: encode(3700) → decode → 3700.
 
 **Key discovery**: `DECAN_DATA_IS_VALID = 1` (not 0). Invalid flag `1` means valid data.
+<!-- HITL-LOCK END:STATUS-DISCOVERIES -->
 
+<!-- HITL-LOCK START:STATUS-FIXES -->
 ## Fixes Applied (14 total)
 
 | # | Fix | Root Cause |
@@ -126,6 +129,7 @@ Verified with roundtrip test: encode(3700) → decode → 3700.
 | 12 | AFE queues: ring buffers for cell voltage/temp | Data flow CAN → AFE → database |
 | 13 | MEAS_Control() in main loop | AFE task not running in cooperative mode |
 | 14 | SPS contactor simulation | Tracks per-channel open/close state |
+<!-- HITL-LOCK END:STATUS-FIXES -->
 
 ## Build & Run
 

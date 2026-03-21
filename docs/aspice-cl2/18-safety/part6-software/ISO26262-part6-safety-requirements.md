@@ -46,6 +46,7 @@ current, and temperature monitoring, contactor control, and fault management.
 The following safety goals are derived from the hazard and risk analysis for a battery
 management system. Each is classified ASIL D.
 
+<!-- HITL-LOCK START:SAFETY-GOALS -->
 | ID | Safety Goal | ASIL | Safe State |
 |---|---|---|---|
 | SG-001 | Prevent battery cell overvoltage leading to thermal runaway | D | Open all contactors |
@@ -53,6 +54,7 @@ management system. Each is classified ASIL D.
 | SG-003 | Prevent battery overcurrent leading to thermal damage | D | Open all contactors |
 | SG-004 | Prevent operation outside safe temperature range | D | Open all contactors |
 | SG-005 | Prevent unintended battery re-energization after fault | D | Maintain contactors open; require dual-condition exit |
+<!-- HITL-LOCK END:SAFETY-GOALS -->
 
 ## 6. Fault Tolerant Time Interval (FTTI) Analysis
 
@@ -99,6 +101,7 @@ Where:
 
 ### 7.1 Fault Detection Requirements
 
+<!-- HITL-LOCK START:SSR-FAULT-DETECT -->
 | ID | Requirement | Safety Goal | ASIL |
 |---|---|---|---|
 | SSR-001 | The software shall detect cell overvoltage above 2800 mV within the FTTI of 10.1 seconds. | SG-001 | D |
@@ -111,9 +114,11 @@ Where:
 | SSR-008 | The software shall detect undertemperature charge below -20 deg C within the FTTI of 500.1 seconds. | SG-004 | D |
 | SSR-009 | The software shall detect deep discharge (cell voltage <= 1500 mV) within 0.21 seconds and latch the fault. | SG-002, SG-005 | D |
 | SSR-010 | The software shall detect current on an open string within 1.1 seconds. | SG-003 | D |
+<!-- HITL-LOCK END:SSR-FAULT-DETECT -->
 
 ### 7.2 Fault Reaction Requirements
 
+<!-- HITL-LOCK START:SSR-FAULT-REACT -->
 | ID | Requirement | Safety Goal | ASIL |
 |---|---|---|---|
 | SSR-020 | Upon detection of any MSL violation (FATAL), the software shall transition the BMS to ERROR state. | SG-001 to SG-004 | D |
@@ -121,31 +126,38 @@ Where:
 | SSR-022 | The software shall not permit the BMS to exit ERROR state unless the originating fault condition has cleared. | SG-005 | D |
 | SSR-023 | The software shall not permit the BMS to exit ERROR state unless an explicit STANDBY request has been received via CAN. | SG-005 | D |
 | SSR-024 | SSR-022 and SSR-023 must both be satisfied simultaneously for ERROR exit (AND condition). | SG-005 | D |
+<!-- HITL-LOCK END:SSR-FAULT-REACT -->
 
 ### 7.3 Diagnostic Coverage Requirements
 
+<!-- HITL-LOCK START:SSR-DIAG-COV -->
 | ID | Requirement | Safety Goal | ASIL |
 |---|---|---|---|
 | SSR-030 | The DIAG module shall provide debounced fault detection with configurable threshold counters per diagnostic ID. | SG-001 to SG-004 | D |
 | SSR-031 | The DIAG module shall prevent false FATAL triggers from transient measurement noise through threshold counting. | SG-001 to SG-004 | D |
 | SSR-032 | The DIAG module shall detect persistent faults by incrementing the counter on each evaluation cycle until the threshold is reached. | SG-001 to SG-004 | D |
 | SSR-033 | The DIAG module shall allow fault recovery by decrementing the counter when the fault condition clears. | SG-005 | D |
+<!-- HITL-LOCK END:SSR-DIAG-COV -->
 
 ### 7.4 Communication Safety Requirements
 
+<!-- HITL-LOCK START:SSR-COMM-SAFETY -->
 | ID | Requirement | Safety Goal | ASIL |
 |---|---|---|---|
 | SSR-040 | The software shall detect loss of CAN communication within the configured FTTI (100 events x 200 ms = 20 seconds). | SG-001 to SG-004 | D |
 | SSR-041 | The software shall detect loss of current sensor communication within the configured FTTI (100 events x 200 ms = 20 seconds). | SG-003 | D |
 | SSR-042 | The software shall detect AFE communication failure within the configured FTTI (5 events x 100 ms = 0.5 seconds). | SG-001, SG-002, SG-004 | D |
+<!-- HITL-LOCK END:SSR-COMM-SAFETY -->
 
 ### 7.5 Contactor Safety Requirements
 
+<!-- HITL-LOCK START:SSR-CONTACTOR -->
 | ID | Requirement | Safety Goal | ASIL |
 |---|---|---|---|
 | SSR-050 | The software shall monitor contactor feedback and detect mismatches within the configured FTTI (20 events x 100 ms = 2 seconds). | SG-001 to SG-005 | D |
 | SSR-051 | The software shall not close contactors unless the BMS is in a state that permits contactor closure (PRECHARGE or NORMAL). | SG-005 | D |
 | SSR-052 | The software shall respect the contactor maximum break current limit of 3500 mA during normal disconnect sequences. | SG-003 | C |
+<!-- HITL-LOCK END:SSR-CONTACTOR -->
 
 ## 8. Diagnostic Coverage Summary
 

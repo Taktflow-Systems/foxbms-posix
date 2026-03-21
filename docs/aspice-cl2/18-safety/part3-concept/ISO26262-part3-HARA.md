@@ -110,6 +110,7 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 
 ## 4  Hazard Identification and Classification
 
+<!-- HITL-LOCK START:HARA-HZ-001 -->
 ### HZ-01: Cell Overvoltage
 
 | Parameter            | Value / Rationale                                                |
@@ -123,9 +124,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — Thermal runaway onset is not perceptible to the driver until gas venting or smoke is visible. By that point, the exothermic reaction is self-sustaining and uncontrollable. No driver action can mitigate internal cell failure. |
 | **ASIL**             | **S3 × E4 × C3 = ASIL D**                                       |
 | **Safety Goal**      | **SG-01:** The BMS shall prevent cell voltage from exceeding the maximum safety limit (2800 mV) by interrupting the charging current path within the Fault Tolerant Time Interval. |
+<!-- HITL-LOCK END:HARA-HZ-001 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-002 -->
 ### HZ-02: Cell Undervoltage
 
 | Parameter            | Value / Rationale                                                |
@@ -139,9 +142,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — The copper dissolution process is electrochemical and invisible to the driver. Dendrite formation during subsequent charging is entirely internal and uncontrollable. |
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-02:** The BMS shall prevent cell voltage from dropping below the minimum safety limit (1500 mV) by interrupting the discharge current path within the FTTI. |
+<!-- HITL-LOCK END:HARA-HZ-002 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-003 -->
 ### HZ-03: Cell Deep Discharge
 
 | Parameter            | Value / Rationale                                                |
@@ -155,9 +160,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C2** — Gas venting produces audible hissing and visible vapor. Occupants can evacuate the vehicle, though exposure in enclosed spaces (garage) reduces controllability. |
 | **ASIL**             | **S2 × E2 × C2 = QM**                                           |
 | **Safety Goal**      | **SG-03:** The BMS shall detect deep discharge conditions and open all contactors immediately to prevent further energy extraction. Although classified QM, this hazard is treated with FATAL severity in the diagnostic configuration as defense-in-depth. |
+<!-- HITL-LOCK END:HARA-HZ-003 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-004 -->
 ### HZ-04: Overcurrent — Discharge
 
 | Parameter            | Value / Rationale                                                |
@@ -171,9 +178,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C2** — Driver can release the accelerator to reduce current demand. However, sudden loss of propulsion on a highway requires vehicle-level controllability (limp-home mode). |
 | **ASIL**             | **S3 × E3 × C2 = ASIL B**                                       |
 | **Safety Goal**      | **SG-04:** The BMS shall limit discharge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI. |
+<!-- HITL-LOCK END:HARA-HZ-004 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-005 -->
 ### HZ-05: Overcurrent — Charge
 
 | Parameter            | Value / Rationale                                                |
@@ -187,9 +196,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — During external charging, the driver is typically absent from the vehicle. During regenerative braking, the driver has no direct control over the charge current magnitude. |
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-05:** The BMS shall limit charge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI. |
+<!-- HITL-LOCK END:HARA-HZ-005 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-006 -->
 ### HZ-06: Overtemperature
 
 | Parameter            | Value / Rationale                                                |
@@ -203,9 +214,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — Cell temperature is not directly observable by the driver. Thermal runaway onset occurs inside sealed cell casing. By the time external symptoms appear (smoke, heat), the reaction is self-sustaining. |
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-06:** The BMS shall monitor cell temperatures and open contactors when temperature exceeds the maximum safety limit within the FTTI to remove the heat source (current flow). |
+<!-- HITL-LOCK END:HARA-HZ-006 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-007 -->
 ### HZ-07: Undertemperature During Charging
 
 | Parameter            | Value / Rationale                                                |
@@ -219,9 +232,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — Lithium plating is an internal electrochemical process invisible to the driver. The delayed failure mode means the driver cannot correlate symptoms with the causal event. |
 | **ASIL**             | **S3 × E2 × C3 = ASIL B**                                       |
 | **Safety Goal**      | **SG-07:** The BMS shall prevent charging when cell temperature is below the minimum charge temperature limit by opening contactors within the FTTI. |
+<!-- HITL-LOCK END:HARA-HZ-007 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-008 -->
 ### HZ-08: Contactor Welding
 
 | Parameter            | Value / Rationale                                                |
@@ -235,9 +250,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — Contactor state is internal to the battery pack. The driver has no means to manually disconnect a welded contactor. Even manual service disconnect may be insufficient if the contactor is welded in the main current path. |
 | **ASIL**             | **S3 × E2 × C3 = ASIL B**                                       |
 | **Safety Goal**      | **SG-08:** The BMS shall detect contactor welding (mismatch between commanded state and feedback) and transition to a degraded state that prevents further operation of the affected string. |
+<!-- HITL-LOCK END:HARA-HZ-008 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-009 -->
 ### HZ-09: Current Sensor Failure
 
 | Parameter            | Value / Rationale                                                |
@@ -251,9 +268,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — Current sensor failure is internal to the BMS. The driver has no visibility into sensor health. Erroneous current measurement may not produce any perceptible symptoms until a secondary fault occurs. |
 | **ASIL**             | **S3 × E2 × C3 = ASIL B**                                       |
 | **Safety Goal**      | **SG-09:** The BMS shall detect current sensor communication failure and open all contactors within the FTTI to prevent unmonitored operation. |
+<!-- HITL-LOCK END:HARA-HZ-009 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-010 -->
 ### HZ-10: Interlock Break — HV Exposure
 
 | Parameter            | Value / Rationale                                                |
@@ -267,9 +286,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C2** — If the interlock break is due to a service action, the service technician is trained and can withdraw. If due to a crash, the situation may be uncontrollable, but crash-related HV safety is addressed by separate crash detection systems. |
 | **ASIL**             | **S2 × E1 × C2 = QM**                                           |
 | **Safety Goal**      | **SG-10:** The BMS shall detect interlock loop break and open all contactors within 200 ms to de-energize the HV path. Treated as FATAL in diagnostic configuration as defense-in-depth despite QM classification. |
+<!-- HITL-LOCK END:HARA-HZ-010 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-011 -->
 ### HZ-11: Insulation Failure
 
 | Parameter            | Value / Rationale                                                |
@@ -283,9 +304,11 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — Insulation failure is invisible to the driver. Electric shock is instantaneous upon contact and may cause involuntary muscle contraction preventing release. |
 | **ASIL**             | **S3 × E1 × C3 = ASIL A**                                       |
 | **Safety Goal**      | **SG-11:** The BMS shall detect insulation faults through voltage plausibility monitoring and transition to safe state. For higher ASIL requirements, integration of a dedicated Insulation Monitoring Device (IMD) is recommended. |
+<!-- HITL-LOCK END:HARA-HZ-011 -->
 
 ---
 
+<!-- HITL-LOCK START:HARA-HZ-012 -->
 ### HZ-12: Cell Imbalance
 
 | Parameter            | Value / Rationale                                                |
@@ -299,6 +322,7 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **Controllability**  | **C3** — Cell-level voltage imbalance is invisible to the driver. The balancing process (passive or active) is entirely internal to the BMS. The driver cannot influence or detect cell imbalance. |
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-12:** The BMS shall monitor individual cell voltages and enforce per-cell overvoltage and undervoltage limits regardless of string-level measurements, ensuring that no individual cell exceeds its safe operating voltage range. |
+<!-- HITL-LOCK END:HARA-HZ-012 -->
 
 ---
 
