@@ -31,7 +31,7 @@ DISABLE_IDS = [
     "DIAG_ID_CURRENT_SENSOR_RESPONDING",
     "DIAG_ID_SBC_FIN_ERROR",
     "DIAG_ID_SBC_RSTB_ERROR",
-    # DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE — RE-ENABLED: SIL pack voltage override available
+    "DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE",  # IVT measurement timestamp not updating → constant false positive
     # DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK — RE-ENABLED: SIL contactor feedback override
     # DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK — RE-ENABLED: SIL contactor feedback override
     # DIAG_ID_PRECHARGE_CONTACTOR_FEEDBACK — RE-ENABLED: SIL contactor feedback override
