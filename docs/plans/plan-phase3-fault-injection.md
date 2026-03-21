@@ -29,89 +29,92 @@ Hysteresis: clearing a fault requires the same number of consecutive OK events (
 
 ---
 
-## Two Approaches
+## Approach: Re-include real `diag.c` (Approach A)
 
-### Approach A: Re-include real `diag.c` in the build
+**Decision**: Use the real foxBMS `diag.c` — no reimplementation. We can modify internals via SIL probes now.
 
-- Remove `! -name 'diag.c'` from Makefile exclusion
-- Remove DIAG_Handler/DIAG_Initialize stubs from hal_stubs_posix.c
-- Fix compilation issues (diag.c depends on `timer.h`, `can_cbs_tx_fatal-error.h`)
-- Real threshold counters, real callbacks, real fatal error tracking
+- Remove `! -name 'diag.c'` from Makefile exclusion list
+- Remove DIAG_Handler/DIAG_Initialize/DIAG_CheckEvent/DIAG_IsAnyFatalErrorSet stubs from hal_stubs_posix.c
+- Stub the FreeRTOS timer dependency (`xTimerCreateStatic` already stubbed in hal_stubs_posix.c)
+- Fix `can_cbs_tx_fatal-error.h` include (stub or include the real file)
+- Real threshold counters, real callbacks, real fatal error tracking — exact production behavior
+- Hardware-absent DIAG IDs: suppress via `DIAG_EVALUATION_DISABLED` in diag_cfg.c patch (not in our stub)
 
-**Pro**: Exact production behavior. No reimplementation.
-**Con**: FreeRTOS timer dependency (`diag_fatalErrorResendTimer`). Needs stub for `xTimerCreateStatic`. Callbacks may call contactor functions that need SPS simulation.
+**Startup safety**: Use SIL layer to manage startup sequence. Hardware-absent faults (SPI, I2C, SBC, IMD) are disabled at the diag_cfg.c level via `DIAG_EVALUATION_DISABLED`, so they never fire. Software faults (OV, OC, OT) only fire when real out-of-range data arrives — during normal startup with the plant model providing valid data, no software faults trigger.
 
-### Approach B: Implement threshold counters in hal_stubs_posix.c
-
-- Keep diag.c excluded
-- Add per-ID counter array and threshold lookup in our DIAG_Handler stub
-- Match the real threshold values from diag_cfg.c
-- Call foxBMS's existing callback functions (they're compiled from diag_cfg.c)
-
-**Pro**: No new dependencies. Full control.
-**Con**: Must keep threshold values in sync with foxBMS. Reimplementation risk.
-
-**Recommended: Approach B** — we already have the stub infrastructure, and the threshold logic is simple (counter + compare). The callbacks are in diag_cfg.c which IS compiled.
+**OT threshold**: Keep real 500 events (~50s at 10Hz). Realistic demo behavior — overtemperature faults develop slowly like in real life.
 
 ---
 
 ## Implementation Steps
 
-### Step 1: Add per-ID threshold counters in hal_stubs_posix.c
+### Step 1: Re-include diag.c in the build
 
-```c
-#define DIAG_ID_COUNT 85u
-static uint16_t diag_occurrence_counter[DIAG_ID_COUNT] = {0};
+**Makefile**: Remove `! -name 'diag.c'` from APP_SRCS exclusion.
 
-// Threshold lookup — matches diag_cfg.c diag_diagnosisIdConfiguration[]
-static const uint16_t diag_thresholds[DIAG_ID_COUNT] = {
-    [18] = 49u,   // CELL_VOLTAGE_OVERVOLTAGE_MSL — 50 events
-    [19] = 19u,   // CELL_VOLTAGE_OVERVOLTAGE_RSL — 20 events
-    [21] = 49u,   // CELL_VOLTAGE_UNDERVOLTAGE_MSL — 50 events
-    [36] = 9u,    // OVERCURRENT_CHARGE_CELL_MSL — 10 events
-    [39] = 9u,    // OVERCURRENT_DISCHARGE_CELL_MSL — 10 events
-    [24] = 499u,  // TEMP_OVERTEMPERATURE_CHARGE_MSL — 500 events
-    [27] = 499u,  // TEMP_OVERTEMPERATURE_DISCHARGE_MSL — 500 events
-    // ... all 85 IDs from diag_cfg.c
-};
+**hal_stubs_posix.c**: Remove these stubs (they're now provided by the real diag.c):
+- `DIAG_Handler()`
+- `DIAG_Initialize()`
+- `DIAG_CheckEvent()`
+- `DIAG_IsAnyFatalErrorSet()`
+- `DIAG_GetDiagnosisEntryState()`
+- `DIAG_GetDelay()`
+- `DIAG_Reset()`
+- `posix_diag_is_hardware_id()` — no longer needed
+- `posix_diag_fault_count` — no longer needed
+
+Keep DIAG probe code in SIL layer (read from real diag state instead of our stub variables).
+
+### Step 2: Fix diag.c compilation dependencies
+
+**diag.c includes**:
+- `timer.h` → FreeRTOS timer, already have `xTimerCreateStatic` stub
+- `can_cbs_tx_fatal-error.h` → CAN TX for fatal error broadcast. Either include the real file (it's in foxBMS source) or stub the function.
+
+**diag.c uses**:
+- `diag_fatalErrorResendTimer` — FreeRTOS software timer. `xTimerCreateStatic` returns a dummy pointer (already stubbed). Timer callback never fires (no timer task) — acceptable for SIL since the fatal error CAN message is sent once at fault-set, the resend timer is optional.
+- `DIAG_SetFatalErrorById()` / `DIAG_IsAnyFatalErrorSet()` — these are IN diag.c, so they work natively.
+
+### Step 3: Patch diag_cfg.c to disable hardware-absent DIAG IDs
+
+Create `patches/patch_diag_cfg_posix.py`:
+
+Set `DIAG_EVALUATION_DISABLED` for all hardware-absent IDs in the `diag_diagnosisIdConfiguration[]` array. This is the correct foxBMS mechanism — no stub needed.
+
+```python
+# For each hardware-absent ID, change enable_evaluate from ENABLED to DISABLED
+ids_to_disable = [
+    "DIAG_ID_FLASHCHECKSUM", "DIAG_ID_AFE_SPI", "DIAG_ID_AFE_COMMUNICATION_INTEGRITY",
+    "DIAG_ID_AFE_MUX", "DIAG_ID_AFE_CONFIG", "DIAG_ID_AFE_OPEN_WIRE",
+    "DIAG_ID_SBC_FIN_ERROR", "DIAG_ID_SBC_RSTB_ERROR",
+    "DIAG_ID_I2C_PEX_ERROR", "DIAG_ID_I2C_RTC_ERROR",
+    "DIAG_ID_RTC_CLOCK_INTEGRITY_ERROR", "DIAG_ID_RTC_BATTERY_LOW_ERROR",
+    "DIAG_ID_FRAM_READ_CRC_ERROR", "DIAG_ID_INTERLOCK_FEEDBACK",
+    "DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK", "DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK",
+    "DIAG_ID_PRECHARGE_CONTACTOR_FEEDBACK",
+    "DIAG_ID_INSULATION_MEASUREMENT_VALID", "DIAG_ID_LOW_INSULATION_RESISTANCE_ERROR",
+    "DIAG_ID_LOW_INSULATION_RESISTANCE_WARNING", "DIAG_ID_INSULATION_GROUND_ERROR",
+    "DIAG_ID_ALERT_MODE", "DIAG_ID_AEROSOL_ALERT", "DIAG_ID_SUPPLY_VOLTAGE_CLAMP_30C_LOST",
+    # Timing-dependent IDs (cooperative loop mismatch):
+    "DIAG_ID_CAN_TIMING",
+    "DIAG_ID_BASE_CELL_VOLTAGE_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_REDUNDANCY0_CELL_VOLTAGE_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_BASE_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_REDUNDANCY0_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_CURRENT_MEASUREMENT_TIMEOUT", "DIAG_ID_CURRENT_MEASUREMENT_ERROR",
+    "DIAG_ID_CURRENT_SENSOR_V1_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_CURRENT_SENSOR_V2_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_CURRENT_SENSOR_V3_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_CURRENT_SENSOR_POWER_MEASUREMENT_TIMEOUT",
+    "DIAG_ID_POWER_MEASUREMENT_ERROR",
+    "DIAG_ID_CURRENT_SENSOR_CC_RESPONDING",
+    "DIAG_ID_CURRENT_SENSOR_EC_RESPONDING",
+    "DIAG_ID_CURRENT_SENSOR_RESPONDING",
+    "DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE",
+]
 ```
 
-### Step 2: Modify DIAG_Handler to use counters
-
-```c
-uint32_t DIAG_Handler(uint32_t id, uint32_t event, ...) {
-    if (posix_diag_is_hardware_id(id)) return OK;  // unchanged
-
-    if (event == NOT_OK) {
-        if (counter[id] <= threshold[id]) {
-            counter[id]++;
-        }
-        if (counter[id] > threshold[id]) {
-            // FAULT CONFIRMED — set fatal error flag
-            posix_diag_fatal_set |= (1ULL << id);
-            return DIAG_HANDLER_RETURN_ERR_OCCURRED;  // ← THIS is the change
-        }
-        return OK;  // still counting, not yet confirmed
-    }
-    if (event == OK) {
-        if (counter[id] > 0) counter[id]--;
-        if (counter[id] == 0) {
-            posix_diag_fatal_set &= ~(1ULL << id);  // clear fault
-        }
-    }
-    return OK;
-}
-```
-
-### Step 3: Fix DIAG_IsAnyFatalErrorSet
-
-```c
-uint8_t DIAG_IsAnyFatalErrorSet(void) {
-    return (posix_diag_fatal_set != 0u) ? 1u : 0u;
-}
-```
-
-This is the gate that SYS checks — when it returns true, SYS transitions to ERROR and opens contactors.
+Software-checkable IDs (OV, UV, OC, OT, plausibility spread) stay ENABLED — these are the ones we want to test.
 
 ### Step 4: Add SIL override intercept patches in foxBMS source
 
@@ -184,11 +187,12 @@ OVR.04 (temp), OVR.05 (current), PER.01 should now pass because overrides interc
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| DIAG threshold values wrong (enum reorder) | MEDIUM | HIGH | Use diag_cfg.c array directly if possible, or static_assert on key IDs |
-| DIAG_IsAnyFatalErrorSet=true blocks startup | HIGH | HIGH | Only enable threshold counting AFTER BMS reaches NORMAL first time |
-| SOA patch breaks precharge | MEDIUM | MEDIUM | Override only active when explicitly set via 0x7E0, not during normal operation |
-| foxBMS callbacks crash on POSIX | LOW | HIGH | Callbacks are in diag_cfg.c (compiled), they set database flags — should work |
-| Recovery takes too long (500 OK events for OT) | LOW | LOW | Use DIAG_EVENT_RESET for fast clear, or reduce threshold for SIL |
+| diag.c doesn't compile (missing headers) | MEDIUM | MEDIUM | Stub `can_cbs_tx_fatal-error.h` functions, FreeRTOS timer already stubbed |
+| Real DIAG blocks startup (transient faults) | HIGH | HIGH | Disable timing-dependent IDs via `DIAG_EVALUATION_DISABLED` in diag_cfg.c patch |
+| SOA patch breaks precharge | MEDIUM | MEDIUM | Overrides only active when explicitly set via 0x7E0 — no effect during normal startup |
+| DIAG callbacks call unsupported functions | LOW | HIGH | Callbacks set database flags — should work. If they call contactor functions, SPS sim handles it |
+| OT recovery takes 50s (500 OK events) | LOW | LOW | Acceptable — realistic. Use DIAG_EVENT_RESET for fast test reset if needed |
+| diag.c symbol conflicts with hal_stubs_posix.c | HIGH | MEDIUM | Must remove ALL DIAG stubs from hal_stubs_posix.c before re-including diag.c |
 
 ---
 
