@@ -1103,7 +1103,7 @@ class TestExecutor:
             #   else (rest/charge) → checks OT_CHG/UT_CHG thresholds
             # Plant starts discharge after detecting NORMAL via CAN feedback (~100ms).
             if tc.category == "TEMP" and ("DIS" in tc.signal):
-                time.sleep(0.5)  # Wait for plant to start discharging
+                time.sleep(2.0)  # Wait for plant to detect NORMAL + start discharging
 
             # Standard injection dispatch by expected reaction
             if tc.expected_reaction == "CONTACTOR_OPEN":
