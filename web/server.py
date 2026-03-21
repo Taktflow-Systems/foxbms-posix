@@ -76,16 +76,8 @@ async def restart_system() -> None:
     state_history.append({"state": -1, "name": "--- RESTART ---", "entered_at": time.time(), "duration_ms": 0})
 
 # -- CAN parsers ------------------------------------------------------------
-def _p_0x220(d: bytes) -> None:
-    state["bms_state"] = d[0] & 0x0F
-    state["bms_state_name"] = BMS_STATES.get(state["bms_state"], "UNKNOWN")
-    state["connected_strings"] = (d[0] >> 4) & 0x0F
-    _track_state(state["bms_state"])
-def _p_0x221(d: bytes) -> None:
-    state["pack_current_ma"] = struct.unpack_from(">i", d, 0)[0]
-    state["pack_voltage_mv"] = struct.unpack_from(">I", d, 4)[0]
-def _p_0x235(d: bytes) -> None:
-    state["soc_pct"] = round(d[5] * 0.25, 2)
+# foxBMS CAN TX parsers disabled — use probes only to avoid flickering
+# 0x220, 0x221, 0x235 conflict with 0x7F9, 0x7FA, 0x7F2 at different update rates
 def _p_0x260(d: bytes) -> None:
     mux, base = d[0], d[0] * 3
     for i in range(3):
@@ -140,7 +132,7 @@ def _log_can(can_id: int, d: bytes) -> None:
     if len(can_log) > 30: can_log.pop(0)
 
 PARSERS: dict[int, Any] = {
-    0x220: _p_0x220, 0x221: _p_0x221, 0x235: _p_0x235, 0x260: _p_0x260,
+    0x260: _p_0x260,  # foxBMS CAN TX 0x220/0x221/0x235 disabled — probes only
     0x7F0: _p_0x7f0, 0x7F2: _p_0x7f2, 0x7F4: _p_0x7f4, 0x7F6: _p_0x7f6,
     0x7F7: _p_0x7f7, 0x7F8: _p_0x7f8, 0x7F9: _p_0x7f9, 0x7FA: _p_0x7fa,
     0x7FF: _p_0x7ff,

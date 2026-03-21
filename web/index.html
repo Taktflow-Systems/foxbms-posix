@@ -174,7 +174,7 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
 </div>
 </div>
 <script>
-const STATES=["UNINITIALIZED","INITIALIZATION","INITIALIZED","IDLE","STANDBY","PRECHARGE","DISCHARGE","NORMAL","CHARGE","OPEN_CONTACTORS","ERROR"];
+const STATES=["UNINITIALIZED","INITIALIZATION","INITIALIZED","IDLE","OPEN_CONTACTORS","STANDBY","PRECHARGE","NORMAL","DISCHARGE","CHARGE","ERROR"];
 const CTRS=[{id:"plus",label:"Main+",bit:0},{id:"pre",label:"Precharge",bit:2,dashed:true},{id:"minus",label:"Main\u2212",bit:1}];
 let ws,reconnTimer,activeFaults=new Set();
 const MAX_CAN=15;
