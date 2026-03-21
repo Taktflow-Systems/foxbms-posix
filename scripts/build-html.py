@@ -13,6 +13,7 @@ Usage:
 import argparse
 import re
 from pathlib import Path
+from collections import defaultdict
 
 import markdown
 from markdown.extensions.tables import TableExtension
@@ -22,6 +23,66 @@ from markdown.extensions.toc import TocExtension
 ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = ROOT / "docs"
 DEFAULT_OUTPUT = DOCS_DIR / "site"
+
+# ---------------------------------------------------------------------------
+# Traceability graph (built once, used to annotate every page)
+# ---------------------------------------------------------------------------
+
+TRACE_DOCS_DIR = ROOT / "docs" / "aspice-cl2"
+TRACE_SRC_DIR = ROOT / "src"
+
+ALL_ID_RE = re.compile(
+    r"\b(STKH-REQ-\d+[A-Za-z]?|SYS-REQ-\d+[A-Za-z]?|SW-REQ-\d+[A-Za-z]?|"
+    r"SSR-\d+|SG-\d+|HZ-\d+|FSR-\d+|TSR-\d+|FM-\d+|UT-\d+|IT-\d+|QT-\d+)\b"
+)
+
+LEVEL_ORDER = ["STKH-REQ","SYS-REQ","SG","HZ","FSR","TSR","SW-REQ","SSR","FM","UT","IT","QT"]
+
+LEVEL_COLORS = {
+    "STKH-REQ":"#9b59b6","SYS-REQ":"#3498db","SG":"#e74c3c","HZ":"#e74c3c",
+    "FSR":"#e67e22","TSR":"#e67e22","SW-REQ":"#2ecc71","SSR":"#f39c12",
+    "FM":"#95a5a6","UT":"#1abc9c","IT":"#1abc9c","QT":"#1abc9c",
+}
+
+def classify_id(rid):
+    for prefix in LEVEL_ORDER:
+        if rid.startswith(prefix + "-"):
+            return prefix
+    return "UNKNOWN"
+
+def build_trace_graph():
+    """Scan ASPICE docs and build {id: {up:set, down:set}} graph."""
+    nodes = defaultdict(lambda: {"up": set(), "down": set()})
+
+    for md_file in sorted(TRACE_DOCS_DIR.rglob("*.md")):
+        text = md_file.read_text(encoding="utf-8", errors="replace")
+        for line in text.split("\n"):
+            if "|" not in line:
+                continue
+            ids_in_row = [m.group(1) for m in ALL_ID_RE.finditer(line)]
+            if len(ids_in_row) >= 2:
+                primary = ids_in_row[0]
+                p_level = classify_id(primary)
+                p_idx = LEVEL_ORDER.index(p_level) if p_level in LEVEL_ORDER else -1
+                for other in ids_in_row[1:]:
+                    if other == primary:
+                        continue
+                    o_level = classify_id(other)
+                    o_idx = LEVEL_ORDER.index(o_level) if o_level in LEVEL_ORDER else -1
+                    # Ensure both exist in graph
+                    _ = nodes[primary]
+                    _ = nodes[other]
+                    if p_idx > o_idx:
+                        nodes[primary]["up"].add(other)
+                        nodes[other]["down"].add(primary)
+                    elif p_idx < o_idx:
+                        nodes[primary]["down"].add(other)
+                        nodes[other]["up"].add(primary)
+
+    return dict(nodes)
+
+# Build once at import time
+TRACE_GRAPH = None
 
 SECTIONS = [
     ("Project Overview", [
@@ -173,6 +234,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -216,11 +297,85 @@ def slugify(text):
     return re.sub(r'[^a-z0-9]+', '-', text.lower()).strip('-')
 
 
-def render_md(text):
+def _make_trace_popup(req_id, page_lookup):
+    """Build HTML for a trace badge popup showing up/down links."""
+    global TRACE_GRAPH
+    if TRACE_GRAPH is None or req_id not in TRACE_GRAPH:
+        return req_id  # No trace data, return plain text
+
+    node = TRACE_GRAPH[req_id]
+    up_ids = sorted(node["up"])
+    down_ids = sorted(node["down"])
+
+    if not up_ids and not down_ids:
+        return req_id  # Orphan, no popup needed
+
+    color = LEVEL_COLORS.get(classify_id(req_id), "#666")
+
+    popup = '<span class="trace-badges">'
+    if up_ids:
+        popup += '<div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br>'
+        for uid in up_ids[:8]:  # limit to 8 to avoid huge popups
+            href = page_lookup.get(uid, "traceability.html")
+            popup += f'<a class="tb-link tb-up" href="{href}">{uid}</a>'
+        if len(up_ids) > 8:
+            popup += f'<span style="color:var(--text2)"> +{len(up_ids)-8} more</span>'
+        popup += '</div>'
+    if down_ids:
+        popup += '<div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br>'
+        for did in down_ids[:8]:
+            href = page_lookup.get(did, "traceability.html")
+            popup += f'<a class="tb-link tb-down" href="{href}">{did}</a>'
+        if len(down_ids) > 8:
+            popup += f'<span style="color:var(--text2)"> +{len(down_ids)-8} more</span>'
+        popup += '</div>'
+    popup += '</span>'
+
+    return (f'<span class="trace-id" style="border-bottom:1px dashed {color};cursor:help">'
+            f'<a href="traceability.html" style="color:{color};text-decoration:none">{req_id}</a>'
+            f'{popup}</span>')
+
+
+def _annotate_trace_links(html, page_lookup):
+    """Post-process rendered HTML to add trace popups to requirement IDs."""
+    # Only annotate IDs that are NOT inside <a> tags or <code> blocks
+    def replacer(m):
+        req_id = m.group(1)
+        return _make_trace_popup(req_id, page_lookup)
+
+    # Split by HTML tags to avoid replacing inside href="" or <code>
+    parts = re.split(r'(<[^>]+>)', html)
+    in_code = False
+    in_a = False
+    result = []
+    for part in parts:
+        if part.startswith('<'):
+            lower = part.lower()
+            if lower.startswith('<code') or lower.startswith('<pre'):
+                in_code = True
+            elif lower.startswith('</code') or lower.startswith('</pre'):
+                in_code = False
+            elif lower.startswith('<a '):
+                in_a = True
+            elif lower.startswith('</a'):
+                in_a = False
+            result.append(part)
+        else:
+            if in_code or in_a:
+                result.append(part)
+            else:
+                result.append(ALL_ID_RE.sub(replacer, part))
+    return ''.join(result)
+
+
+def render_md(text, page_lookup=None):
     text = re.sub(r'<!--\s*HITL-LOCK\s+START:([^>]+)\s*-->', r'<div class="hitl-lock">🔒 HITL-LOCK: \1</div>', text)
     text = re.sub(r'<!--\s*HITL-LOCK\s+END:[^>]+\s*-->', '', text)
     md = markdown.Markdown(extensions=[TableExtension(), FencedCodeExtension(), TocExtension(permalink=False)])
-    return md.convert(text)
+    html = md.convert(text)
+    if page_lookup is not None and TRACE_GRAPH:
+        html = _annotate_trace_links(html, page_lookup)
+    return html
 
 
 def build_sidebar(sections, all_pages, current_slug=None):
