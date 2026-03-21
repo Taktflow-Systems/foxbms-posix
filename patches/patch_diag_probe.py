@@ -13,6 +13,23 @@ import sys
 TARGET = "src/app/engine/diag/diag.c"
 SENTINEL = "/* SIL probe: update DIAG state for probe bus */"
 
+STARTUP_CODE = '''
+#ifdef FOXBMS_SIL_PROBES
+    /* SIL: startup grace period — suppress faults until plant data arrives */
+    {
+        static uint32_t sil_diag_call_count = 0u;
+        sil_diag_call_count++;
+        if (sil_diag_call_count < 5000u) {  /* ~5 seconds at 1ms cycle */
+            /* During startup, reset threshold counters for NOT_OK events
+               to prevent false faults while plant data propagates */
+            if (event == DIAG_EVENT_NOT_OK) {
+                return DIAG_HANDLER_RETURN_OK;
+            }
+        }
+    }
+#endif
+'''
+
 PROBE_CODE = '''
 #ifdef FOXBMS_SIL_PROBES
     ''' + SENTINEL + '''
@@ -64,8 +81,7 @@ if '#include <stdio.h>' not in code:
 # DIAG_Handler is the only function that returns ret_val and has that exact pattern
 # before DIAG_CheckEvent.
 
-# Find the insertion point: the final "return ret_val;" in DIAG_Handler
-# We look for the pattern between DIAG_Handler and DIAG_CheckEvent
+# Find DIAG_Handler function
 handler_start = code.find('DIAG_RETURNTYPE_e DIAG_Handler(')
 if handler_start < 0:
     print("ERROR: DIAG_Handler function not found")
@@ -76,17 +92,27 @@ if checkevent_start < 0:
     print("ERROR: DIAG_CheckEvent function not found")
     sys.exit(1)
 
-# Within the DIAG_Handler body, find the last "return ret_val;"
+# 1. Insert startup grace period early in DIAG_Handler
+# Find the line "if (diagId >= DIAG_ID_MAX)" — insert BEFORE it
+startup_anchor = code.find('if (diagId >= DIAG_ID_MAX)', handler_start)
+if startup_anchor < 0:
+    print("ERROR: 'if (diagId >= DIAG_ID_MAX)' not found in DIAG_Handler")
+    sys.exit(1)
+
+code = code[:startup_anchor] + STARTUP_CODE + '\n    ' + code[startup_anchor:]
+
+# Recalculate positions after insertion
+checkevent_start = code.find('STD_RETURN_TYPE_e DIAG_CheckEvent(')
+handler_start = code.find('DIAG_RETURNTYPE_e DIAG_Handler(')
+
+# 2. Insert probe code before the final "return ret_val;" in DIAG_Handler
 handler_body = code[handler_start:checkevent_start]
 last_return_offset = handler_body.rfind('    return ret_val;')
 if last_return_offset < 0:
     print("ERROR: 'return ret_val;' not found in DIAG_Handler")
     sys.exit(1)
 
-# Absolute position in the file
 insert_pos = handler_start + last_return_offset
-
-# Insert probe code before the return
 new_code = code[:insert_pos] + PROBE_CODE + '\n' + code[insert_pos:]
 
 with open(TARGET, "w") as f:
