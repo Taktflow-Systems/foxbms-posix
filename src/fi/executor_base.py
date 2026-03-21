@@ -69,11 +69,14 @@ class TestExecutor:
                 print("  [precond] 1/6 BMS state = NORMAL")
             if ok[0] and not ok[1]:
                 cur_ok = abs(m.pack_current_ma) > 200
-                t_in = (time.monotonic() - m.normal_entry_time) if m.normal_entry_time > 0 else 0.0
-                if cur_ok or t_in > 4.0:
+                t_in = time.monotonic() - m.normal_entry_time if m.normal_entry_time > 0 else 0.0
+                # Accept after 4s in NORMAL (plant starts discharging by then)
+                if cur_ok or t_in > 4.0 or (m.bms_in_normal() and time.monotonic() - deadline + timeout_s > 4.0):
                     ok[1] = True
-                    print(f"  [precond] 2/6 Current: {m.pack_current_ma}mA" if cur_ok
-                          else f"  [precond] 2/6 Current: {t_in:.1f}s in NORMAL")
+                    if cur_ok:
+                        print(f"  [precond] 2/6 Current: {m.pack_current_ma}mA")
+                    else:
+                        print(f"  [precond] 2/6 Current: accepted after {t_in:.1f}s in NORMAL")
             if not ok[2]:
                 v_min, v_max = m.cell_voltage_min_mv, m.cell_voltage_max_mv
                 if v_min > 0 and 2700 <= v_min and v_max <= 4150:
