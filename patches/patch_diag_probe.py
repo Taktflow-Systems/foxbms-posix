@@ -15,13 +15,14 @@ SENTINEL = "/* SIL probe: update DIAG state for probe bus */"
 
 STARTUP_CODE = '''
 #ifdef FOXBMS_SIL_PROBES
-    /* SIL: startup grace period — suppress faults until plant data arrives */
+    /* SIL: startup grace period — suppress faults until plant data arrives.
+       Cell database starts at 0mV; undervoltage threshold is ~50ms (50 events).
+       Plant model needs ~200ms to send first frame + propagate through DB.
+       Grace period: 3000 calls ≈ 3 seconds. */
     {
         static uint32_t sil_diag_call_count = 0u;
         sil_diag_call_count++;
-        if (sil_diag_call_count < 5000u) {  /* ~5 seconds at 1ms cycle */
-            /* During startup, reset threshold counters for NOT_OK events
-               to prevent false faults while plant data propagates */
+        if (sil_diag_call_count < 3000u) {
             if (event == DIAG_EVENT_NOT_OK) {
                 return DIAG_HANDLER_RETURN_OK;
             }

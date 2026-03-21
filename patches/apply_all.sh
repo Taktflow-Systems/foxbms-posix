@@ -81,6 +81,7 @@ PATCHES=(
     "patch_10ms2.py"        # 10ms task trace
     "patch_precharge.py"    # Precharge trace
     # 5. Phase 3: Real DIAG integration
+    "patch_battery_cfg.py"  # NMC cell voltage thresholds (must be before DIAG)
     "patch_diag_posix.py"   # Disable hardware-absent DIAG IDs in diag_cfg.c
     "patch_diag_probe.py"   # Add SIL probe instrumentation to diag.c
 )
