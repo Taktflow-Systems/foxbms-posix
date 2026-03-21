@@ -98,7 +98,7 @@ SECTIONS = [
         ("Integration Notes", DOCS_DIR / "project" / "integration-notes.md"),
         ("10-Role Audit v1", DOCS_DIR / "project" / "audit-10-role.md"),
         ("10-Role Audit v2", DOCS_DIR / "project" / "audit-10-role-v2.md"),
-        ("Munich Electrification", DOCS_DIR / "project" / "munich-electrification-mapping.md"),
+
         ("Lessons Learned", DOCS_DIR / "project" / "lessons-learned.md"),
     ]),
     ("ASPICE CL2 — Assessment", [

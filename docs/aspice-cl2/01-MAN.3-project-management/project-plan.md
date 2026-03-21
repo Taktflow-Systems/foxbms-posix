@@ -37,7 +37,7 @@ Deliver a validated software-in-the-loop (SIL) representation of foxBMS 2 v1.10.
 | Role | Person | Responsibility |
 |---|---|---|
 | Project Lead / Developer | An Dao | Architecture, implementation, testing, documentation |
-| Organization | Munich Electrification | HIL test laboratory |
+| Organization | Tier 1 BMS OEM | HIL test laboratory |
 | Role | HIL Engineer | Primary stakeholder and end-user |
 
 ## 5. Project Phases and Milestones

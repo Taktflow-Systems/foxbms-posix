@@ -134,7 +134,6 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="integration-notes.html" >Integration Notes</a>
 <a href="10-role-audit-v1.html" >10-Role Audit v1</a>
 <a href="10-role-audit-v2.html" >10-Role Audit v2</a>
-<a href="munich-electrification.html" >Munich Electrification</a>
 <a href="lessons-learned.html" >Lessons Learned</a>
 <h3>ASPICE CL2 — Assessment</h3>
 <a href="assessment-scope.html" >Assessment Scope</a>
@@ -190,7 +189,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="ml-integration.html" >ML Integration</a>
 <a href="ml-feasibility.html" >ML Feasibility</a>
 <a href="hil-data-plan.html" >HIL Data Plan</a>
-<div class="stats">59 documents</div>
+<div class="stats">58 documents</div>
 </nav>
 <main>
 <div class="breadcrumb"><a href="index.html">Home</a> / Business & Service / Reusable Pipeline</div>
@@ -718,7 +717,7 @@ def calibrate(decoded_csv, config):
 <td>Build everything. foxBMS SIL + fault injection + ML sidecar.</td>
 </tr>
 <tr>
-<td><strong>#1 (Munich Electrification)</strong></td>
+<td><strong>#1 (Customer A)</strong></td>
 <td>+2 weeks</td>
 <td>Internal pilot. Real Bologna bench data. Validate + fine-tune.</td>
 </tr>
@@ -760,30 +759,30 @@ def calibrate(decoded_csv, config):
 ├── customers/                     ← PER-CUSTOMER CONFIG (15 min each)
 │   ├── foxbms-demo/
 │   │   └── pack_config.json
-│   ├── munich-electrification/
+│   ├── customer-example/
 │   │   └── pack_config.json
 │   └── customer-template/
 │       └── pack_config.json       Template with comments
 │
 └── reports/                       Generated output
     ├── foxbms-demo/
-    ├── munich-electrification/
+    ├── customer-example/
     └── ...
 </code></pre>
 <hr />
 <h2 id="one-command-audit">One-Command Audit</h2>
 <pre><code class="language-bash"># For any customer, any CAN log:
 python pipeline/run_audit.py \
-    --dbc customers/munich-electrification/bologna.dbc \
-    --config customers/munich-electrification/pack_config.json \
+    --dbc customers/customer-example/bologna.dbc \
+    --config customers/customer-example/pack_config.json \
     --log /path/to/their/test_run.blf \
-    --output reports/munich-electrification/
+    --output reports/customer-example/
 
 # Output:
-#   reports/munich-electrification/soc_audit.pdf
-#   reports/munich-electrification/thermal_risk.pdf
-#   reports/munich-electrification/cell_health.pdf
-#   reports/munich-electrification/raw_predictions.csv
+#   reports/customer-example/soc_audit.pdf
+#   reports/customer-example/thermal_risk.pdf
+#   reports/customer-example/cell_health.pdf
+#   reports/customer-example/raw_predictions.csv
 </code></pre>
 <p>15 minutes to create the config. 1 command to run. 3 reports out.</p></div>
 <div class="nav-buttons"><a href="dbc-signals.html">&larr; DBC Signals</a><a href="ml-integration.html">ML Integration &rarr;</a></div>

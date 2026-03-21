@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Run untested high-risk scenarios for foxBMS POSIX vECU."""
+# @verifies SW-REQ-040
+# @verifies SW-REQ-043
+# @verifies SW-REQ-044
+# @verifies SW-REQ-045
+# @verifies SW-REQ-050
+# @verifies SW-REQ-070
 
 import socket
 import struct

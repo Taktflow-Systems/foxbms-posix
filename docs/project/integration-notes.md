@@ -28,7 +28,7 @@ Changed mingw path from `C:\foxbms\mingw-w64\x86_64-8.1.0-release-posix-seh-rt_v
 ### Build Commands
 ```bash
 # Must add gcovr to PATH first
-export PATH="/c/Users/andao/AppData/Local/Programs/Python/Python312/Scripts:$PATH"
+export PATH="<PYTHON_PATH>/Scripts:$PATH"
 
 # Configure (once)
 python fox.py waf configure

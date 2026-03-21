@@ -21,6 +21,14 @@ Categories (80+ tests):
 Usage:
     python3 test_sil_probes.py <can_interface> [trip_csv]
 """
+# @verifies SW-REQ-001
+# @verifies SW-REQ-002
+# @verifies SW-REQ-010
+# @verifies SW-REQ-020
+# @verifies SW-REQ-040
+# @verifies SW-REQ-062
+# @verifies SW-REQ-070
+# @verifies SW-REQ-120
 
 import subprocess
 import sys

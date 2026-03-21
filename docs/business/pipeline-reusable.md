@@ -500,7 +500,7 @@ def calibrate(decoded_csv, config):
 | Customer | Calendar Time | What Happens |
 |---|---|---|
 | **#0 (foxBMS demo)** | Now → 4-6 weeks | Build everything. foxBMS SIL + fault injection + ML sidecar. |
-| **#1 (Munich Electrification)** | +2 weeks | Internal pilot. Real Bologna bench data. Validate + fine-tune. |
+| **#1 (Customer A)** | +2 weeks | Internal pilot. Real Bologna bench data. Validate + fine-tune. |
 | **#2** | +1-2 weeks | Swap config. Run pipeline. Generate reports. |
 | **#3** | +1 week | Routine. Config + run + deliver. |
 | **#10** | +2-3 days | Streamlined. Mostly automated. |
@@ -529,14 +529,14 @@ taktflow-bms-ml/
 ├── customers/                     ← PER-CUSTOMER CONFIG (15 min each)
 │   ├── foxbms-demo/
 │   │   └── pack_config.json
-│   ├── munich-electrification/
+│   ├── customer-example/
 │   │   └── pack_config.json
 │   └── customer-template/
 │       └── pack_config.json       Template with comments
 │
 └── reports/                       Generated output
     ├── foxbms-demo/
-    ├── munich-electrification/
+    ├── customer-example/
     └── ...
 ```
 
@@ -547,16 +547,16 @@ taktflow-bms-ml/
 ```bash
 # For any customer, any CAN log:
 python pipeline/run_audit.py \
-    --dbc customers/munich-electrification/bologna.dbc \
-    --config customers/munich-electrification/pack_config.json \
+    --dbc customers/customer-example/bologna.dbc \
+    --config customers/customer-example/pack_config.json \
     --log /path/to/their/test_run.blf \
-    --output reports/munich-electrification/
+    --output reports/customer-example/
 
 # Output:
-#   reports/munich-electrification/soc_audit.pdf
-#   reports/munich-electrification/thermal_risk.pdf
-#   reports/munich-electrification/cell_health.pdf
-#   reports/munich-electrification/raw_predictions.csv
+#   reports/customer-example/soc_audit.pdf
+#   reports/customer-example/thermal_risk.pdf
+#   reports/customer-example/cell_health.pdf
+#   reports/customer-example/raw_predictions.csv
 ```
 
 15 minutes to create the config. 1 command to run. 3 reports out.

@@ -16,6 +16,20 @@ Exit codes:
     1 = SOME FAIL
     2 = ERROR (process startup failure)
 """
+# @verifies SW-REQ-040
+# @verifies SW-REQ-041
+# @verifies SW-REQ-042
+# @verifies SW-REQ-050
+# @verifies SW-REQ-051
+# @verifies SW-REQ-052
+# @verifies SW-REQ-053
+# @verifies SW-REQ-070
+# @verifies SW-REQ-073
+# @verifies SW-REQ-090
+# @verifies SW-REQ-101
+# @verifies SW-REQ-102
+# @verifies SW-REQ-110
+# @verifies SW-REQ-120
 
 import subprocess
 import sys

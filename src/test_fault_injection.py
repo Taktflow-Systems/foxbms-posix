@@ -11,6 +11,18 @@ Usage:
     python3 test_fault_injection.py vcan1 --category VOLT --priority P1 --quick
     python3 test_fault_injection.py vcan1 --max 10 --report results.txt
 """
+# @verifies SW-REQ-001
+# @verifies SW-REQ-002
+# @verifies SW-REQ-010
+# @verifies SW-REQ-020
+# @verifies SW-REQ-030
+# @verifies SW-REQ-043
+# @verifies SW-REQ-044
+# @verifies SSR-001
+# @verifies SSR-002
+# @verifies SSR-005
+# @verifies SSR-007
+# @verifies SSR-010
 
 import argparse
 import sys

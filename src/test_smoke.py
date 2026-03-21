@@ -13,6 +13,10 @@ Exit codes:
     1 = FAIL (BMS did not reach NORMAL within timeout)
     2 = ERROR (process startup failure)
 """
+# @verifies SW-REQ-040
+# @verifies SW-REQ-070
+# @verifies SYS-REQ-090
+# @verifies SYS-REQ-130
 
 import subprocess
 import sys

@@ -21,6 +21,32 @@ Test categories:
 Usage:
     python3 test_asil.py <can_interface> <trip_csv>
 """
+# @verifies SW-REQ-001
+# @verifies SW-REQ-002
+# @verifies SW-REQ-010
+# @verifies SW-REQ-011
+# @verifies SW-REQ-020
+# @verifies SW-REQ-040
+# @verifies SW-REQ-041
+# @verifies SW-REQ-042
+# @verifies SW-REQ-043
+# @verifies SW-REQ-044
+# @verifies SW-REQ-045
+# @verifies SW-REQ-060
+# @verifies SW-REQ-062
+# @verifies SW-REQ-070
+# @verifies SW-REQ-071
+# @verifies SW-REQ-073
+# @verifies SW-REQ-074
+# @verifies SW-REQ-090
+# @verifies SW-REQ-091
+# @verifies SW-REQ-092
+# @verifies SW-REQ-093
+# @verifies SW-REQ-101
+# @verifies SW-REQ-102
+# @verifies SW-REQ-103
+# @verifies SW-REQ-120
+# @verifies SW-REQ-200
 
 import subprocess
 import sys

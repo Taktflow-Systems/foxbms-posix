@@ -39,7 +39,7 @@ The product is a software-in-the-loop (SIL) adaptation of the open-source foxBMS
 
 ### 2.3 Project Context
 
-This project serves as a Model-in-the-Loop / Software-in-the-Loop (MIL-SIL) pre-validation capability for HIL test engineers at Munich Electrification. The vECU enables early validation of BMS logic, diagnostic paths, and state machine behavior before physical bench testing, reducing HIL bench time and enabling fault injection scenarios that are difficult or dangerous to execute on real hardware.
+This project serves as a Model-in-the-Loop / Software-in-the-Loop (MIL-SIL) pre-validation capability for HIL test engineers at a Tier 1 BMS supplier. The vECU enables early validation of BMS logic, diagnostic paths, and state machine behavior before physical bench testing, reducing HIL bench time and enabling fault injection scenarios that are difficult or dangerous to execute on real hardware.
 
 ## 3. Assessment Target
 
