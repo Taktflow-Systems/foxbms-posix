@@ -185,8 +185,9 @@ try:
         # ============================================================
         msg_counter = (tick & 0x3F) << 2  # 6-bit counter, status bits = 0
 
-        # IVT Current (0x521) — IVT convention: negative = discharge
-        ivt_current = -current_ma if current_ma > 0 else 0
+        # IVT Current (0x521) — foxBMS: BS_POSITIVE_DISCHARGE_CURRENT=true
+        # Positive = discharge, Negative = charge
+        ivt_current = current_ma
         can_send(0x521, struct.pack(">BBi", msg_counter & 0xFF, 0, ivt_current)[:6])
 
         # IVT Voltage 1/2/3 (0x522-0x524)
