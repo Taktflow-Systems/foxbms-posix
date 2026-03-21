@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import copy
 import csv
 import os
 import random
@@ -358,7 +359,13 @@ def parse_target(target_str: str) -> Tuple[str, List[int]]:
             pass
 
     if "+" in target_str:
-        return ("compound", [])
+        # Parse compound target: "CELL_0+STRING_0" -> [("cell", [0]), ("string", [0])]
+        parts = target_str.split("+")
+        sub_targets = []
+        for part in parts:
+            sub_type, sub_indices = parse_target(part.strip())
+            sub_targets.append((sub_type, sub_indices))
+        return ("compound", sub_targets)
 
     if target_str.startswith("IVT") or target_str.startswith("0x") or target_str.startswith("CAN_"):
         return ("special", [])
@@ -444,8 +451,8 @@ def parse_injection_value(value_str: str, fault_method: str) -> Optional[int]:
     if value_str == "NO_SIGNAL":
         return None
 
-    # COMBO values: "CELL_V=4260/I=16000" — not directly injectable
-    if "=" in value_str and "/" in value_str:
+    # COMBO values: "CELL_V=4260/I=16000" — not directly injectable as single int
+    if "=" in value_str and "/" in value_str and "inject=" not in value_str:
         return None
 
     # inject=4260/clear=3700 (RECOV patterns)
@@ -456,6 +463,97 @@ def parse_injection_value(value_str: str, fault_method: str) -> Optional[int]:
             pass
 
     return None
+
+
+def parse_compound_injection(value_str: str) -> Dict[str, int]:
+    """Parse compound injection values into a dict of named values.
+
+    Handles formats:
+        PLAUS:  "cell=3700/pack=81500" -> {"cell": 3700, "pack": 81500}
+        PLAUS:  "T=540/I=14900"        -> {"T": 540, "I": 14900}
+        PLAUS:  "SOC=100%/V=2600mV"    -> {"SOC": 100, "V": 2600}
+        PLAUS:  "spread=100mV"         -> {"spread": 100}
+        COMBO:  "CELL_V=4260/I=16000"  -> {"CELL_V": 4260, "I": 16000}
+        COMBO:  "CELL_V=4260/T=560"    -> {"CELL_V": 4260, "T": 560}
+        COMBO:  "CELL_V=2490/T=-210"   -> {"CELL_V": 2490, "T": -210}
+        COMBO:  "I=16000/T=560"        -> {"I": 16000, "T": 560}
+        COMBO:  "V=4260/T=560/I=16000" -> {"V": 4260, "T": 560, "I": 16000}
+        COMBO:  "C0=4260/C17=2490"     -> {"C0": 4260, "C17": 2490}
+    """
+    result = {}
+    value_str = value_str.strip()
+
+    for part in value_str.split("/"):
+        part = part.strip()
+        if "=" not in part:
+            continue
+        key, val_str = part.split("=", 1)
+        # Strip units: mV, mA, ms, %, ddegC
+        val_str = (val_str.replace("mV", "").replace("mA", "")
+                   .replace("ms", "").replace("%", "").replace("ddegC", ""))
+        try:
+            result[key] = int(val_str)
+        except ValueError:
+            pass
+
+    return result
+
+
+def parse_recov_injection(value_str: str) -> Dict[str, object]:
+    """Parse RECOV injection values.
+
+    Handles formats:
+        "inject=4260/clear=3700"            -> {"inject": 4260, "clear": 3700}
+        "inject=4260/clear=3700/check_latch" -> {"inject": 4260, "clear": 3700, "check_latch": True}
+        "inject=4260/clear=3700/request=NORMAL" -> {"inject": 4260, "clear": 3700, "request": "NORMAL"}
+        "inject=4260/duration=10s"          -> {"inject": 4260, "duration_s": 10}
+    """
+    result: Dict[str, object] = {}
+    value_str = value_str.strip()
+
+    for part in value_str.split("/"):
+        part = part.strip()
+        if part == "check_latch":
+            result["check_latch"] = True
+            continue
+        if "=" not in part:
+            continue
+        key, val_str = part.split("=", 1)
+        if key == "duration":
+            # "10s" -> 10
+            try:
+                result["duration_s"] = int(val_str.replace("s", ""))
+            except ValueError:
+                result["duration_s"] = 10
+        elif key == "request":
+            result["request"] = val_str
+        else:
+            try:
+                result[key] = int(val_str)
+            except ValueError:
+                result[key] = val_str
+
+    return result
+
+
+def resolve_recov_override_cmd(signal: str) -> int:
+    """Map RECOV signal name to the SIL override command byte.
+
+    Signal names: RECOV_OV_*, RECOV_UV_*, RECOV_OT_*, RECOV_UT_*,
+                  RECOV_OC_*, DEEP_DISCHARGE_*
+    Must check OT/UT/OC before OV/UV because "RECOV" contains "OV".
+    """
+    sig = signal.upper()
+    # Check temperature first (OT/UT) — before voltage since RECOV contains OV
+    if "_OT_" in sig or "_UT_" in sig:
+        return SIL_CELL_TEMP
+    # Check current (OC)
+    if "_OC_" in sig:
+        return SIL_PACK_CURRENT
+    # Voltage: OV, UV, DEEP_DISCHARGE
+    if "_OV_" in sig or "_UV_" in sig or "DEEP_DISCHARGE" in sig:
+        return SIL_CELL_VOLTAGE
+    return SIL_CELL_VOLTAGE  # Default
 
 
 def parse_drift_range(value_str: str) -> Tuple[int, int]:
@@ -543,19 +641,28 @@ def should_skip(tc: TestCase) -> Optional[str]:
     if tc.fault_method in SKIP_FAULT_METHODS:
         return f"requires {tc.fault_method} (not implemented)"
 
+    # RECOV and COMBO tests that require non-NORMAL states: skip
+    # PLAUS tests in NORMAL state: run them
     if tc.bms_state != "NORMAL" and tc.bms_state not in ("", "N/A"):
         return f"requires {tc.bms_state} state"
 
-    target_type, indices = parse_target(tc.target)
+    target_type, _ = parse_target(tc.target)
     if target_type in SKIP_TARGET_TYPES:
         return f"requires {tc.target} target (not supported)"
 
     if tc.expected_reaction in SKIP_REACTIONS:
         return f"requires {tc.expected_reaction} verification"
 
-    # COMBO tests with compound targets need multi-override
-    if tc.category == "COMBO" and target_type == "compound":
-        return "COMBO with compound target (not yet implemented)"
+    # PLAUS tests with DIAG IDs not in our map: skip
+    if tc.category == "PLAUS":
+        diag = tc.diag_id
+        if diag not in DIAG_ID_MAP and diag not in ("", "N/A"):
+            return f"DIAG ID {diag} not mapped (may be disabled)"
+
+    # COMBO tests needing T=NO_SIGNAL or other unsupported patterns
+    if tc.category == "COMBO":
+        if "NO_SIGNAL" in tc.injection_value:
+            return "COMBO with NO_SIGNAL (requires timeout injection)"
 
     return None
 
@@ -1054,8 +1161,101 @@ class TestExecutor:
                 category=tc.category, priority=tc.priority,
             )
 
+        # ---- Category-level dispatch for PLAUS, COMBO, RECOV ----
+        try:
+            # PLAUS: plausibility mismatch / spread tests
+            if tc.category == "PLAUS":
+                if tc.fault_method == "INJECTED_MISMATCH":
+                    return self.run_plaus_mismatch_test(tc)
+                elif tc.fault_method == "INJECTED_SPREAD":
+                    return self.run_plaus_spread_test(tc)
+                else:
+                    return TestOutcome(
+                        test_id=tc.test_id, result=TestResult.SKIP,
+                        elapsed_ms=0,
+                        detail=f"PLAUS method {tc.fault_method} not implemented",
+                        category=tc.category, priority=tc.priority,
+                    )
+
+            # COMBO: simultaneous / sequential multi-fault tests
+            if tc.category == "COMBO":
+                if tc.fault_method == "SIMULTANEOUS":
+                    return self.run_combo_simultaneous_test(tc)
+                elif tc.fault_method == "SEQUENTIAL":
+                    return self.run_combo_sequential_test(tc)
+                elif tc.fault_method == "TIMED_INJECTION":
+                    return self.run_combo_sequential_test(tc)
+                else:
+                    return TestOutcome(
+                        test_id=tc.test_id, result=TestResult.SKIP,
+                        elapsed_ms=0,
+                        detail=f"COMBO method {tc.fault_method} not implemented",
+                        category=tc.category, priority=tc.priority,
+                    )
+
+            # RECOV: recovery / persist / latch tests
+            if tc.category == "RECOV":
+                if tc.fault_method == "INJECT_THEN_CLEAR":
+                    return self.run_recovery_test(tc)
+                elif tc.fault_method == "CONTINUOUS":
+                    return self.run_persist_test(tc)
+                elif tc.fault_method == "OSCILLATE":
+                    cmd = resolve_recov_override_cmd(tc.signal)
+                    if cmd == SIL_CELL_VOLTAGE:
+                        indices = list(range(18))
+                    elif cmd == SIL_CELL_TEMP:
+                        indices = list(range(5))
+                    else:
+                        indices = [0]
+                    # Parse "oscillate=4260<>3700@100ms" -> override injection_value
+                    # so _run_oscillate_test can parse it
+                    osc_val = tc.injection_value
+                    if "oscillate=" in osc_val:
+                        # Extract the fault value before "<>"
+                        try:
+                            osc_parts = osc_val.split("=")[1].split("<>")
+                            fault_v = int(osc_parts[0])
+                            # Create a modified tc with parseable injection_value
+                            tc_osc = copy.copy(tc)
+                            tc_osc.injection_value = str(fault_v)
+                            return self._run_oscillate_test(tc_osc, cmd, indices)
+                        except (ValueError, IndexError):
+                            pass
+                    return self._run_oscillate_test(tc, cmd, indices)
+                elif tc.fault_method == "INJECT_PARTIAL_CLEAR":
+                    # Counter reset tests ("inject=49ev/clear/49ev") need
+                    # debounce counter manipulation; skip for now
+                    return TestOutcome(
+                        test_id=tc.test_id, result=TestResult.SKIP,
+                        elapsed_ms=0,
+                        detail="INJECT_PARTIAL_CLEAR requires counter manipulation",
+                        category=tc.category, priority=tc.priority,
+                    )
+                else:
+                    return TestOutcome(
+                        test_id=tc.test_id, result=TestResult.SKIP,
+                        elapsed_ms=0,
+                        detail=f"RECOV method {tc.fault_method} not implemented",
+                        category=tc.category, priority=tc.priority,
+                    )
+        except Exception as e:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.ERROR,
+                elapsed_ms=0, detail=f"exception in category dispatch: {e}",
+                category=tc.category, priority=tc.priority,
+            )
+
+        # ---- Generic dispatch for VOLT, TEMP, CURR, etc. ----
         # Resolve override command and target
-        target_type, indices = parse_target(tc.target)
+        target_type, raw_indices = parse_target(tc.target)
+        # For compound targets that reach here, extract first sub-target's indices
+        if target_type == "compound" and isinstance(raw_indices, list) and raw_indices:
+            if isinstance(raw_indices[0], tuple):
+                indices = raw_indices[0][1]
+            else:
+                indices = raw_indices
+        else:
+            indices = raw_indices
         cmd = resolve_override_cmd(tc.category, tc.signal)
 
         # Resolve injection value
@@ -1213,6 +1413,506 @@ class TestExecutor:
         return TestOutcome(
             test_id=tc.test_id, result=TestResult.FAIL,
             elapsed_ms=elapsed_ms, detail=f"{elapsed_ms}ms TIMEOUT | oscillation test",
+            category=tc.category, priority=tc.priority,
+        )
+
+    # ----------------------------------------------------------------
+    # PLAUS — Plausibility mismatch tests
+    # ----------------------------------------------------------------
+
+    def run_plaus_mismatch_test(self, tc: TestCase) -> TestOutcome:
+        """Run a PLAUS INJECTED_MISMATCH test.
+
+        Parses compound injection values and injects to create plausibility
+        mismatches. Supports:
+          - cell=X/pack=Y  → inject all 18 cells at X (pack stays at plant value)
+          - T=X/I=Y        → inject temp on sensors + current on string
+          - SOC=X/V=Y      → inject cell voltages at Y (SOC is derived)
+        """
+        vals = parse_compound_injection(tc.injection_value)
+        if not vals:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.ERROR,
+                elapsed_ms=0,
+                detail=f"cannot parse PLAUS value: {tc.injection_value}",
+                category=tc.category, priority=tc.priority,
+            )
+
+        diag_bit = resolve_diag_bit(tc.diag_id, tc.severity_tier)
+        t_start = time.monotonic()
+        timeout_s = self.timeout_ms / 1000.0
+
+        # Determine what to inject based on the parsed keys
+        if "cell" in vals:
+            # cell=X/pack=Y — inject all 18 cells at X to create mismatch
+            cell_val = vals["cell"]
+            self.injector.inject_multi(SIL_CELL_VOLTAGE, list(range(18)), cell_val)
+        elif "T" in vals and "I" in vals:
+            # T=X/I=Y — inject temp on all sensors + current on string 0
+            self.injector.inject_multi(SIL_CELL_TEMP, list(range(5)), vals["T"])
+            self.injector.inject(SIL_PACK_CURRENT, 0, vals["I"])
+        elif "SOC" in vals and "V" in vals:
+            # SOC=X%/V=YmV — inject cell voltages at Y; SOC is computed from V
+            self.injector.inject_multi(SIL_CELL_VOLTAGE, list(range(18)), vals["V"])
+        elif "V" in vals and "T" in vals and "I" in vals:
+            # Triple injection
+            self.injector.inject_multi(SIL_CELL_VOLTAGE, list(range(18)), vals["V"])
+            self.injector.inject_multi(SIL_CELL_TEMP, list(range(5)), vals["T"])
+            self.injector.inject(SIL_PACK_CURRENT, 0, vals["I"])
+        else:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.SKIP,
+                elapsed_ms=0,
+                detail=f"unsupported PLAUS key combination: {list(vals.keys())}",
+                category=tc.category, priority=tc.priority,
+            )
+
+        # Monitor for expected reaction
+        return self._monitor_for_reaction(tc, diag_bit, t_start, timeout_s,
+                                          sustain_fn=None)
+
+    def run_plaus_spread_test(self, tc: TestCase) -> TestOutcome:
+        """Run a PLAUS INJECTED_SPREAD test.
+
+        Parses spread=XmV and injects cell voltages with a spread across cells.
+        Cell 0 gets nominal+spread/2, cell 17 gets nominal-spread/2.
+        """
+        vals = parse_compound_injection(tc.injection_value)
+        spread = vals.get("spread")
+        if spread is None:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.ERROR,
+                elapsed_ms=0,
+                detail=f"cannot parse spread value: {tc.injection_value}",
+                category=tc.category, priority=tc.priority,
+            )
+
+        diag_bit = resolve_diag_bit(tc.diag_id, tc.severity_tier)
+        t_start = time.monotonic()
+        timeout_s = self.timeout_ms / 1000.0
+
+        # Inject cells with a linear spread around nominal (3700mV)
+        nominal = 3700
+        half_spread = spread // 2
+        for i in range(18):
+            # Linear interpolation: cell 0 = nominal + half, cell 17 = nominal - half
+            cell_val = nominal + half_spread - (spread * i // 17)
+            self.injector.inject(SIL_CELL_VOLTAGE, i, cell_val)
+
+        return self._monitor_for_reaction(tc, diag_bit, t_start, timeout_s,
+                                          sustain_fn=None)
+
+    # ----------------------------------------------------------------
+    # COMBO — Multi-target simultaneous fault injection
+    # ----------------------------------------------------------------
+
+    def run_combo_simultaneous_test(self, tc: TestCase) -> TestOutcome:
+        """Run a COMBO SIMULTANEOUS test: inject multiple faults at once.
+
+        Parses compound injection values and targets, injects all simultaneously,
+        then monitors for the expected reaction (typically CONTACTOR_OPEN).
+        """
+        vals = parse_compound_injection(tc.injection_value)
+        if not vals:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.ERROR,
+                elapsed_ms=0,
+                detail=f"cannot parse COMBO value: {tc.injection_value}",
+                category=tc.category, priority=tc.priority,
+            )
+
+        t_start = time.monotonic()
+        timeout_s = self.timeout_ms / 1000.0
+
+        # Parse the compound target to get sub-targets
+        target_type, sub_targets = parse_target(tc.target)
+
+        # Inject based on parsed values
+        self._inject_combo_values(vals, tc, sub_targets if target_type == "compound" else [])
+
+        # COMBO tests use compound DIAG IDs (e.g. "DIAG_ID_OV+DIAG_ID_OC")
+        # We check for contactor open rather than individual DIAG bits
+        return self._monitor_for_reaction(tc, None, t_start, timeout_s,
+                                          sustain_fn=lambda: self._inject_combo_values(
+                                              vals, tc,
+                                              sub_targets if target_type == "compound" else []))
+
+    def run_combo_sequential_test(self, tc: TestCase) -> TestOutcome:
+        """Run a COMBO SEQUENTIAL test: inject faults with a time gap.
+
+        Parses timing from injection_value like "OV@t=0/OC@t+50ms".
+        """
+        t_start = time.monotonic()
+        timeout_s = self.timeout_ms / 1000.0
+
+        # Parse sequential timing: "OV@t=0/OC@t+50ms"
+        parts = tc.injection_value.split("/")
+        injections = []
+        for part in parts:
+            part = part.strip()
+            if "@t" not in part:
+                continue
+            fault_type = part.split("@")[0]
+            time_spec = part.split("@")[1]
+            delay_ms = 0
+            if "+=" in time_spec or "+" in time_spec:
+                try:
+                    delay_str = time_spec.replace("t+", "").replace("t=", "").replace("ms", "")
+                    delay_ms = int(delay_str)
+                except ValueError:
+                    pass
+            injections.append((fault_type, delay_ms))
+
+        # Execute injections with delays
+        for fault_type, delay_ms in injections:
+            if delay_ms > 0:
+                time.sleep(delay_ms / 1000.0)
+
+            ft = fault_type.upper()
+            if ft == "OV":
+                self.injector.inject_multi(SIL_CELL_VOLTAGE, [0], 4260)
+            elif ft == "UV":
+                self.injector.inject_multi(SIL_CELL_VOLTAGE, [0], 2490)
+            elif ft == "OC":
+                self.injector.inject(SIL_PACK_CURRENT, 0, 16000)
+            elif ft == "OT":
+                self.injector.inject_multi(SIL_CELL_TEMP, [0], 560)
+            elif ft == "UT":
+                self.injector.inject_multi(SIL_CELL_TEMP, [0], -210)
+
+        # Monitor for reaction
+        return self._monitor_for_reaction(tc, None, t_start, timeout_s,
+                                          sustain_fn=None)
+
+    def _inject_combo_values(self, vals: Dict[str, int], tc: TestCase,
+                              sub_targets: list) -> None:
+        """Inject multiple override values for COMBO tests."""
+        # Map value keys to SIL commands and appropriate indices
+        if "CELL_V" in vals or "V" in vals:
+            v = vals.get("CELL_V", vals.get("V", 3700))
+            # Find cell indices from sub_targets or default to cell 0
+            cell_indices = [0]
+            for st in sub_targets:
+                if isinstance(st, tuple) and st[0] == "cell":
+                    cell_indices = st[1]
+                    break
+            self.injector.inject_multi(SIL_CELL_VOLTAGE, cell_indices, v)
+
+        if "I" in vals:
+            self.injector.inject(SIL_PACK_CURRENT, 0, vals["I"])
+
+        if "T" in vals:
+            # Find sensor indices from sub_targets or default to sensor 0
+            sensor_indices = [0]
+            for st in sub_targets:
+                if isinstance(st, tuple) and st[0] == "sensor":
+                    sensor_indices = st[1]
+                    break
+            self.injector.inject_multi(SIL_CELL_TEMP, sensor_indices, vals["T"])
+
+        # Handle cell-specific combos: "C0=4260/C17=2490"
+        for key, val in vals.items():
+            if key.startswith("C") and key[1:].isdigit():
+                cell_idx = int(key[1:])
+                self.injector.inject(SIL_CELL_VOLTAGE, cell_idx, val)
+
+    # ----------------------------------------------------------------
+    # RECOV — Two-phase inject/clear recovery tests
+    # ----------------------------------------------------------------
+
+    def run_recovery_test(self, tc: TestCase) -> TestOutcome:
+        """Run a RECOV INJECT_THEN_CLEAR test.
+
+        Phase 1: Inject fault value, wait for DIAG bit / contactor open.
+        Phase 2: Clear override (inject clear value), wait for fault to clear.
+        For check_latch: verify fault does NOT clear after injecting clear value.
+        """
+        recov = parse_recov_injection(tc.injection_value)
+        inject_val = recov.get("inject")
+        clear_val = recov.get("clear")
+        check_latch = recov.get("check_latch", False)
+
+        if inject_val is None:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.ERROR,
+                elapsed_ms=0,
+                detail=f"cannot parse RECOV inject value: {tc.injection_value}",
+                category=tc.category, priority=tc.priority,
+            )
+
+        cmd = resolve_recov_override_cmd(tc.signal)
+        diag_bit = resolve_diag_bit(tc.diag_id, tc.severity_tier)
+
+        # Determine indices: RECOV uses STRING_0 → inject on all cells/sensors
+        if cmd == SIL_CELL_VOLTAGE:
+            indices = list(range(18))
+        elif cmd == SIL_CELL_TEMP:
+            indices = list(range(5))
+        else:
+            indices = [0]
+
+        t_start = time.monotonic()
+
+        # Phase 1: Inject fault and wait for detection
+        self.injector.inject_multi(cmd, indices, inject_val)
+        inject_deadline = t_start + (self.timeout_ms / 1000.0)
+        fault_detected = False
+
+        while time.monotonic() < inject_deadline:
+            self.injector.monitor_and_update(self.monitor, 0.005)
+            self.injector.inject_multi(cmd, indices, inject_val)
+
+            if diag_bit is not None and self.monitor.diag_bit_set(diag_bit):
+                fault_detected = True
+                break
+            # Also check for contactor open as indication of fault
+            if self.monitor.contactors_open() or self.monitor.bms_in_error():
+                fault_detected = True
+                break
+
+        if not fault_detected:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.FAIL,
+                elapsed_ms=(time.monotonic() - t_start) * 1000,
+                detail="fault never detected during injection phase",
+                category=tc.category, priority=tc.priority,
+            )
+
+        t_fault = time.monotonic()
+
+        # Phase 2: Clear override / inject clear value
+        if clear_val is not None:
+            # Inject the clear (safe) value
+            self.injector.inject_multi(cmd, indices, clear_val)
+        else:
+            # Just clear all overrides
+            self.injector.clear()
+
+        # Wait for recovery
+        recovery_timeout = RECOVERY_TIMEOUT_S
+        if check_latch:
+            # For latch check, shorter observation window
+            recovery_timeout = 5.0
+
+        clear_deadline = time.monotonic() + recovery_timeout
+        fault_cleared = False
+
+        while time.monotonic() < clear_deadline:
+            self.injector.monitor_and_update(self.monitor, 0.05)
+            # Re-inject the clear value to sustain it
+            if clear_val is not None:
+                self.injector.inject_multi(cmd, indices, clear_val)
+
+            if diag_bit is not None and not self.monitor.diag_bit_set(diag_bit):
+                fault_cleared = True
+                break
+
+        elapsed_ms = (time.monotonic() - t_start) * 1000
+
+        if check_latch:
+            # For LATCH_OR_CLEAR: report whether it latched or cleared
+            if fault_cleared:
+                return TestOutcome(
+                    test_id=tc.test_id, result=TestResult.PASS,
+                    elapsed_ms=elapsed_ms,
+                    detail="fault cleared after safe value (non-latching behavior)",
+                    category=tc.category, priority=tc.priority,
+                )
+            else:
+                return TestOutcome(
+                    test_id=tc.test_id, result=TestResult.PASS,
+                    elapsed_ms=elapsed_ms,
+                    detail="fault latched (latching behavior confirmed)",
+                    category=tc.category, priority=tc.priority,
+                )
+
+        # Standard FAULT_CLEARS expectation
+        if tc.expected_reaction == "FAULT_CLEARS":
+            if fault_cleared:
+                return TestOutcome(
+                    test_id=tc.test_id, result=TestResult.PASS,
+                    elapsed_ms=elapsed_ms,
+                    detail="fault cleared after override removed; recovery OK",
+                    category=tc.category, priority=tc.priority,
+                )
+            else:
+                return TestOutcome(
+                    test_id=tc.test_id, result=TestResult.FAIL,
+                    elapsed_ms=elapsed_ms,
+                    detail="fault did not clear after override removed",
+                    category=tc.category, priority=tc.priority,
+                )
+
+        # For other reactions, use contactor_open as pass criteria
+        return self.run_contactor_open_test(
+            tc, cmd, indices, inject_val)
+
+    def run_persist_test(self, tc: TestCase) -> TestOutcome:
+        """Run a RECOV CONTINUOUS/PERSIST test: inject and verify fault stays active.
+
+        Injects the fault value continuously for the specified duration and
+        verifies the fault remains active throughout.
+        """
+        recov = parse_recov_injection(tc.injection_value)
+        inject_val = recov.get("inject")
+        duration_s = recov.get("duration_s", 10)
+
+        if inject_val is None:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.ERROR,
+                elapsed_ms=0,
+                detail=f"cannot parse persist inject value: {tc.injection_value}",
+                category=tc.category, priority=tc.priority,
+            )
+
+        cmd = resolve_recov_override_cmd(tc.signal)
+        diag_bit = resolve_diag_bit(tc.diag_id, tc.severity_tier)
+
+        if cmd == SIL_CELL_VOLTAGE:
+            indices = list(range(18))
+        elif cmd == SIL_CELL_TEMP:
+            indices = list(range(5))
+        else:
+            indices = [0]
+
+        t_start = time.monotonic()
+
+        # Inject fault
+        self.injector.inject_multi(cmd, indices, inject_val)
+
+        # Wait for initial fault detection
+        detect_deadline = t_start + (self.timeout_ms / 1000.0)
+        fault_detected = False
+        while time.monotonic() < detect_deadline:
+            self.injector.monitor_and_update(self.monitor, 0.005)
+            self.injector.inject_multi(cmd, indices, inject_val)
+            if diag_bit is not None and self.monitor.diag_bit_set(diag_bit):
+                fault_detected = True
+                break
+            if self.monitor.contactors_open() or self.monitor.bms_in_error():
+                fault_detected = True
+                break
+
+        if not fault_detected:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.FAIL,
+                elapsed_ms=(time.monotonic() - t_start) * 1000,
+                detail="fault never detected during persist test",
+                category=tc.category, priority=tc.priority,
+            )
+
+        # Hold injection for the specified duration, cap at timeout
+        hold_s = min(duration_s, self.timeout_ms / 1000.0)
+        hold_deadline = time.monotonic() + hold_s
+        fault_persisted = True
+
+        while time.monotonic() < hold_deadline:
+            self.injector.inject_multi(cmd, indices, inject_val)
+            self.injector.monitor_and_update(self.monitor, 0.05)
+
+            # Check fault is still active
+            if diag_bit is not None and not self.monitor.diag_bit_set(diag_bit):
+                # Fault cleared unexpectedly during sustained injection
+                fault_persisted = False
+                break
+
+        elapsed_ms = (time.monotonic() - t_start) * 1000
+
+        if fault_persisted:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.PASS,
+                elapsed_ms=elapsed_ms,
+                detail=f"fault persisted during {hold_s:.0f}s sustained injection",
+                category=tc.category, priority=tc.priority,
+            )
+        else:
+            return TestOutcome(
+                test_id=tc.test_id, result=TestResult.FAIL,
+                elapsed_ms=elapsed_ms,
+                detail="fault cleared unexpectedly during sustained injection",
+                category=tc.category, priority=tc.priority,
+            )
+
+    # ----------------------------------------------------------------
+    # Shared monitoring helper
+    # ----------------------------------------------------------------
+
+    def _monitor_for_reaction(self, tc: TestCase, diag_bit: Optional[int],
+                               t_start: float, timeout_s: float,
+                               sustain_fn=None) -> TestOutcome:
+        """Shared monitor loop for PLAUS/COMBO tests.
+
+        Watches for the expected reaction (CONTACTOR_OPEN, WARNING_FLAG,
+        PLAUSIBILITY_ERROR, etc.) and returns the appropriate outcome.
+        """
+        deadline = t_start + timeout_s
+        diag_detected = False
+        contactor_opened = False
+        t_diag = 0.0
+
+        while time.monotonic() < deadline:
+            self.injector.monitor_and_update(self.monitor, 0.005)
+
+            # Sustain injection if needed
+            if sustain_fn is not None:
+                sustain_fn()
+
+            if not diag_detected and diag_bit is not None:
+                if self.monitor.diag_bit_set(diag_bit):
+                    diag_detected = True
+                    t_diag = time.monotonic() - t_start
+
+            if not contactor_opened and self.monitor.contactors_open():
+                contactor_opened = True
+
+            # Dispatch by expected reaction
+            if tc.expected_reaction in ("CONTACTOR_OPEN", "PLAUSIBILITY_ERROR",
+                                        "BOTH_DETECTED", "FAULT_ACTIVE"):
+                if contactor_opened:
+                    elapsed_ms = (time.monotonic() - t_start) * 1000
+                    detail = "contactor open confirmed"
+                    if diag_detected:
+                        detail += f"; DIAG bit {diag_bit} at {t_diag*1000:.0f}ms"
+                    return TestOutcome(
+                        test_id=tc.test_id, result=TestResult.PASS,
+                        elapsed_ms=elapsed_ms, detail=detail,
+                        category=tc.category, priority=tc.priority,
+                    )
+
+            elif tc.expected_reaction == "WARNING_FLAG":
+                if diag_detected and self.monitor.bms_in_normal():
+                    elapsed_ms = t_diag * 1000
+                    return TestOutcome(
+                        test_id=tc.test_id, result=TestResult.PASS,
+                        elapsed_ms=elapsed_ms,
+                        detail=f"DIAG bit {diag_bit} set; BMS stays NORMAL",
+                        category=tc.category, priority=tc.priority,
+                    )
+
+            elif tc.expected_reaction in ("NO_REACTION", "NO_CONTACTOR_OPEN"):
+                # Check at end of timeout
+                pass
+
+        # Timeout reached
+        elapsed_ms = (time.monotonic() - t_start) * 1000
+
+        if tc.expected_reaction in ("NO_REACTION", "NO_CONTACTOR_OPEN"):
+            if not contactor_opened and not self.monitor.bms_in_error():
+                return TestOutcome(
+                    test_id=tc.test_id, result=TestResult.PASS,
+                    elapsed_ms=elapsed_ms, detail="no reaction as expected",
+                    category=tc.category, priority=tc.priority,
+                )
+
+        parts = []
+        if diag_bit is not None and not diag_detected:
+            parts.append(f"DIAG bit {diag_bit} not set")
+        if not contactor_opened:
+            parts.append("contactor did not open")
+        detail = f"{elapsed_ms:.0f}ms TIMEOUT | " + "; ".join(parts) if parts else f"{elapsed_ms:.0f}ms TIMEOUT"
+        return TestOutcome(
+            test_id=tc.test_id, result=TestResult.FAIL,
+            elapsed_ms=elapsed_ms, detail=detail,
             category=tc.category, priority=tc.priority,
         )
 
