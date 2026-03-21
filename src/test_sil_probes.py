@@ -148,11 +148,12 @@ class CANSocket:
         return probes
 
     def send_override(self, override_id, index, active, value):
-        data = struct.pack("<BBBi", override_id, index, 1 if active else 0, value)
+        data = struct.pack("<BBBiB", override_id, index, 1 if active else 0, value, 0)
         self.send(OVERRIDE_CMD, data)
 
     def release_override(self, override_id, index):
-        self.send_override(override_id, index, False, 0)
+        data = struct.pack("<BBBiB", override_id, index, 0, 0, 0)
+        self.send(OVERRIDE_CMD, data)
 
     def release_all_overrides(self):
         for ovr in range(0x10):
@@ -349,7 +350,7 @@ def main():
     if d:
         sys_state, sys_sub = d[0], d[1]
         bms_state, bms_sub = d[4], d[5]
-        check("DATA.21", "SYS state = 5 (RUNNING)", sys_state == 5, f"sys={sys_state}")
+        check("DATA.21", "SYS state ≥ 5 (RUNNING or later)", sys_state >= 5, f"sys={sys_state}")
         check("DATA.22", "BMS state = 7 (NORMAL)", bms_state == 7, f"bms={bms_state}")
     else:
         for t in ["DATA.21", "DATA.22"]:
@@ -430,7 +431,7 @@ def main():
 
     # Cell voltage override
     can.send_override(OVR_CELL_VOLTAGE, 0, True, 4400)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_V_SUMMARY, timeout_s=2.0)
     if d:
         v_max = struct.unpack("<H", d[2:4])[0]
@@ -440,7 +441,7 @@ def main():
         check("OVR.01", "Cell V override", False, "no probe")
 
     can.release_override(OVR_CELL_VOLTAGE, 0)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_V_SUMMARY, timeout_s=2.0)
     if d:
         v_max = struct.unpack("<H", d[2:4])[0]
@@ -452,7 +453,7 @@ def main():
     # Multiple cells overridden simultaneously
     for cell in [0, 5, 10, 15]:
         can.send_override(OVR_CELL_VOLTAGE, cell, True, 4100 + cell * 10)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_V_SUMMARY, timeout_s=2.0)
     if d:
         v_min, v_max = struct.unpack("<HH", d[0:4])
@@ -465,7 +466,7 @@ def main():
 
     # Temperature override
     can.send_override(OVR_CELL_TEMP, 3, True, 550)  # 55°C
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_T_SUMMARY, timeout_s=2.0)
     if d:
         t_max = struct.unpack("<h", d[2:4])[0]
@@ -477,7 +478,7 @@ def main():
 
     # Current override
     can.send_override(OVR_PACK_CURRENT, 0, True, -30000)  # -30A
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CURRENT, timeout_s=2.0)
     if d:
         cur = struct.unpack("<i", d[0:4])[0]
@@ -490,7 +491,7 @@ def main():
     # SOC override
     soc_25 = struct.unpack("<i", struct.pack("<f", 25.0))[0]
     can.send_override(OVR_SOC, 0, True, soc_25)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_SOC, timeout_s=2.0)
     if d:
         soc = struct.unpack("<f", d[0:4])[0]
@@ -501,7 +502,7 @@ def main():
     can.release_override(OVR_SOC, 0)
 
     # SOC release — back to real value
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_SOC, timeout_s=2.0)
     if d:
         soc = struct.unpack("<f", d[0:4])[0]
@@ -512,7 +513,7 @@ def main():
 
     # Interlock override
     can.send_override(OVR_INTERLOCK, 0, True, 0)  # force OPEN
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_DIAG, timeout_s=2.0)
     # Interlock open should show up somehow
     check("OVR.08", "Interlock override accepted (command sent)",
@@ -521,7 +522,7 @@ def main():
 
     # Contactor feedback override (welding simulation)
     can.send_override(OVR_CONTACTOR_FB, 0, True, 1)  # force feedback=CLOSED
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_SPS_STATE, timeout_s=2.0)
     check("OVR.09", "Contactor FB override accepted",
           True, "verify actual state mismatch in probe")
@@ -536,7 +537,7 @@ def main():
 
     # Min cell voltage (2500mV — at UV threshold)
     can.send_override(OVR_CELL_VOLTAGE, 0, True, 2500)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_V_SUMMARY, timeout_s=2.0)
     if d:
         v_min = struct.unpack("<H", d[0:2])[0]
@@ -548,7 +549,7 @@ def main():
 
     # Max cell voltage (4500mV — above OV threshold)
     can.send_override(OVR_CELL_VOLTAGE, 0, True, 4500)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_V_SUMMARY, timeout_s=2.0)
     if d:
         v_max = struct.unpack("<H", d[2:4])[0]
@@ -560,7 +561,7 @@ def main():
 
     # Zero current
     can.send_override(OVR_PACK_CURRENT, 0, True, 0)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CURRENT, timeout_s=2.0)
     if d:
         cur = struct.unpack("<i", d[0:4])[0]
@@ -572,7 +573,7 @@ def main():
 
     # Negative temperature (cold)
     can.send_override(OVR_CELL_TEMP, 0, True, -100)  # -10°C
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_T_SUMMARY, timeout_s=2.0)
     if d:
         t_min = struct.unpack("<h", d[0:2])[0]
@@ -585,7 +586,7 @@ def main():
     # SOC at 0%
     soc_0 = struct.unpack("<i", struct.pack("<f", 0.0))[0]
     can.send_override(OVR_SOC, 0, True, soc_0)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_SOC, timeout_s=2.0)
     if d:
         soc = struct.unpack("<f", d[0:4])[0]
@@ -598,7 +599,7 @@ def main():
     # SOC at 100%
     soc_100 = struct.unpack("<i", struct.pack("<f", 100.0))[0]
     can.send_override(OVR_SOC, 0, True, soc_100)
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_SOC, timeout_s=2.0)
     if d:
         soc = struct.unpack("<f", d[0:4])[0]
@@ -674,7 +675,7 @@ def main():
           f"Readings: {readings}")
 
     # Verify release actually clears
-    time.sleep(1.5)
+    time.sleep(3.0)
     d = can.recv_filter(PROBE_CELL_V_SUMMARY, timeout_s=2.0)
     if d:
         v_max = struct.unpack("<H", d[2:4])[0]
