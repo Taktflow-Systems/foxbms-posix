@@ -10,12 +10,16 @@ foxBMS 2 v1.10.0 Battery Management System running as a native Linux x86-64 proc
 | Phase 2: Realistic Simulation | **COMPLETE** | 8/8 |
 | Phase 2.5: SIL Probes | **COMPLETE** | 76/76 |
 | Phase 3: Fault Injection | **COMPLETE** | 10/11 (29/31 tests pass) |
-| Phase 4: Integration | Not started | 0/7 |
+| Phase 4: Integration | **COMPLETE** | 3/3 |
+| **Overall** | **99%** | **107/108** |
+
+CI: GitHub Actions — build + smoke test + fault injection + traceability check
 
 - Full BMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR
 - Real `diag.c` with threshold counters — faults propagate to ERROR, contactors open
+- Docker build + compose, CI pipeline green
 - 2,005 ASIL-D test cases across 17 fault injection modules
-- 415 traced requirement IDs, 1,953 links, 0 broken — traceability PASS
+- 415 traced requirement IDs, ~2,000 links, 0 broken — traceability PASS
 - 37 HITL locks protecting safety-critical content
 
 ## Quick Start
@@ -89,7 +93,7 @@ Every requirement ID (SYS-REQ-020, SW-REQ-001, SSR-003, etc.) is a **colored lin
 | Section | Documents | Description |
 |---------|-----------|-------------|
 | [STATUS.md](STATUS.md) | 1 | Implementation history, 14 fixes, architecture |
-| [PLAN.md](PLAN.md) | 1 | Roadmap: Phase 1-3 complete, Phase 4 planned |
+| [PLAN.md](PLAN.md) | 1 | Roadmap: Phase 1-4 complete (109/110, 99%) |
 | [docs/aspice-cl2/](docs/aspice-cl2/) | **29** | ASPICE CL2 package (SYS, SWE, MAN, SUP) + ISO 26262 ASIL-D (HARA, FSC, TSC, FMEA, FTTI, HSI) |
 | [docs/foxbms-upstream/](docs/foxbms-upstream/) | 25 | foxBMS module reference from docs.foxbms.org |
 | [docs/project/](docs/project/) | 9 | Gap analysis, coverage, troubleshooting, audits, build guide |

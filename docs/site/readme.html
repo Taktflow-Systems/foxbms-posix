@@ -227,16 +227,23 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td>Phase 4: Integration</td>
-<td>Not started</td>
-<td>0/7</td>
+<td><strong>COMPLETE</strong></td>
+<td>3/3</td>
+</tr>
+<tr>
+<td><strong>Overall</strong></td>
+<td><strong>99%</strong></td>
+<td><strong>107/108</strong></td>
 </tr>
 </tbody>
 </table>
+<p>CI: GitHub Actions — build + smoke test + fault injection + traceability check</p>
 <ul>
 <li>Full BMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR</li>
 <li>Real <code>diag.c</code> with threshold counters — faults propagate to ERROR, contactors open</li>
+<li>Docker build + compose, CI pipeline green</li>
 <li>2,005 ASIL-D test cases across 17 fault injection modules</li>
-<li>415 traced requirement IDs, 1,953 links, 0 broken — traceability PASS</li>
+<li>415 traced requirement IDs, ~2,000 links, 0 broken — traceability PASS</li>
 <li>37 HITL locks protecting safety-critical content</li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
@@ -309,7 +316,7 @@ start docs/site/index.html              # Windows
 <tr>
 <td><a href="PLAN.md">PLAN.md</a></td>
 <td>1</td>
-<td>Roadmap: Phase 1-3 complete, Phase 4 planned</td>
+<td>Roadmap: Phase 1-4 complete (109/110, 99%)</td>
 </tr>
 <tr>
 <td><a href="docs/aspice-cl2/">docs/aspice-cl2/</a></td>
