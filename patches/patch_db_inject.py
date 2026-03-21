@@ -57,6 +57,13 @@ INJECT_CODE = '''
                             }
                         }
 
+                        /* Update probe variables from MIN_MAX (possibly overridden) */
+                        {
+                            extern uint16_t posix_sil_cell_v_min, posix_sil_cell_v_max;
+                            posix_sil_cell_v_min = (uint16_t)pMM->minimumCellVoltage_mV[s];
+                            posix_sil_cell_v_max = (uint16_t)pMM->maximumCellVoltage_mV[s];
+                        }
+
                         /* Temperature override */
                         int16_t ot_min = 32767;
                         int16_t ot_max = -32768;

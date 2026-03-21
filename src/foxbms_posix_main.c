@@ -328,17 +328,12 @@ int main(int argc, char *argv[])
                 memcpy(&soc_buf[0], &soc, 4);
                 sil_probe_raw(SIL_PROBE_SOC, soc_buf, 8);
 
-                /* Cell voltage summary probe — check all cell overrides */
+                /* Cell voltage summary probe — reads from posix_sil_cell_v_min/max
+                   which are updated by the DB inject patch in DATA_IterateOverDatabaseEntries
+                   every time BMS reads MIN_MAX */
                 extern uint16_t posix_sil_cell_v_min, posix_sil_cell_v_max;
                 uint16_t v_min = posix_sil_cell_v_min;
                 uint16_t v_max = posix_sil_cell_v_max;
-                for (uint8_t ci = 0; ci < 18; ci++) {
-                    if (sil_override_active(SIL_CELL_VOLTAGE, ci)) {
-                        uint16_t ov = (uint16_t)sil_override_get_i32(SIL_CELL_VOLTAGE, ci);
-                        if (ov > v_max) v_max = ov;
-                        if (ov < v_min) v_min = ov;
-                    }
-                }
                 uint16_t v_avg = (v_min + v_max) / 2u;
                 uint16_t v_delta = v_max - v_min;
                 sil_probe_4u16(SIL_PROBE_CELL_V_SUMMARY, v_min, v_max, v_avg, v_delta);
