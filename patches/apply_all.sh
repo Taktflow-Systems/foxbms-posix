@@ -1,10 +1,13 @@
 #!/bin/bash
 # GA-15: Apply all foxBMS POSIX patches in the correct order.
 #
-# Usage: cd foxbms-posix && ./patches/apply_all.sh
+# Usage: cd foxbms-posix && ./patches/apply_all.sh [--force]
 #
 # This script must be run from the foxbms-posix repo root.
 # foxbms-2/ submodule must be initialized (git submodule update --init).
+#
+# Flags:
+#   --force   Override version check and idempotency guard
 
 set -e
 
@@ -12,17 +15,46 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FOXBMS_DIR="$REPO_ROOT/foxbms-2"
 
-# Version check
+FORCE=0
+for arg in "$@"; do
+    if [ "$arg" = "--force" ]; then
+        FORCE=1
+    fi
+done
+
+# Version check — enforcing
 EXPECTED_VERSION="v1.10.0"
 if [ -f "$FOXBMS_DIR/src/version/version_cfg.h" ]; then
-    VERSION=$(grep 'VER_foxBMS_Release_' "$FOXBMS_DIR/src/version/version_cfg.h" 2>/dev/null || true)
-    echo "[patches] foxBMS version info: $VERSION"
+    if ! grep -q "$EXPECTED_VERSION" "$FOXBMS_DIR/src/version/version_cfg.h" 2>/dev/null; then
+        echo "ERROR: foxBMS version mismatch — expected $EXPECTED_VERSION."
+        echo "       Patches may not apply cleanly to a different version."
+        if [ "$FORCE" -eq 0 ]; then
+            echo "       Re-run with --force to override."
+            exit 1
+        else
+            echo "       --force specified — continuing anyway."
+        fi
+    else
+        echo "[patches] foxBMS version $EXPECTED_VERSION confirmed."
+    fi
 fi
 
 if [ ! -d "$FOXBMS_DIR/src/app" ]; then
     echo "ERROR: foxbms-2/ submodule not initialized."
     echo "Run: git submodule update --init"
     exit 1
+fi
+
+# Idempotency check — detect if patch_sbc.py's patched sentinel already exists
+SBC_FILE="$FOXBMS_DIR/src/app/driver/sbc/sbc.c"
+PATCHED_SENTINEL="return SBC_STATEMACHINE_RUNNING;  /* POSIX: no SPI, skip SBC init */"
+if [ -f "$SBC_FILE" ] && grep -qF "$PATCHED_SENTINEL" "$SBC_FILE" 2>/dev/null; then
+    if [ "$FORCE" -eq 0 ]; then
+        echo "Already patched — skipping. Use git checkout foxbms-2 to re-apply."
+        exit 0
+    else
+        echo "[patches] Already patched but --force specified — re-applying."
+    fi
 fi
 
 echo "=== Applying foxBMS POSIX patches ==="

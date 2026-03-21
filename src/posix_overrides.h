@@ -24,7 +24,7 @@
  * The TMS570 port uses ARM CLZ instruction. On x86, use __builtin_clz. */
 #undef portGET_HIGHEST_PRIORITY
 #define portGET_HIGHEST_PRIORITY(uxTopPriority, uxReadyPriorities) \
-    (uxTopPriority) = (31UL - (uint32_t)__builtin_clz((uxReadyPriorities)))
+    (uxTopPriority) = ((uxReadyPriorities) ? (31UL - (uint32_t)__builtin_clz((uxReadyPriorities))) : 0UL)
 
 #undef portRECORD_READY_PRIORITY
 #define portRECORD_READY_PRIORITY(uxPriority, uxReadyPriorities) \

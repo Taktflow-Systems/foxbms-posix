@@ -1,0 +1,5 @@
+src/build/
+src/foxbms-vecu
+__pycache__/
+*.o
+*.pyc

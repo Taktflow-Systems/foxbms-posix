@@ -24,7 +24,9 @@ import signal
 # Configuration
 CAN_IF = sys.argv[1] if len(sys.argv) > 1 else "vcan1"
 TIMEOUT_S = 30         # max seconds to wait for NORMAL state
+POST_NORMAL_S = 5      # seconds to continue monitoring after NORMAL detected
 BMS_STATE_CAN_ID = 0x220
+BMS_SOC_CAN_ID = 0x235
 BMS_STATE_NORMAL = 7   # foxBMS BMS_NORMAL state value
 POLL_INTERVAL = 0.5    # seconds between CAN checks
 
@@ -61,7 +63,7 @@ def main():
     plant_proc = subprocess.Popen(
         [sys.executable, os.path.join(script_dir, "plant_model.py"), CAN_IF],
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE
+        stderr=subprocess.DEVNULL
     )
     print(f"[SMOKE] Plant model started (PID {plant_proc.pid})")
 
@@ -81,7 +83,7 @@ def main():
         [vecu_path],
         env=env,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE
+        stderr=subprocess.DEVNULL
     )
     print(f"[SMOKE] foxbms-vecu started (PID {vecu_proc.pid})")
 
@@ -103,8 +105,27 @@ def main():
     start_time = time.time()
     bms_state_seen = {}
     result = 1  # FAIL by default
+    normal_time = None
+    connected_strings_at_normal = 0
+    soc_nonzero_seen = False
 
-    while (time.time() - start_time) < TIMEOUT_S:
+    state_names = {
+        0: "UNINITIALIZED", 1: "INITIALIZATION", 2: "INITIALIZED",
+        3: "IDLE", 5: "STANDBY", 6: "PRECHARGE", 7: "NORMAL",
+        8: "CHARGE", 9: "ERROR"
+    }
+
+    while True:
+        elapsed = time.time() - start_time
+
+        # Phase 1: waiting for NORMAL — enforce overall timeout
+        if normal_time is None and elapsed >= TIMEOUT_S:
+            break
+
+        # Phase 2: post-NORMAL monitoring — enforce 5-second window
+        if normal_time is not None and (time.time() - normal_time) >= POST_NORMAL_S:
+            break
+
         # Check if processes are still alive
         if vecu_proc.poll() is not None:
             print(f"[SMOKE] ERROR: foxbms-vecu exited with code {vecu_proc.returncode}")
@@ -125,21 +146,22 @@ def main():
                     connected_strings = (state_byte >> 4) & 0x0F
 
                     if bms_state not in bms_state_seen:
-                        state_names = {
-                            0: "UNINITIALIZED", 1: "INITIALIZATION", 2: "INITIALIZED",
-                            3: "IDLE", 5: "STANDBY", 6: "PRECHARGE", 7: "NORMAL",
-                            8: "CHARGE", 9: "ERROR"
-                        }
                         name = state_names.get(bms_state, f"UNKNOWN({bms_state})")
-                        elapsed = time.time() - start_time
                         print(f"[SMOKE] BMS state: {name} (0x{state_byte:02X}) at {elapsed:.1f}s")
                         bms_state_seen[bms_state] = elapsed
 
-                    if bms_state == BMS_STATE_NORMAL:
-                        elapsed = time.time() - start_time
-                        print(f"[SMOKE] PASS: BMS reached NORMAL state after {elapsed:.1f}s")
-                        result = 0
-                        break
+                    if bms_state == BMS_STATE_NORMAL and normal_time is None:
+                        normal_time = time.time()
+                        connected_strings_at_normal = connected_strings
+                        print(f"[SMOKE] BMS reached NORMAL state after {elapsed:.1f}s "
+                              f"(connected_strings={connected_strings})")
+                        print(f"[SMOKE] Monitoring SOC for {POST_NORMAL_S}s...")
+
+                elif can_id == BMS_SOC_CAN_ID and normal_time is not None and len(data) >= 6:
+                    # 0x235 SOC message: byte 5 is SOC value (non-zero = SOC > 0%)
+                    soc_byte5 = data[5]
+                    if soc_byte5 != 0:
+                        soc_nonzero_seen = True
 
         except sock.timeout:
             continue
@@ -149,15 +171,42 @@ def main():
 
     s.close()
 
-    if result == 1:
+    if normal_time is None:
         elapsed = time.time() - start_time
         print(f"[SMOKE] FAIL: BMS did not reach NORMAL within {elapsed:.1f}s")
         print(f"[SMOKE] States seen: {bms_state_seen}")
+    else:
+        # Assertions after post-NORMAL monitoring window
+        assertion_ok = True
+
+        if connected_strings_at_normal == 0:
+            print(f"[SMOKE] FAIL: connected_strings is 0 when NORMAL — expected > 0")
+            assertion_ok = False
+        else:
+            print(f"[SMOKE] OK: connected_strings={connected_strings_at_normal} when NORMAL")
+
+        if not soc_nonzero_seen:
+            print(f"[SMOKE] FAIL: 0x235 byte 5 was always 0 during post-NORMAL window — SOC not reported")
+            assertion_ok = False
+        else:
+            print(f"[SMOKE] OK: SOC non-zero seen on 0x235")
+
+        if assertion_ok:
+            print(f"[SMOKE] PASS: BMS NORMAL, connected_strings > 0, SOC > 0% confirmed")
+            result = 0
+        else:
+            result = 1
 
     # Cleanup
     print("[SMOKE] Stopping processes...")
-    vecu_proc.send_signal(signal.SIGINT)
-    plant_proc.send_signal(signal.SIGINT)
+    try:
+        vecu_proc.send_signal(signal.SIGINT)
+    except ProcessLookupError:
+        pass
+    try:
+        plant_proc.send_signal(signal.SIGINT)
+    except ProcessLookupError:
+        pass
     try:
         vecu_proc.wait(timeout=5)
     except subprocess.TimeoutExpired:

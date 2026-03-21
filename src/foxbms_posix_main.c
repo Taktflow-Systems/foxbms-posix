@@ -77,6 +77,10 @@ static int can_socket = -1;
 
 int posix_can_open(const char *ifname)
 {
+    if (can_socket >= 0) {
+        /* Already open — idempotent, skip re-open */
+        return 0;
+    }
     struct sockaddr_can addr;
     struct ifreq ifr;
     can_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
@@ -211,14 +215,20 @@ int main(int argc, char *argv[])
         {
             struct can_frame rx_frame;
             while (read(can_socket, &rx_frame, sizeof(rx_frame)) == sizeof(rx_frame)) {
-                posix_can_rx_inject(rx_frame.can_id & 0x7FFu, rx_frame.data, rx_frame.can_dlc);
+                /* Skip error frames, RTR frames, and extended (29-bit) frames —
+                 * foxBMS uses standard 11-bit IDs only. */
+                if (rx_frame.can_id & (CAN_ERR_FLAG | CAN_RTR_FLAG | CAN_EFF_FLAG)) {
+                    continue;
+                }
+                posix_can_rx_inject(rx_frame.can_id & CAN_SFF_MASK, rx_frame.data, rx_frame.can_dlc);
             }
         }
 
         /* 1ms cyclic */
         if (now - last_1ms >= 1000) {
             uint64_t t0 = get_time_us();
-            last_1ms = now;
+            last_1ms += 1000;
+            if (now - last_1ms >= 2000) { last_1ms = now; } /* catch-up guard */
             FTSK_RunUserCodeCyclic1ms();
             FTSK_RunUserCodeEngine();
             /* MEAS_Control() runs at 1ms rate — gated here rather than every loop
@@ -241,7 +251,8 @@ int main(int argc, char *argv[])
         /* 10ms cyclic */
         if (now - last_10ms >= 10000) {
             uint64_t t0 = get_time_us();
-            last_10ms = now;
+            last_10ms += 10000;
+            if (now - last_10ms >= 20000) { last_10ms = now; } /* catch-up guard */
             FTSK_RunUserCodeCyclic10ms();
             uint64_t dt = get_time_us() - t0;
             if (dt > max_10ms_us) max_10ms_us = dt;
@@ -256,7 +267,8 @@ int main(int argc, char *argv[])
         /* 100ms cyclic */
         if (now - last_100ms >= 100000) {
             uint64_t t0 = get_time_us();
-            last_100ms = now;
+            last_100ms += 100000;
+            if (now - last_100ms >= 200000) { last_100ms = now; } /* catch-up guard */
             FTSK_RunUserCodeCyclic100ms();
             FTSK_RunUserCodeCyclicAlgorithm100ms();
             uint64_t dt = get_time_us() - t0;

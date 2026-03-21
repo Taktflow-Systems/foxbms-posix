@@ -328,9 +328,20 @@ static volatile uint32_t posix_can_rx_tail = 0;
 extern const char can_node1[];
 #define CAN_NODE_1_PTR ((void *)&can_node1)
 
+static uint32_t posix_can_rx_overflow_count = 0u;
+
 void posix_can_rx_inject(uint32_t id, uint8_t *data, uint8_t dlc) {
     uint32_t next = (posix_can_rx_head + 1) % POSIX_CAN_RX_BUF_SIZE;
-    if (next == posix_can_rx_tail) return; /* full, drop */
+    if (next == posix_can_rx_tail) {
+        posix_can_rx_overflow_count++;
+        if (posix_can_rx_overflow_count == 1u) {
+            fprintf(stderr, "[CAN-RX] WARNING: RX ring buffer full — dropping frame id=0x%03X "
+                    "(buffer size=%d). Further overflows will be counted but not logged.\n",
+                    (unsigned)id, POSIX_CAN_RX_BUF_SIZE);
+            fflush(stderr);
+        }
+        return;
+    }
     posix_can_rx_buf[posix_can_rx_head].canNode = CAN_NODE_1_PTR;
     posix_can_rx_buf[posix_can_rx_head].id = id;
     posix_can_rx_buf[posix_can_rx_head].idType = 0; /* standard */

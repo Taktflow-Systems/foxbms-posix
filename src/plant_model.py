@@ -237,4 +237,5 @@ try:
 
 except KeyboardInterrupt:
     print(f"\n[plant] Stopped. Final SOC={soc_pct:.1f}%")
+finally:
     s.close()
