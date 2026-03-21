@@ -44,12 +44,18 @@ PROBE_CODE = '''
     extern uint8_t posix_diag_last_event;
     extern uint64_t posix_diag_bitmap;
     if (event == DIAG_EVENT_NOT_OK && ret_val == DIAG_HANDLER_RETURN_ERR_OCCURRED) {
-        posix_diag_fault_count++;
         posix_diag_last_id = (uint8_t)(diagId & 0xFFu);
         posix_diag_last_event = 1u;
-        if ((uint16_t)diagId < 64u) posix_diag_bitmap |= (1ULL << (uint16_t)diagId);
-        fprintf(stderr, "[DIAG] FATAL: diagId=%u threshold exceeded -> contactor open\\n", (unsigned)diagId);
-        fflush(stderr);
+        if ((uint16_t)diagId < 64u) {
+            uint64_t bit = 1ULL << (uint16_t)diagId;
+            if (!(posix_diag_bitmap & bit)) {
+                /* First time this fault exceeded threshold — count it */
+                posix_diag_fault_count++;
+                posix_diag_bitmap |= bit;
+                fprintf(stderr, "[DIAG] FATAL: diagId=%u threshold exceeded -> contactor open\\n", (unsigned)diagId);
+                fflush(stderr);
+            }
+        }
     } else if (event == DIAG_EVENT_OK) {
         if ((uint16_t)diagId < 64u) posix_diag_bitmap &= ~(1ULL << (uint16_t)diagId);
     }

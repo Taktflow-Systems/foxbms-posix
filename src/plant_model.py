@@ -121,14 +121,17 @@ try:
                 if len(rx_frame) >= 16:
                     rx_id = struct.unpack("=I", rx_frame[0:4])[0] & 0x1FFFFFFF
                     rx_data = rx_frame[8:16]
-                    if rx_id == 0x220 and len(rx_data) >= 1:
-                        bms_state = rx_data[0] & 0x0F
-                        if bms_state == 7 and not bms_state_normal:
+                    if rx_id == 0x7F0 and len(rx_data) >= 4:
+                        # SIL probe: contactor actual state (reliable, no mux issues)
+                        # Bytes 2-3 = actual state bitmask. If Main+ and Main- closed → NORMAL
+                        contactor_actual = struct.unpack_from("<H", rx_data, 2)[0]
+                        contactors_closed = (contactor_actual & 0x03) == 0x03  # bits 0+1
+                        if contactors_closed and not bms_state_normal:
                             bms_state_normal = True
-                            print(f"[plant] foxBMS NORMAL detected at tick {tick} — starting discharge")
-                        elif bms_state != 7 and bms_state_normal:
+                            print(f"[plant] Contactors CLOSED at tick {tick} — starting discharge")
+                        elif not contactors_closed and bms_state_normal:
                             bms_state_normal = False
-                            print(f"[plant] foxBMS left NORMAL (state={bms_state}) — stopping discharge")
+                            print(f"[plant] Contactors OPENED at tick {tick} — stopping discharge")
                     elif rx_id == 0x6E0 and len(rx_data) >= 7:
                         cmd, idx, active = rx_data[0], rx_data[1], rx_data[2]
                         value = struct.unpack_from('<i', rx_data, 3)[0]
