@@ -56,6 +56,8 @@ ID_PATTERNS = [
     ("IT",       r"IT-0*(\d+)"),
     ("QT",       r"QT-0*(\d+)"),
     ("FM",       r"FM-0*(\d+)"),
+    # Fault injection test IDs from CSV matrix (2,005 tests)
+    ("FI",       r"FI-(?:VOLT|CURR|TEMP|TIMING|PLAUS|RECOV|STATE|COMBO|IMBAL|SENSOR)-0*(\d+)"),
 ]
 
 # Composite regex that matches any requirement ID in text.
@@ -74,6 +76,7 @@ ALL_ID_RE = re.compile(
     r"|IT-\d+"
     r"|QT-\d+"
     r"|FM-\d+"
+    r"|FI-(?:VOLT|CURR|TEMP|TIMING|PLAUS|RECOV|STATE|COMBO|IMBAL|SENSOR)-\d+"
     r")\b"
 )
 
@@ -91,7 +94,7 @@ LEVEL_ORDER = [
 LEAF_LEVELS = {"SW-REQ", "SSR"}
 
 # Test levels
-TEST_LEVELS = {"UT", "IT", "QT"}
+TEST_LEVELS = {"UT", "IT", "QT", "FI"}
 
 # ASIL values
 ASIL_ORDER = {"QM": 0, "A": 1, "B": 2, "C": 3, "D": 4}

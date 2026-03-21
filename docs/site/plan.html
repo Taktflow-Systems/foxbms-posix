@@ -512,6 +512,80 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li>HALCoGen headers committed (BSD-licensed)</li>
 </ul>
 <hr />
+<h2 id="phase-5-web-demo-portfolio">Phase 5: Web Demo &amp; Portfolio</h2>
+<p><strong>Goal</strong>: Customer-facing BMS SIL demo with documentation portfolio.</p>
+<h3 id="exit-criteria_3">Exit Criteria</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+<th>Test</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5.1</td>
+<td>Live web dashboard on Netcup</td>
+<td>https://sil.taktflow-systems.com/bms/ accessible</td>
+<td><strong>DONE</strong></td>
+</tr>
+<tr>
+<td>5.2</td>
+<td>SWE.6 fault injection via web UI</td>
+<td>Plant OV inject → BMS ERROR visible on dashboard</td>
+<td><strong>DONE</strong></td>
+</tr>
+<tr>
+<td>5.3</td>
+<td>SWE.5 fault injection via web UI</td>
+<td>BMS DB override with 11 methods selectable</td>
+<td><strong>DONE</strong></td>
+</tr>
+<tr>
+<td>5.4</td>
+<td>Documentation portfolio (59 HTML pages)</td>
+<td>All docs published at /bms-docs/ on Netcup</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>5.5</td>
+<td>SIL demo guide written</td>
+<td>docs/SIL-DEMO-GUIDE.md</td>
+<td><strong>DONE</strong></td>
+</tr>
+<tr>
+<td>5.6</td>
+<td>State machine walk-through on reset</td>
+<td>Click Reset → see UNINIT→NORMAL transition</td>
+<td><strong>DONE</strong></td>
+</tr>
+<tr>
+<td>5.7</td>
+<td>Event log shows chain reaction</td>
+<td>Inject → DIAG → state → contactor in log</td>
+<td><strong>DONE</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="status-67-criteria-met">Status: 6/7 criteria met</h3>
+<h3 id="completed-work_3">Completed Work</h3>
+<ul>
+<li>Web dashboard: battery pack, plant physics, BMS inputs, state machine, contactors</li>
+<li>Fault injection: Plant (SWE.6) + BMS (SWE.5) toggle with method selector</li>
+<li>Cell/sensor range selector, discharge current slider</li>
+<li>Event log with chain reaction (inject→DIAG→state→contactor)</li>
+<li>CAN monitor with color-coded live traffic</li>
+<li>SWE.5 verified test results table (29 PASS)</li>
+<li>Deployed on Netcup behind Caddy HTTPS reverse proxy</li>
+<li>SIL demo guide (docs/SIL-DEMO-GUIDE.md)</li>
+</ul>
+<h3 id="remaining_1">Remaining</h3>
+<ul>
+<li>5.4: Publish 59 HTML documentation pages as portfolio on Netcup</li>
+</ul>
+<hr />
 <h2 id="overall-progress">Overall Progress</h2>
 <table>
 <thead>
@@ -554,10 +628,16 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>COMPLETE</strong> ✓</td>
 </tr>
 <tr>
+<td>Phase 5: Web Demo &amp; Portfolio</td>
+<td>7</td>
+<td><strong>6/7</strong></td>
+<td><strong>IN PROGRESS</strong></td>
+</tr>
+<tr>
 <td><strong>Total</strong></td>
-<td><strong>108</strong></td>
-<td><strong>107/108</strong></td>
-<td><strong>99%</strong></td>
+<td><strong>115</strong></td>
+<td><strong>113/115</strong></td>
+<td><strong>98%</strong></td>
 </tr>
 </tbody>
 </table>

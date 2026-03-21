@@ -40,6 +40,7 @@ ID_PATTERNS = [
     ("FSR",      r"FSR-0*(\d+)"),
     ("TSR",      r"TSR-0*(\d+)"),
     ("FM",       r"FM-0*(\d+)"),
+    ("FI",       r"FI-(?:VOLT|CURR|TEMP|TIMING|PLAUS|RECOV|STATE|COMBO|IMBAL|SENSOR)-0*(\d+)"),
     ("UT",       r"UT-0*(\d+)"),
     ("IT",       r"IT-0*(\d+)"),
     ("QT",       r"QT-0*(\d+)"),
@@ -47,10 +48,12 @@ ID_PATTERNS = [
 
 ALL_ID_RE = re.compile(
     r"(STKH-REQ-\d+[A-Za-z]?|SYS-REQ-\d+[A-Za-z]?|SW-REQ-\d+[A-Za-z]?|"
-    r"SSR-\d+|SG-\d+|HZ-\d+|FSR-\d+|TSR-\d+|FM-\d+|UT-\d+|IT-\d+|QT-\d+)"
+    r"SSR-\d+|SG-\d+|HZ-\d+|FSR-\d+|TSR-\d+|FM-\d+|"
+    r"FI-(?:VOLT|CURR|TEMP|TIMING|PLAUS|RECOV|STATE|COMBO|IMBAL|SENSOR)-\d+|"
+    r"UT-\d+|IT-\d+|QT-\d+)"
 )
 
-LEVEL_ORDER = ["STKH-REQ", "SYS-REQ", "SG", "HZ", "FSR", "TSR", "SW-REQ", "SSR", "FM", "UT", "IT", "QT"]
+LEVEL_ORDER = ["STKH-REQ", "SYS-REQ", "SG", "HZ", "FSR", "TSR", "SW-REQ", "SSR", "FM", "FI", "UT", "IT", "QT"]
 
 LEVEL_COLORS = {
     "STKH-REQ": "#9b59b6",
@@ -62,6 +65,7 @@ LEVEL_COLORS = {
     "SW-REQ": "#2ecc71",
     "SSR": "#f39c12",
     "FM": "#95a5a6",
+    "FI": "#e056a0",
     "UT": "#1abc9c",
     "IT": "#1abc9c",
     "QT": "#1abc9c",
@@ -77,6 +81,7 @@ LEVEL_LABELS = {
     "SW-REQ": "Software",
     "SSR": "SW Safety",
     "FM": "Failure Modes",
+    "FI": "Fault Injection (2005)",
     "UT": "Unit Tests",
     "IT": "Integration Tests",
     "QT": "Qualification Tests",
