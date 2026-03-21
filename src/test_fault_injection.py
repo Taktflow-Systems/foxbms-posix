@@ -519,7 +519,7 @@ def resolve_diag_bit(diag_id_str: str, severity_tier: str) -> Optional[int]:
 # ============================================================================
 
 # Fault methods that need special handling (skip for now)
-SKIP_FAULT_METHODS = {"MISSING_TIMEOUT", "CAN_BUS_FAULT"}
+SKIP_FAULT_METHODS = {"MISSING_TIMEOUT", "CAN_BUS_FAULT", "STUCK_AT_LAST"}
 
 # BMS states we cannot currently set up
 SKIP_BMS_STATES = {
