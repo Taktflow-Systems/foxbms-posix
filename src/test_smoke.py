@@ -118,10 +118,11 @@ def main():
                 data = frame[8:16]
 
                 if can_id == BMS_STATE_CAN_ID and len(data) >= 1:
-                    # Byte 0 of 0x220: bits [7:4] = state, bits [3:0] = connected strings
+                    # Byte 0 of 0x220: BmsState signal is 4 bits at DBC start_bit=3
+                    # In big-endian DBC notation, this is the LOWER nibble of byte 0
                     state_byte = data[0]
-                    bms_state = (state_byte >> 4) & 0x0F
-                    connected_strings = state_byte & 0x0F
+                    bms_state = state_byte & 0x0F
+                    connected_strings = (state_byte >> 4) & 0x0F
 
                     if bms_state not in bms_state_seen:
                         state_names = {
