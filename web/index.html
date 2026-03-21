@@ -366,8 +366,7 @@ function update(d){
   document.getElementById("socFill").style.width=Math.min(soc,100)+"%";
   document.getElementById("socPct").textContent=soc.toFixed(1)+"%";
   document.getElementById("fPackV").textContent=packV.toFixed(1)+" V";
-  const footI=(d.plant_current_ma??0)/1000;
-  document.getElementById("fCurr").textContent=footI.toFixed(1)+" A"+(footI>0.1?" \u25B6":footI<-0.1?" \u25C0":"");
+  document.getElementById("fCurr").textContent=pI.toFixed(1)+" A"+(pI>0.1?" \u25B6":pI<-0.1?" \u25C0":"");
   document.getElementById("fCellV").textContent=mn+"\u2013"+mx+" mV";
   document.getElementById("fTemp").textContent=tMin.toFixed(1)+"\u2013"+tMax.toFixed(1)+" \u00B0C";
   document.getElementById("fUptime").textContent=((d.uptime_ms??0)/1000).toFixed(0)+" s";
