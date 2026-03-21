@@ -171,7 +171,8 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
     <div class="inject-group"><label>Overvoltage</label><div class="inject-row"><select id="ovFrom"></select><span style="font-size:10px;color:var(--dim)">to</span><select id="ovTo"></select><button class="btn btn-inject" onclick="inject('ov')">Inject</button></div></div>
     <div class="inject-group"><label>Undervoltage</label><div class="inject-row"><select id="uvFrom"></select><span style="font-size:10px;color:var(--dim)">to</span><select id="uvTo"></select><button class="btn btn-inject" onclick="inject('uv')">Inject</button></div></div>
     <div class="inject-group"><label>Overtemperature</label><div class="inject-row"><select id="otFrom"></select><span style="font-size:10px;color:var(--dim)">to</span><select id="otTo"></select><button class="btn btn-inject" onclick="inject('ot')">Inject</button></div></div>
-    <div class="inject-group"><label>Overcurrent</label><div class="inject-row"><span style="font-size:12px;color:var(--dim)">Fixed 200 A</span><button class="btn btn-inject" onclick="inject('oc')">Inject</button></div></div>
+    <div class="inject-group"><label>Overcurrent</label><div class="inject-row"><input type="number" id="ocValue" value="200" min="0" max="200" style="width:50px"> A<button class="btn btn-inject" onclick="inject('oc')">Inject</button></div></div>
+    <div class="inject-group"><label>Discharge Current</label><div class="inject-row"><input type="range" id="dischargeSlider" min="0" max="10" step="0.5" value="1" style="flex:1" oninput="setDischargeCurrent(this.value)"><span id="dischargeLabel" style="min-width:40px;text-align:right;font-size:12px">1.0 A</span></div></div>
     <button class="btn btn-clear" onclick="clearAll()">Clear All Faults</button>
     <button class="btn" onclick="resetVecu()" style="background:rgba(234,179,8,.15);color:var(--warn);border:1px solid rgba(234,179,8,.3);width:100%;margin-top:6px;padding:7px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer" title="Clears overrides on both plant and BMS, restarts processes.">Reset System</button>
     <!-- Event Log -->
@@ -513,7 +514,7 @@ function inject(type){
     for(let s=lo;s<=hi;s++){ws.send(JSON.stringify({action:action,type:"temperature",sensor:s,value:v}));activeFaults.add("ot_"+s);}
     return;
   }
-  else if(type==="oc"){msg.type="current";msg.value=200000;activeFaults.add("oc");}
+  else if(type==="oc"){const a=+document.getElementById("ocValue").value;msg.type="current";msg.value=a*1000;activeFaults.add("oc");}
   ws.send(JSON.stringify(msg));
 }
 
@@ -525,6 +526,13 @@ function clearAll(){
 function resetVecu(){
   if(!ws||ws.readyState!==1)return;
   ws.send(JSON.stringify({action:"reset"}));activeFaults.clear();
+}
+
+function setDischargeCurrent(val){
+  document.getElementById("dischargeLabel").textContent=parseFloat(val).toFixed(1)+" A";
+  if(!ws||ws.readyState!==1)return;
+  // Set plant discharge current via plant override (0x6E0, type=0x03)
+  ws.send(JSON.stringify({action:"plant_inject",type:"current",value:Math.round(val*1000)}));
 }
 </script>
 </body>
