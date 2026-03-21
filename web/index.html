@@ -374,6 +374,7 @@ function update(d){
   // Event log
   if(d.event_log&&d.event_log.length){
     const el=document.getElementById("eventLog");
+    const wasAtBottom=el.scrollHeight-el.scrollTop-el.clientHeight<20;
     const icons={"inject":"⚡","diag":"🔍","state":"🔄","contactor":"🔓","clear":"✅","reset":"🔁"};
     el.innerHTML=d.event_log.map(e=>{
       const ts=new Date(e.t*1000).toTimeString().slice(0,8);
@@ -381,7 +382,7 @@ function update(d){
       const color=e.icon==="diag"?"var(--err)":e.icon==="contactor"?"var(--warn)":e.icon==="inject"?"var(--accent2)":e.icon==="clear"?"var(--ok)":"var(--text)";
       return '<div style="color:'+color+'">'+ts+"  "+icon+" "+e.msg+"</div>";
     }).join("");
-    el.scrollTop=el.scrollHeight;
+    if(wasAtBottom) el.scrollTop=el.scrollHeight;
   }
 }
 
