@@ -74,6 +74,12 @@ INJECT_CODE = '''
                                 pMM->minimumTemperature_ddegC[s] = ot_min;
                             }
                             if (ot_max > pMM->maximumTemperature_ddegC[s]) {
+                                static uint32_t t_trace = 0u;
+                                if (t_trace++ < 5u) {
+                                    fprintf(stderr, "[DB-INJECT] T override: max %d -> %d (MSL=%d)\\n",
+                                        pMM->maximumTemperature_ddegC[s], ot_max, 550);
+                                    fflush(stderr);
+                                }
                                 pMM->maximumTemperature_ddegC[s] = ot_max;
                             }
                         }
