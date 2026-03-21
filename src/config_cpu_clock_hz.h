@@ -1,0 +1,1 @@
+#define configCPU_CLOCK_HZ (300000000UL)

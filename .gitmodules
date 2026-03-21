@@ -1,0 +1,3 @@
+[submodule "foxbms-2"]
+	path = foxbms-2
+	url = https://github.com/foxBMS/foxbms-2.git
