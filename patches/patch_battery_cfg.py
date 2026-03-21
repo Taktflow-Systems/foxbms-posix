@@ -39,7 +39,7 @@ SYSTEM_REPLACEMENTS = [
     ("BS_MAXIMUM_STRING_CURRENT_mA", "2400u", "15000u"),
     # Pack current limit (mA) — uses hardcoded 2400 * NR_STRINGS
     # Set to 15A * NR_STRINGS for consistency
-    ("BS_MAXIMUM_PACK_CURRENT_mA", "2400u", "15000u"),
+    ("BS_MAXIMUM_PACK_CURRENT_mA", "2400u * BS_NR_OF_STRINGS", "15000u * BS_NR_OF_STRINGS"),
 ]
 
 
