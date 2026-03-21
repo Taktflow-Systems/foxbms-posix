@@ -68,7 +68,7 @@ OBJS = $(sort $(ALL_OBJS))
 
 TARGET = foxbms-vecu
 
-.PHONY: all clean check
+.PHONY: all clean check docker ci
 
 all: $(TARGET)
 	@echo "=== Built $(TARGET) ==="
@@ -108,3 +108,18 @@ list:
 	@echo "=== APP_SRCS ===" && echo "$(APP_SRCS)" | tr ' ' '\n' | wc -l
 	@echo "=== FREERTOS_SRCS ===" && echo "$(FREERTOS_SRCS)" | tr ' ' '\n' | wc -l
 	@echo "=== Total ===" && echo "$(ALL_SRCS)" | tr ' ' '\n' | wc -l
+
+# --- Docker & CI targets ---
+
+# Build Docker image (run from src/)
+docker:
+	cd .. && docker build -t foxbms-vecu .
+
+# Run CI-equivalent locally: build + smoke + 10 P1 fault injection tests
+CAN_IF ?= vcan1
+ci: $(TARGET)
+	@echo "=== CI: Smoke test ==="
+	python3 test_smoke.py $(CAN_IF)
+	@echo ""
+	@echo "=== CI: P1 fault injection (10 tests) ==="
+	python3 test_fault_injection.py $(CAN_IF) --priority P1 --max 10

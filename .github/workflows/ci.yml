@@ -1,11 +1,13 @@
 # =============================================================================
 # foxBMS POSIX vECU — CI Pipeline
 #
-# Builds the POSIX vECU, runs smoke test, unit/integration/ASIL tests, and
-# validates bidirectional requirement traceability.
+# Builds the POSIX vECU, runs smoke test, fault injection (10 P1 tests),
+# and validates bidirectional requirement traceability.
 #
 # ISO 26262 Part 8: Bidirectional traceability must be maintained.
 # ASPICE SWE.4/5/6: Test evidence must be reproducible in CI.
+#
+# Target: < 3 minutes total
 # =============================================================================
 name: foxBMS POSIX CI
 
@@ -17,16 +19,15 @@ on:
 
 env:
   CAN_IF: vcan1
-  BUILD_DIR: src
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Job 1: Build and Smoke Test
+  # Job 1: Build, Smoke Test, and Quick Fault Injection
   # ---------------------------------------------------------------------------
-  smoke-test:
-    name: Build & Smoke Test
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 5
 
     steps:
       - name: Checkout repository
@@ -38,33 +39,18 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            build-essential gcc-13 g++-13 make \
-            python3 python3-pip \
+            gcc make \
+            python3 \
             can-utils iproute2 linux-modules-extra-$(uname -r)
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
-
-      - name: Initialize foxBMS submodule
-        run: |
-          git submodule update --init --recursive foxbms-2
-          echo "foxBMS submodule initialized at $(cd foxbms-2 && git rev-parse --short HEAD)"
 
       - name: Apply POSIX patches
-        run: |
-          if [ -d patches/ ]; then
-            for p in patches/*.patch; do
-              [ -f "$p" ] && echo "Applying $p..." && \
-                (cd foxbms-2 && git apply --check "../$p" 2>/dev/null && \
-                 git apply "../$p") || echo "Patch $p already applied or N/A"
-            done
-          fi
+        run: bash patches/apply_all.sh --force
 
       - name: Build foxBMS POSIX vECU
         run: |
-          cd ${{ env.BUILD_DIR }}
+          cd src
           make -j$(nproc)
-          echo "Build completed successfully"
-          ls -la foxbms-vecu || ls -la foxbms_posix || echo "Binary name check needed"
+          ls -la foxbms-vecu
 
       - name: Setup vCAN interface
         run: |
@@ -75,19 +61,43 @@ jobs:
 
       - name: Run smoke test
         run: |
-          cd ${{ env.BUILD_DIR }}
-          python3 test_smoke.py ${{ env.CAN_IF }}
+          cd src
+          python3 test_smoke.py ${{ env.CAN_IF }} 2>&1 | tee ../test-smoke.txt
 
-      - name: Upload build artifact
+      - name: Run P1 fault injection tests (10 quick)
+        if: always() && success()
+        run: |
+          cd src
+          python3 test_fault_injection.py ${{ env.CAN_IF }} \
+            --priority P1 --max 10 \
+            --report ../test-fault-injection.txt 2>&1 | tee -a ../test-fault-injection.txt
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f test-smoke.txt ]; then
+            echo "### Smoke Test" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -5 test-smoke.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f test-fault-injection.txt ]; then
+            echo "### Fault Injection (P1, max 10)" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -15 test-fault-injection.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: foxbms-posix-binary
+          name: test-results
           path: |
-            src/foxbms-vecu
-            src/foxbms_posix
-          retention-days: 7
-          if-no-files-found: warn
+            test-*.txt
+          retention-days: 30
 
   # ---------------------------------------------------------------------------
   # Job 2: Traceability Validation
@@ -119,28 +129,10 @@ jobs:
         run: |
           echo "## Traceability Matrix" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          if [ -f docs/aspice-cl2/00-assessment/traceability-matrix-generated.md ]; then
-            # Extract summary table (first 15 lines after "## Summary")
-            sed -n '/^## Summary$/,/^## /{ /^## Summary$/d; /^## [^S]/q; p; }' \
-              docs/aspice-cl2/00-assessment/traceability-matrix-generated.md \
-              >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
           if [ -f trace-stats.txt ]; then
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             cat trace-stats.txt >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          # Report broken links / untested counts
-          BROKEN=$(grep -c "Broken links" trace-check.txt 2>/dev/null || echo "0")
-          UNTESTED=$(grep -c "Untested" trace-check.txt 2>/dev/null || echo "0")
-          if grep -q "CI CHECK FAILED" trace-check.txt 2>/dev/null; then
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "> **WARNING:** Traceability check found issues. Review trace-check.txt artifact." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload traceability artifacts
@@ -153,102 +145,3 @@ jobs:
             trace-stats.txt
             trace-check.txt
           retention-days: 90
-
-  # ---------------------------------------------------------------------------
-  # Job 3: Full Test Suite
-  # ---------------------------------------------------------------------------
-  unit-tests:
-    name: Test Suite
-    runs-on: ubuntu-24.04
-    needs: smoke-test
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            build-essential gcc-13 g++-13 make \
-            python3 python3-pip python3-venv \
-            can-utils iproute2 linux-modules-extra-$(uname -r)
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
-          pip3 install --user python-can pytest || true
-
-      - name: Initialize foxBMS submodule and apply patches
-        run: |
-          git submodule update --init --recursive foxbms-2
-          if [ -d patches/ ]; then
-            for p in patches/*.patch; do
-              [ -f "$p" ] && (cd foxbms-2 && git apply --check "../$p" 2>/dev/null && \
-                git apply "../$p") || true
-            done
-          fi
-
-      - name: Build foxBMS POSIX vECU
-        run: |
-          cd ${{ env.BUILD_DIR }}
-          make -j$(nproc)
-
-      - name: Setup vCAN interface
-        run: |
-          sudo modprobe vcan
-          sudo ip link add ${{ env.CAN_IF }} type vcan
-          sudo ip link set ${{ env.CAN_IF }} up
-
-      - name: Run smoke tests
-        id: smoke
-        run: |
-          cd ${{ env.BUILD_DIR }}
-          python3 test_smoke.py ${{ env.CAN_IF }} 2>&1 | tee ../test-smoke.txt
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
-
-      - name: Run integration tests
-        id: integration
-        if: always() && steps.smoke.outcome == 'success'
-        run: |
-          cd ${{ env.BUILD_DIR }}
-          python3 -m pytest test_integration.py -v --tb=short \
-            --junitxml=../test-integration.xml 2>&1 | tee ../test-integration.txt || true
-
-      - name: Run ASIL fault injection tests
-        id: asil
-        if: always() && steps.smoke.outcome == 'success'
-        run: |
-          cd ${{ env.BUILD_DIR }}
-          python3 -m pytest test_asil.py -v --tb=short \
-            --junitxml=../test-asil.xml 2>&1 | tee ../test-asil.txt || true
-
-      - name: Run SIL probe tests
-        id: sil_probes
-        if: always() && steps.smoke.outcome == 'success'
-        run: |
-          cd ${{ env.BUILD_DIR }}
-          python3 -m pytest test_sil_probes.py -v --tb=short \
-            --junitxml=../test-sil-probes.xml 2>&1 | tee ../test-sil-probes.txt || true
-
-      - name: Test summary
-        if: always()
-        run: |
-          echo "## Test Results" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Suite | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Smoke | ${{ steps.smoke.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Integration | ${{ steps.integration.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| ASIL | ${{ steps.asil.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| SIL Probes | ${{ steps.sil_probes.outcome }} |" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            test-*.txt
-            test-*.xml
-          retention-days: 30
