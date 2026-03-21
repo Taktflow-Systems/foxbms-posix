@@ -135,6 +135,20 @@ Each of the 18 cells is tested individually with 4 key OV methods and 4 key UV m
 | P2 | Should have (warning-level, robustness) | 1,100 | 54.9% |
 | **Total** | | **2,005** | **100%** |
 
+## Test Level (ASPICE Process Area)
+
+| Test Level | ASPICE Process | Categories | Count | Percentage |
+|------------|---------------|------------|------:|----------:|
+| SWE.5 | SW Integration Test | VOLT, TEMP, CURR, PLAUS, COMBO | 1,756 | 87.6% |
+| SWE.6 | SW Qualification Test | TIMING, RECOV, STATE | 249 | 12.4% |
+| **Total** | | | **2,005** | **100%** |
+
+**Classification rationale:**
+
+- **SWE.5** tests verify component interaction through the full signal pipeline (CAN → AFE → DB → SOA → DIAG → BMS → contactor). VOLT/TEMP/CURR exercise the signal-to-reaction chain, PLAUS tests cross-signal plausibility (component interaction), and COMBO tests multi-component simultaneous faults.
+- **SWE.6** tests verify behavior against requirements: TIMING tests measure FTTI (timing requirements), RECOV tests verify recovery behavior (recovery requirements), and STATE tests validate state machine transitions (behavioral requirements).
+- No tests are classified as **SWE.4** (unit level) because all tests exercise the full BMS pipeline end-to-end, not individual functions in isolation.
+
 ## Test Categories Explained
 
 ### VOLT (743 tests)
@@ -257,4 +271,4 @@ These foxBMS tests exercise hardware that doesn't exist on POSIX:
 
 - **Test Matrix CSV**: `fault-injection-test-matrix-asild.csv`
 - **Generator Script**: Generated via Python cross-product approach
-- **CSV Columns**: TEST_ID, CATEGORY, SIGNAL, FAULT_METHOD, INJECTION_VALUE, TARGET_CELL_OR_SENSOR, BMS_STATE, SEVERITY_TIER, DIAG_ID, THRESHOLD, EXPECTED_REACTION, PASS_CRITERIA, PRIORITY
+- **CSV Columns**: TEST_ID, CATEGORY, SIGNAL, FAULT_METHOD, INJECTION_VALUE, TARGET_CELL_OR_SENSOR, BMS_STATE, SEVERITY_TIER, DIAG_ID, THRESHOLD, EXPECTED_REACTION, PASS_CRITERIA, PRIORITY, TEST_LEVEL
