@@ -227,8 +227,7 @@ int main(int argc, char *argv[])
         /* 1ms cyclic */
         if (now - last_1ms >= 1000) {
             uint64_t t0 = get_time_us();
-            last_1ms += 1000;
-            if (now - last_1ms >= 2000) { last_1ms = now; } /* catch-up guard */
+            last_1ms = now; /* relative timing — correct for cooperative loop where tasks take >1ms */
             FTSK_RunUserCodeCyclic1ms();
             FTSK_RunUserCodeEngine();
             /* MEAS_Control() runs at 1ms rate — gated here rather than every loop
@@ -251,8 +250,7 @@ int main(int argc, char *argv[])
         /* 10ms cyclic */
         if (now - last_10ms >= 10000) {
             uint64_t t0 = get_time_us();
-            last_10ms += 10000;
-            if (now - last_10ms >= 20000) { last_10ms = now; } /* catch-up guard */
+            last_10ms = now;
             FTSK_RunUserCodeCyclic10ms();
             uint64_t dt = get_time_us() - t0;
             if (dt > max_10ms_us) max_10ms_us = dt;
@@ -267,8 +265,7 @@ int main(int argc, char *argv[])
         /* 100ms cyclic */
         if (now - last_100ms >= 100000) {
             uint64_t t0 = get_time_us();
-            last_100ms += 100000;
-            if (now - last_100ms >= 200000) { last_100ms = now; } /* catch-up guard */
+            last_100ms = now;
             FTSK_RunUserCodeCyclic100ms();
             FTSK_RunUserCodeCyclicAlgorithm100ms();
             uint64_t dt = get_time_us() - t0;
