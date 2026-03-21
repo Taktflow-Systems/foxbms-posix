@@ -6,13 +6,14 @@ CFLAGS = -std=c11 -D_GNU_SOURCE -DFOXBMS_POSIX -DGNU_COMPILER -DFOXBMS_USES_FREE
 CFLAGS += -Wno-unused-parameter -Wno-attributes -Wno-enum-conversion
 CFLAGS += -Wno-address-of-packed-member -Wno-missing-braces -Wno-cpp
 CFLAGS += -Wno-unterminated-string-initialization -Wno-absolute-value
-CFLAGS += -fcommon -g -O0 -include $(ROOT)/posix/posix_overrides.h
+CFLAGS += -fcommon -g -O0 -include posix_overrides.h
 
-ROOT = ..
+# ROOT points to the foxbms-2 submodule containing upstream foxBMS source
+ROOT = ../foxbms-2
 BUILD = build
 
-# Include paths: POSIX shim + FreeRTOS POSIX port + HALCoGen headers + ALL app dirs
-INC  = -I$(ROOT)/posix
+# Include paths: POSIX src dir + FreeRTOS POSIX port + HALCoGen headers + ALL app dirs
+INC  = -I.
 INC += -I$(ROOT)/src/os/freertos/freertos/include
 INC += -I$(ROOT)/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix
 INC += -I$(ROOT)/build/app_host_unit_test/include
