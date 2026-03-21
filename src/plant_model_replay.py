@@ -142,6 +142,9 @@ print(f"[replay] Speed: {SPEED}x, Loop: {LOOP}")
 # ================================================================
 s = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
 s.bind((CAN_INTERFACE,))
+s.setblocking(False)  # non-blocking for closed-loop RX
+
+bms_state_normal = False  # True when foxBMS reports NORMAL (contactors closed)
 
 def can_send(can_id, data):
     dlc = len(data)
@@ -178,6 +181,25 @@ try:
         data_idx += rows_per_tick
 
         # ========================================================
+        # Closed-loop: read foxBMS 0x220 for contactor state
+        # ========================================================
+        try:
+            while True:
+                rx_frame = s.recv(16)
+                if len(rx_frame) >= 16:
+                    rx_id = struct.unpack("=I", rx_frame[0:4])[0] & 0x7FF
+                    if rx_id == 0x220:
+                        bms_state = rx_frame[8] & 0x0F
+                        if bms_state == 7 and not bms_state_normal:
+                            bms_state_normal = True
+                            print(f"[replay] foxBMS NORMAL detected at tick {tick} — enabling current")
+                        elif bms_state != 7 and bms_state_normal:
+                            bms_state_normal = False
+                            print(f"[replay] foxBMS left NORMAL (state={bms_state}) — zeroing current")
+        except BlockingIOError:
+            pass
+
+        # ========================================================
         # Scale BMW → foxBMS
         # ========================================================
         # Cell voltage from pack (same NMC chemistry)
@@ -193,8 +215,12 @@ try:
         # Pack voltage for IVT (sum of cells — consistent by construction)
         pack_voltage_mv = sum(cell_voltages)
 
-        # Current scaled by capacity ratio (same C-rate)
-        current_fox_ma = int(bmw_i * CAPACITY_RATIO * 1000.0)
+        # Current: only flow when contactors are closed (NORMAL state)
+        # Before NORMAL: 0A (contactors open — no physical current path)
+        if bms_state_normal:
+            current_fox_ma = int(bmw_i * CAPACITY_RATIO * 1000.0)
+        else:
+            current_fox_ma = 0
 
         # Temperature in deci-°C
         temp_ddegc = int(bmw_t * 10.0)
