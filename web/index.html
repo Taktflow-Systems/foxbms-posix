@@ -129,6 +129,14 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
       <div class="perc-row"><span class="lbl">Pack Voltage</span><span class="val" id="percPackV">--- V</span></div>
       <div class="perc-row"><span class="lbl">Pack Power</span><span class="val" id="percPackP">--- W</span></div>
     </div>
+    <!-- Method explanation -->
+    <div id="methodInfo" style="display:none;margin-top:10px;background:#0A0A14;border:1px solid var(--border);border-radius:6px;padding:8px;font-size:10px;line-height:1.5">
+      <div style="color:var(--accent2);font-weight:600;margin-bottom:4px" id="methodTitle">STUCK_AT_MAX</div>
+      <div style="color:var(--dim)" id="methodDesc">Signal frozen at maximum valid value</div>
+      <pre style="color:var(--ok);margin:4px 0 0;font-size:9px;line-height:1.3" id="methodGraph">───────┐
+       │ ████████████
+       └────────────→ t</pre>
+    </div>
   </div>
   <!-- Col 3: BMS State + Contactors -->
   <div class="panel">
@@ -147,7 +155,7 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
       <label><input type="radio" name="injectTarget" value="plant" checked><span>Plant (SWE.6)</span></label>
       <label><input type="radio" name="injectTarget" value="bms"><span>BMS (SWE.5)</span></label>
     </div>
-    <div class="inject-group"><label>Method</label><div class="inject-row"><select id="faultMethod" style="flex:1">
+    <div class="inject-group" id="methodGroup" style="display:none"><label>Method</label><div class="inject-row"><select id="faultMethod" style="flex:1">
       <option value="step_max">STUCK_AT_MAX</option>
       <option value="step_0">STUCK_AT_0</option>
       <option value="oor_high">OUT_OF_RANGE_HIGH</option>
@@ -269,10 +277,58 @@ let canFrames=[];
   document.getElementById("ovTo").value="0";document.getElementById("uvTo").value="0";
   for(let i=0;i<8;i++){addOpt("otFrom",i,"S"+i);addOpt("otTo",i,"S"+i);}
   document.getElementById("otTo").value="0";
+  document.getElementById("faultMethod").addEventListener("change",updateMethodInfo);
+  updateMethodInfo();
   connect();
 })();
 
+const METHOD_INFO={
+  step_max:["STUCK_AT_MAX","Signal frozen at maximum valid value.\nTests: sensor stuck high, ADC saturation.",
+    "nominal ──┐\n           │ ████ MAX\n           └──────→ t"],
+  step_0:["STUCK_AT_0","Signal frozen at zero.\nTests: wire break, sensor power loss.",
+    "nominal ──┐\n     0 ████│\n           └──────→ t"],
+  oor_high:["OUT_OF_RANGE_HIGH","Value above physical maximum.\nTests: ADC overflow, EMI spike.",
+    "    ████ >MAX\nnominal ──┘\n           ──────→ t"],
+  oor_low:["OUT_OF_RANGE_LOW","Value below physical minimum.\nTests: negative voltage, sensor fault.",
+    "nominal ──┐\n     <MIN ████\n           ──────→ t"],
+  drift_up:["DRIFT_UP","Slow increase toward threshold.\nTests: gradual degradation, aging.",
+    "           ╱████\nnominal ──╱\n          ──────→ t"],
+  drift_down:["DRIFT_DOWN","Slow decrease toward threshold.\nTests: capacity fade, leakage.",
+    "nominal ──╲\n           ╲████\n           ──────→ t"],
+  offset_pos:["OFFSET_POS","Constant positive offset (+600mV).\nTests: calibration error, ground shift.",
+    "    ████████ +offset\nnominal ────────\n           ──────→ t"],
+  offset_neg:["OFFSET_NEG","Constant negative offset (-1300mV).\nTests: reference drift, wiring fault.",
+    "nominal ────────\n    ████████ -offset\n           ──────→ t"],
+  noise:["NOISE ±200mV","Random noise around threshold.\nTests: EMI susceptibility, poor shielding.",
+    "    ╱╲╱╲╱╲╱╲ noise\nnominal ────────\n           ──────→ t"],
+  inverted:["INVERTED","Signal polarity reversed.\nTests: wiring swap, sign error.",
+    "nominal ──┐\n     -val │████████\n           ──────→ t"],
+  corrupted:["CORRUPTED","Random valid/invalid value.\nTests: CRC error, bit flip, memory fault.",
+    "    █ █  █ random\nnominal ─ ── ──\n           ──────→ t"],
+};
+
 function addOpt(id,v,t){const o=document.createElement("option");o.value=v;o.textContent=t;document.getElementById(id).appendChild(o);}
+
+function updateMethodInfo(){
+  const m=document.getElementById("faultMethod").value;
+  const info=METHOD_INFO[m]||METHOD_INFO.step_max;
+  document.getElementById("methodTitle").textContent=info[0];
+  document.getElementById("methodDesc").textContent=info[1];
+  document.getElementById("methodGraph").textContent=info[2];
+}
+
+function getInjectTarget(){
+  return document.querySelector('input[name="injectTarget"]:checked').value;
+}
+
+// Show/hide method selector based on SWE.5/SWE.6 toggle
+document.querySelectorAll('input[name="injectTarget"]').forEach(r=>{
+  r.addEventListener("change",()=>{
+    const isBms=getInjectTarget()==="bms";
+    document.getElementById("methodGroup").style.display=isBms?"block":"none";
+    document.getElementById("methodInfo").style.display=isBms?"block":"none";
+  });
+});
 
 function connect(){
   const loc=location.hostname||"localhost",port=location.port||"8080";
@@ -292,7 +348,7 @@ function cellClass(mv){
   return "ok";
 }
 
-function getInjectTarget(){return document.querySelector('input[name="injectTarget"]:checked')?.value||"plant";}
+// getInjectTarget defined above
 
 function fmtTime(ts){const d=new Date(ts*1000);return d.toTimeString().slice(0,8);}
 
