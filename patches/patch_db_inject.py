@@ -92,25 +92,33 @@ INJECT_CODE = '''
                     }
                 }
 
-                /* Override individual cell voltages in CELL_VOLTAGE block */
+                /* Override individual cell voltages in CELL_VOLTAGE block
+                   Array: cellVoltage_mV[BS_NR_OF_STRINGS][BS_NR_OF_MODULES_PER_STRING][BS_NR_OF_CELL_BLOCKS_PER_MODULE] */
                 if (uniqueId == (uint8_t)DATA_BLOCK_ID_CELL_VOLTAGE) {
                     DATA_BLOCK_CELL_VOLTAGE_s *pCV = (DATA_BLOCK_CELL_VOLTAGE_s *)pPassedDataStruct;
                     for (uint8_t c = 0u; c < BS_NR_OF_CELL_BLOCKS_PER_MODULE; c++) {
                         if (sil_override_active(0x01u, c)) {
+                            int16_t v = (int16_t)sil_override_get_i32(0x01u, c);
                             for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
-                                pCV->cellVoltage_mV[s][c] = (int16_t)sil_override_get_i32(0x01u, c);
+                                for (uint8_t m = 0u; m < BS_NR_OF_MODULES_PER_STRING; m++) {
+                                    pCV->cellVoltage_mV[s][m][c] = v;
+                                }
                             }
                         }
                     }
                 }
 
-                /* Override individual cell temperatures in CELL_TEMPERATURE block */
+                /* Override individual cell temperatures in CELL_TEMPERATURE block
+                   Array: cellTemperature_ddegC[BS_NR_OF_STRINGS][BS_NR_OF_MODULES_PER_STRING][BS_NR_OF_TEMP_SENSORS_PER_MODULE] */
                 if (uniqueId == (uint8_t)DATA_BLOCK_ID_CELL_TEMPERATURE) {
                     DATA_BLOCK_CELL_TEMPERATURE_s *pCT = (DATA_BLOCK_CELL_TEMPERATURE_s *)pPassedDataStruct;
                     for (uint8_t t = 0u; t < BS_NR_OF_TEMP_SENSORS_PER_MODULE; t++) {
                         if (sil_override_active(0x02u, t)) {
+                            int16_t tv = (int16_t)sil_override_get_i32(0x02u, t);
                             for (uint8_t s = 0u; s < BS_NR_OF_STRINGS; s++) {
-                                pCT->cellTemperature_ddegC[s][t] = (int16_t)sil_override_get_i32(0x02u, t);
+                                for (uint8_t m = 0u; m < BS_NR_OF_MODULES_PER_STRING; m++) {
+                                    pCT->cellTemperature_ddegC[s][m][t] = tv;
+                                }
                             }
                         }
                     }
