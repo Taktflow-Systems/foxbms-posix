@@ -11,7 +11,7 @@ N_CELLS = 18
 Q_CELL_MAH = 3000.0        # Cell capacity (mAh)
 R_CELL_MOHM = 50.0          # Internal resistance per cell (mΩ)
 R_TOTAL_MOHM = R_CELL_MOHM * N_CELLS  # Total string resistance (mΩ)
-I_DISCHARGE_MA = 10000      # Discharge current when NORMAL (10 A)
+I_DISCHARGE_MA = 1000       # Discharge current when NORMAL (1 A, 0.33C — slow for demo)
 DT_S = 0.001                # Loop period (1 ms) — SIL rate, synced with foxBMS cycle
 
 # OCV(SOC) lookup — linear approximation (mV)
