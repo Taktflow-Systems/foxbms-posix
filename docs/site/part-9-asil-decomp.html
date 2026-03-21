@@ -74,6 +74,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -325,7 +345,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tbody>
 </table>
 <h3 id="33-decomposition-compliance-for-each-safety-goal">3.3  Decomposition Compliance for Each Safety Goal</h3>
-<h4 id="sg-01-cell-overvoltage-asil-d">SG-01: Cell Overvoltage (ASIL D)</h4>
+<h4 id="sg-01-cell-overvoltage-asil-d"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>: Cell Overvoltage (ASIL D)</h4>
 <table>
 <thead>
 <tr>
@@ -358,7 +378,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tbody>
 </table>
 <p><strong>Decomposition:</strong> ASIL D = ASIL D(D) [MSL] + ASIL B(D) [RSL + Plausibility]. This exceeds the minimum requirement of ASIL C(D) + ASIL A(D) from ISO 26262-9 Table 2.</p>
-<h4 id="sg-02-cell-undervoltage-asil-c">SG-02: Cell Undervoltage (ASIL C)</h4>
+<h4 id="sg-02-cell-undervoltage-asil-c"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span>: Cell Undervoltage (ASIL C)</h4>
 <table>
 <thead>
 <tr>
@@ -386,7 +406,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tbody>
 </table>
 <p><strong>Decomposition:</strong> ASIL C = ASIL C(C) [MSL] + ASIL A(C) [RSL]. Compliant.</p>
-<h4 id="sg-04sg-05-overcurrent-dischargecharge-asil-bc">SG-04/SG-05: Overcurrent Discharge/Charge (ASIL B/C)</h4>
+<h4 id="sg-04sg-05-overcurrent-dischargecharge-asil-bc"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span>/<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span>: Overcurrent Discharge/Charge (ASIL B/C)</h4>
 <table>
 <thead>
 <tr>
@@ -414,7 +434,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tbody>
 </table>
 <p><strong>Two-level MSL:</strong> The dual cell-level and string-level overcurrent detection provides two independent MSL thresholds. Even if one level fails, the other provides protection.</p>
-<h4 id="sg-06-overtemperature-asil-c">SG-06: Overtemperature (ASIL C)</h4>
+<h4 id="sg-06-overtemperature-asil-c"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span>: Overtemperature (ASIL C)</h4>
 <table>
 <thead>
 <tr>
@@ -523,7 +543,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <p><strong>Conclusion:</strong> Sufficient independence exists between MSL and RSL reactions. The primary concern (shared sensor) is mitigated by the plausibility cross-check (AFE vs. IVT) for voltage measurements.</p>
 <h3 id="42-independence-between-primary-and-secondary-detection-paths">4.2  Independence Between Primary and Secondary Detection Paths</h3>
-<p>For ASIL D safety goals (SG-01: overvoltage), a secondary detection path is required:</p>
+<p>For ASIL D safety goals (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>: overvoltage), a secondary detection path is required:</p>
 <table>
 <thead>
 <tr>
@@ -970,7 +990,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>SG-01</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span></td>
 <td>D</td>
 <td>ASIL D(D)</td>
 <td>ASIL B(D)</td>
@@ -980,7 +1000,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-02</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span></td>
 <td>C</td>
 <td>ASIL C(C)</td>
 <td>ASIL A(C)</td>
@@ -990,7 +1010,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-03</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-03">FSR-03</a><a class="tb-link tb-down" href="part-3-hara.html#hz-03">HZ-03</a></div></span></span></td>
 <td>QM</td>
 <td>FATAL (QM)</td>
 <td>N/A</td>
@@ -1000,7 +1020,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-04</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span></td>
 <td>B</td>
 <td>ASIL B(B)</td>
 <td>ASIL A(B)</td>
@@ -1010,7 +1030,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-05</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span></td>
 <td>C</td>
 <td>ASIL C(C)</td>
 <td>ASIL A(C)</td>
@@ -1020,7 +1040,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-06</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span></td>
 <td>C</td>
 <td>ASIL C(C)</td>
 <td>ASIL A(C)</td>
@@ -1030,7 +1050,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-07</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-07">FSR-07</a><a class="tb-link tb-down" href="part-3-hara.html#hz-07">HZ-07</a></div></span></span></td>
 <td>B</td>
 <td>ASIL B(B)</td>
 <td>ASIL A(B)</td>
@@ -1040,7 +1060,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-08</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-08">FSR-08</a><a class="tb-link tb-down" href="part-3-hara.html#hz-08">HZ-08</a></div></span></span></td>
 <td>B</td>
 <td>ASIL B(B)</td>
 <td>N/A</td>
@@ -1050,7 +1070,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-09</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-09">FSR-09</a><a class="tb-link tb-down" href="part-3-hara.html#hz-09">HZ-09</a></div></span></span></td>
 <td>B</td>
 <td>ASIL B(B)</td>
 <td>N/A</td>
@@ -1060,7 +1080,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-10</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-10">FSR-10</a><a class="tb-link tb-down" href="part-3-hara.html#hz-10">HZ-10</a></div></span></span></td>
 <td>QM</td>
 <td>FATAL (QM)</td>
 <td>N/A</td>
@@ -1070,7 +1090,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-11</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-11">FSR-11</a><a class="tb-link tb-down" href="part-3-hara.html#hz-11">HZ-11</a></div></span></span></td>
 <td>A</td>
 <td>ASIL A(A)</td>
 <td>N/A</td>
@@ -1080,7 +1100,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 <tr>
-<td>SG-12</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-12">FSR-12</a><a class="tb-link tb-down" href="part-3-hara.html#hz-12">HZ-12</a></div></span></span></td>
 <td>C</td>
 <td>ASIL C(C)</td>
 <td>ASIL A(C)</td>
@@ -1100,10 +1120,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <p><strong>RSL adds reliability:</strong> The RSL (WARNING) tier reduces the demand rate on the MSL by preemptively limiting current or inhibiting charge/discharge. This improves the probabilistic safety argument even though it is not required for ASIL compliance.</p>
 </li>
 <li>
-<p><strong>Independent detection paths exist for ASIL D:</strong> SG-01 (overvoltage, ASIL D) has three independent detection paths: AFE per-cell measurement, IVT pack voltage plausibility, and SBC watchdog. This satisfies the ASIL D requirement for independence.</p>
+<p><strong>Independent detection paths exist for ASIL D:</strong> <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span> (overvoltage, ASIL D) has three independent detection paths: AFE per-cell measurement, IVT pack voltage plausibility, and SBC watchdog. This satisfies the ASIL D requirement for independence.</p>
 </li>
 <li>
-<p><strong>Temperature monitoring lacks diversity:</strong> All temperature measurements route through the AFE multiplexer. There is no independent temperature sensor. This is acceptable for ASIL C (SG-06) but would require enhancement for ASIL D.</p>
+<p><strong>Temperature monitoring lacks diversity:</strong> All temperature measurements route through the AFE multiplexer. There is no independent temperature sensor. This is acceptable for ASIL C (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span>) but would require enhancement for ASIL D.</p>
 </li>
 <li>
 <p><strong>Contactor N-1 redundancy:</strong> Three contactors in the current path (string+, string-, precharge) provide N-1 redundancy for current interruption. Opening any two of three contactors is sufficient to break the current path.</p>
@@ -1143,7 +1163,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tr>
 <td>R-05</td>
 <td>Add Insulation Monitoring Device (IMD) for HV systems</td>
-<td>SG-11 upgrade</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-11">FSR-11</a><a class="tb-link tb-down" href="part-3-hara.html#hz-11">HZ-11</a></div></span></span> upgrade</td>
 </tr>
 <tr>
 <td>R-06</td>

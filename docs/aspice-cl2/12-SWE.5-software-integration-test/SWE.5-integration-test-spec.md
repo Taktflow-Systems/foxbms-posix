@@ -153,4 +153,20 @@ Integration follows a bottom-up approach:
 - State transitions shall occur within 500 ms of stimulus injection.
 
 ---
+
+## Traceability: SW-REQ to Integration Test
+
+| SW-REQ | Verified By | Description |
+|--------|------------|-------------|
+| SW-REQ-001 | IT-036 | Voltage check integration |
+| SW-REQ-010 | IT-036 | Voltage check integration |
+| SW-REQ-020 | IT-036 | Voltage check integration |
+| SW-REQ-040 | IT-001 | State machine integration |
+| SW-REQ-044 | IT-050 | Contactor integration |
+| SW-REQ-060 | IT-010 | Database integration |
+| SW-REQ-070 | IT-011 | SOC integration |
+| SW-REQ-090 | IT-002 | CAN TX integration |
+| SW-REQ-100 | IT-002 | CAN RX integration |
+
+---
 *End of Document*

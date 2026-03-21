@@ -555,4 +555,26 @@ These system-level monitors have threshold=1 and no delay because they indicate 
 
 ---
 
+## Traceability
+
+| TSR ID | Description | Traces Down To |
+|--------|-------------|---------------|
+| TSR-001 | Voltage monitoring | SSR-001, SSR-002, SW-REQ-001, SW-REQ-002 |
+| TSR-002 | Current monitoring | SSR-005, SSR-006, SW-REQ-010, SW-REQ-011 |
+| TSR-003 | Temperature monitoring | SSR-007, SSR-008, SSR-009, SW-REQ-020, SW-REQ-021, SW-REQ-022, SW-REQ-023 |
+| TSR-004 | DIAG threshold | SSR-010, SW-REQ-030, SW-REQ-031 |
+| TSR-005 | Contactor control | SSR-004, SW-REQ-044 |
+| TSR-006 | Precharge check | SSR-004, SW-REQ-042 |
+| TSR-007 | Interlock monitoring | SSR-010 |
+| TSR-008 | CAN timing | SSR-010, SW-REQ-110 |
+| TSR-009 | Current sensor | SSR-010, SW-REQ-111 |
+| TSR-010 | SBC watchdog | SSR-010 |
+| TSR-011 | Insulation monitoring | SSR-010 |
+| TSR-012 | Cell balancing | SW-REQ-080 |
+| TSR-013 | SOC estimation | SW-REQ-070 |
+| TSR-014 | Redundancy check | SSR-003 |
+| TSR-015 | Plausibility check | SSR-003, SW-REQ-060 |
+
+---
+
 *End of Document FOX-SAF-TSC-001*

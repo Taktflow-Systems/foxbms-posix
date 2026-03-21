@@ -423,6 +423,8 @@ def page_html(title, sidebar, body, breadcrumb="", prev_link="", next_link=""):
 
 
 def build():
+    global TRACE_GRAPH
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', default=str(DEFAULT_OUTPUT))
     args = parser.parse_args()
@@ -430,12 +432,36 @@ def build():
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
 
+    # Build traceability graph
+    print("Building traceability graph...")
+    TRACE_GRAPH = build_trace_graph()
+    print(f"  {len(TRACE_GRAPH)} requirement IDs, {sum(len(v['up'])+len(v['down']) for v in TRACE_GRAPH.values())//2} links")
+
     # Collect all pages in order
     all_pages = []
     for group_name, docs in SECTIONS:
         for title, filepath in docs:
             if filepath.exists():
                 all_pages.append((title, filepath, slugify(title), group_name))
+
+    # Build page lookup: requirement ID → which HTML page contains it
+    # Scan each page's markdown for IDs defined in it (first column of tables)
+    page_lookup = {}
+    for title, filepath, slug, group in all_pages:
+        text = filepath.read_text(encoding='utf-8', errors='replace')
+        for line in text.split("\n"):
+            if "|" not in line:
+                continue
+            cells = [c.strip() for c in line.split("|")]
+            if len(cells) >= 3:
+                # Check first non-empty cell for a requirement ID
+                for cell in cells[1:3]:
+                    m = ALL_ID_RE.match(cell.strip())
+                    if m:
+                        page_lookup[m.group(1)] = f"{slug}.html#{slugify(m.group(1))}"
+                        break
+    # Fallback: any ID not found gets linked to traceability.html
+    print(f"  {len(page_lookup)} IDs mapped to pages")
 
     # Build index page
     sidebar = build_sidebar(SECTIONS, all_pages, current_slug=None)
@@ -460,7 +486,7 @@ def build():
     for i, (title, filepath, slug, group) in enumerate(all_pages):
         sidebar = build_sidebar(SECTIONS, all_pages, current_slug=slug)
         text = filepath.read_text(encoding='utf-8', errors='replace')
-        body = render_md(text)
+        body = render_md(text, page_lookup=page_lookup)
         bc = f'<div class="breadcrumb"><a href="index.html">Home</a> / {group} / {title}</div>'
 
         prev_link = (all_pages[i - 1][0], f"{all_pages[i - 1][2]}.html") if i > 0 else ""

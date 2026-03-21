@@ -152,4 +152,43 @@ validate the port-specific adaptations and the integrated safety logic.
 - For QM modules, statement coverage is sufficient.
 
 ---
+
+## Traceability: SW-REQ to Unit Test
+
+| SW-REQ | Verified By | Description |
+|--------|------------|-------------|
+| SW-REQ-001 | UT-016 | SOA overvoltage |
+| SW-REQ-002 | UT-016 | SOA overvoltage |
+| SW-REQ-003 | UT-016 | SOA overvoltage |
+| SW-REQ-004 | UT-016 | SOA overvoltage |
+| SW-REQ-005 | UT-016 | SOA overvoltage |
+| SW-REQ-010 | UT-020 | SOA overcurrent |
+| SW-REQ-011 | UT-020 | SOA overcurrent |
+| SW-REQ-012 | UT-020 | SOA overcurrent |
+| SW-REQ-013 | UT-020 | SOA overcurrent |
+| SW-REQ-014 | UT-020 | SOA overcurrent |
+| SW-REQ-020 | UT-024 | SOA overtemperature |
+| SW-REQ-021 | UT-024 | SOA overtemperature |
+| SW-REQ-022 | UT-024 | SOA overtemperature |
+| SW-REQ-023 | UT-024 | SOA overtemperature |
+| SW-REQ-030 | UT-001 | DIAG threshold |
+| SW-REQ-031 | UT-001 | DIAG threshold |
+| SW-REQ-032 | UT-001 | DIAG threshold |
+| SW-REQ-033 | UT-001 | DIAG threshold |
+| SW-REQ-034 | UT-040 | POSIX DIAG |
+| SW-REQ-035 | UT-040 | POSIX DIAG |
+| SW-REQ-040 | UT-030 | BMS state |
+| SW-REQ-041 | UT-030 | BMS state |
+| SW-REQ-042 | UT-030 | BMS state |
+| SW-REQ-043 | UT-030 | BMS state |
+| SW-REQ-044 | UT-060 | Contactor |
+| SW-REQ-045 | UT-030 | BMS state |
+| SW-REQ-060 | UT-042 | Database |
+| SW-REQ-061 | UT-042 | Database |
+| SW-REQ-070 | UT-070 | SOC |
+| SW-REQ-080 | UT-080 | Balancing |
+| SW-REQ-090 | UT-052 | CAN TX |
+| SW-REQ-100 | UT-052 | CAN RX |
+
+---
 *End of Document*

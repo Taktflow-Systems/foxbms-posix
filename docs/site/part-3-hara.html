@@ -74,6 +74,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -447,8 +467,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <hr />
 <h2 id="4-hazard-identification-and-classification">4  Hazard Identification and Classification</h2>
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-001 </div>
-<h3 id="hz-01-cell-overvoltage">HZ-01: Cell Overvoltage</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-6-safety-reqs.html#sg-001">SG-001</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-01-cell-overvoltage"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span>: Cell Overvoltage</h3>
 <table>
 <thead>
 <tr>
@@ -459,7 +479,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-01</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -491,13 +511,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-01:</strong> The BMS shall prevent cell voltage from exceeding the maximum safety limit (2800 mV) by interrupting the charging current path within the Fault Tolerant Time Interval.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>:</strong> The BMS shall prevent cell voltage from exceeding the maximum safety limit (2800 mV) by interrupting the charging current path within the Fault Tolerant Time Interval.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-002 </div>
-<h3 id="hz-02-cell-undervoltage">HZ-02: Cell Undervoltage</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-002</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-6-safety-reqs.html#sg-002">SG-002</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-002</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-02-cell-undervoltage"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>: Cell Undervoltage</h3>
 <table>
 <thead>
 <tr>
@@ -508,7 +528,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-02</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -540,13 +560,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-02:</strong> The BMS shall prevent cell voltage from dropping below the minimum safety limit (1500 mV) by interrupting the discharge current path within the FTTI.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span>:</strong> The BMS shall prevent cell voltage from dropping below the minimum safety limit (1500 mV) by interrupting the discharge current path within the FTTI.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-003 </div>
-<h3 id="hz-03-cell-deep-discharge">HZ-03: Cell Deep Discharge</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-003</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-6-safety-reqs.html#sg-003">SG-003</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-003</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-03-cell-deep-discharge"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-03">SG-03</a></div></span></span>: Cell Deep Discharge</h3>
 <table>
 <thead>
 <tr>
@@ -557,7 +577,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-03</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-03">SG-03</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -589,13 +609,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-03:</strong> The BMS shall detect deep discharge conditions and open all contactors immediately to prevent further energy extraction. Although classified QM, this hazard is treated with FATAL severity in the diagnostic configuration as defense-in-depth.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-03">FSR-03</a><a class="tb-link tb-down" href="part-3-hara.html#hz-03">HZ-03</a></div></span></span>:</strong> The BMS shall detect deep discharge conditions and open all contactors immediately to prevent further energy extraction. Although classified QM, this hazard is treated with FATAL severity in the diagnostic configuration as defense-in-depth.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-004 </div>
-<h3 id="hz-04-overcurrent-discharge">HZ-04: Overcurrent — Discharge</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-004</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-6-safety-reqs.html#sg-004">SG-004</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-004</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-04-overcurrent-discharge"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span>: Overcurrent — Discharge</h3>
 <table>
 <thead>
 <tr>
@@ -606,7 +626,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-04</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -638,13 +658,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-04:</strong> The BMS shall limit discharge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span>:</strong> The BMS shall limit discharge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-005 </div>
-<h3 id="hz-05-overcurrent-charge">HZ-05: Overcurrent — Charge</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-6-safety-reqs.html#sg-005">SG-005</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-005</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-05-overcurrent-charge"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span>: Overcurrent — Charge</h3>
 <table>
 <thead>
 <tr>
@@ -655,7 +675,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-05</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -671,7 +691,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Severity</strong></td>
-<td><strong>S3</strong> — Thermal runaway risk equivalent to HZ-04. During charging, the vehicle is typically stationary and potentially in an enclosed space (garage), increasing fire severity.</td>
+<td><strong>S3</strong> — Thermal runaway risk equivalent to <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span>. During charging, the vehicle is typically stationary and potentially in an enclosed space (garage), increasing fire severity.</td>
 </tr>
 <tr>
 <td><strong>Exposure</strong></td>
@@ -687,13 +707,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-05:</strong> The BMS shall limit charge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span>:</strong> The BMS shall limit charge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-006 </div>
-<h3 id="hz-06-overtemperature">HZ-06: Overtemperature</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-006</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability.html">SG-006</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-006</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-06-overtemperature"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-06">SG-06</a></div></span></span>: Overtemperature</h3>
 <table>
 <thead>
 <tr>
@@ -704,7 +724,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-06</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-06">SG-06</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -736,13 +756,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-06:</strong> The BMS shall monitor cell temperatures and open contactors when temperature exceeds the maximum safety limit within the FTTI to remove the heat source (current flow).</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span>:</strong> The BMS shall monitor cell temperatures and open contactors when temperature exceeds the maximum safety limit within the FTTI to remove the heat source (current flow).</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-007 </div>
-<h3 id="hz-07-undertemperature-during-charging">HZ-07: Undertemperature During Charging</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-007</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability.html">SG-007</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-007</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-07-undertemperature-during-charging"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-07">SG-07</a></div></span></span>: Undertemperature During Charging</h3>
 <table>
 <thead>
 <tr>
@@ -753,7 +773,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-07</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-07">SG-07</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -785,13 +805,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-07:</strong> The BMS shall prevent charging when cell temperature is below the minimum charge temperature limit by opening contactors within the FTTI.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-07">FSR-07</a><a class="tb-link tb-down" href="part-3-hara.html#hz-07">HZ-07</a></div></span></span>:</strong> The BMS shall prevent charging when cell temperature is below the minimum charge temperature limit by opening contactors within the FTTI.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-008 </div>
-<h3 id="hz-08-contactor-welding">HZ-08: Contactor Welding</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-008</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability.html">SG-008</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-008</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-08-contactor-welding"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-08">SG-08</a></div></span></span>: Contactor Welding</h3>
 <table>
 <thead>
 <tr>
@@ -802,7 +822,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-08</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-08">SG-08</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -818,7 +838,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Severity</strong></td>
-<td><strong>S3</strong> — Loss of the ability to reach the safe state. All downstream hazards (HZ-01 through HZ-07) become unmitigated. Worst case: continued overcurrent or overcharge leads to thermal runaway with no possibility of current interruption.</td>
+<td><strong>S3</strong> — Loss of the ability to reach the safe state. All downstream hazards (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span> through <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-07">SG-07</a></div></span></span>) become unmitigated. Worst case: continued overcurrent or overcharge leads to thermal runaway with no possibility of current interruption.</td>
 </tr>
 <tr>
 <td><strong>Exposure</strong></td>
@@ -834,13 +854,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-08:</strong> The BMS shall detect contactor welding (mismatch between commanded state and feedback) and transition to a degraded state that prevents further operation of the affected string.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-08">FSR-08</a><a class="tb-link tb-down" href="part-3-hara.html#hz-08">HZ-08</a></div></span></span>:</strong> The BMS shall detect contactor welding (mismatch between commanded state and feedback) and transition to a degraded state that prevents further operation of the affected string.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-009 </div>
-<h3 id="hz-09-current-sensor-failure">HZ-09: Current Sensor Failure</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-009</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability.html">SG-009</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-009</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-09-current-sensor-failure"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-09">SG-09</a></div></span></span>: Current Sensor Failure</h3>
 <table>
 <thead>
 <tr>
@@ -851,11 +871,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-09</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-09">SG-09</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
-<td>The IVT current sensor stops responding or provides erroneous measurements. Loss of current measurement eliminates the BMS ability to detect overcurrent conditions (HZ-04, HZ-05) and corrupts SOC estimation (coulomb counting). Without accurate SOC, the BMS may permit charging of a fully charged pack (leading to overvoltage) or discharging of a depleted pack (leading to undervoltage).</td>
+<td>The IVT current sensor stops responding or provides erroneous measurements. Loss of current measurement eliminates the BMS ability to detect overcurrent conditions (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span>) and corrupts SOC estimation (coulomb counting). Without accurate SOC, the BMS may permit charging of a fully charged pack (leading to overvoltage) or discharging of a depleted pack (leading to undervoltage).</td>
 </tr>
 <tr>
 <td><strong>DIAG IDs</strong></td>
@@ -867,7 +887,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Severity</strong></td>
-<td><strong>S3</strong> — Loss of overcurrent protection enables all thermal hazards from HZ-04 and HZ-05. Loss of SOC accuracy enables all voltage hazards from HZ-01 and HZ-02.</td>
+<td><strong>S3</strong> — Loss of overcurrent protection enables all thermal hazards from <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span> and <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span>. Loss of SOC accuracy enables all voltage hazards from <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span> and <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>.</td>
 </tr>
 <tr>
 <td><strong>Exposure</strong></td>
@@ -883,13 +903,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-09:</strong> The BMS shall detect current sensor communication failure and open all contactors within the FTTI to prevent unmonitored operation.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-09">FSR-09</a><a class="tb-link tb-down" href="part-3-hara.html#hz-09">HZ-09</a></div></span></span>:</strong> The BMS shall detect current sensor communication failure and open all contactors within the FTTI to prevent unmonitored operation.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-010 </div>
-<h3 id="hz-10-interlock-break-hv-exposure">HZ-10: Interlock Break — HV Exposure</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-010</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability.html">SG-010</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-010</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><span style="color:var(--text2)"> +65 more</span></div></span></span> </div>
+<h3 id="hz-10-interlock-break-hv-exposure"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-10">SG-10</a></div></span></span>: Interlock Break — HV Exposure</h3>
 <table>
 <thead>
 <tr>
@@ -900,7 +920,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-10</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-10">SG-10</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -932,13 +952,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-10:</strong> The BMS shall detect interlock loop break and open all contactors within 200 ms to de-energize the HV path. Treated as FATAL in diagnostic configuration as defense-in-depth despite QM classification.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-10">FSR-10</a><a class="tb-link tb-down" href="part-3-hara.html#hz-10">HZ-10</a></div></span></span>:</strong> The BMS shall detect interlock loop break and open all contactors within 200 ms to de-energize the HV path. Treated as FATAL in diagnostic configuration as defense-in-depth despite QM classification.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-011 </div>
-<h3 id="hz-11-insulation-failure">HZ-11: Insulation Failure</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-011</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability.html">SG-011</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-011</a></div></span></span> </div>
+<h3 id="hz-11-insulation-failure"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-11">SG-11</a></div></span></span>: Insulation Failure</h3>
 <table>
 <thead>
 <tr>
@@ -949,7 +969,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-11</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-11">SG-11</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
@@ -981,13 +1001,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-11:</strong> The BMS shall detect insulation faults through voltage plausibility monitoring and transition to safe state. For higher ASIL requirements, integration of a dedicated Insulation Monitoring Device (IMD) is recommended.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-11">FSR-11</a><a class="tb-link tb-down" href="part-3-hara.html#hz-11">HZ-11</a></div></span></span>:</strong> The BMS shall detect insulation faults through voltage plausibility monitoring and transition to safe state. For higher ASIL requirements, integration of a dedicated Insulation Monitoring Device (IMD) is recommended.</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<div class="hitl-lock">🔒 HITL-LOCK: HARA-HZ-012 </div>
-<h3 id="hz-12-cell-imbalance">HZ-12: Cell Imbalance</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: HARA-<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-012</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability.html">SG-012</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FSR-012</a></div></span></span> </div>
+<h3 id="hz-12-cell-imbalance"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-12">SG-12</a></div></span></span>: Cell Imbalance</h3>
 <table>
 <thead>
 <tr>
@@ -998,11 +1018,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Hazard ID</strong></td>
-<td>HZ-12</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-12">SG-12</a></div></span></span></td>
 </tr>
 <tr>
 <td><strong>Hazardous Event</strong></td>
-<td>Progressive divergence of individual cell voltages within the series string. Caused by manufacturing variation in capacity/impedance, differential aging, or temperature gradients across the module. The weakest cell (lowest capacity) reaches overvoltage during charge or undervoltage during discharge before the string average, while the string-level monitoring may not detect the condition if averaging is used. This leads to localized overcharge or overdischarge of the imbalanced cell, triggering the failure chains described in HZ-01 or HZ-02.</td>
+<td>Progressive divergence of individual cell voltages within the series string. Caused by manufacturing variation in capacity/impedance, differential aging, or temperature gradients across the module. The weakest cell (lowest capacity) reaches overvoltage during charge or undervoltage during discharge before the string average, while the string-level monitoring may not detect the condition if averaging is used. This leads to localized overcharge or overdischarge of the imbalanced cell, triggering the failure chains described in <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span> or <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>.</td>
 </tr>
 <tr>
 <td><strong>DIAG IDs</strong></td>
@@ -1014,7 +1034,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Severity</strong></td>
-<td><strong>S3</strong> — Identical to HZ-01 and HZ-02. Thermal runaway from localized overcharge or copper dendrite formation from localized overdischarge.</td>
+<td><strong>S3</strong> — Identical to <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span> and <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>. Thermal runaway from localized overcharge or copper dendrite formation from localized overdischarge.</td>
 </tr>
 <tr>
 <td><strong>Exposure</strong></td>
@@ -1030,7 +1050,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td><strong>SG-12:</strong> The BMS shall monitor individual cell voltages and enforce per-cell overvoltage and undervoltage limits regardless of string-level measurements, ensuring that no individual cell exceeds its safe operating voltage range.</td>
+<td><strong><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-12">FSR-12</a><a class="tb-link tb-down" href="part-3-hara.html#hz-12">HZ-12</a></div></span></span>:</strong> The BMS shall monitor individual cell voltages and enforce per-cell overvoltage and undervoltage limits regardless of string-level measurements, ensuring that no individual cell exceeds its safe operating voltage range.</td>
 </tr>
 </tbody>
 </table>
@@ -1047,74 +1067,74 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>SG-01</td>
-<td>HZ-01</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span></td>
 <td>ASIL D</td>
 <td>Prevent cell overvoltage above 2800 mV by interrupting charge current within FTTI</td>
 </tr>
 <tr>
-<td>SG-02</td>
-<td>HZ-02</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span></td>
 <td>ASIL C</td>
 <td>Prevent cell undervoltage below 1500 mV by interrupting discharge current within FTTI</td>
 </tr>
 <tr>
-<td>SG-03</td>
-<td>HZ-03</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-03">FSR-03</a><a class="tb-link tb-down" href="part-3-hara.html#hz-03">HZ-03</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-03">SG-03</a></div></span></span></td>
 <td>QM</td>
 <td>Detect deep discharge and open contactors immediately</td>
 </tr>
 <tr>
-<td>SG-04</td>
-<td>HZ-04</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span></td>
 <td>ASIL B</td>
 <td>Limit discharge current to rated maximum and open contactors on persistent overcurrent</td>
 </tr>
 <tr>
-<td>SG-05</td>
-<td>HZ-05</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span></td>
 <td>ASIL C</td>
 <td>Limit charge current to rated maximum and open contactors on persistent overcurrent</td>
 </tr>
 <tr>
-<td>SG-06</td>
-<td>HZ-06</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-06">SG-06</a></div></span></span></td>
 <td>ASIL C</td>
 <td>Monitor cell temperatures and open contactors on overtemperature within FTTI</td>
 </tr>
 <tr>
-<td>SG-07</td>
-<td>HZ-07</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-07">FSR-07</a><a class="tb-link tb-down" href="part-3-hara.html#hz-07">HZ-07</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-07">SG-07</a></div></span></span></td>
 <td>ASIL B</td>
 <td>Prevent charging below minimum temperature limit by opening contactors within FTTI</td>
 </tr>
 <tr>
-<td>SG-08</td>
-<td>HZ-08</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-08">FSR-08</a><a class="tb-link tb-down" href="part-3-hara.html#hz-08">HZ-08</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-08">SG-08</a></div></span></span></td>
 <td>ASIL B</td>
 <td>Detect contactor welding via feedback mismatch and prevent further operation</td>
 </tr>
 <tr>
-<td>SG-09</td>
-<td>HZ-09</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-09">FSR-09</a><a class="tb-link tb-down" href="part-3-hara.html#hz-09">HZ-09</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-09">SG-09</a></div></span></span></td>
 <td>ASIL B</td>
 <td>Detect current sensor failure and open contactors within FTTI</td>
 </tr>
 <tr>
-<td>SG-10</td>
-<td>HZ-10</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-10">FSR-10</a><a class="tb-link tb-down" href="part-3-hara.html#hz-10">HZ-10</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-10">SG-10</a></div></span></span></td>
 <td>QM</td>
 <td>Detect interlock break and de-energize HV path within 200 ms (treated as FATAL defense-in-depth)</td>
 </tr>
 <tr>
-<td>SG-11</td>
-<td>HZ-11</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-11">FSR-11</a><a class="tb-link tb-down" href="part-3-hara.html#hz-11">HZ-11</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-11">SG-11</a></div></span></span></td>
 <td>ASIL A</td>
 <td>Detect insulation faults via voltage plausibility and transition to safe state</td>
 </tr>
 <tr>
-<td>SG-12</td>
-<td>HZ-12</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-12">FSR-12</a><a class="tb-link tb-down" href="part-3-hara.html#hz-12">HZ-12</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-12">SG-12</a></div></span></span></td>
 <td>ASIL C</td>
 <td>Enforce per-cell voltage limits independent of string-level measurements</td>
 </tr>
@@ -1127,7 +1147,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <p>The ASIL classifications assume the BMS is the sole safety barrier for battery electrical hazards. If the vehicle integrates additional independent safety mechanisms (e.g., pyro-fuse, independent BMS watchdog, dedicated IMD), ASIL decomposition may reduce the classification for individual elements (see FOX-SAF-ASIL-DEC-001).</p>
 </li>
 <li>
-<p>Severity ratings for HZ-10 and HZ-11 are based on the as-configured 18s pack (45–50.4 V nominal). For deployments with higher cell counts exceeding 60 V DC, severity shall be re-evaluated as S3.</p>
+<p>Severity ratings for <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-10">SG-10</a></div></span></span> and <span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">HZ-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-11">SG-11</a></div></span></span> are based on the as-configured 18s pack (45–50.4 V nominal). For deployments with higher cell counts exceeding 60 V DC, severity shall be re-evaluated as S3.</p>
 </li>
 <li>
 <p>Exposure ratings assume automotive deployment with typical European driving patterns. Deployment in extreme climate regions (sub-arctic, tropical) may increase exposure for temperature-related hazards.</p>

@@ -74,6 +74,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -298,7 +318,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tr>
 <td>A3-02: No safe-state verification</td>
 <td>HIGH</td>
-<td>REMAINS — blocked by A3-01. Test cases written in SWE.6 (QT-004 through QT-008) but can't execute until DIAG propagation works.</td>
+<td>REMAINS — blocked by A3-01. Test cases written in SWE.6 (<span class="trace-id" style="border-bottom:1px dashed #1abc9c;cursor:help"><a href="traceability.html" style="color:#1abc9c;text-decoration:none">QT-004</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability-matrix.html#hz-001">HZ-001</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-002">HZ-002</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-003">HZ-003</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-004">HZ-004</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-005">HZ-005</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-006">HZ-006</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-007">HZ-007</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-008">HZ-008</a><span style="color:var(--text2)"> +12 more</span></div></span></span> through <span class="trace-id" style="border-bottom:1px dashed #1abc9c;cursor:help"><a href="traceability.html" style="color:#1abc9c;text-decoration:none">QT-008</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-020">SYS-REQ-020</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-043">SYS-REQ-043</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-080">SYS-REQ-080</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-083">SYS-REQ-083</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-084">SYS-REQ-084</a></div></span></span>) but can't execute until DIAG propagation works.</td>
 </tr>
 <tr>
 <td>A3-03: Interlock hardcoded</td>

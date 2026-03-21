@@ -466,4 +466,30 @@ Although no failure modes exceed the RPN action threshold, the following recomme
 
 ---
 
+## Traceability
+
+| FM ID | Failure Mode | Hazard | Safety Requirement | DIAG ID |
+|-------|-------------|--------|-------------------|---------|
+| FM-001 | Cell overvoltage | HZ-001 | SSR-001 | DIAG_ID_CELLVOLTAGE_OVERVOLTAGE_MSL |
+| FM-002 | Cell undervoltage | HZ-002 | SSR-002 | DIAG_ID_CELLVOLTAGE_UNDERVOLTAGE_MSL |
+| FM-003 | Overcurrent discharge | HZ-004 | SSR-005 | DIAG_ID_OVERCURRENT_DISCHARGE_CELL_MSL |
+| FM-004 | Overcurrent charge | HZ-005 | SSR-006 | DIAG_ID_OVERCURRENT_CHARGE_CELL_MSL |
+| FM-005 | Overtemperature discharge | HZ-006 | SSR-007 | DIAG_ID_TEMP_OVERTEMPERATURE_DISCHARGE_MSL |
+| FM-006 | Overtemperature charge | HZ-006 | SSR-008 | DIAG_ID_TEMP_OVERTEMPERATURE_CHARGE_MSL |
+| FM-007 | Undertemperature charge | HZ-007 | SSR-009 | DIAG_ID_TEMP_UNDERTEMPERATURE_CHARGE_MSL |
+| FM-008 | Sensor failure - voltage | HZ-001 | SSR-003 | DIAG_ID_AFE_CELL_VOLTAGE_MEAS_ERROR |
+| FM-009 | Sensor failure - current | HZ-009 | SSR-010 | DIAG_ID_CURRENT_SENSOR_RESPONDING |
+| FM-010 | Sensor failure - temperature | HZ-006 | SSR-010 | DIAG_ID_AFE_CELL_TEMPERATURE_MEAS_ERROR |
+| FM-011 | CAN timeout | HZ-009 | SSR-010 | DIAG_ID_CAN_TIMING |
+| FM-012 | Contactor weld | HZ-008 | SSR-004 | DIAG_ID_CONTACTOR_FEEDBACK |
+| FM-013 | Contactor fail open | HZ-008 | SSR-004 | DIAG_ID_CONTACTOR_FEEDBACK |
+| FM-014 | Precharge fail | HZ-008 | SSR-004 | DIAG_ID_PRECHARGE_ABORT |
+| FM-015 | Interlock break | HZ-010 | SSR-010 | DIAG_ID_INTERLOCK_FEEDBACK |
+| FM-016 | SBC failure | HZ-009 | SSR-010 | DIAG_ID_SBC_FIN_STATE |
+| FM-017 | Insulation fault | HZ-011 | SSR-010 | DIAG_ID_INSULATION_MEASUREMENT |
+| FM-018 | Cell imbalance | HZ-012 | SSR-003 | DIAG_ID_CELL_VOLTAGE_SPREAD |
+| FM-019 | Deep discharge | HZ-003 | SSR-002 | DIAG_ID_DEEP_DISCHARGE_DETECTED |
+
+---
+
 *End of Document FOX-SAF-FMEA-001*

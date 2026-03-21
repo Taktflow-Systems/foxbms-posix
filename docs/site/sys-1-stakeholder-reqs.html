@@ -74,6 +74,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -280,32 +300,32 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>STKH-REQ-001</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-001">SYS-REQ-001</a></div></span></span></td>
 <td>The system shall build from source on Ubuntu 24.04 LTS using only standard packages (GCC, Make, Python 3, SocketCAN).</td>
 <td>S3: Student</td>
 <td>MUST</td>
-<td>SYS-REQ-001</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-001">STKH-REQ-001</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-002</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-002</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-002">SYS-REQ-002</a></div></span></span></td>
 <td>A single setup command shall clone the repository, apply all patches, build the vECU, configure the CAN interface, and run a smoke test.</td>
 <td>S3: Student</td>
 <td>MUST</td>
-<td>SYS-REQ-002</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-002</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-002">STKH-REQ-002</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-003</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-003</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-080">SW-REQ-080</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-003">SYS-REQ-003</a></div></span></span></td>
 <td>The build shall complete in under 60 seconds on a standard workstation.</td>
 <td>S1: HIL Eng</td>
 <td>SHOULD</td>
-<td>SYS-REQ-003</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-003</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-003">STKH-REQ-003</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-063">SW-REQ-063</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-066">SW-REQ-066</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-080">SW-REQ-080</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-004</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-004</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-004">SYS-REQ-004</a></div></span></span></td>
 <td>The system shall use foxBMS v1.10.0 as a pinned, version-checked dependency to ensure reproducible builds.</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-004</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-004</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-004">STKH-REQ-004</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-063">SW-REQ-063</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span></td>
 </tr>
 </tbody>
 </table>
@@ -322,32 +342,32 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>STKH-REQ-005</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-070">SW-REQ-070</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-010">SYS-REQ-010</a></div></span></span></td>
 <td>The vECU shall execute the same BMS state machine logic as the production foxBMS (SYS/BMS/CONT/BAL state machines).</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-010</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-010</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-005">STKH-REQ-005</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-065">SW-REQ-065</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-070">SW-REQ-070</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-006</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-006</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-071">SW-REQ-071</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-011">SYS-REQ-011</a></div></span></span></td>
 <td>The BMS shall reach the NORMAL operating state through the legitimate transition sequence (UNINIT, INIT, IDLE, STANDBY, PRECHARGE, NORMAL).</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-011</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-011</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-006">STKH-REQ-006</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-065">SW-REQ-065</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-071">SW-REQ-071</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-075">SW-REQ-075</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-007</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-007</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-020">SYS-REQ-020</a></div></span></span></td>
 <td>The vECU shall transmit at least 15 CAN message types on the virtual CAN bus, matching the foxBMS DBC message IDs.</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-020</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-010">UT-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-011">UT-011</a><span style="color:var(--text2)"> +1 more</span></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-008</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-008</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-010">SW-REQ-010</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-030">SYS-REQ-030</a></div></span></span></td>
 <td>The SOC algorithm shall reflect changes in battery state of charge when current flows (discharge or charge).</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-008">STKH-REQ-008</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-004">QT-004</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-010">SW-REQ-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-016">UT-016</a></div></span></span></td>
 </tr>
 </tbody>
 </table>
@@ -364,39 +384,39 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>STKH-REQ-009</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-009</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-005">SSR-005</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-020">SW-REQ-020</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-040">SYS-REQ-040</a></div></span></span></td>
 <td>The vECU shall execute the DIAG_Handler for all software-checkable diagnostic IDs (overvoltage, undervoltage, overcurrent, overtemperature, plausibility).</td>
 <td>S2: Safety Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-040</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-040</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-005">QT-005</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-005">SSR-005</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-020">SW-REQ-020</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-018">UT-018</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-010</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-010</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-006">SSR-006</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-021">SW-REQ-021</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-041">SYS-REQ-041</a></div></span></span></td>
 <td>Hardware-absent diagnostic IDs (AFE SPI, SBC, I2C, IMD, interlock) shall be explicitly suppressed with documented rationale.</td>
 <td>S2: Safety Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-041</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-041</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-010">STKH-REQ-010</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-005">QT-005</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-006">SSR-006</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-021">SW-REQ-021</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-019">UT-019</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-011</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-011</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-030">SW-REQ-030</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a></div></span></span></td>
 <td>The system shall provide a fault injection interface that allows test scripts to override cell voltages, currents, and temperatures at runtime.</td>
 <td>S2: Safety Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-050</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-050</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-007">QT-007</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-010">QT-010</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-011">QT-011</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-012">QT-012</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-014">QT-014</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><span style="color:var(--text2)"> +3 more</span></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-012</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-012</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-032">SSR-032</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-030">SW-REQ-030</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-031">SW-REQ-031</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a></div></span></span></td>
 <td>Injected faults shall trigger the same DIAG_Handler response as genuine sensor readings (same DIAG ID, same severity classification).</td>
 <td>S2: Safety Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-051</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-051</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-042">IT-042</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-004">QT-004</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-032">SSR-032</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-030">SW-REQ-030</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-031">SW-REQ-031</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-001">UT-001</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-003">UT-003</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-013</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-013</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-007">SSR-007</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-022">SW-REQ-022</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-042">SYS-REQ-042</a></div></span></span></td>
 <td>FAS_ASSERT violations shall terminate the vECU with a visible error message including file and line number.</td>
 <td>S2: Safety Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-042</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-042</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-013">STKH-REQ-013</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-034">IT-034</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-005">QT-005</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-007">SSR-007</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-022">SW-REQ-022</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-020">UT-020</a></div></span></span></td>
 </tr>
 </tbody>
 </table>
@@ -413,32 +433,32 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>STKH-REQ-014</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-014</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-060">SW-REQ-060</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-061">SW-REQ-061</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-090">SW-REQ-090</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-091">SW-REQ-091</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-092">SW-REQ-092</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-093">SW-REQ-093</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-102">SW-REQ-102</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-103">SW-REQ-103</a><span style="color:var(--text2)"> +1 more</span></div></span></span></td>
 <td>An automated smoke test shall verify that the BMS reaches NORMAL state, contactors close, and SOC is non-zero.</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-060</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-060</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-014">STKH-REQ-014</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-007">IT-007</a><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-060">SW-REQ-060</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-061">SW-REQ-061</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-068">SW-REQ-068</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-069">SW-REQ-069</a><span style="color:var(--text2)"> +11 more</span></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-015</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-015</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-100">SW-REQ-100</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-061">SYS-REQ-061</a></div></span></span></td>
 <td>The vECU shall support a timeout flag (--timeout N) for CI pipeline integration, exiting cleanly after N seconds.</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-061</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-061</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-015">STKH-REQ-015</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-013">IT-013</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-091">SW-REQ-091</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-100">SW-REQ-100</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-051">UT-051</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-016</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-016</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-041">SSR-041</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-070">SW-REQ-070</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-101">SW-REQ-101</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-111">SW-REQ-111</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-062">SYS-REQ-062</a></div></span></span></td>
 <td>Integration tests shall verify end-to-end CAN communication between plant model and vECU.</td>
 <td>S1: HIL Eng</td>
 <td>SHOULD</td>
-<td>SYS-REQ-062</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-062</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-016">STKH-REQ-016</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-002">IT-002</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-004">IT-004</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-006">QT-006</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-041">SSR-041</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-09b">SW-REQ-09B</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-101">SW-REQ-101</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-111">SW-REQ-111</a><span style="color:var(--text2)"> +1 more</span></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-017</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-017</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-040">SSR-040</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-110">SW-REQ-110</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-063">SYS-REQ-063</a></div></span></span></td>
 <td>ASIL-D fault injection tests shall cover all safety-relevant diagnostic paths with pass/fail verdict.</td>
 <td>S2: Safety Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-063</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-063</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-007">IT-007</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-006">QT-006</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-040">SSR-040</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-09b">SW-REQ-09B</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-110">SW-REQ-110</a></div></span></span></td>
 </tr>
 </tbody>
 </table>
@@ -455,25 +475,25 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>STKH-REQ-018</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-018</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-050">SW-REQ-050</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-051">SW-REQ-051</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-052">SW-REQ-052</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-053">SW-REQ-053</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-070">SYS-REQ-070</a></div></span></span></td>
 <td>The project shall include a troubleshooting guide covering common failure modes with diagnosis and resolution steps.</td>
 <td>S3: Student</td>
 <td>SHOULD</td>
-<td>SYS-REQ-070</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-070</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-018">STKH-REQ-018</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-020">IT-020</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-050">SW-REQ-050</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-053">SW-REQ-053</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-100">SW-REQ-100</a></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-019</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-019</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-040">SW-REQ-040</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-042">SW-REQ-042</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-071">SYS-REQ-071</a></div></span></span></td>
 <td>The architecture shall be documented with block diagrams showing layer decomposition and data flow.</td>
 <td>S3: Student</td>
 <td>SHOULD</td>
-<td>SYS-REQ-071</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-071</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-019">STKH-REQ-019</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-020">SSR-020</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-021">SSR-021</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-040">SW-REQ-040</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-108">SW-REQ-108</a><span style="color:var(--text2)"> +2 more</span></div></span></span></td>
 </tr>
 <tr>
-<td>STKH-REQ-020</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-041">SW-REQ-041</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-072">SYS-REQ-072</a></div></span></span></td>
 <td>A feature coverage matrix shall identify which foxBMS features work on POSIX, which are suppressed, and which are not implemented.</td>
 <td>S1: HIL Eng</td>
 <td>MUST</td>
-<td>SYS-REQ-072</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-072</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-020">STKH-REQ-020</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-041">SW-REQ-041</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-109">SW-REQ-109</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-031">UT-031</a></div></span></span></td>
 </tr>
 </tbody>
 </table>
@@ -510,15 +530,15 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>STKH-REQ-005 (same logic) vs. single-threaded execution</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-070">SW-REQ-070</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-010">SYS-REQ-010</a></div></span></span> (same logic) vs. single-threaded execution</td>
 <td>ACCEPTED: cooperative loop preserves logic correctness; concurrency testing deferred to HIL (GA-02)</td>
 </tr>
 <tr>
-<td>STKH-REQ-010 (suppress HW diag) vs. STKH-REQ-009 (execute SW diag)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-010</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-006">SSR-006</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-021">SW-REQ-021</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-041">SYS-REQ-041</a></div></span></span> (suppress HW diag) vs. <span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-009</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-005">SSR-005</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-020">SW-REQ-020</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-040">SYS-REQ-040</a></div></span></span> (execute SW diag)</td>
 <td>Selective DIAG_Handler: 24 HW IDs suppressed, 61 SW IDs enabled</td>
 </tr>
 <tr>
-<td>STKH-REQ-003 (build speed) vs. STKH-REQ-004 (reproducibility)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-003</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-080">SW-REQ-080</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-003">SYS-REQ-003</a></div></span></span> (build speed) vs. <span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-004</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-004">SYS-REQ-004</a></div></span></span> (reproducibility)</td>
 <td>setup.sh caches submodule; incremental builds take &lt;10s</td>
 </tr>
 </tbody>

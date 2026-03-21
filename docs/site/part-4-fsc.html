@@ -74,6 +74,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -265,7 +285,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 - System monitoring / flash checksum: 1 ms (system-level checks)</p>
 <hr />
 <h2 id="4-functional-safety-requirements">4  Functional Safety Requirements</h2>
-<h3 id="41-fsr-01-cell-overvoltage-protection-sg-01-asil-d">4.1  FSR-01: Cell Overvoltage Protection (SG-01, ASIL D)</h3>
+<h3 id="41-fsr-01-cell-overvoltage-protection-sg-01-asil-d">4.1  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span>: Cell Overvoltage Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>, ASIL D)</h3>
 <table>
 <thead>
 <tr>
@@ -276,7 +296,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-01: Prevent cell voltage exceeding 2800 mV</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>: Prevent cell voltage exceeding 2800 mV</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -316,7 +336,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="42-fsr-02-cell-undervoltage-protection-sg-02-asil-c">4.2  FSR-02: Cell Undervoltage Protection (SG-02, ASIL C)</h3>
+<h3 id="42-fsr-02-cell-undervoltage-protection-sg-02-asil-c">4.2  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>: Cell Undervoltage Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span>, ASIL C)</h3>
 <table>
 <thead>
 <tr>
@@ -327,7 +347,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-02: Prevent cell voltage below 1500 mV</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span>: Prevent cell voltage below 1500 mV</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -367,7 +387,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="43-fsr-03-deep-discharge-protection-sg-03-qm">4.3  FSR-03: Deep Discharge Protection (SG-03, QM)</h3>
+<h3 id="43-fsr-03-deep-discharge-protection-sg-03-qm">4.3  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-03">SG-03</a></div></span></span>: Deep Discharge Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-03">FSR-03</a><a class="tb-link tb-down" href="part-3-hara.html#hz-03">HZ-03</a></div></span></span>, QM)</h3>
 <table>
 <thead>
 <tr>
@@ -378,7 +398,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-03: Detect deep discharge and open contactors immediately</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-03">FSR-03</a><a class="tb-link tb-down" href="part-3-hara.html#hz-03">HZ-03</a></div></span></span>: Detect deep discharge and open contactors immediately</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -418,7 +438,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="44-fsr-04-overcurrent-discharge-protection-sg-04-asil-b">4.4  FSR-04: Overcurrent Discharge Protection (SG-04, ASIL B)</h3>
+<h3 id="44-fsr-04-overcurrent-discharge-protection-sg-04-asil-b">4.4  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span>: Overcurrent Discharge Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span>, ASIL B)</h3>
 <table>
 <thead>
 <tr>
@@ -429,7 +449,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-04: Limit discharge current and open contactors on persistent overcurrent</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span>: Limit discharge current and open contactors on persistent overcurrent</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -469,7 +489,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="45-fsr-05-overcurrent-charge-protection-sg-05-asil-c">4.5  FSR-05: Overcurrent Charge Protection (SG-05, ASIL C)</h3>
+<h3 id="45-fsr-05-overcurrent-charge-protection-sg-05-asil-c">4.5  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span>: Overcurrent Charge Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span>, ASIL C)</h3>
 <table>
 <thead>
 <tr>
@@ -480,7 +500,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-05: Limit charge current and open contactors on persistent overcurrent</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span>: Limit charge current and open contactors on persistent overcurrent</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -492,7 +512,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Detection</strong></td>
-<td>Same as FSR-04 but for charge direction (sign convention)</td>
+<td>Same as <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span> but for charge direction (sign convention)</td>
 </tr>
 <tr>
 <td><strong>Safe State</strong></td>
@@ -520,7 +540,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="46-fsr-06-overtemperature-protection-sg-06-asil-c">4.6  FSR-06: Overtemperature Protection (SG-06, ASIL C)</h3>
+<h3 id="46-fsr-06-overtemperature-protection-sg-06-asil-c">4.6  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-06">SG-06</a></div></span></span>: Overtemperature Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span>, ASIL C)</h3>
 <table>
 <thead>
 <tr>
@@ -531,7 +551,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-06: Monitor cell temperatures and open contactors on overtemperature</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span>: Monitor cell temperatures and open contactors on overtemperature</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -571,7 +591,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="47-fsr-07-undertemperature-charge-protection-sg-07-asil-b">4.7  FSR-07: Undertemperature Charge Protection (SG-07, ASIL B)</h3>
+<h3 id="47-fsr-07-undertemperature-charge-protection-sg-07-asil-b">4.7  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-07">SG-07</a></div></span></span>: Undertemperature Charge Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-07">FSR-07</a><a class="tb-link tb-down" href="part-3-hara.html#hz-07">HZ-07</a></div></span></span>, ASIL B)</h3>
 <table>
 <thead>
 <tr>
@@ -582,7 +602,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-07: Prevent charging below -20 °C</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-07">FSR-07</a><a class="tb-link tb-down" href="part-3-hara.html#hz-07">HZ-07</a></div></span></span>: Prevent charging below -20 °C</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -622,7 +642,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="48-fsr-08-contactor-welding-detection-sg-08-asil-b">4.8  FSR-08: Contactor Welding Detection (SG-08, ASIL B)</h3>
+<h3 id="48-fsr-08-contactor-welding-detection-sg-08-asil-b">4.8  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-08">SG-08</a></div></span></span>: Contactor Welding Detection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-08">FSR-08</a><a class="tb-link tb-down" href="part-3-hara.html#hz-08">HZ-08</a></div></span></span>, ASIL B)</h3>
 <table>
 <thead>
 <tr>
@@ -633,7 +653,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-08: Detect contactor welding and prevent further operation</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-08">FSR-08</a><a class="tb-link tb-down" href="part-3-hara.html#hz-08">HZ-08</a></div></span></span>: Detect contactor welding and prevent further operation</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -673,7 +693,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="49-fsr-09-current-sensor-failure-detection-sg-09-asil-b">4.9  FSR-09: Current Sensor Failure Detection (SG-09, ASIL B)</h3>
+<h3 id="49-fsr-09-current-sensor-failure-detection-sg-09-asil-b">4.9  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-09">SG-09</a></div></span></span>: Current Sensor Failure Detection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-09">FSR-09</a><a class="tb-link tb-down" href="part-3-hara.html#hz-09">HZ-09</a></div></span></span>, ASIL B)</h3>
 <table>
 <thead>
 <tr>
@@ -684,7 +704,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-09: Detect current sensor failure and open contactors</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-09">FSR-09</a><a class="tb-link tb-down" href="part-3-hara.html#hz-09">HZ-09</a></div></span></span>: Detect current sensor failure and open contactors</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -724,7 +744,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="410-fsr-10-interlock-monitoring-sg-10-qm">4.10  FSR-10: Interlock Monitoring (SG-10, QM)</h3>
+<h3 id="410-fsr-10-interlock-monitoring-sg-10-qm">4.10  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-10">SG-10</a></div></span></span>: Interlock Monitoring (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-10">FSR-10</a><a class="tb-link tb-down" href="part-3-hara.html#hz-10">HZ-10</a></div></span></span>, QM)</h3>
 <table>
 <thead>
 <tr>
@@ -735,7 +755,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-10: Detect interlock break and de-energize HV path</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-10">FSR-10</a><a class="tb-link tb-down" href="part-3-hara.html#hz-10">HZ-10</a></div></span></span>: Detect interlock break and de-energize HV path</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -775,7 +795,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="411-fsr-11-insulation-fault-detection-sg-11-asil-a">4.11  FSR-11: Insulation Fault Detection (SG-11, ASIL A)</h3>
+<h3 id="411-fsr-11-insulation-fault-detection-sg-11-asil-a">4.11  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-11">SG-11</a></div></span></span>: Insulation Fault Detection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-11">FSR-11</a><a class="tb-link tb-down" href="part-3-hara.html#hz-11">HZ-11</a></div></span></span>, ASIL A)</h3>
 <table>
 <thead>
 <tr>
@@ -786,7 +806,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-11: Detect insulation faults and transition to safe state</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-11">FSR-11</a><a class="tb-link tb-down" href="part-3-hara.html#hz-11">HZ-11</a></div></span></span>: Detect insulation faults and transition to safe state</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -826,7 +846,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h3 id="412-fsr-12-cell-imbalance-protection-sg-12-asil-c">4.12  FSR-12: Cell Imbalance Protection (SG-12, ASIL C)</h3>
+<h3 id="412-fsr-12-cell-imbalance-protection-sg-12-asil-c">4.12  <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-12">SG-12</a></div></span></span>: Cell Imbalance Protection (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-12">FSR-12</a><a class="tb-link tb-down" href="part-3-hara.html#hz-12">HZ-12</a></div></span></span>, ASIL C)</h3>
 <table>
 <thead>
 <tr>
@@ -837,7 +857,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td><strong>Safety Goal</strong></td>
-<td>SG-12: Enforce per-cell voltage limits regardless of string-level measurements</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-12">FSR-12</a><a class="tb-link tb-down" href="part-3-hara.html#hz-12">HZ-12</a></div></span></span>: Enforce per-cell voltage limits regardless of string-level measurements</td>
 </tr>
 <tr>
 <td><strong>ASIL</strong></td>
@@ -849,7 +869,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Detection</strong></td>
-<td>Per-cell AFE measurement. Same DIAG IDs as FSR-01 and FSR-02 (CELL_VOLTAGE_OVERVOLTAGE_MSL, CELL_VOLTAGE_UNDERVOLTAGE_MSL). Detection inherently operates per-cell because the SOA check iterates over all cells.</td>
+<td>Per-cell AFE measurement. Same DIAG IDs as <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span> and <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span> (CELL_VOLTAGE_OVERVOLTAGE_MSL, CELL_VOLTAGE_UNDERVOLTAGE_MSL). Detection inherently operates per-cell because the SOA check iterates over all cells.</td>
 </tr>
 <tr>
 <td><strong>Safe State</strong></td>
@@ -857,7 +877,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>Warning Concept</strong></td>
-<td>Same three-tier MOL/RSL/MSL as FSR-01 and FSR-02.</td>
+<td>Same three-tier MOL/RSL/MSL as <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span> and <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>.</td>
 </tr>
 <tr>
 <td><strong>Degradation</strong></td>
@@ -865,11 +885,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td><strong>FTTI Calculation</strong></td>
-<td>Same as FSR-01/FSR-02: <strong>FTTI = 750 ms.</strong></td>
+<td>Same as <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span>/<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>: <strong>FTTI = 750 ms.</strong></td>
 </tr>
 <tr>
 <td><strong>Verdict</strong></td>
-<td><strong>ADEQUATE</strong> — Same analysis as FSR-01/FSR-02 applies</td>
+<td><strong>ADEQUATE</strong> — Same analysis as <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span>/<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span> applies</td>
 </tr>
 </tbody>
 </table>
@@ -891,8 +911,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </thead>
 <tbody>
 <tr>
-<td>FSR-01</td>
-<td>SG-01</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span></td>
 <td>ASIL D</td>
 <td>500</td>
 <td>200</td>
@@ -902,8 +922,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-02</td>
-<td>SG-02</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span></td>
 <td>ASIL C</td>
 <td>500</td>
 <td>200</td>
@@ -913,8 +933,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-03</td>
-<td>SG-03</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-03">SG-03</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-03">FSR-03</a><a class="tb-link tb-down" href="part-3-hara.html#hz-03">HZ-03</a></div></span></span></td>
 <td>QM</td>
 <td>10</td>
 <td>100</td>
@@ -924,8 +944,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-04</td>
-<td>SG-04</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span></td>
 <td>ASIL B</td>
 <td>100</td>
 <td>100</td>
@@ -935,8 +955,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-05</td>
-<td>SG-05</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span></td>
 <td>ASIL C</td>
 <td>100</td>
 <td>100</td>
@@ -946,8 +966,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-06</td>
-<td>SG-06</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-06">SG-06</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span></td>
 <td>ASIL C</td>
 <td>5000</td>
 <td>1000</td>
@@ -957,8 +977,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-07</td>
-<td>SG-07</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-07">SG-07</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-07">FSR-07</a><a class="tb-link tb-down" href="part-3-hara.html#hz-07">HZ-07</a></div></span></span></td>
 <td>ASIL B</td>
 <td>5000</td>
 <td>1000</td>
@@ -968,8 +988,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-08</td>
-<td>SG-08</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-08">SG-08</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-08">FSR-08</a><a class="tb-link tb-down" href="part-3-hara.html#hz-08">HZ-08</a></div></span></span></td>
 <td>ASIL B</td>
 <td>200</td>
 <td>100</td>
@@ -979,8 +999,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-09</td>
-<td>SG-09</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-09">SG-09</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-09">FSR-09</a><a class="tb-link tb-down" href="part-3-hara.html#hz-09">HZ-09</a></div></span></span></td>
 <td>ASIL B</td>
 <td>1000</td>
 <td>200</td>
@@ -990,8 +1010,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-10</td>
-<td>SG-10</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-10">SG-10</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-10">FSR-10</a><a class="tb-link tb-down" href="part-3-hara.html#hz-10">HZ-10</a></div></span></span></td>
 <td>QM</td>
 <td>100</td>
 <td>100</td>
@@ -1001,8 +1021,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-11</td>
-<td>SG-11</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-11">SG-11</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-11">FSR-11</a><a class="tb-link tb-down" href="part-3-hara.html#hz-11">HZ-11</a></div></span></span></td>
 <td>ASIL A</td>
 <td>100</td>
 <td>100</td>
@@ -1012,8 +1032,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ADEQUATE</td>
 </tr>
 <tr>
-<td>FSR-12</td>
-<td>SG-12</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-12">SG-12</a></div></span></span></td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-12">FSR-12</a><a class="tb-link tb-down" href="part-3-hara.html#hz-12">HZ-12</a></div></span></span></td>
 <td>ASIL C</td>
 <td>500</td>
 <td>200</td>
@@ -1071,7 +1091,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
                                       └─────────────┘
 </code></pre>
 <h3 id="62-independence-of-safety-mechanisms">6.2  Independence of Safety Mechanisms</h3>
-<p>For ASIL D safety goals (SG-01), the diagnostic configuration provides independence through:</p>
+<p>For ASIL D safety goals (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>), the diagnostic configuration provides independence through:</p>
 <ol>
 <li><strong>Primary path:</strong> AFE cell voltage measurement → SOA_CheckCellVoltage() → DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL → ERROR → contactor open</li>
 <li><strong>Secondary path:</strong> IVT pack voltage measurement → plausibility check against AFE sum → DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE → ERROR → contactor open</li>

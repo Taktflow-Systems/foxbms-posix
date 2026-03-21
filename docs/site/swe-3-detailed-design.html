@@ -74,6 +74,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -242,7 +262,7 @@ the SOA module check functions, and the BMS state machine transitions.</p>
 <td>Software Architecture Description</td>
 </tr>
 <tr>
-<td>[ISO-SSR-001]</td>
+<td>[ISO-<span class="trace-id" style="border-bottom:1px dashed #f39c12;cursor:help"><a href="traceability.html" style="color:#f39c12;text-decoration:none">SSR-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability-matrix.html#hz-001">HZ-001</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-002">HZ-002</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-003">HZ-003</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-004">HZ-004</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-005">HZ-005</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-006">HZ-006</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-007">HZ-007</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-008">HZ-008</a><span style="color:var(--text2)"> +6 more</span></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-012">UT-012</a></div></span></span>]</td>
 <td>Software Safety Requirements</td>
 </tr>
 </tbody>
@@ -281,7 +301,7 @@ entry point for reporting diagnostic events.</p>
 <p>The following table lists all 29 diagnostic IDs configured with FATAL severity. These
 are the entries that, when their threshold counter is reached, cause the BMS to
 transition to ERROR state and open contactors.</p>
-<p>Traces to: SW-REQ-030, SW-REQ-031, SW-REQ-035</p>
+<p>Traces to: <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-031</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-053">SYS-REQ-053</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-041">IT-041</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-042">IT-042</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-061">IT-061</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-032">SSR-032</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-001">UT-001</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-002">UT-002</a><span style="color:var(--text2)"> +1 more</span></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-035</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-084">SYS-REQ-084</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-154">SYS-REQ-154</a></div></span></span></p>
 <table>
 <thead>
 <tr>
@@ -300,7 +320,7 @@ transition to ERROR state and open contactors.</p>
 <td>50</td>
 <td>FATAL</td>
 <td>200</td>
-<td>SW-REQ-001</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-020">SYS-REQ-020</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-012">UT-012</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-015">UT-015</a></div></span></span></td>
 </tr>
 <tr>
 <td>2</td>
@@ -308,7 +328,7 @@ transition to ERROR state and open contactors.</p>
 <td>50</td>
 <td>FATAL</td>
 <td>200</td>
-<td>SW-REQ-002</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-002</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-021">SYS-REQ-021</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-002">SSR-002</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-013">UT-013</a></div></span></span></td>
 </tr>
 <tr>
 <td>3</td>
@@ -316,7 +336,7 @@ transition to ERROR state and open contactors.</p>
 <td>500</td>
 <td>FATAL</td>
 <td>1000</td>
-<td>SW-REQ-022</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-022</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-013">STKH-REQ-013</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-042">SYS-REQ-042</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-034">IT-034</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-007">SSR-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-020">UT-020</a></div></span></span></td>
 </tr>
 <tr>
 <td>4</td>
@@ -324,7 +344,7 @@ transition to ERROR state and open contactors.</p>
 <td>500</td>
 <td>FATAL</td>
 <td>1000</td>
-<td>SW-REQ-020</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-040">SYS-REQ-040</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-012">IT-012</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-005">SSR-005</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-018">UT-018</a></div></span></span></td>
 </tr>
 <tr>
 <td>5</td>
@@ -332,7 +352,7 @@ transition to ERROR state and open contactors.</p>
 <td>500</td>
 <td>FATAL</td>
 <td>1000</td>
-<td>SW-REQ-023</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-023</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-043">SYS-REQ-043</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-008">SSR-008</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-021">UT-021</a></div></span></span></td>
 </tr>
 <tr>
 <td>6</td>
@@ -340,7 +360,7 @@ transition to ERROR state and open contactors.</p>
 <td>500</td>
 <td>FATAL</td>
 <td>1000</td>
-<td>SW-REQ-021</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-021</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-010">STKH-REQ-010</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-041">SYS-REQ-041</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-006">SSR-006</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-019">UT-019</a></div></span></span></td>
 </tr>
 <tr>
 <td>7</td>
@@ -348,7 +368,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-011</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-011</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-031">SYS-REQ-031</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-037">IT-037</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-004">SSR-004</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-017">UT-017</a></div></span></span></td>
 </tr>
 <tr>
 <td>8</td>
@@ -356,7 +376,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-010</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-010</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-008">STKH-REQ-008</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-030">SYS-REQ-030</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-016">UT-016</a></div></span></span></td>
 </tr>
 <tr>
 <td>9</td>
@@ -364,7 +384,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-012</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-012</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-013">SYS-REQ-013</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a></div></span></span></td>
 </tr>
 <tr>
 <td>10</td>
@@ -372,7 +392,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-012</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-012</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-013">SYS-REQ-013</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a></div></span></span></td>
 </tr>
 <tr>
 <td>11</td>
@@ -380,7 +400,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-013</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-013</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-014">SYS-REQ-014</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a></div></span></span></td>
 </tr>
 <tr>
 <td>12</td>
@@ -388,7 +408,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-013</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-013</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-014">SYS-REQ-014</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a></div></span></span></td>
 </tr>
 <tr>
 <td>13</td>
@@ -396,7 +416,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-014</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-014</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-013">SYS-REQ-013</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-039">IT-039</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-010">SSR-010</a></div></span></span></td>
 </tr>
 <tr>
 <td>14</td>
@@ -404,7 +424,7 @@ transition to ERROR state and open contactors.</p>
 <td>1</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-005</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-022">SYS-REQ-022</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-038">IT-038</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-009">SSR-009</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-014">UT-014</a></div></span></span></td>
 </tr>
 <tr>
 <td>15</td>
@@ -412,7 +432,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-060</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-060</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-014">STKH-REQ-014</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-060">SYS-REQ-060</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-013">IT-013</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-040">UT-040</a></div></span></span></td>
 </tr>
 <tr>
 <td>16</td>
@@ -420,7 +440,7 @@ transition to ERROR state and open contactors.</p>
 <td>10</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>17</td>
@@ -428,7 +448,7 @@ transition to ERROR state and open contactors.</p>
 <td>5</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>18</td>
@@ -436,7 +456,7 @@ transition to ERROR state and open contactors.</p>
 <td>5</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>19</td>
@@ -444,7 +464,7 @@ transition to ERROR state and open contactors.</p>
 <td>5</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>20</td>
@@ -452,7 +472,7 @@ transition to ERROR state and open contactors.</p>
 <td>1</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>21</td>
@@ -460,7 +480,7 @@ transition to ERROR state and open contactors.</p>
 <td>100</td>
 <td>FATAL</td>
 <td>200</td>
-<td>SW-REQ-110</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-110</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-05a">SYS-REQ-05A</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-063">SYS-REQ-063</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-040">SSR-040</a></div></span></span></td>
 </tr>
 <tr>
 <td>22</td>
@@ -468,7 +488,7 @@ transition to ERROR state and open contactors.</p>
 <td>100</td>
 <td>FATAL</td>
 <td>200</td>
-<td>SW-REQ-111</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-111</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-016">STKH-REQ-016</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-062">SYS-REQ-062</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-073">SYS-REQ-073</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-041">SSR-041</a></div></span></span></td>
 </tr>
 <tr>
 <td>23</td>
@@ -476,7 +496,7 @@ transition to ERROR state and open contactors.</p>
 <td>1</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>24</td>
@@ -484,7 +504,7 @@ transition to ERROR state and open contactors.</p>
 <td>20</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-044</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-044</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-006">SYS-REQ-006</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-015">SYS-REQ-015</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-054">SYS-REQ-054</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-114">SYS-REQ-114</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-052">IT-052</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-063">IT-063</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-021">SSR-021</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-050">SSR-050</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-052">SSR-052</a><span style="color:var(--text2)"> +3 more</span></div></span></span></td>
 </tr>
 <tr>
 <td>25</td>
@@ -492,7 +512,7 @@ transition to ERROR state and open contactors.</p>
 <td>20</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-044</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-044</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-006">SYS-REQ-006</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-015">SYS-REQ-015</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-054">SYS-REQ-054</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-114">SYS-REQ-114</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-052">IT-052</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-063">IT-063</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-021">SSR-021</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-050">SSR-050</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-052">SSR-052</a><span style="color:var(--text2)"> +3 more</span></div></span></span></td>
 </tr>
 <tr>
 <td>26</td>
@@ -500,7 +520,7 @@ transition to ERROR state and open contactors.</p>
 <td>20</td>
 <td>FATAL</td>
 <td>100</td>
-<td>SW-REQ-044</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-044</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-006">SYS-REQ-006</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-015">SYS-REQ-015</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-054">SYS-REQ-054</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-114">SYS-REQ-114</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-052">IT-052</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-063">IT-063</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-021">SSR-021</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-050">SSR-050</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-052">SSR-052</a><span style="color:var(--text2)"> +3 more</span></div></span></span></td>
 </tr>
 <tr>
 <td>27</td>
@@ -508,7 +528,7 @@ transition to ERROR state and open contactors.</p>
 <td>1</td>
 <td>FATAL</td>
 <td>0</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>28</td>
@@ -516,7 +536,7 @@ transition to ERROR state and open contactors.</p>
 <td>1</td>
 <td>FATAL</td>
 <td>0</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 <tr>
 <td>29</td>
@@ -524,7 +544,7 @@ transition to ERROR state and open contactors.</p>
 <td>1</td>
 <td>FATAL</td>
 <td>0</td>
-<td>SW-REQ-030</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-050">SYS-REQ-050</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-051">SYS-REQ-051</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-052">SYS-REQ-052</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-042">SSR-042</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-007">UT-007</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-008">UT-008</a></div></span></span></td>
 </tr>
 </tbody>
 </table>
@@ -621,7 +641,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
         else:
             DIAG_Handler(CELL_VOLTAGE_UNDERVOLTAGE_MSL, OK, ...)
 </code></pre>
-<p>Traces to: SW-REQ-001 through SW-REQ-005</p>
+<p>Traces to: <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-020">SYS-REQ-020</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-012">UT-012</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-015">UT-015</a></div></span></span> through <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-022">SYS-REQ-022</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-038">IT-038</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-009">SSR-009</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-014">UT-014</a></div></span></span></p>
 <h4 id="522-soa_checkcurrents">5.2.2 SOA_CheckCurrents</h4>
 <pre><code>SOA_CheckCurrents(pCurrentData):
     // Cell-level discharge
@@ -650,7 +670,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
     if contactorsOpen AND abs(current) &gt; restCurrentThreshold:
         DIAG_Handler(CURRENT_ON_OPEN_STRING, NOT_OK, ...)
 </code></pre>
-<p>Traces to: SW-REQ-010 through SW-REQ-014</p>
+<p>Traces to: <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-010</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-008">STKH-REQ-008</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-030">SYS-REQ-030</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-016">UT-016</a></div></span></span> through <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-014</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-013">SYS-REQ-013</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-039">IT-039</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-010">SSR-010</a></div></span></span></p>
 <h4 id="523-soa_checktemperatures">5.2.3 SOA_CheckTemperatures</h4>
 <pre><code>SOA_CheckTemperatures(pTempData, chargingState):
     for each sensor i in [0..7]:
@@ -682,7 +702,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
             if t &lt; -20: DIAG_Handler(TEMP_UNDERTEMPERATURE_CHARGE_MSL, NOT_OK, ...)
             else:       DIAG_Handler(TEMP_UNDERTEMPERATURE_CHARGE_MSL, OK, ...)
 </code></pre>
-<p>Traces to: SW-REQ-020 through SW-REQ-023</p>
+<p>Traces to: <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-040">SYS-REQ-040</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-012">IT-012</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-005">SSR-005</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-018">UT-018</a></div></span></span> through <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-023</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-043">SYS-REQ-043</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-008">SSR-008</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-021">UT-021</a></div></span></span></p>
 <h2 id="6-bms-state-machine-detailed-design">6. BMS State Machine Detailed Design</h2>
 <h3 id="61-state-diagram">6.1 State Diagram</h3>
 <pre><code>                    +-------------------+
@@ -729,7 +749,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>Request == NORMAL</td>
 <td>PRECHARGE</td>
 <td>Begin precharge sequence</td>
-<td>SW-REQ-041</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-041</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-020">STKH-REQ-020</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-072">SYS-REQ-072</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-091">SYS-REQ-091</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-023">IT-023</a><a class="tb-link tb-down" href="part-8-traceability.html#it-050">IT-050</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-031">UT-031</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-061">UT-061</a></div></span></span></td>
 </tr>
 <tr>
 <td>STANDBY</td>
@@ -737,7 +757,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>--</td>
 <td>ERROR</td>
 <td>Open all contactors</td>
-<td>SW-REQ-043</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-043</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-073">SYS-REQ-073</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-093">SYS-REQ-093</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-034">IT-034</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><span style="color:var(--text2)"> +4 more</span></div></span></span></td>
 </tr>
 <tr>
 <td>PRECHARGE</td>
@@ -745,7 +765,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>Voltage within tolerance</td>
 <td>NORMAL</td>
 <td>Close string+ contactor</td>
-<td>SW-REQ-042</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-042</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-019">STKH-REQ-019</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-092">SYS-REQ-092</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-022">IT-022</a><a class="tb-link tb-down" href="part-8-traceability.html#it-050">IT-050</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-032">UT-032</a></div></span></span></td>
 </tr>
 <tr>
 <td>PRECHARGE</td>
@@ -753,7 +773,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>Timeout expired</td>
 <td>ERROR</td>
 <td>Open all contactors</td>
-<td>SW-REQ-043</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-043</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-073">SYS-REQ-073</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-093">SYS-REQ-093</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-034">IT-034</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><span style="color:var(--text2)"> +4 more</span></div></span></span></td>
 </tr>
 <tr>
 <td>PRECHARGE</td>
@@ -761,7 +781,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>--</td>
 <td>ERROR</td>
 <td>Open all contactors</td>
-<td>SW-REQ-043</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-043</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-073">SYS-REQ-073</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-093">SYS-REQ-093</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-034">IT-034</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><span style="color:var(--text2)"> +4 more</span></div></span></span></td>
 </tr>
 <tr>
 <td>NORMAL</td>
@@ -769,7 +789,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>--</td>
 <td>ERROR</td>
 <td>Open all contactors</td>
-<td>SW-REQ-043</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-043</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-073">SYS-REQ-073</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-093">SYS-REQ-093</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-033">IT-033</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-034">IT-034</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><span style="color:var(--text2)"> +4 more</span></div></span></span></td>
 </tr>
 <tr>
 <td>NORMAL</td>
@@ -777,7 +797,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>Request == STANDBY</td>
 <td>STANDBY</td>
 <td>Open all contactors</td>
-<td>SW-REQ-041</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-041</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-020">STKH-REQ-020</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-072">SYS-REQ-072</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-091">SYS-REQ-091</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-023">IT-023</a><a class="tb-link tb-down" href="part-8-traceability.html#it-050">IT-050</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-031">UT-031</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-061">UT-061</a></div></span></span></td>
 </tr>
 <tr>
 <td>ERROR</td>
@@ -785,7 +805,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
 <td>Both conditions met</td>
 <td>STANDBY</td>
 <td>Reset error flags</td>
-<td>SW-REQ-045</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-045</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-055">SYS-REQ-055</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-094">SYS-REQ-094</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-038">IT-038</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-022">SSR-022</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-023">SSR-023</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-024">SSR-024</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-035">UT-035</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-036">UT-036</a></div></span></span></td>
 </tr>
 </tbody>
 </table>
@@ -830,7 +850,7 @@ database, comparing each value against the three-tier threshold structure (MOL, 
                 if request == STANDBY_REQUESTED:
                     bmsState = STANDBY
 </code></pre>
-<p>Traces to: SW-REQ-040 through SW-REQ-045</p>
+<p>Traces to: <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-040</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-019">STKH-REQ-019</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-071">SYS-REQ-071</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-090">SYS-REQ-090</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-014">IT-014</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-062">IT-062</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-030">UT-030</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-102">UT-102</a></div></span></span> through <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-045</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-055">SYS-REQ-055</a><a class="tb-link tb-up" href="sys-2-system-reqs.html#sys-req-094">SYS-REQ-094</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-038">IT-038</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-022">SSR-022</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-023">SSR-023</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-024">SSR-024</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-035">UT-035</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-036">UT-036</a></div></span></span></p>
 <h3 id="64-contactor-sequence-timing">6.4 Contactor Sequence Timing</h3>
 <table>
 <thead>

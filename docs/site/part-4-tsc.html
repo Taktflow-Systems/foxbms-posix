@@ -74,6 +74,26 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 .content pre code { background: none; padding: 0; color: var(--text); }
 .hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
 
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
 /* Index page cards */
 .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
 .card {
@@ -279,7 +299,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 10. Error state handler commands all contactors open via <code>CONT_OpenContactor()</code> → SPS driver</p>
 <hr />
 <h2 id="3-technical-safety-requirements">3  Technical Safety Requirements</h2>
-<h3 id="31-tsr-01-cell-overvoltage-detection-and-reaction-fsr-01-asil-d">3.1  TSR-01: Cell Overvoltage Detection and Reaction (FSR-01, ASIL D)</h3>
+<h3 id="31-tsr-01-cell-overvoltage-detection-and-reaction-fsr-01-asil-d">3.1  TSR-01: Cell Overvoltage Detection and Reaction (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-01">SG-01</a></div></span></span>, ASIL D)</h3>
 <h4 id="311-detection-mechanism">3.1.1  Detection Mechanism</h4>
 <table>
 <thead>
@@ -447,7 +467,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li><strong>Independence:</strong> AFE and IVT are physically separate devices with separate communication buses (SPI vs. CAN), separate power supplies, and independent measurement principles (direct cell tapping vs. pack-level shunt + ADC)</li>
 </ul>
 <hr />
-<h3 id="32-tsr-02-cell-undervoltage-detection-and-reaction-fsr-02-asil-c">3.2  TSR-02: Cell Undervoltage Detection and Reaction (FSR-02, ASIL C)</h3>
+<h3 id="32-tsr-02-cell-undervoltage-detection-and-reaction-fsr-02-asil-c">3.2  TSR-02: Cell Undervoltage Detection and Reaction (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-02">SG-02</a></div></span></span>, ASIL C)</h3>
 <h4 id="321-detection-mechanism">3.2.1  Detection Mechanism</h4>
 <table>
 <thead>
@@ -522,7 +542,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tbody>
 </table>
 <hr />
-<h3 id="33-tsr-03-deep-discharge-detection-fsr-03-qm">3.3  TSR-03: Deep Discharge Detection (FSR-03, QM)</h3>
+<h3 id="33-tsr-03-deep-discharge-detection-fsr-03-qm">3.3  TSR-03: Deep Discharge Detection (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-03">SG-03</a></div></span></span>, QM)</h3>
 <table>
 <thead>
 <tr>
@@ -558,7 +578,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tbody>
 </table>
 <hr />
-<h3 id="34-tsr-04-overcurrent-discharge-detection-fsr-04-asil-b">3.4  TSR-04: Overcurrent Discharge Detection (FSR-04, ASIL B)</h3>
+<h3 id="34-tsr-04-overcurrent-discharge-detection-fsr-04-asil-b">3.4  TSR-04: Overcurrent Discharge Detection (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-04">SG-04</a></div></span></span>, ASIL B)</h3>
 <h4 id="341-detection-mechanism">3.4.1  Detection Mechanism</h4>
 <table>
 <thead>
@@ -691,7 +711,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tbody>
 </table>
 <hr />
-<h3 id="35-tsr-05-overcurrent-charge-detection-fsr-05-asil-c">3.5  TSR-05: Overcurrent Charge Detection (FSR-05, ASIL C)</h3>
+<h3 id="35-tsr-05-overcurrent-charge-detection-fsr-05-asil-c">3.5  TSR-05: Overcurrent Charge Detection (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-05">SG-05</a></div></span></span>, ASIL C)</h3>
 <table>
 <thead>
 <tr>
@@ -740,7 +760,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <p>Detection and reaction chain identical to TSR-04 with charge-direction sign convention.</p>
 <hr />
-<h3 id="36-tsr-06-overtemperature-detection-fsr-06-asil-c">3.6  TSR-06: Overtemperature Detection (FSR-06, ASIL C)</h3>
+<h3 id="36-tsr-06-overtemperature-detection-fsr-06-asil-c">3.6  TSR-06: Overtemperature Detection (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-06">SG-06</a></div></span></span>, ASIL C)</h3>
 <h4 id="361-detection-mechanism">3.6.1  Detection Mechanism</h4>
 <table>
 <thead>
@@ -829,7 +849,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li><strong>False positive prevention:</strong> In automotive environments with rapid ambient temperature changes (e.g., engine bay heat soak after parking), brief temperature excursions should not trigger unnecessary shutdowns.</li>
 </ol>
 <hr />
-<h3 id="37-tsr-07-undertemperature-detection-fsr-07-asil-b">3.7  TSR-07: Undertemperature Detection (FSR-07, ASIL B)</h3>
+<h3 id="37-tsr-07-undertemperature-detection-fsr-07-asil-b">3.7  TSR-07: Undertemperature Detection (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-07">SG-07</a></div></span></span>, ASIL B)</h3>
 <table>
 <thead>
 <tr>
@@ -870,7 +890,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <p>Same thermal inertia justification as TSR-06 applies. Ambient temperature changes that would push cell temperature through the -20 °C threshold occur over minutes, not seconds.</p>
 <hr />
-<h3 id="38-tsr-08-contactor-feedback-monitoring-fsr-08-asil-b">3.8  TSR-08: Contactor Feedback Monitoring (FSR-08, ASIL B)</h3>
+<h3 id="38-tsr-08-contactor-feedback-monitoring-fsr-08-asil-b">3.8  TSR-08: Contactor Feedback Monitoring (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-08">SG-08</a></div></span></span>, ASIL B)</h3>
 <h4 id="381-detection-mechanism">3.8.1  Detection Mechanism</h4>
 <table>
 <thead>
@@ -951,7 +971,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </ol>
 <p>Both cases result in FATAL flag and ERROR state transition.</p>
 <hr />
-<h3 id="39-tsr-09-current-sensor-communication-monitoring-fsr-09-asil-b">3.9  TSR-09: Current Sensor Communication Monitoring (FSR-09, ASIL B)</h3>
+<h3 id="39-tsr-09-current-sensor-communication-monitoring-fsr-09-asil-b">3.9  TSR-09: Current Sensor Communication Monitoring (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-09">SG-09</a></div></span></span>, ASIL B)</h3>
 <h4 id="391-detection-mechanism-multi-channel-monitoring">3.9.1  Detection Mechanism — Multi-Channel Monitoring</h4>
 <table>
 <thead>
@@ -1144,7 +1164,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li><strong>Alert mode:</strong> SBC has entered alert mode due to watchdog failure or voltage supervisor trip.</li>
 </ul>
 <hr />
-<h3 id="313-tsr-13-interlock-loop-monitoring-fsr-10">3.13  TSR-13: Interlock Loop Monitoring (FSR-10)</h3>
+<h3 id="313-tsr-13-interlock-loop-monitoring-fsr-10">3.13  TSR-13: Interlock Loop Monitoring (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">FSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-9-asil-decomp.html#sg-10">SG-10</a></div></span></span>)</h3>
 <table>
 <thead>
 <tr>
