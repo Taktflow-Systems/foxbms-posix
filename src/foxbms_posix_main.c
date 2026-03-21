@@ -304,18 +304,17 @@ int main(int argc, char *argv[])
 #ifdef FOXBMS_SIL_PROBES
             {
                 /* State machine probe: SYS state + BMS state
-                 * Read BMS state from the last CAN 0x220 TX frame
-                 * (foxBMS encodes state in byte 0 lower nibble) */
+                 * Read directly from foxBMS API — not CAN sniffing
+                 * (CAN 0x220 has multiplexed sub-messages that cause flicker) */
                 extern volatile uint8_t os_boot;
-                static uint8_t last_bms_state_byte = 0u;
-                /* Snoop 0x220 from CAN TX — the canTransmit stub tracks this */
-                extern uint8_t posix_last_can_tx_220[8];
-                last_bms_state_byte = posix_last_can_tx_220[0];
+                extern uint8_t BMS_GetState(void);
+                extern uint8_t BMS_GetNumberOfConnectedStrings(void);
+                uint8_t bms_st = BMS_GetState();
+                uint8_t bms_strings = BMS_GetNumberOfConnectedStrings();
                 uint8_t sm_buf[8] = {0};
-                sm_buf[0] = os_boot;                       /* SYS state */
-                sm_buf[1] = 0;
-                sm_buf[4] = last_bms_state_byte & 0x0Fu;   /* BMS state */
-                sm_buf[5] = (last_bms_state_byte >> 4) & 0x0Fu;  /* connected strings */
+                sm_buf[0] = os_boot;        /* SYS state */
+                sm_buf[4] = bms_st;         /* BMS state (direct from state machine) */
+                sm_buf[5] = bms_strings;    /* connected strings */
                 sil_probe_raw(SIL_PROBE_STATE_MACHINE, sm_buf, 8);
 
                 /* SOC probe — read from DB via extern */

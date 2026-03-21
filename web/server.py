@@ -101,8 +101,10 @@ def _p_0x7f7(d: bytes) -> None:
 def _p_0x7f8(d: bytes) -> None:
     state["diag_bitmap"] = struct.unpack_from("<Q", d, 0)[0]
 def _p_0x7f9(d: bytes) -> None:
-    state["sys_state"], state["bms_state"] = d[0], d[4]
+    state["sys_state"] = d[0]
+    state["bms_state"] = d[4]
     state["bms_state_name"] = BMS_STATES.get(d[4], "UNKNOWN")
+    state["connected_strings"] = d[5] if len(d) > 5 else 0
     _track_state(d[4])
 def _p_0x7fa(d: bytes) -> None:
     state["pack_current_ma"] = struct.unpack_from("<i", d, 0)[0]
@@ -111,7 +113,9 @@ def _p_0x7ff(d: bytes) -> None:
     state["uptime_ms"] = struct.unpack_from("<I", d, 4)[0]
 # -- Plant telemetry (0x600-0x607) ------------------------------------------
 def _p_0x600(d: bytes) -> None:
-    state["plant_soc_pct"] = round(struct.unpack_from("<f", d, 0)[0], 2)
+    soc = struct.unpack_from("<f", d, 0)[0]
+    if soc > 0:  # ignore zero/invalid reads
+        state["plant_soc_pct"] = round(soc, 2)
     state["plant_current_ma"] = struct.unpack_from("<i", d, 4)[0]
 def _p_0x601(d: bytes) -> None:
     state["plant_ocv_mv"] = struct.unpack_from("<i", d, 0)[0]
