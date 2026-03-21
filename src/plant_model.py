@@ -1,32 +1,6 @@
 #!/usr/bin/env python3
-"""
-foxBMS POSIX vECU — Dynamic Battery Plant Model
-
-Simulates a realistic 18S Li-ion battery pack with:
-- Coulomb-counting SOC (decreases under load)
-- OCV(SOC) voltage curve per cell
-- IR drop on pack voltage under load
-- Per-cell voltage noise (±10 mV Gaussian)
-- Closed-loop: reads foxBMS contactor state from CAN TX
-
-CAN Messages sent:
-  0x521 - IVT Current (dynamic, based on contactor state)
-  0x522 - IVT Voltage 1 (pack voltage with IR drop)
-  0x523 - IVT Voltage 2 (same)
-  0x524 - IVT Voltage 3 (same, for redundancy module)
-  0x527 - IVT Temperature (25.0°C)
-  0x270 - Cell voltages (18 cells, OCV-based + noise)
-  0x280 - Cell temperatures (25.0°C)
-  0x210 - BMS state request (STANDBY → NORMAL)
-"""
-
-import socket
-import struct
-import time
-import sys
-import random
-import fcntl
-import os
+"""foxBMS POSIX vECU — Dynamic Battery Plant Model with override protocol (0x6E0)."""
+import socket, struct, time, sys, random, fcntl, os
 
 CAN_INTERFACE = sys.argv[1] if len(sys.argv) > 1 else "vcan1"
 
@@ -109,35 +83,18 @@ def encode_cell_temp_msg(mux, temps_ddegc):
         d = foxbms_encode_signal(d, temp_bit_starts[i], 8, t_degc)
     return msg_data_to_bytes(d)
 
-# ================================================================
-# SocketCAN setup
-# ================================================================
+# -- SocketCAN setup -------------------------------------------------------
 s = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
 s.bind((CAN_INTERFACE,))
-
-# Set non-blocking for RX (closed-loop feedback)
-s.setblocking(False)
-
-print(f"[plant] Dynamic plant model on {CAN_INTERFACE}")
-print(f"[plant] {N_CELLS}S pack, {Q_CELL_MAH} mAh, R_int={R_CELL_MOHM} mΩ/cell")
-print(f"[plant] Discharge current: {I_DISCHARGE_MA/1000:.0f} A when NORMAL")
+s.setblocking(False)  # Non-blocking for RX (closed-loop + overrides)
+print(f"[plant] {N_CELLS}S pack on {CAN_INTERFACE}, {Q_CELL_MAH}mAh, R={R_CELL_MOHM}mΩ/cell, I={I_DISCHARGE_MA/1000:.0f}A")
 
 def can_send(can_id, data):
-    """Send a CAN frame."""
-    dlc = len(data)
-    data_padded = data + bytes(8 - dlc)
-    frame = struct.pack("=IB3x8s", can_id, dlc, data_padded)
-    s.send(frame)
+    s.send(struct.pack("=IB3x8s", can_id, len(data), data + bytes(8 - len(data))))
 
-# ================================================================
-# Battery state
-# ================================================================
-soc_pct = 50.0              # Initial SOC (%)
-current_ma = 0              # Current flowing (mA, positive = discharge)
-bms_state_normal = False     # True when foxBMS reports NORMAL
-
-# Per-cell manufacturing offset (fixed per cell, ±5mV — realistic for NMC)
-random.seed(42)  # Reproducible
+# -- Battery state ---------------------------------------------------------
+soc_pct = 50.0; current_ma = 0; bms_state_normal = False
+random.seed(42)
 per_cell_offset = [random.gauss(0, 5.0) for _ in range(N_CELLS)]
 
 # AFE-style moving average filter (16 samples, like ADI ADES1830)
@@ -147,13 +104,16 @@ initial_ocv = ocv_mv(soc_pct)
 cell_voltage_history = [[initial_ocv + per_cell_offset[i]] * AFE_AVG_DEPTH for i in range(N_CELLS)]
 afe_sample_idx = 0
 
+# Plant override table (populated by 0x6E0 commands from web server)
+plant_overrides = {}  # key = (type, index), value = int
+
 tick = 0
 try:
     while True:
         tick += 1
 
         # ============================================================
-        # Closed-loop: read foxBMS CAN TX to detect NORMAL state
+        # Closed-loop: read foxBMS CAN TX + plant override commands
         # ============================================================
         try:
             while True:
@@ -162,132 +122,94 @@ try:
                     rx_id = struct.unpack("=I", rx_frame[0:4])[0] & 0x1FFFFFFF
                     rx_data = rx_frame[8:16]
                     if rx_id == 0x220 and len(rx_data) >= 1:
-                        bms_state = rx_data[0] & 0x0F  # Lower nibble = BMS state
+                        bms_state = rx_data[0] & 0x0F
                         if bms_state == 7 and not bms_state_normal:
                             bms_state_normal = True
                             print(f"[plant] foxBMS NORMAL detected at tick {tick} — starting discharge")
                         elif bms_state != 7 and bms_state_normal:
                             bms_state_normal = False
                             print(f"[plant] foxBMS left NORMAL (state={bms_state}) — stopping discharge")
+                    elif rx_id == 0x6E0 and len(rx_data) >= 7:
+                        cmd, idx, active = rx_data[0], rx_data[1], rx_data[2]
+                        value = struct.unpack_from('<i', rx_data, 3)[0]
+                        if cmd == 0xFF:  # clear all
+                            plant_overrides.clear()
+                            print(f"[plant] Override: CLEAR ALL")
+                        elif active:
+                            plant_overrides[(cmd, idx)] = value
+                            print(f"[plant] Override: cmd=0x{cmd:02X} idx={idx} val={value}")
+                        else:
+                            plant_overrides.pop((cmd, idx), None)
+                            print(f"[plant] Override removed: cmd=0x{cmd:02X} idx={idx}")
         except BlockingIOError:
             pass  # No more frames to read
 
-        # ============================================================
-        # Current model
-        # ============================================================
-        if bms_state_normal:
-            current_ma = I_DISCHARGE_MA  # 10 A discharge
-        else:
-            current_ma = 0
+        # -- Current model -------------------------------------------------
+        current_ma = I_DISCHARGE_MA if bms_state_normal else 0
+        if (0x03, 0) in plant_overrides: current_ma = plant_overrides[(0x03, 0)]
 
-        # ============================================================
-        # SOC integration (coulomb counting)
-        # ============================================================
+        # -- SOC integration (coulomb counting) ----------------------------
         if current_ma > 0:
-            # dSOC = I × dt / (Q × 3600) × 100%
             soc_pct -= (current_ma / 1000.0) / (Q_CELL_MAH / 1000.0) * (DT_S / 3600.0) * 100.0
             soc_pct = max(0.0, min(100.0, soc_pct))
 
-        # ============================================================
-        # Cell voltage model
-        # ============================================================
+        # -- Cell voltage model (OCV + noise + AFE averaging) --------------
         v_ocv = ocv_mv(soc_pct)
-
-        # Per-cell voltages: OCV + manufacturing offset + measurement noise
-        # Then AFE-style averaging (16-sample moving average)
         cell_voltages = []
         for i in range(N_CELLS):
-            # Raw sample: OCV + fixed offset + Gaussian noise (±3mV σ, realistic for 16-bit AFE)
             v_raw = v_ocv + per_cell_offset[i] + random.gauss(0, 3.0)
-            # Store in circular buffer
             cell_voltage_history[i][afe_sample_idx % AFE_AVG_DEPTH] = v_raw
-            # Report averaged value (like real AFE hardware)
-            v_avg = sum(cell_voltage_history[i]) / AFE_AVG_DEPTH
-            cell_voltages.append(max(2500, min(4500, int(v_avg))))
+            cell_voltages.append(max(2500, min(4500, int(sum(cell_voltage_history[i]) / AFE_AVG_DEPTH))))
         afe_sample_idx += 1
-
-        # Pack voltage with IR drop: V_pack = N × V_OCV − I × R_total
+        # Apply plant overrides to cell voltages
+        for i in range(N_CELLS):
+            if (0x01, i) in plant_overrides: cell_voltages[i] = plant_overrides[(0x01, i)]
+        # Pack voltage with IR drop
         ir_drop_mv = int((current_ma / 1000.0) * R_TOTAL_MOHM)
-        pack_voltage_mv = sum(cell_voltages) - ir_drop_mv
-        pack_voltage_mv = max(0, pack_voltage_mv)
+        pack_voltage_mv = max(0, sum(cell_voltages) - ir_drop_mv)
 
-        # ============================================================
-        # IVT messages
-        # ============================================================
-        msg_counter = (tick & 0x3F) << 2  # 6-bit counter, status bits = 0
+        # -- IVT messages --------------------------------------------------
+        mc = (tick & 0x3F) << 2
+        can_send(0x521, struct.pack(">BBi", mc & 0xFF, 0, current_ma)[:6])
+        for vid in (0x522, 0x523, 0x524):
+            can_send(vid, struct.pack(">BBi", mc & 0xFF, 0, pack_voltage_mv)[:6])
+        # IVT Temperature — check for override
+        temp_ddegc = 250
+        for si in range(8):
+            if (0x02, si) in plant_overrides: temp_ddegc = plant_overrides[(0x02, si)]; break
+        can_send(0x527, struct.pack(">BBi", mc & 0xFF, 0, temp_ddegc)[:6])
 
-        # IVT Current (0x521) — foxBMS: BS_POSITIVE_DISCHARGE_CURRENT=true
-        # Positive = discharge, Negative = charge
-        ivt_current = current_ma
-        can_send(0x521, struct.pack(">BBi", msg_counter & 0xFF, 0, ivt_current)[:6])
+        # -- BMS State Request (0x210) -------------------------------------
+        can_send(0x210, bytes([0x00 if tick < 3000 else 0x02, 0, 0, 0, 0, 0, 0, 0]))
+        if tick == 3000: print("[plant] Switching to NORMAL request")
 
-        # IVT Voltage 1/2/3 (0x522-0x524)
-        can_send(0x522, struct.pack(">BBi", msg_counter & 0xFF, 0, pack_voltage_mv)[:6])
-        can_send(0x523, struct.pack(">BBi", msg_counter & 0xFF, 0, pack_voltage_mv)[:6])
-        can_send(0x524, struct.pack(">BBi", msg_counter & 0xFF, 0, pack_voltage_mv)[:6])
-
-        # IVT Temperature (0x527)
-        can_send(0x527, struct.pack(">BBi", msg_counter & 0xFF, 0, 250)[:6])  # 25.0°C
-
-        # ============================================================
-        # BMS State Request (0x210)
-        # ============================================================
-        if tick < 3000:  # 3 seconds at 1ms
-            can_send(0x210, bytes([0x00, 0, 0, 0, 0, 0, 0, 0]))  # STANDBY
-        else:
-            can_send(0x210, bytes([0x02, 0, 0, 0, 0, 0, 0, 0]))  # NORMAL
-
-        if tick == 3000:
-            print("[plant] Switching to NORMAL request")
-
-        # ============================================================
-        # Cell Voltages (0x270)
-        # ============================================================
-        for mux in range(5):  # 5 × 4 = 20 slots (18 cells used)
+        # -- Cell Voltages (0x270) -----------------------------------------
+        for mux in range(5):
             base = mux * 4
-            volts = []
-            for j in range(4):
-                idx = base + j
-                if idx < N_CELLS:
-                    volts.append(cell_voltages[idx])
-                else:
-                    volts.append(0)  # Unused slots
+            volts = [cell_voltages[base+j] if base+j < N_CELLS else 0 for j in range(4)]
             can_send(0x270, encode_cell_voltage_msg(mux, volts))
 
-        # Cell Temperatures (0x280) — 2 mux groups × 6 sensors = 12 slots (8 sensors used)
-        for mux in range(2):  # mux 0 = sensors 0-5, mux 1 = sensors 6-7 + 4 unused
-            n_sensors = min(6, 8 - mux * 6)  # 8 total sensors
-            temps = [250] * max(1, n_sensors)  # 25.0°C (250 ddegC) for all
+        # -- Cell Temperatures (0x280) -------------------------------------
+        for mux in range(2):
+            n_sens = min(6, 8 - mux * 6)
+            temps = [plant_overrides.get((0x02, mux*6+si), 250) for si in range(max(1, n_sens))]
             can_send(0x280, encode_cell_temp_msg(mux, temps))
 
-        # ============================================================
-        # Plant telemetry (0x600-0x602) — for web dashboard
-        # ============================================================
-        if tick % 100 == 0:  # Every 100ms (10Hz for web display)
-            # 0x600: SOC (float32 LE), current (int32 LE)
-            soc_bytes = struct.pack('<f', soc_pct)
-            cur_bytes = struct.pack('<i', current_ma)
-            can_send(0x600, soc_bytes + cur_bytes)
-            # 0x601: OCV (int32), pack_voltage (int32) — both in mV
+        # -- Plant telemetry (0x600-0x607) for web dashboard ---------------
+        if tick % 100 == 0:
+            can_send(0x600, struct.pack('<fi', soc_pct, current_ma))
             can_send(0x601, struct.pack('<ii', v_ocv, pack_voltage_mv))
-            # 0x602: IR drop (int32), bms_state_normal (uint8), N_CELLS (uint8)
-            can_send(0x602, struct.pack('<iBB', ir_drop_mv, 1 if bms_state_normal else 0, N_CELLS) + b'\x00\x00')
-            # 0x603-0x607: per-cell voltages for web dashboard (simple int16 LE)
+            can_send(0x602, struct.pack('<iBB', ir_drop_mv, int(bms_state_normal), N_CELLS) + b'\x00\x00')
             for grp in range(5):
-                cell_data = b''
-                for j in range(4):
-                    idx = grp * 4 + j
-                    v = cell_voltages[idx] if idx < N_CELLS else 0
-                    cell_data += struct.pack('<H', v)
-                can_send(0x603 + grp, cell_data)
+                can_send(0x603 + grp, b''.join(
+                    struct.pack('<H', cell_voltages[grp*4+j] if grp*4+j < N_CELLS else 0) for j in range(4)))
 
-        # ============================================================
-        # Status log
-        # ============================================================
-        if tick % 5000 == 0:  # Every 5 seconds at 1ms
+        # -- Status log (every 5s) ----------------------------------------
+        if tick % 5000 == 0:
+            ovr = f" OVR={len(plant_overrides)}" if plant_overrides else ""
             print(f"[plant] tick={tick} SOC={soc_pct:.1f}% I={current_ma/1000:.1f}A "
                   f"Vcell={v_ocv}mV Vpack={pack_voltage_mv}mV IR={ir_drop_mv}mV "
-                  f"{'NORMAL' if bms_state_normal else 'idle'}")
+                  f"{'NORMAL' if bms_state_normal else 'idle'}{ovr}")
 
         time.sleep(DT_S)
 
