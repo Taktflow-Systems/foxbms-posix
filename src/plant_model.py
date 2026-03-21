@@ -121,7 +121,17 @@ def can_send(can_id, data):
 soc_pct = 50.0              # Initial SOC (%)
 current_ma = 0              # Current flowing (mA, positive = discharge)
 bms_state_normal = False     # True when foxBMS reports NORMAL
-per_cell_offset = [0.0 for _ in range(N_CELLS)]  # No per-cell offset (Phase 2: add ±5mV Gaussian)
+
+# Per-cell manufacturing offset (fixed per cell, ±5mV — realistic for NMC)
+random.seed(42)  # Reproducible
+per_cell_offset = [random.gauss(0, 5.0) for _ in range(N_CELLS)]
+
+# AFE-style moving average filter (16 samples, like ADI ADES1830)
+AFE_AVG_DEPTH = 16
+# Pre-fill with initial OCV so first report isn't averaged with zeros
+initial_ocv = ocv_mv(soc_pct)
+cell_voltage_history = [[initial_ocv + per_cell_offset[i]] * AFE_AVG_DEPTH for i in range(N_CELLS)]
+afe_sample_idx = 0
 
 tick = 0
 try:
@@ -169,11 +179,18 @@ try:
         # ============================================================
         v_ocv = ocv_mv(soc_pct)
 
-        # Per-cell voltages with fixed offset + random noise
+        # Per-cell voltages: OCV + manufacturing offset + measurement noise
+        # Then AFE-style averaging (16-sample moving average)
         cell_voltages = []
         for i in range(N_CELLS):
-            v = v_ocv + per_cell_offset[i]  # No per-tick noise (Phase 2: add random.gauss(0, 5))
-            cell_voltages.append(max(2500, min(4500, int(v))))
+            # Raw sample: OCV + fixed offset + Gaussian noise (±3mV σ, realistic for 16-bit AFE)
+            v_raw = v_ocv + per_cell_offset[i] + random.gauss(0, 3.0)
+            # Store in circular buffer
+            cell_voltage_history[i][afe_sample_idx % AFE_AVG_DEPTH] = v_raw
+            # Report averaged value (like real AFE hardware)
+            v_avg = sum(cell_voltage_history[i]) / AFE_AVG_DEPTH
+            cell_voltages.append(max(2500, min(4500, int(v_avg))))
+        afe_sample_idx += 1
 
         # Pack voltage with IR drop: V_pack = N × V_OCV − I × R_total
         ir_drop_mv = int((current_ma / 1000.0) * R_TOTAL_MOHM)
