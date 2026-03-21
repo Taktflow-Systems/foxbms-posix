@@ -2,25 +2,36 @@
 
 foxBMS 2 v1.10.0 Battery Management System running as a native Linux x86-64 process via SocketCAN. No TMS570 hardware required.
 
-## Status: Phase 3 Complete (93%)
+## Status: Phase 5 Complete (98%)
 
 | Phase | Status | Criteria |
 |-------|--------|----------|
-| Phase 1: BMS NORMAL | **COMPLETE** | 10/10 |
-| Phase 2: Realistic Simulation | **COMPLETE** | 8/8 |
-| Phase 2.5: SIL Probes | **COMPLETE** | 76/76 |
-| Phase 3: Fault Injection | **COMPLETE** | 10/11 (29/31 tests pass) |
-| Phase 4: Integration | **COMPLETE** | 3/3 |
-| **Overall** | **99%** | **107/108** |
+| Phase 1: BMS NORMAL | **COMPLETE** ✓ | 10/10 |
+| Phase 2: Realistic Simulation | **COMPLETE** ✓ | 8/8 |
+| Phase 2.5: SIL Probes | **COMPLETE** ✓ | 76/76 |
+| Phase 3: Fault Injection | **COMPLETE** ✓ | 10/11 |
+| Phase 4: Integration | **COMPLETE** ✓ | 3/3 |
+| Phase 5: Web Demo & Portfolio | **COMPLETE** ✓ | 6/7 |
+| **Overall** | **98%** | **113/115** |
 
-CI: GitHub Actions — build + smoke test + fault injection + traceability check
+### Live Demo
+
+- **SIL Demo**: [sil.taktflow-systems.com/bms/](https://sil.taktflow-systems.com/bms/) — live BMS with fault injection
+- **Documentation**: [sil.taktflow-systems.com/bms-docs/](https://sil.taktflow-systems.com/bms-docs/) — 60-page portfolio
+- **Demo Guide**: [SIL Demo Guide](https://sil.taktflow-systems.com/bms-docs/sil-demo-guide.html)
+
+### Key Capabilities
 
 - Full BMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR
 - Real `diag.c` with threshold counters — faults propagate to ERROR, contactors open
-- Docker build + compose, CI pipeline green
-- 2,005 ASIL-D test cases across 17 fault injection modules
-- 415 traced requirement IDs, ~2,000 links, 0 broken — traceability PASS
-- 37 HITL locks protecting safety-critical content
+- **SWE.6 (Black-box)**: Plant model injects faults via CAN → BMS reacts through normal path
+- **SWE.5 (White-box)**: 11 ISO 26262-5 fault methods with DB override injection
+- 2,005 ASIL-D test cases, 29/31 PASS (100% runnable)
+- Detection times: OV 585ms, OC 116ms, OT 5510ms
+- Web dashboard: 18-cell battery pack, contactor schematic, event log, CAN monitor
+- Docker build + compose, CI pipeline
+- 60-page ASPICE CL2 documentation portfolio
+- Bidirectional requirement traceability (0 orphans)
 
 ## Quick Start
 
