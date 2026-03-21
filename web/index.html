@@ -278,8 +278,6 @@ let canFrames=[];
   document.getElementById("ovTo").value="0";document.getElementById("uvTo").value="0";
   for(let i=0;i<8;i++){addOpt("otFrom",i,"S"+i);addOpt("otTo",i,"S"+i);}
   document.getElementById("otTo").value="0";
-  document.getElementById("faultMethod").addEventListener("change",updateMethodInfo);
-  updateMethodInfo();
   connect();
 })();
 
@@ -330,6 +328,8 @@ document.querySelectorAll('input[name="injectTarget"]').forEach(r=>{
     document.getElementById("methodInfo").style.display=isBms?"block":"none";
   });
 });
+document.getElementById("faultMethod").addEventListener("change",updateMethodInfo);
+updateMethodInfo();
 
 function connect(){
   const loc=location.hostname||"localhost",port=location.port||"8080";
