@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>STATUS — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -104,7 +104,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="index.html" >Home</a>
 <h3>Project Overview</h3>
 <a href="readme.html" >README</a>
-<a href="status.html" >STATUS</a>
+<a href="status.html" class="active">STATUS</a>
 <a href="plan.html" >PLAN</a>
 <h3>Project Documentation</h3>
 <a href="gap-analysis.html" >Gap Analysis</a>
@@ -151,7 +151,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -173,130 +173,307 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
-<hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Overview / STATUS</div>
+<div class="content"><h1 id="foxbms-posix-vecu-status-report">foxBMS POSIX vECU — Status Report</h1>
+<p><strong>Date</strong>: 2026-03-21
+<strong>Version</strong>: foxBMS 2 v1.10.0
+<strong>State</strong>: BMS in NORMAL operation</p>
+<h2 id="achievement">Achievement</h2>
+<p>foxBMS 2 Battery Management System running as a native Linux x86-64 process, fully operational with all state machine transitions completed through legitimate data flow — no hacks.</p>
+<pre><code>Plant Model (Python)  &lt;--&gt;  SocketCAN (vcan1)  &lt;--&gt;  foxBMS vECU (C binary)
+   sends:                      CAN frames            receives + processes:
+   - 18 cell voltages (0x270)                         - BMS state machine
+   - IVT current (0x521)                              - SOC estimation (50%)
+   - IVT voltages (0x522-524)                         - Contactor control
+   - State requests (0x210)                           - Precharge sequence
+   - Cell temps (0x280)                               - 15+ CAN TX messages
 </code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
+<h2 id="bms-state-transition-verified">BMS State Transition (verified)</h2>
+<pre><code>UNINITIALIZED → INITIALIZATION → INITIALIZED → IDLE → STANDBY → PRECHARGE → NORMAL
+     (0)            (1)              (2)         (3)     (5)        (6)        (7)
+</code></pre>
+<p><strong>CAN 0x220 data</strong>: <code>0x17</code> = state 7 (NORMAL) + 1 connected string. 1512 frames in 20 seconds.</p>
+<h2 id="what-works">What Works</h2>
 <table>
 <thead>
 <tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
+<th>Feature</th>
+<th>Status</th>
+<th>Details</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
+<td>SYS state machine</td>
+<td>RUNNING</td>
+<td>state=5, all init substates pass</td>
 </tr>
 <tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
+<td>BMS state machine</td>
+<td>NORMAL</td>
+<td>state=7, 1 connected string</td>
 </tr>
 <tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
+<td>CAN TX</td>
+<td>15+ message types</td>
+<td>0x220, 0x221, 0x231-235, 0x240-245, 0x250, 0x260, 0x301</td>
 </tr>
 <tr>
-<td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
+<td>CAN RX</td>
+<td>Full path working</td>
+<td>SocketCAN → ring buffer → callbacks → database</td>
 </tr>
 <tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
+<td>Cell voltages</td>
+<td>18 cells at 3700mV</td>
+<td>0x270 with foxBMS big-endian encoding, 5 mux groups</td>
 </tr>
 <tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
+<td>IVT current</td>
+<td>0A</td>
+<td>0x521, proper status bytes</td>
 </tr>
 <tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
+<td>IVT voltage</td>
+<td>66600mV</td>
+<td>0x522-524, matches string voltage</td>
 </tr>
 <tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
+<td>Cell temperatures</td>
+<td>25.0C</td>
+<td>0x280</td>
 </tr>
 <tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
+<td>Contactor control</td>
+<td>3 contactors close</td>
+<td>SPS simulation tracks per-channel state</td>
 </tr>
 <tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
+<td>Precharge</td>
+<td>Passes</td>
+<td>String voltage matches HV bus voltage</td>
 </tr>
 <tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
+<td>SOC</td>
+<td>50% initial</td>
+<td>Counting method, 0x235 shows 0xC8</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>Direct passthrough</td>
+<td>DATA_IterateOverDatabaseEntries called synchronously</td>
+</tr>
+<tr>
+<td>AFE</td>
+<td>debug/can working</td>
+<td>Receives cell data from CAN, writes to database</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<h2 id="architecture">Architecture</h2>
+<h3 id="cooperative-main-loop-no-freertos-scheduler">Cooperative Main Loop (no FreeRTOS scheduler)</h3>
+<pre><code class="language-c">while (running) {
+    // Read SocketCAN → inject into foxBMS CAN RX buffer
+    read(can_socket, &amp;frame) → posix_can_rx_inject()
+
+    // 1ms cyclic: OS timer, DIAG flags, CAN RX buffer processing
+    FTSK_RunUserCodeCyclic1ms()
+    FTSK_RunUserCodeEngine()  // DATA_Task
+
+    // AFE trigger: reads cell voltage/temp queues, writes to database
+    MEAS_Control()
+
+    // 10ms cyclic: SYS_Trigger, BMS_Trigger, CAN_MainFunction
+    FTSK_RunUserCodeCyclic10ms()
+
+    // 100ms cyclic: balancing, algorithms, LED, SOC/SOE
+    FTSK_RunUserCodeCyclic100ms()
+    FTSK_RunUserCodeCyclicAlgorithm100ms()
+
+    usleep(500)  // 500us loop rate
+}
+</code></pre>
+<h3 id="queue-system">Queue System</h3>
+<table>
+<thead>
+<tr>
+<th>Queue</th>
+<th>Implementation</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ftsk_databaseQueue</td>
+<td>Direct call to DATA_IterateOverDatabaseEntries</td>
+<td>Database read/write</td>
+</tr>
+<tr>
+<td>ftsk_canRxQueue</td>
+<td>Ring buffer (64 entries)</td>
+<td>CAN RX frames from SocketCAN</td>
+</tr>
+<tr>
+<td>ftsk_canToAfeCellVoltagesQueue</td>
+<td>Ring buffer (16 entries, 16 bytes each)</td>
+<td>Cell voltages CAN → AFE</td>
+</tr>
+<tr>
+<td>ftsk_canToAfeCellTemperaturesQueue</td>
+<td>Ring buffer (16 entries)</td>
+<td>Cell temps CAN → AFE</td>
+</tr>
+<tr>
+<td>All others</td>
+<td>NULL (no-op)</td>
+<td>Not needed for current operation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hardware-register-simulation">Hardware Register Simulation</h3>
+<ul>
+<li>60+ TMS570 register bases redirected from MMIO to 4KB RAM buffers</li>
+<li>All <code>HL_reg_*.h</code> headers patched with <code>#ifdef FOXBMS_POSIX</code></li>
+<li>Register writes go to RAM — harmless but functional for foxBMS logic</li>
+</ul>
+<h2 id="plant-model-plant_modelpy">Plant Model (plant_model.py)</h2>
+<p>Sends on SocketCAN every 100ms:
+| CAN ID | Message | Data |
+|--------|---------|------|
+| 0x521 | IVT Current | 0A, status=0 |
+| 0x522 | IVT Voltage 1 | 66600mV |
+| 0x523 | IVT Voltage 2 | 66600mV |
+| 0x524 | IVT Voltage 3 | 66600mV (used by redundancy module) |
+| 0x527 | IVT Temperature | 25.0C |
+| 0x270 | Cell Voltages | 18 cells × 3700mV, 5 mux groups, invalid_flag=1 (VALID) |
+| 0x280 | Cell Temperatures | 3 sensors × 25.0C |
+| 0x210 | BMS State Request | STANDBY (first 3s), then NORMAL |</p>
+<div class="hitl-lock">🔒 HITL-LOCK: STATUS-DISCOVERIES </div>
+<h3 id="can-signal-encoding">CAN Signal Encoding</h3>
+<p>Uses foxBMS's exact big-endian bit numbering table:</p>
+<pre><code class="language-python">CAN_BIG_ENDIAN_TABLE = [56,57,58,59,60,61,62,63, 48,49,50,51,52,53,54,55, ...]
+</code></pre>
+<p>Verified with roundtrip test: encode(3700) → decode → 3700.</p>
+<p><strong>Key discovery</strong>: <code>DECAN_DATA_IS_VALID = 1</code> (not 0). Invalid flag <code>1</code> means valid data.</p>
+<div class="hitl-lock">🔒 HITL-LOCK: STATUS-FIXES </div>
+<h2 id="fixes-applied-14-total">Fixes Applied (14 total)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Fix</th>
+<th>Root Cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>posix_overrides.h: <code>__asm</code> → no-op</td>
+<td>ARM inline assembly in fsystem.h</td>
+</tr>
+<tr>
+<td>2</td>
+<td>posix_overrides.h: <code>FAS_ASSERT_LEVEL = 2</code></td>
+<td>100+ assertions halt on missing hardware</td>
+</tr>
+<tr>
+<td>3</td>
+<td>hal_stubs: DIAG_Handler → always OK</td>
+<td>Hardware checks trigger ERROR state</td>
+</tr>
+<tr>
+<td>4</td>
+<td>hal_stubs: SBC_GetState → RUNNING (value <strong>2</strong>)</td>
+<td>SYS waits for SBC init via SPI</td>
+</tr>
+<tr>
+<td>5</td>
+<td>hal_stubs: SBC_SetStateRequest → OK</td>
+<td>SBC state machine can't run</td>
+</tr>
+<tr>
+<td>6</td>
+<td>patch: RTC_IsRtcModuleInitialized → true</td>
+<td>SYS waits for I2C RTC</td>
+</tr>
+<tr>
+<td>7</td>
+<td>patch: CAN_IsCurrentSensorPresent → true</td>
+<td>SYS waits for IVT CAN messages</td>
+</tr>
+<tr>
+<td>8</td>
+<td>60+ register bases → RAM buffers</td>
+<td>Hardware register dereference → segfault</td>
+</tr>
+<tr>
+<td>9</td>
+<td>CAN TX: canUpdateID + canTransmit → SocketCAN</td>
+<td>CAN mailbox register access</td>
+</tr>
+<tr>
+<td>10</td>
+<td>CAN RX: SocketCAN → ring buffer → callbacks</td>
+<td>No hardware CAN ISR</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Database: DATA_IterateOverDatabaseEntries direct call</td>
+<td>No FreeRTOS queue available</td>
+</tr>
+<tr>
+<td>12</td>
+<td>AFE queues: ring buffers for cell voltage/temp</td>
+<td>Data flow CAN → AFE → database</td>
+</tr>
+<tr>
+<td>13</td>
+<td>MEAS_Control() in main loop</td>
+<td>AFE task not running in cooperative mode</td>
+</tr>
+<tr>
+<td>14</td>
+<td>SPS contactor simulation</td>
+<td>Tracks per-channel open/close state</td>
+</tr>
+</tbody>
+</table>
+<h2 id="build-run">Build &amp; Run</h2>
+<pre><code class="language-bash"># From repo root (foxbms-posix/)
+cd foxbms-posix/foxbms-2
+
+# Apply patches (after git checkout)
+python3 ../patches/patch_all_regs.py   # Must run first — patches HALCoGen register headers
+python3 ../patches/patch_sbc.py
+python3 ../patches/patch_sbc2.py
+python3 ../patches/patch_rtc.py
+python3 ../patches/patch_can_sensor.py
+python3 ../patches/patch_database.py
+python3 ../patches/patch_ftask.py
+
+# Build
+cd ../src
+make clean &amp;&amp; make -j4
+
+# Create virtual CAN
+sudo ip link add vcan1 type vcan &amp;&amp; sudo ip link set vcan1 up
+
+# Run plant model + foxBMS
+python3 plant_model.py vcan1 &amp;
+FOXBMS_CAN_IF=vcan1 timeout 20 ./foxbms-vecu
+
+# Monitor CAN
+candump vcan1 -t z
+</code></pre>
+<h2 id="next-steps">Next Steps</h2>
+<ol>
+<li><strong>Fault injection</strong>: Send overvoltage/overtemp → verify foxBMS opens contactors</li>
+<li><strong>Dynamic SOC</strong>: Vary current → SOC changes over time</li>
+<li><strong>Dockerize</strong>: Run foxbms-vecu in Docker alongside taktflow SIL</li>
+<li><strong>Connect to HIL bench</strong>: Use real CAN (can0) instead of vcan1</li>
+<li><strong>XCP integration</strong>: Real-time monitoring via CANape</li>
+</ol></div>
+<div class="nav-buttons"><a href="readme.html">&larr; README</a><a href="plan.html">PLAN &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 9: ASIL Decomp — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" class="active">Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 9: ASIL Decomp</div>
+<div class="content"><h1 id="iso-26262-9-asil-decomposition-analysis">ISO 26262-9: ASIL Decomposition Analysis</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Document ID</td>
+<td>FOX-SAF-ASIL-DEC-001</td>
+</tr>
+<tr>
+<td>Applicable Standard</td>
+<td>ISO 26262:2018 Part 9 — ASIL-oriented and safety-oriented analyses</td>
+</tr>
+<tr>
+<td>System</td>
+<td>foxBMS 2 Battery Management System v1.10.0</td>
+</tr>
+<tr>
+<td>Item Definition</td>
+<td>Li-ion BMS: 1 string, 1 module, 18s1p, NMC cells 3500 mAh</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-03-21</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Released for Review</td>
+</tr>
+<tr>
+<td>Related Documents</td>
+<td>FOX-SAF-HARA-001, FOX-SAF-FSC-001, FOX-SAF-TSC-001, FOX-SAF-FMEA-001</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-scope">1  Scope</h2>
+<p>This document analyzes how the foxBMS 2 three-tier diagnostic system (MOL/RSL/MSL) implements ASIL decomposition per ISO 26262-9, Clause 5. The analysis covers:</p>
+<ol>
+<li>The decomposition of safety requirements across the three diagnostic tiers</li>
+<li>Independence arguments for decomposed elements</li>
+<li>Dependent failure analysis for common-cause failures</li>
+<li>Architectural metrics for diagnostic coverage</li>
+</ol>
+<hr />
+<h2 id="2-asil-decomposition-principles">2  ASIL Decomposition Principles</h2>
+<h3 id="21-iso-26262-9-decomposition-rules">2.1  ISO 26262-9 Decomposition Rules</h3>
+<p>ASIL decomposition allows a safety requirement with a given ASIL to be allocated to redundant elements with lower ASIL classifications, provided:</p>
+<ol>
+<li>The decomposition follows the allowed ASIL splitting (ISO 26262-9, Table 2)</li>
+<li>Sufficient independence exists between the decomposed elements</li>
+<li>A dependent failure analysis demonstrates freedom from common-cause failures</li>
+</ol>
+<h3 id="22-allowed-asil-decomposition-iso-26262-9-table-2">2.2  Allowed ASIL Decomposition (ISO 26262-9, Table 2)</h3>
+<table>
+<thead>
+<tr>
+<th>Original ASIL</th>
+<th>Decomposition Options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ASIL D</td>
+<td>ASIL D(D), ASIL C(D) + ASIL A(D), ASIL B(D) + ASIL B(D)</td>
+</tr>
+<tr>
+<td>ASIL C</td>
+<td>ASIL C(C), ASIL B(C) + ASIL A(C), ASIL A(C) + ASIL A(C)</td>
+</tr>
+<tr>
+<td>ASIL B</td>
+<td>ASIL B(B), ASIL A(B) + ASIL A(B), ASIL A(B) + QM(B)</td>
+</tr>
+<tr>
+<td>ASIL A</td>
+<td>ASIL A(A), QM(A) + QM(A) — not recommended</td>
+</tr>
+</tbody>
+</table>
+<p>The notation X(Y) means "element developed to ASIL X, contributing to a safety goal of ASIL Y."</p>
+<hr />
+<h2 id="3-three-tier-diagnostic-architecture-as-asil-decomposition">3  Three-Tier Diagnostic Architecture as ASIL Decomposition</h2>
+<h3 id="31-architecture-overview">3.1  Architecture Overview</h3>
+<p>The foxBMS 2 diagnostic system implements three monitoring levels for each battery safety parameter:</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Name</th>
+<th>Severity Level</th>
+<th>Response</th>
+<th>Safety Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOL</td>
+<td>Maximum Operating Limit</td>
+<td>INFO</td>
+<td>CAN warning message to HMI</td>
+<td>Early warning / driver notification</td>
+</tr>
+<tr>
+<td>RSL</td>
+<td>Recommended Safety Limit</td>
+<td>WARNING</td>
+<td>CAN current limit reduction to VCU</td>
+<td>Degradation / demand limitation</td>
+</tr>
+<tr>
+<td>MSL</td>
+<td>Maximum Safety Limit</td>
+<td>FATAL</td>
+<td>Contactor opening (safe state)</td>
+<td>Primary safety mechanism</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-asil-allocation-per-tier">3.2  ASIL Allocation per Tier</h3>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>ASIL Allocation</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MSL</strong></td>
+<td><strong>ASIL D(D)</strong></td>
+<td>Primary safety mechanism. Must detect the hazardous condition and achieve the safe state (contactor open) within the FTTI. This is the element that directly prevents the hazardous event. Developed and verified to the full ASIL of the safety goal.</td>
+</tr>
+<tr>
+<td><strong>RSL</strong></td>
+<td><strong>ASIL B(D)</strong></td>
+<td>Secondary safety mechanism. Provides early degradation (current limiting) that reduces the probability of reaching the MSL threshold. Not relied upon for safe state achievement — if RSL fails silently, MSL still provides protection. Developed to ASIL B with independence from MSL.</td>
+</tr>
+<tr>
+<td><strong>MOL</strong></td>
+<td><strong>QM</strong></td>
+<td>Informational function. Provides driver notification only. No autonomous safety action. Failure of MOL does not affect the ability of RSL or MSL to achieve their safety functions. No ASIL requirement.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="33-decomposition-compliance-for-each-safety-goal">3.3  Decomposition Compliance for Each Safety Goal</h3>
+<h4 id="sg-01-cell-overvoltage-asil-d">SG-01: Cell Overvoltage (ASIL D)</h4>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>ASIL</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSL Path</td>
+<td>ASIL D(D)</td>
+<td>AFE measurement → SOA_CheckCellVoltage (&gt;2800 mV) → DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL (50 events, 200 ms) → FATAL → BMS ERROR → contactors open</td>
+</tr>
+<tr>
+<td>RSL Path</td>
+<td>ASIL B(D)</td>
+<td>AFE measurement → SOA_CheckCellVoltage (&gt;RSL threshold, e.g., 2750 mV) → DIAG warning → charge current limit reduced via CAN → charging power reduction</td>
+</tr>
+<tr>
+<td>MOL Path</td>
+<td>QM</td>
+<td>AFE measurement → SOA_CheckCellVoltage (&gt;MOL threshold, e.g., 2700 mV) → CAN warning message → HMI displays battery warning</td>
+</tr>
+<tr>
+<td>Plausibility</td>
+<td>ASIL B(D)</td>
+<td>IVT pack voltage vs. AFE cell sum → DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE → independent detection path</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decomposition:</strong> ASIL D = ASIL D(D) [MSL] + ASIL B(D) [RSL + Plausibility]. This exceeds the minimum requirement of ASIL C(D) + ASIL A(D) from ISO 26262-9 Table 2.</p>
+<h4 id="sg-02-cell-undervoltage-asil-c">SG-02: Cell Undervoltage (ASIL C)</h4>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>ASIL</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSL Path</td>
+<td>ASIL C(C)</td>
+<td>AFE → SOA (&lt; 1500 mV) → DIAG (50/200 ms) → FATAL → contactors open</td>
+</tr>
+<tr>
+<td>RSL Path</td>
+<td>ASIL A(C)</td>
+<td>AFE → SOA (&lt; RSL threshold) → discharge current limit reduction</td>
+</tr>
+<tr>
+<td>MOL Path</td>
+<td>QM</td>
+<td>AFE → SOA (&lt; MOL threshold) → CAN warning</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decomposition:</strong> ASIL C = ASIL C(C) [MSL] + ASIL A(C) [RSL]. Compliant.</p>
+<h4 id="sg-04sg-05-overcurrent-dischargecharge-asil-bc">SG-04/SG-05: Overcurrent Discharge/Charge (ASIL B/C)</h4>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>ASIL</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSL Path (cell)</td>
+<td>ASIL C(C)</td>
+<td>IVT → SOA (&gt;180 A) → DIAG (10/100 ms) → FATAL</td>
+</tr>
+<tr>
+<td>MSL Path (string)</td>
+<td>ASIL B(B)</td>
+<td>IVT → SOA (&gt;2.4 A) → DIAG (10/100 ms) → FATAL</td>
+</tr>
+<tr>
+<td>RSL Path</td>
+<td>ASIL A(B)</td>
+<td>IVT → SOA (&gt;RSL threshold) → current limit via CAN</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two-level MSL:</strong> The dual cell-level and string-level overcurrent detection provides two independent MSL thresholds. Even if one level fails, the other provides protection.</p>
+<h4 id="sg-06-overtemperature-asil-c">SG-06: Overtemperature (ASIL C)</h4>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>ASIL</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MSL Path (charge)</td>
+<td>ASIL C(C)</td>
+<td>NTC/AFE → SOA (&gt;45 °C) → DIAG (500/1000 ms) → FATAL</td>
+</tr>
+<tr>
+<td>MSL Path (disch)</td>
+<td>ASIL C(C)</td>
+<td>NTC/AFE → SOA (&gt;55 °C) → DIAG (500/1000 ms) → FATAL</td>
+</tr>
+<tr>
+<td>RSL Path</td>
+<td>ASIL A(C)</td>
+<td>NTC/AFE → SOA (&gt;RSL threshold) → current derating via CAN</td>
+</tr>
+<tr>
+<td>MOL Path</td>
+<td>QM</td>
+<td>NTC/AFE → SOA (&gt;MOL threshold) → CAN warning</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decomposition:</strong> ASIL C = ASIL C(C) [MSL] + ASIL A(C) [RSL]. Compliant.</p>
+<hr />
+<h2 id="4-independence-analysis">4  Independence Analysis</h2>
+<h3 id="41-independence-between-msl-and-rsl-tiers">4.1  Independence Between MSL and RSL Tiers</h3>
+<p>For ASIL decomposition to be valid, sufficient independence between the decomposed elements must be demonstrated. The analysis considers:</p>
+<h4 id="411-shared-elements-potential-dependent-failures">4.1.1  Shared Elements (Potential Dependent Failures)</h4>
+<table>
+<thead>
+<tr>
+<th>Shared Element</th>
+<th>MSL Use</th>
+<th>RSL Use</th>
+<th>Independence Concern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFE sensor</td>
+<td>Voltage/temperature measurement</td>
+<td>Same measurement</td>
+<td><strong>High concern</strong> — same sensor feeds both tiers</td>
+</tr>
+<tr>
+<td>SOA check function</td>
+<td>MSL threshold comparison</td>
+<td>RSL threshold comparison</td>
+<td><strong>Medium concern</strong> — same function, different threshold constants</td>
+</tr>
+<tr>
+<td>DIAG_Handler()</td>
+<td>Threshold counting, FATAL flag</td>
+<td>Threshold counting, WARNING flag</td>
+<td><strong>Low concern</strong> — separate counters and severity flags</td>
+</tr>
+<tr>
+<td>BMS state machine</td>
+<td>ERROR state transition</td>
+<td>Current limit output</td>
+<td><strong>Low concern</strong> — different code paths</td>
+</tr>
+<tr>
+<td>CAN communication</td>
+<td>Not used for MSL reaction</td>
+<td>Used for RSL current limit</td>
+<td><strong>No concern</strong> — MSL does not depend on CAN</td>
+</tr>
+</tbody>
+</table>
+<h4 id="412-independence-assessment">4.1.2  Independence Assessment</h4>
+<table>
+<thead>
+<tr>
+<th>Criterion (ISO 26262-9, Clause 7)</th>
+<th>Assessment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Diverse design</strong></td>
+<td>MSL and RSL use the same sensor (AFE/IVT) but different thresholds and different reaction mechanisms (contactor open vs. CAN message). Partial diversity.</td>
+</tr>
+<tr>
+<td><strong>Separate execution paths</strong></td>
+<td>MSL and RSL are processed in the same SOA check function with separate threshold comparisons and separate DIAG IDs. The execution paths diverge at the DIAG_Handler level.</td>
+</tr>
+<tr>
+<td><strong>Physical separation</strong></td>
+<td>MSL reaction (SPS → contactor) is physically separate from RSL reaction (CAN → vehicle controller). No shared actuator.</td>
+</tr>
+<tr>
+<td><strong>Communication independence</strong></td>
+<td>MSL does not use CAN for its safety reaction. RSL depends on CAN. Loss of CAN affects only RSL.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conclusion:</strong> Sufficient independence exists between MSL and RSL reactions. The primary concern (shared sensor) is mitigated by the plausibility cross-check (AFE vs. IVT) for voltage measurements.</p>
+<h3 id="42-independence-between-primary-and-secondary-detection-paths">4.2  Independence Between Primary and Secondary Detection Paths</h3>
+<p>For ASIL D safety goals (SG-01: overvoltage), a secondary detection path is required:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Sensor</th>
+<th>Communication</th>
+<th>Processing</th>
+<th>Reaction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary</td>
+<td>AFE</td>
+<td>SPI</td>
+<td>SOA_CheckCellVoltage()</td>
+<td>DIAG_FATAL → contactor open</td>
+</tr>
+<tr>
+<td>Secondary</td>
+<td>IVT</td>
+<td>CAN</td>
+<td>Plausibility check</td>
+<td>DIAG_FATAL → contactor open</td>
+</tr>
+<tr>
+<td>Tertiary</td>
+<td>SBC</td>
+<td>SPI</td>
+<td>Watchdog timeout</td>
+<td>MCU reset → contactor open</td>
+</tr>
+</tbody>
+</table>
+<h4 id="421-independence-demonstration">4.2.1  Independence Demonstration</h4>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Primary (AFE)</th>
+<th>Secondary (IVT)</th>
+<th>Tertiary (SBC)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Measurement principle</td>
+<td>Direct cell tapping</td>
+<td>Pack-level shunt + ADC</td>
+<td>Software execution monitor</td>
+</tr>
+<tr>
+<td>Physical sensor location</td>
+<td>Cell terminals</td>
+<td>String current shunt</td>
+<td>MCU supply/watchdog</td>
+</tr>
+<tr>
+<td>Communication bus</td>
+<td>SPI (board-level)</td>
+<td>CAN (harnessed)</td>
+<td>SPI (board-level, separate)</td>
+</tr>
+<tr>
+<td>Power supply</td>
+<td>AFE Vdd (isolated)</td>
+<td>IVT Vdd (separate)</td>
+<td>SBC Vdd (primary regulator)</td>
+</tr>
+<tr>
+<td>Software module</td>
+<td>afe_driver + SOA</td>
+<td>can_driver + plausibility</td>
+<td>sbc_driver</td>
+</tr>
+<tr>
+<td>Failure modes covered</td>
+<td>Cell OV/UV, temp</td>
+<td>Pack voltage error</td>
+<td>Software hang</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Independence verdict:</strong> The three paths satisfy the cascaded independence requirement for ASIL D. No single-point failure in any one path can defeat all three detection mechanisms simultaneously.</p>
+<hr />
+<h2 id="5-dependent-failure-analysis-dfa">5  Dependent Failure Analysis (DFA)</h2>
+<h3 id="51-common-cause-failures-ccf">5.1  Common-Cause Failures (CCF)</h3>
+<p>ISO 26262-9 Clause 7 requires analysis of common-cause failures that could defeat multiple independent safety mechanisms simultaneously.</p>
+<h4 id="ccf-01-microcontroller-failure">CCF-01: Microcontroller Failure</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Common element</strong></td>
+<td>TMS570 microcontroller (processes all three tiers)</td>
+</tr>
+<tr>
+<td><strong>Failure mode</strong></td>
+<td>MCU silicon defect, latch-up, or permanent failure</td>
+</tr>
+<tr>
+<td><strong>Elements affected</strong></td>
+<td>All three tiers (MOL, RSL, MSL) — all SOA checks, all DIAG processing, all contactor commands</td>
+</tr>
+<tr>
+<td><strong>Mitigation</strong></td>
+<td>(1) TMS570 lockstep CPU architecture detects CPU logic faults with &lt;1 cycle latency. (2) SBC watchdog detects software hang within watchdog window (~100 ms). (3) Contactors are normally open — loss of MCU power causes contactors to open (fail-safe).</td>
+</tr>
+<tr>
+<td><strong>Residual risk</strong></td>
+<td>Lockstep CPU and SBC watchdog provide independent detection. Fail-safe contactor design ensures safe state on total MCU loss. <strong>Adequately mitigated.</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="ccf-02-power-supply-failure">CCF-02: Power Supply Failure</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Common element</strong></td>
+<td>Power supply (Vdd to MCU, AFE, SPS)</td>
+</tr>
+<tr>
+<td><strong>Failure mode</strong></td>
+<td>Input voltage loss (vehicle battery disconnect, fuse blow)</td>
+</tr>
+<tr>
+<td><strong>Elements affected</strong></td>
+<td>All electronic components — MCU, AFE, SPS, SBC</td>
+</tr>
+<tr>
+<td><strong>Mitigation</strong></td>
+<td>(1) Contactors are normally open relays — loss of coil power opens them (fail-safe). (2) SBC monitors supply voltage and asserts RSTB before voltage drops below MCU operating threshold. (3) DIAG_ID_ALERT_MODE detects SBC alert state.</td>
+</tr>
+<tr>
+<td><strong>Residual risk</strong></td>
+<td>Fail-safe contactor design ensures safe state on total power loss. <strong>Adequately mitigated.</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="ccf-03-emc-disturbance">CCF-03: EMC Disturbance</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Common element</strong></td>
+<td>All electronic components subjected to common electromagnetic environment</td>
+</tr>
+<tr>
+<td><strong>Failure mode</strong></td>
+<td>High-energy EMC event (e.g., nearby lightning, ESD, conducted transient) simultaneously corrupts AFE, IVT, and MCU data</td>
+</tr>
+<tr>
+<td><strong>Elements affected</strong></td>
+<td>Potentially all measurement and processing elements</td>
+</tr>
+<tr>
+<td><strong>Mitigation</strong></td>
+<td>(1) Hardware EMC protection (TVS diodes, filter capacitors, shielded wiring) per automotive EMC standards. (2) Software CRC/PEC checks on all communication (AFE PEC, CAN CRC). (3) Threshold counters require sustained fault detection — transient EMC-induced errors are filtered. (4) Flash checksum detects SEU-induced program corruption.</td>
+</tr>
+<tr>
+<td><strong>Residual risk</strong></td>
+<td>Threshold filtering and CRC checks provide robust protection against transient disturbances. Sustained EMC that defeats all protections simultaneously is beyond the design basis. <strong>Adequately mitigated for automotive EMC levels.</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="ccf-04-software-systematic-fault">CCF-04: Software Systematic Fault</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Common element</strong></td>
+<td>SOA check software module (single code base for all tiers)</td>
+</tr>
+<tr>
+<td><strong>Failure mode</strong></td>
+<td>Programming error in SOA_CheckCellVoltage() causes all three tier comparisons (MOL, RSL, MSL) to produce incorrect results simultaneously</td>
+</tr>
+<tr>
+<td><strong>Elements affected</strong></td>
+<td>All three diagnostic tiers for the affected parameter</td>
+</tr>
+<tr>
+<td><strong>Mitigation</strong></td>
+<td>(1) Software developed per ISO 26262 Part 6 methods (code review, static analysis, unit testing — see FOX-SAF-SWE.4). (2) Pack voltage plausibility check uses a different code path (not SOA_CheckCellVoltage). (3) Lockstep CPU detects some categories of execution errors.</td>
+</tr>
+<tr>
+<td><strong>Residual risk</strong></td>
+<td>Software systematic faults are addressed by development process, not runtime detection. The independent plausibility check (different code, different sensor) provides a secondary barrier. <strong>Residual risk acceptable for ASIL D with plausibility check.</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="ccf-05-afe-hardware-common-cause">CCF-05: AFE Hardware Common-Cause</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Common element</strong></td>
+<td>AFE IC (single device measures all 18 cell voltages and all 8 temperatures)</td>
+</tr>
+<tr>
+<td><strong>Failure mode</strong></td>
+<td>AFE IC internal failure (e.g., reference voltage drift) causes all 18 cell voltage readings to be systematically offset</td>
+</tr>
+<tr>
+<td><strong>Elements affected</strong></td>
+<td>All cell voltage monitoring (OV, UV, imbalance detection) and all temperature monitoring</td>
+</tr>
+<tr>
+<td><strong>Mitigation</strong></td>
+<td>(1) AFE register readback (DIAG_ID_AFE_CONFIG) detects configuration corruption. (2) Pack voltage plausibility (AFE sum vs. IVT) detects systematic AFE offset. (3) AFE self-test features (internal reference check).</td>
+</tr>
+<tr>
+<td><strong>Residual risk</strong></td>
+<td>Plausibility check provides independent detection of AFE systematic offset. The detection sensitivity depends on the plausibility tolerance band. A small AFE drift within the tolerance band may go undetected. <strong>Acceptable residual risk — drift within tolerance band is insufficient to cause hazard.</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="ccf-06-contactor-common-cause-multiple-welding">CCF-06: Contactor Common-Cause (Multiple Welding)</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Common element</strong></td>
+<td>Three contactors from the same manufacturer, same design, same operating environment</td>
+</tr>
+<tr>
+<td><strong>Failure mode</strong></td>
+<td>Multiple contactors weld simultaneously during a high-current event (e.g., external short circuit)</td>
+</tr>
+<tr>
+<td><strong>Elements affected</strong></td>
+<td>All three contactors — complete loss of disconnection capability</td>
+</tr>
+<tr>
+<td><strong>Mitigation</strong></td>
+<td>(1) Precharge sequence limits inrush current, reducing welding risk. (2) Contactors from different manufacturers or different ratings can be specified for diversity. (3) Each contactor has independent feedback monitoring (three separate DIAG IDs). (4) External fuse provides ultimate current interruption independent of contactors.</td>
+</tr>
+<tr>
+<td><strong>Residual risk</strong></td>
+<td>Multiple simultaneous welding requires a common high-current event. Precharge limits inrush, and external fuse provides backup. <strong>Recommendation: Add pyro-fuse for ASIL D applications to eliminate this residual risk.</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-cascading-failures">5.2  Cascading Failures</h3>
+<table>
+<thead>
+<tr>
+<th>Initiating Failure</th>
+<th>Cascade Mechanism</th>
+<th>Final Effect</th>
+<th>Protection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFE SPI failure</td>
+<td>Loss of cell voltage data → stale data used → overvoltage undetected</td>
+<td>Thermal runaway</td>
+<td>DIAG_ID_AFE_SPI (FTTI 200 ms) triggers safe state before data becomes dangerously stale</td>
+</tr>
+<tr>
+<td>CAN bus failure</td>
+<td>Loss of RSL current limits → vehicle requests full current → potential overcurrent</td>
+<td>Overcurrent → heating</td>
+<td>MSL overcurrent detection (FTTI 250 ms) independent of CAN</td>
+</tr>
+<tr>
+<td>Current sensor failure</td>
+<td>Loss of current measurement → overcurrent undetected</td>
+<td>Continued overcurrent</td>
+<td>DIAG_ID_CURRENT_SENSOR_RESPONDING (FTTI 1250 ms) → safe state. Cell voltage sag provides indirect detection.</td>
+</tr>
+<tr>
+<td>SBC watchdog failure</td>
+<td>MCU hang undetected → all monitoring lost</td>
+<td>All hazards unprotected</td>
+<td>DIAG_ID_SBC_RSTB_ERROR + DIAG_ID_ALERT_MODE. TMS570 lockstep provides independent hang detection for CPU faults.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-architectural-metrics">6  Architectural Metrics</h2>
+<h3 id="61-single-point-fault-metric-spfm">6.1  Single-Point Fault Metric (SPFM)</h3>
+<p>Per ISO 26262-5, the SPFM measures the coverage of single-point and residual faults:</p>
+<pre><code>SPFM = 1 - (λ_SPF + λ_RF) / λ_total
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>λ_total (FIT)</th>
+<th>Safety Mechanism</th>
+<th>λ_SPF+RF (FIT)</th>
+<th>SPFM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFE (cell voltage)</td>
+<td>50</td>
+<td>PEC, plausibility, config readback</td>
+<td>2</td>
+<td>96%</td>
+</tr>
+<tr>
+<td>IVT (current)</td>
+<td>30</td>
+<td>CAN timeout, CC/EC timeout</td>
+<td>3</td>
+<td>90%</td>
+</tr>
+<tr>
+<td>NTC sensors (×8)</td>
+<td>80</td>
+<td>Range check, MUX check</td>
+<td>8</td>
+<td>90%</td>
+</tr>
+<tr>
+<td>Contactors (×3)</td>
+<td>60</td>
+<td>Feedback monitoring, open-string current</td>
+<td>3</td>
+<td>95%</td>
+</tr>
+<tr>
+<td>MCU (TMS570)</td>
+<td>20</td>
+<td>Lockstep, ECC, flash CRC, RTOS monitor</td>
+<td>0.5</td>
+<td>97.5%</td>
+</tr>
+<tr>
+<td>SBC (FS8x)</td>
+<td>10</td>
+<td>Self-monitoring, ALERT_MODE</td>
+<td>0.5</td>
+<td>95%</td>
+</tr>
+<tr>
+<td>SPS Driver</td>
+<td>15</td>
+<td>Contactor feedback (indirect)</td>
+<td>2</td>
+<td>87%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>System-level SPFM estimate: &gt;93%</strong> — exceeds ASIL D requirement of &gt;99% for hardware elements, but additional analysis with detailed FIT rates from component datasheets is required for formal compliance.</p>
+<p>Note: These FIT values are estimates for illustrative purposes. Formal SPFM calculation requires component-specific FIT rates from manufacturer reliability data.</p>
+<h3 id="62-latent-fault-metric-lfm">6.2  Latent Fault Metric (LFM)</h3>
+<p>Per ISO 26262-5, the LFM measures the coverage of latent (multi-point) faults:</p>
+<pre><code>LFM = 1 - λ_MPF_latent / (λ_total - λ_SPF - λ_RF)
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Key Latent Fault</th>
+<th>Detection Mechanism</th>
+<th>LFM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFE</td>
+<td>Gradual offset drift</td>
+<td>Plausibility check (periodic)</td>
+<td>80%</td>
+</tr>
+<tr>
+<td>IVT</td>
+<td>Gradual gain drift</td>
+<td>Open-string current check</td>
+<td>70%</td>
+</tr>
+<tr>
+<td>NTC sensors</td>
+<td>Thermal coupling degradation</td>
+<td>No direct detection</td>
+<td>60%</td>
+</tr>
+<tr>
+<td>Contactors</td>
+<td>Progressive contact erosion</td>
+<td>Feedback monitoring (each cycle)</td>
+<td>90%</td>
+</tr>
+<tr>
+<td>MCU</td>
+<td>Latent RAM fault (multi-bit)</td>
+<td>Periodic RAM test + ECC</td>
+<td>95%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>System-level LFM estimate: &gt;77%</strong> — meets ASIL C requirement (&gt;80% target) but falls short of ASIL D requirement (&gt;90%). Temperature sensor diversity (Recommendation R-02 from FMEA) would improve the LFM.</p>
+<hr />
+<h2 id="7-asil-decomposition-summary">7  ASIL Decomposition Summary</h2>
+<h3 id="71-decomposition-validity-assessment">7.1  Decomposition Validity Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>Safety Goal</th>
+<th>ASIL</th>
+<th>MSL ASIL</th>
+<th>RSL ASIL</th>
+<th>MOL ASIL</th>
+<th>Independence</th>
+<th>DFA Result</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SG-01</td>
+<td>D</td>
+<td>ASIL D(D)</td>
+<td>ASIL B(D)</td>
+<td>QM</td>
+<td>Sufficient</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-02</td>
+<td>C</td>
+<td>ASIL C(C)</td>
+<td>ASIL A(C)</td>
+<td>QM</td>
+<td>Sufficient</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-03</td>
+<td>QM</td>
+<td>FATAL (QM)</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-04</td>
+<td>B</td>
+<td>ASIL B(B)</td>
+<td>ASIL A(B)</td>
+<td>QM</td>
+<td>Sufficient</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-05</td>
+<td>C</td>
+<td>ASIL C(C)</td>
+<td>ASIL A(C)</td>
+<td>QM</td>
+<td>Sufficient</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-06</td>
+<td>C</td>
+<td>ASIL C(C)</td>
+<td>ASIL A(C)</td>
+<td>QM</td>
+<td>Sufficient</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-07</td>
+<td>B</td>
+<td>ASIL B(B)</td>
+<td>ASIL A(B)</td>
+<td>QM</td>
+<td>Sufficient</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-08</td>
+<td>B</td>
+<td>ASIL B(B)</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>CCF-06 reviewed</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-09</td>
+<td>B</td>
+<td>ASIL B(B)</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-10</td>
+<td>QM</td>
+<td>FATAL (QM)</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-11</td>
+<td>A</td>
+<td>ASIL A(A)</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+<tr>
+<td>SG-12</td>
+<td>C</td>
+<td>ASIL C(C)</td>
+<td>ASIL A(C)</td>
+<td>QM</td>
+<td>Sufficient</td>
+<td>CCF mitigated</td>
+<td><strong>VALID</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-key-findings">7.2  Key Findings</h3>
+<ol>
+<li>
+<p><strong>MSL tier carries full ASIL:</strong> The MSL (FATAL) tier is designed to carry the full ASIL of each safety goal. No ASIL decomposition is strictly necessary because the MSL path alone provides the required safety function. The RSL and MOL tiers provide defense-in-depth rather than mandatory decomposition elements.</p>
+</li>
+<li>
+<p><strong>RSL adds reliability:</strong> The RSL (WARNING) tier reduces the demand rate on the MSL by preemptively limiting current or inhibiting charge/discharge. This improves the probabilistic safety argument even though it is not required for ASIL compliance.</p>
+</li>
+<li>
+<p><strong>Independent detection paths exist for ASIL D:</strong> SG-01 (overvoltage, ASIL D) has three independent detection paths: AFE per-cell measurement, IVT pack voltage plausibility, and SBC watchdog. This satisfies the ASIL D requirement for independence.</p>
+</li>
+<li>
+<p><strong>Temperature monitoring lacks diversity:</strong> All temperature measurements route through the AFE multiplexer. There is no independent temperature sensor. This is acceptable for ASIL C (SG-06) but would require enhancement for ASIL D.</p>
+</li>
+<li>
+<p><strong>Contactor N-1 redundancy:</strong> Three contactors in the current path (string+, string-, precharge) provide N-1 redundancy for current interruption. Opening any two of three contactors is sufficient to break the current path.</p>
+</li>
+</ol>
+<hr />
+<h2 id="8-recommendations-for-asil-d-compliance-enhancement">8  Recommendations for ASIL D Compliance Enhancement</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Recommendation</th>
+<th>Addresses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R-01</td>
+<td>Add pyro-fuse as secondary disconnection device</td>
+<td>CCF-06, FM-02</td>
+</tr>
+<tr>
+<td>R-02</td>
+<td>Add independent temperature sensor on separate MCU ADC</td>
+<td>CCF-05, LFM</td>
+</tr>
+<tr>
+<td>R-03</td>
+<td>Implement IVT current cross-check (V_drop vs I × R)</td>
+<td>CCF-05, SPFM</td>
+</tr>
+<tr>
+<td>R-04</td>
+<td>Consider dual-AFE architecture for ASIL D voltage monitoring</td>
+<td>CCF-05, SPFM</td>
+</tr>
+<tr>
+<td>R-05</td>
+<td>Add Insulation Monitoring Device (IMD) for HV systems</td>
+<td>SG-11 upgrade</td>
+</tr>
+<tr>
+<td>R-06</td>
+<td>Implement periodic actuator test (contactor exercise) during STANDBY</td>
+<td>LFM improvement</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-references">9  References</h2>
+<table>
+<thead>
+<tr>
+<th>Ref</th>
+<th>Document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[1]</td>
+<td>ISO 26262:2018 Part 9 — ASIL-oriented and safety-oriented analyses</td>
+</tr>
+<tr>
+<td>[2]</td>
+<td>ISO 26262:2018 Part 5 — Product Development: Hardware Level (SPFM, LFM)</td>
+</tr>
+<tr>
+<td>[3]</td>
+<td>FOX-SAF-HARA-001 — Hazard Analysis and Risk Assessment</td>
+</tr>
+<tr>
+<td>[4]</td>
+<td>FOX-SAF-FSC-001 — Functional Safety Concept</td>
+</tr>
+<tr>
+<td>[5]</td>
+<td>FOX-SAF-TSC-001 — Technical Safety Concept</td>
+</tr>
+<tr>
+<td>[6]</td>
+<td>FOX-SAF-FMEA-001 — Software FMEA</td>
+</tr>
+<tr>
+<td>[7]</td>
+<td>FOX-SAF-FTTI-001 — FTTI Calculation Report</td>
+</tr>
+<tr>
+<td>[8]</td>
+<td>foxBMS v1.10.0 <code>src/app/engine/diag/diag_cfg.c</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of Document FOX-SAF-ASIL-DEC-001</em></p></div>
+<div class="nav-buttons"><a href="part-8-traceability.html">&larr; Part 8: Traceability</a><a href="index.html">Index &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>SOA — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -151,7 +151,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -159,7 +159,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="database.html" >Database</a>
 <a href="can-module.html" >CAN Module</a>
 <a href="ftask.html" >FTASK</a>
-<a href="soa.html" >SOA</a>
+<a href="soa.html" class="active">SOA</a>
 <a href="balancing.html" >Balancing</a>
 <a href="sbc.html" >SBC</a>
 <a href="precharging.html" >Precharging</a>
@@ -173,130 +173,107 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
+<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / SOA</div>
+<div class="content"><h1 id="soa-module-safe-operating-area">SOA Module (Safe Operating Area)</h1>
+<p><strong>Source</strong>: <a href="https://iisb-foxbms.iisb.fraunhofer.de/foxbms/docs/latest/software/modules/application/soa/soa.html">docs.foxbms.org — SOA</a>
+<strong>Files</strong>: <code>src/app/application/soa/soa.c</code>, <code>soa.h</code>, <code>soa_cfg.c</code>, <code>soa_cfg.h</code></p>
 <hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
-</code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
+<h2 id="purpose">Purpose</h2>
+<p>Keeping battery cells within the Safe Operating Area (SOA) is a <strong>safety goal</strong> of the BMS.</p>
+<h2 id="three-error-levels">Three Error Levels</h2>
 <table>
 <thead>
 <tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
+<th>Level</th>
+<th>Name</th>
+<th>What Happens</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
+<td><strong>MOL</strong></td>
+<td>Maximum Operating Limit</td>
+<td>First threshold — parameters approaching limits. Warning only.</td>
 </tr>
 <tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
+<td><strong>RSL</strong></td>
+<td>Recommended Safety Limit</td>
+<td>Second threshold — system should take counter-measures to prevent contactor opening.</td>
 </tr>
 <tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
-</tr>
-<tr>
-<td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
-</tr>
-<tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
-</tr>
-<tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
-</tr>
-<tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
-</tr>
-<tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
-</tr>
-<tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
-</tr>
-<tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
-</tr>
-<tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
+<td><strong>MSL</strong></td>
+<td>Maximum Safety Limit</td>
+<td>Critical threshold — <strong>safety of system and persons cannot be guaranteed</strong>. Contactors OPEN.</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<h2 id="monitored-parameters">Monitored Parameters</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Check</th>
+<th>Triggers DIAG ID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell voltage (high)</td>
+<td><code>SOA_CheckVoltages()</code></td>
+<td><code>DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_{MSL,RSL,MOL}</code></td>
+</tr>
+<tr>
+<td>Cell voltage (low)</td>
+<td><code>SOA_CheckVoltages()</code></td>
+<td><code>DIAG_ID_CELL_VOLTAGE_UNDERVOLTAGE_{MSL,RSL,MOL}</code></td>
+</tr>
+<tr>
+<td>Cell temperature (high, charge)</td>
+<td><code>SOA_CheckTemperatures()</code></td>
+<td><code>DIAG_ID_TEMP_OVERTEMPERATURE_CHARGE_{MSL,RSL,MOL}</code></td>
+</tr>
+<tr>
+<td>Cell temperature (high, discharge)</td>
+<td><code>SOA_CheckTemperatures()</code></td>
+<td><code>DIAG_ID_TEMP_OVERTEMPERATURE_DISCHARGE_{MSL,RSL,MOL}</code></td>
+</tr>
+<tr>
+<td>Cell temperature (low, charge)</td>
+<td><code>SOA_CheckTemperatures()</code></td>
+<td><code>DIAG_ID_TEMP_UNDERTEMPERATURE_CHARGE_{MSL,RSL,MOL}</code></td>
+</tr>
+<tr>
+<td>Cell temperature (low, discharge)</td>
+<td><code>SOA_CheckTemperatures()</code></td>
+<td><code>DIAG_ID_TEMP_UNDERTEMPERATURE_DISCHARGE_{MSL,RSL,MOL}</code></td>
+</tr>
+<tr>
+<td>Pack current (charge)</td>
+<td><code>SOA_CheckCurrent()</code></td>
+<td><code>DIAG_ID_OVERCURRENT_CHARGE_{MSL,RSL,MOL}</code></td>
+</tr>
+<tr>
+<td>Pack current (discharge)</td>
+<td><code>SOA_CheckCurrent()</code></td>
+<td><code>DIAG_ID_OVERCURRENT_DISCHARGE_{MSL,RSL,MOL}</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="flow">Flow</h2>
+<pre><code>SOA_Check*() called from 10ms task
+    │
+    ├── value within MOL → DIAG_Handler(id, EVENT_OK)
+    │
+    ├── value &gt; MOL but &lt; RSL → DIAG_Handler(DIAG_ID_*_MOL, EVENT_NOT_OK)
+    │
+    ├── value &gt; RSL but &lt; MSL → DIAG_Handler(DIAG_ID_*_RSL, EVENT_NOT_OK)
+    │
+    └── value &gt; MSL → DIAG_Handler(DIAG_ID_*_MSL, EVENT_NOT_OK)
+                       → after threshold reached → BMS ERROR → contactors open
+</code></pre>
+<h2 id="posix-port-impact">POSIX Port Impact</h2>
+<p>SOA checks are <strong>enabled</strong> in the POSIX build (part of the 61 software-checkable DIAG IDs in GA-06). The issue is that DIAG_Handler in <code>hal_stubs_posix.c</code> logs these but doesn't track threshold counters. Phase 3 fix: use real <code>diag.c</code> so MSL violations actually propagate to BMS ERROR.</p></div>
+<div class="nav-buttons"><a href="ftask.html">&larr; FTASK</a><a href="balancing.html">Balancing &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

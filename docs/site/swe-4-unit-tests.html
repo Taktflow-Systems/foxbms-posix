@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWE.4 Unit Tests — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" class="active">SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Software / SWE.4 Unit Tests</div>
+<div class="content"><h1 id="unit-test-specification">Unit Test Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.4-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies unit-level tests for the foxBMS 2 POSIX port, satisfying
+ASPICE SWE.4 (software unit verification) and ISO 26262 Part 6 Clause 9. It covers
+both the upstream foxBMS Ceedling test suite (183+ test cases) and the POSIX-specific
+test suites.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>Unit tests verify individual software modules in isolation using mock dependencies.
+The upstream Ceedling tests validate the foxBMS code base. The POSIX test suites
+validate the port-specific adaptations and the integrated safety logic.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.3-001]</td>
+<td>Software Detailed Design</td>
+</tr>
+<tr>
+<td>[SWE.5-001]</td>
+<td>Integration Test Specification</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-test-environment">4. Test Environment</h2>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Upstream (Ceedling)</th>
+<th>POSIX Test Suites</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td>Ceedling + Unity + CMock</td>
+<td>pytest + SocketCAN</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>Host (x86-64)</td>
+<td>POSIX SIL binary</td>
+</tr>
+<tr>
+<td>Mocking</td>
+<td>CMock auto-generated mocks</td>
+<td>SocketCAN stimulus injection</td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td>Per-module, function-level</td>
+<td>System-level behavior</td>
+</tr>
+<tr>
+<td>Count</td>
+<td>183+ test cases</td>
+<td>147+ test criteria across 4 suites</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-upstream-ceedling-unit-tests">5. Upstream Ceedling Unit Tests</h2>
+<h3 id="51-diag-module-tests">5.1 DIAG Module Tests</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Module</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-001</td>
+<td>DIAG_Handler increments counter on NOT_OK event</td>
+<td>diag.c</td>
+<td>Counter increases by 1</td>
+<td>SW-REQ-031</td>
+</tr>
+<tr>
+<td>UT-002</td>
+<td>DIAG_Handler decrements counter on OK event</td>
+<td>diag.c</td>
+<td>Counter decreases by 1 (min 0)</td>
+<td>SW-REQ-031</td>
+</tr>
+<tr>
+<td>UT-003</td>
+<td>DIAG_Handler sets FATAL flag when counter reaches threshold</td>
+<td>diag.c</td>
+<td>fatalFlag == true</td>
+<td>SW-REQ-031</td>
+</tr>
+<tr>
+<td>UT-004</td>
+<td>DIAG_Handler respects evaluation delay</td>
+<td>diag.c</td>
+<td>Event ignored if called within delay period</td>
+<td>SW-REQ-033</td>
+</tr>
+<tr>
+<td>UT-005</td>
+<td>DIAG_IsAnyFatalErrorSet returns true when any FATAL flag set</td>
+<td>diag.c</td>
+<td>Returns true</td>
+<td>SW-REQ-032</td>
+</tr>
+<tr>
+<td>UT-006</td>
+<td>DIAG_IsAnyFatalErrorSet returns false when no FATAL flag set</td>
+<td>diag.c</td>
+<td>Returns false</td>
+<td>SW-REQ-032</td>
+</tr>
+<tr>
+<td>UT-007</td>
+<td>DIAG configuration table has 85 entries</td>
+<td>diag_cfg.c</td>
+<td>Table size == 85</td>
+<td>SW-REQ-030</td>
+</tr>
+<tr>
+<td>UT-008</td>
+<td>All FATAL entries have non-zero thresholds</td>
+<td>diag_cfg.c</td>
+<td>No FATAL entry with threshold == 0 (except immediate entries)</td>
+<td>SW-REQ-030</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-soa-module-tests">5.2 SOA Module Tests</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Module</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-010</td>
+<td>SOA detects overvoltage at MOL threshold (2720 mV)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OV_MOL</td>
+<td>SW-REQ-003</td>
+</tr>
+<tr>
+<td>UT-011</td>
+<td>SOA detects overvoltage at RSL threshold (2750 mV)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OV_RSL</td>
+<td>SW-REQ-003</td>
+</tr>
+<tr>
+<td>UT-012</td>
+<td>SOA detects overvoltage at MSL threshold (2800 mV)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OV_MSL</td>
+<td>SW-REQ-001</td>
+</tr>
+<tr>
+<td>UT-013</td>
+<td>SOA detects undervoltage at MSL threshold (1500 mV)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with UV_MSL</td>
+<td>SW-REQ-002</td>
+</tr>
+<tr>
+<td>UT-014</td>
+<td>SOA detects deep discharge at 1500 mV</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with DEEP_DISCHARGE</td>
+<td>SW-REQ-005</td>
+</tr>
+<tr>
+<td>UT-015</td>
+<td>SOA reports OK when voltage within normal range</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OK event</td>
+<td>SW-REQ-001</td>
+</tr>
+<tr>
+<td>UT-016</td>
+<td>SOA detects discharge overcurrent at MSL (180000 mA)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OC_DISCHARGE_MSL</td>
+<td>SW-REQ-010</td>
+</tr>
+<tr>
+<td>UT-017</td>
+<td>SOA detects charge overcurrent at MSL (180000 mA)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OC_CHARGE_MSL</td>
+<td>SW-REQ-011</td>
+</tr>
+<tr>
+<td>UT-018</td>
+<td>SOA detects overtemperature discharge at MSL (55 deg C)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OT_DISCHARGE_MSL</td>
+<td>SW-REQ-020</td>
+</tr>
+<tr>
+<td>UT-019</td>
+<td>SOA detects undertemperature discharge at MSL (-20 deg C)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with UT_DISCHARGE_MSL</td>
+<td>SW-REQ-021</td>
+</tr>
+<tr>
+<td>UT-020</td>
+<td>SOA detects overtemperature charge at MSL (45 deg C)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with OT_CHARGE_MSL</td>
+<td>SW-REQ-022</td>
+</tr>
+<tr>
+<td>UT-021</td>
+<td>SOA detects undertemperature charge at MSL (-20 deg C)</td>
+<td>soa.c</td>
+<td>DIAG_Handler called with UT_CHARGE_MSL</td>
+<td>SW-REQ-023</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-bms-module-tests">5.3 BMS Module Tests</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Module</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-030</td>
+<td>BMS initializes in STANDBY state</td>
+<td>bms.c</td>
+<td>BMS_GetState() == STANDBY</td>
+<td>SW-REQ-040</td>
+</tr>
+<tr>
+<td>UT-031</td>
+<td>BMS transitions STANDBY to PRECHARGE on valid request</td>
+<td>bms.c</td>
+<td>State changes to PRECHARGE</td>
+<td>SW-REQ-041</td>
+</tr>
+<tr>
+<td>UT-032</td>
+<td>BMS transitions PRECHARGE to NORMAL on precharge complete</td>
+<td>bms.c</td>
+<td>State changes to NORMAL</td>
+<td>SW-REQ-042</td>
+</tr>
+<tr>
+<td>UT-033</td>
+<td>BMS transitions to ERROR on FATAL diagnostic</td>
+<td>bms.c</td>
+<td>State changes to ERROR</td>
+<td>SW-REQ-043</td>
+</tr>
+<tr>
+<td>UT-034</td>
+<td>BMS opens all contactors in ERROR state</td>
+<td>bms.c</td>
+<td>All 3 contactors commanded OPEN</td>
+<td>SW-REQ-044</td>
+</tr>
+<tr>
+<td>UT-035</td>
+<td>BMS remains in ERROR until fault cleared AND STANDBY requested</td>
+<td>bms.c</td>
+<td>State stays ERROR without both conditions</td>
+<td>SW-REQ-045</td>
+</tr>
+<tr>
+<td>UT-036</td>
+<td>BMS transitions ERROR to STANDBY when both conditions met</td>
+<td>bms.c</td>
+<td>State changes to STANDBY</td>
+<td>SW-REQ-045</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-database-module-tests">5.4 Database Module Tests</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Module</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-040</td>
+<td>Database write and read returns same data</td>
+<td>database.c</td>
+<td>Read data matches written data</td>
+<td>SW-REQ-060</td>
+</tr>
+<tr>
+<td>UT-041</td>
+<td>Database read returns most recent write</td>
+<td>database.c</td>
+<td>Latest write visible to reader</td>
+<td>SW-REQ-061</td>
+</tr>
+<tr>
+<td>UT-042</td>
+<td>Database entries exist for all configured measurements</td>
+<td>database.c</td>
+<td>Cell voltages (18), temps (8), currents present</td>
+<td>SW-REQ-062</td>
+</tr>
+</tbody>
+</table>
+<h3 id="55-can-module-tests">5.5 CAN Module Tests</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Module</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-050</td>
+<td>CAN transmit formats BMS state message at ID 0x220</td>
+<td>can.c</td>
+<td>Correct ID, DLC, data encoding</td>
+<td>SW-REQ-090</td>
+</tr>
+<tr>
+<td>UT-051</td>
+<td>CAN receive decodes state request from ID 0x210</td>
+<td>can.c</td>
+<td>Correct state request extracted</td>
+<td>SW-REQ-100</td>
+</tr>
+<tr>
+<td>UT-052</td>
+<td>CAN receive decodes IVT frames from IDs 0x521-0x527</td>
+<td>can.c</td>
+<td>Current, voltage, temperature values correct</td>
+<td>SW-REQ-101</td>
+</tr>
+</tbody>
+</table>
+<h3 id="56-contactor-module-tests">5.6 Contactor Module Tests</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Module</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-060</td>
+<td>Contactor set state OPEN commands the physical output</td>
+<td>contactor.c</td>
+<td>SPS output set to OPEN</td>
+<td>SW-REQ-044</td>
+</tr>
+<tr>
+<td>UT-061</td>
+<td>Contactor set state CLOSE commands the physical output</td>
+<td>contactor.c</td>
+<td>SPS output set to CLOSE</td>
+<td>SW-REQ-041</td>
+</tr>
+<tr>
+<td>UT-062</td>
+<td>Contactor feedback mismatch reported to DIAG</td>
+<td>contactor.c</td>
+<td>DIAG_Handler called with feedback event</td>
+<td>SW-REQ-044</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-posix-specific-unit-tests">6. POSIX-Specific Unit Tests</h2>
+<h3 id="61-smoke-test-suite-test_smokepy">6.1 Smoke Test Suite (test_smoke.py)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-100</td>
+<td>Binary starts without crash</td>
+<td>Process starts, PID &gt; 0</td>
+<td>SW-REQ-123</td>
+</tr>
+<tr>
+<td>UT-101</td>
+<td>Binary reaches SYS RUNNING state</td>
+<td>CAN 0x220 shows SYS state &gt;= 5</td>
+<td>SW-REQ-050</td>
+</tr>
+<tr>
+<td>UT-102</td>
+<td>BMS reaches STANDBY state</td>
+<td>CAN 0x220 shows BMS state == 5</td>
+<td>SW-REQ-040</td>
+</tr>
+<tr>
+<td>UT-103</td>
+<td>CAN TX messages appear on SocketCAN</td>
+<td>At least one frame received on vcan0</td>
+<td>SW-REQ-090</td>
+</tr>
+<tr>
+<td>UT-104</td>
+<td>Binary runs for 10 seconds without error</td>
+<td>Process exit code == 0 after SIGTERM</td>
+<td>SW-REQ-123</td>
+</tr>
+<tr>
+<td>UT-105</td>
+<td>No segfault or abort during startup</td>
+<td>No SIGSEGV or SIGABRT</td>
+<td>SW-REQ-123</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-hal-stub-tests">6.2 HAL Stub Tests</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UT-110</td>
+<td>All 80+ HAL stub functions are callable</td>
+<td>No linker errors, no crashes</td>
+<td>SW-REQ-122</td>
+</tr>
+<tr>
+<td>UT-111</td>
+<td>Register base pointers map to valid RAM</td>
+<td>Read/write to register base does not segfault</td>
+<td>SW-REQ-122</td>
+</tr>
+<tr>
+<td>UT-112</td>
+<td>60+ register bases allocated</td>
+<td>All register structs have non-NULL base addresses</td>
+<td>SW-REQ-122</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-test-coverage-summary">7. Test Coverage Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th># Unit Tests</th>
+<th>Safety-Critical</th>
+<th>Coverage Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DIAG</td>
+<td>8</td>
+<td>Yes (ASIL D)</td>
+<td>MC/DC</td>
+</tr>
+<tr>
+<td>SOA</td>
+<td>12</td>
+<td>Yes (ASIL D)</td>
+<td>MC/DC</td>
+</tr>
+<tr>
+<td>BMS</td>
+<td>7</td>
+<td>Yes (ASIL D)</td>
+<td>MC/DC</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>3</td>
+<td>Yes (ASIL C)</td>
+<td>Branch</td>
+</tr>
+<tr>
+<td>CAN</td>
+<td>3</td>
+<td>Yes (ASIL B)</td>
+<td>Branch</td>
+</tr>
+<tr>
+<td>Contactor</td>
+<td>3</td>
+<td>Yes (ASIL D)</td>
+<td>MC/DC</td>
+</tr>
+<tr>
+<td>HAL Stubs</td>
+<td>3</td>
+<td>No (QM)</td>
+<td>Statement</td>
+</tr>
+<tr>
+<td>Smoke</td>
+<td>6</td>
+<td>No (QM)</td>
+<td>Statement</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-passfail-criteria">8. Pass/Fail Criteria</h2>
+<ul>
+<li>All unit tests shall pass with zero failures.</li>
+<li>No test shall produce undefined behavior (address sanitizer clean).</li>
+<li>For ASIL D modules, MC/DC coverage shall be demonstrated.</li>
+<li>For ASIL B/C modules, branch coverage shall be demonstrated.</li>
+<li>For QM modules, statement coverage is sufficient.</li>
+</ul>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="swe-3-detailed-design.html">&larr; SWE.3 Detailed Design</a><a href="swe-5-integration-tests.html">SWE.5 Integration Tests &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

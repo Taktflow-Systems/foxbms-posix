@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integration Notes — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" class="active">Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Documentation / Integration Notes</div>
+<div class="content"><h1 id="foxbms-2-integration-findings-setup-2026-03-20">foxBMS 2 Integration — Findings &amp; Setup (2026-03-20)</h1>
+<blockquote>
+<p><strong>Note</strong>: This document contains historical findings from the integration process. Some sections describe approaches that were later abandoned (e.g., the FreeRTOS POSIX port with 7 pthreads was replaced by a cooperative main loop). See <a href="STATUS.md">STATUS.md</a> for the current architecture and <a href="PLAN.md">PLAN.md</a> for remaining work.</p>
+</blockquote>
+<h2 id="foxbms-unit-test-infrastructure-windows-pc">foxBMS Unit Test Infrastructure (Windows PC)</h2>
+<h3 id="tools-installed">Tools Installed</h3>
+<ul>
+<li><strong>Ruby 3.4.4</strong>: <code>C:\foxbms\Ruby\Ruby34-x64\</code></li>
+<li><strong>Ceedling 1.0.1</strong>: <code>C:\foxbms\Ceedling\1.0.1\bin\</code></li>
+<li><strong>GCC 15.2 (MSYS2)</strong>: <code>C:\tools\msys64\ucrt64\bin\</code> — foxBMS expects GCC 8.1 but 15 works with warning fixes</li>
+<li><strong>gcovr</strong>: <code>C:\Users\andao\AppData\Local\Programs\Python\Python312\Scripts\gcovr.exe</code></li>
+<li><strong>Python 3.12.10</strong>: <code>C:\Users\andao\AppData\Local\Programs\Python\Python312\python.exe</code></li>
+</ul>
+<h3 id="gcc-15-compatibility-fixes-confunitapp_project_win32yml">GCC 15 Compatibility Fixes (conf/unit/app_project_win32.yml)</h3>
+<p>Added to <code>:flags: :test: :compile: :*:</code>:</p>
+<pre><code class="language-yaml">- -Wno-enum-conversion        # enum type mismatch in mock returns
+- -Wno-incompatible-pointer-types  # pointer type differences
+- -Wno-attributes             # section attribute conflicts in FreeRTOS MPU
+- -Wno-unterminated-string-initialization  # string init without NUL
+- -Wno-absolute-value         # abs() with time_t argument
+- -fcommon                    # multiple definition of tentative globals
+</code></pre>
+<h3 id="paths_win32txt-changes">paths_win32.txt Changes</h3>
+<p>Changed mingw path from <code>C:\foxbms\mingw-w64\x86_64-8.1.0-release-posix-seh-rt_v6-rev0\bin</code> to <code>C:\tools\msys64\ucrt64\bin</code></p>
+<h3 id="build-commands">Build Commands</h3>
+<pre><code class="language-bash"># Must add gcovr to PATH first
+export PATH=&quot;/c/Users/andao/AppData/Local/Programs/Python/Python312/Scripts:$PATH&quot;
+
+# Configure (once)
+python fox.py waf configure
+
+# Run all tests (clean first if stale cache suspected)
+python fox.py waf clean_app_host_unit_test
+python fox.py ceedling test:all
+
+# Run single test
+python fox.py ceedling test:test_bms
+</code></pre>
+<h3 id="critical-lesson-always-clean-before-full-test-run">Critical Lesson: Always Clean Before Full Test Run</h3>
+<p>Stale Ceedling build cache causes mock generation to fail silently for files with hyphens in names (e.g., <code>can_cbs_tx_crash-dump.h</code>). After <code>clean_app_host_unit_test</code>, all 183+ tests pass. Without clean, 11 tests fail with "No such file" for mock headers.</p>
+<h3 id="test-results-100-pass-after-clean-gcc-15-fixes">Test Results: 100% PASS (after clean + GCC 15 fixes)</h3>
+<p>All non-AFE-vendor tests pass. ADI ADES1830 tests also pass after clean.</p>
+<h2 id="foxbms-can-message-map-for-plant-model">foxBMS CAN Message Map (for Plant Model)</h2>
+<h3 id="rx-plant-foxbms-must-send">RX: Plant → foxBMS (must send)</h3>
+<table>
+<thead>
+<tr>
+<th>CAN ID</th>
+<th>Message</th>
+<th>Period</th>
+<th>Endianness</th>
+<th>DLC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x210</td>
+<td>BMS State Request</td>
+<td>aperiodic</td>
+<td>Big</td>
+<td>8</td>
+</tr>
+<tr>
+<td>0x270</td>
+<td>AFE Cell Voltages</td>
+<td>periodic</td>
+<td>Big</td>
+<td>8</td>
+</tr>
+<tr>
+<td>0x280</td>
+<td>AFE Cell Temperatures</td>
+<td>periodic</td>
+<td>Big</td>
+<td>8</td>
+</tr>
+<tr>
+<td>0x521</td>
+<td>IVT String0 Current</td>
+<td>periodic</td>
+<td>Big</td>
+<td>6</td>
+</tr>
+<tr>
+<td>0x522</td>
+<td>IVT String0 Voltage1</td>
+<td>periodic</td>
+<td>Big</td>
+<td>6</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tx-foxbms-plant-will-receive">TX: foxBMS → Plant (will receive)</h3>
+<table>
+<thead>
+<tr>
+<th>CAN ID</th>
+<th>Message</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x220</td>
+<td>BMS State</td>
+<td>Operating state</td>
+</tr>
+<tr>
+<td>0x221</td>
+<td>BMS State Details</td>
+<td>Detailed state info</td>
+</tr>
+<tr>
+<td>0x231</td>
+<td>Pack Min/Max Values</td>
+<td>Min/max cell voltages</td>
+</tr>
+<tr>
+<td>0x232</td>
+<td>Pack Limits</td>
+<td>Current/voltage limits</td>
+</tr>
+<tr>
+<td>0x233</td>
+<td>Pack Values P0</td>
+<td>Pack voltage, current</td>
+</tr>
+<tr>
+<td>0x234</td>
+<td>Pack Values P1</td>
+<td>Additional pack data</td>
+</tr>
+<tr>
+<td>0x235</td>
+<td>Pack State Estimation</td>
+<td>SOC/SOE</td>
+</tr>
+<tr>
+<td>0x240</td>
+<td>String State</td>
+<td>Contactor/string state</td>
+</tr>
+<tr>
+<td>0x241</td>
+<td>String Min/Max</td>
+<td>Per-string min/max</td>
+</tr>
+<tr>
+<td>0x243</td>
+<td>String Values P0</td>
+<td>String voltage</td>
+</tr>
+<tr>
+<td>0x244</td>
+<td>String Values P1</td>
+<td>String current</td>
+</tr>
+<tr>
+<td>0x245</td>
+<td>String State Estimation</td>
+<td>Per-string SOC</td>
+</tr>
+<tr>
+<td>0x250</td>
+<td>Cell Voltages</td>
+<td>Individual cell V</td>
+</tr>
+<tr>
+<td>0x260</td>
+<td>Cell Temperatures</td>
+<td>Individual cell T</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cell-voltage-message-format-0x270">Cell Voltage Message Format (0x270)</h3>
+<ul>
+<li>Mux byte (bits 7:0): selects group of 4 cells</li>
+<li>4 cell voltages: 13 bits each at bit positions 11, 30, 33, 52</li>
+<li>4 invalid flags: 1 bit each at bit positions 12, 13, 14, 15</li>
+<li>Endianness: Big</li>
+</ul>
+<h3 id="bms-configuration-confbmsbmsjson">BMS Configuration (conf/bms/bms.json)</h3>
+<ul>
+<li>AFE: <code>debug/can</code> (reads cell data from CAN, not SPI)</li>
+<li>SOC: counting method</li>
+<li>SOE: counting method</li>
+<li>SOF: trapezoid method</li>
+<li>Balancing: voltage-based</li>
+<li>IMD: none (insulation monitoring disabled)</li>
+</ul>
+<h2 id="foxbms-hardware-port-tms570-launchpad-status">foxBMS Hardware Port (TMS570 LaunchPad) — Status</h2>
+<h3 id="what-works">What Works</h3>
+<ul>
+<li>foxBMS builds: <code>fox.py waf build_app_embedded</code> → <code>foxbms.elf</code> (BE32)</li>
+<li>HALCoGen partially adapted: 16 MHz crystal, CAN1 500 kbps, SCI1 115200, GIOB6/7</li>
+</ul>
+<h3 id="what-blocks-boot">What Blocks Boot</h3>
+<ul>
+<li><strong>PLL NR divider wrong</strong>: HALCoGen NR=10 with 16 MHz crystal → 240 MHz (should be 300 MHz). Fix: NR=8.</li>
+<li><strong>Driver stubs missing</strong>: SBC, SPS, PEX, FRAM hang on missing SPI/I2C hardware</li>
+<li><strong>LED driver</strong>: uses HET1[1], LaunchPad has GIOB[6:7]</li>
+</ul>
+<h3 id="tms570-launchpad-hardware-findings">TMS570 LaunchPad Hardware Findings</h3>
+<ul>
+<li><strong>DCAN1 TX/RX</strong>: J10 pin 44 (RX), J10 pin 45 (TX) — NOT J9 pins 20/21 as markdown summaries claimed</li>
+<li><strong>CAN transceiver</strong>: SN65HVD230 module, needs 3.3V VCC</li>
+<li><strong>BE32 required</strong>: <code>-Wl,--be32</code> for all TMS570 linking. BE8 ELF = doesn't run, no error</li>
+<li><strong>sc_startup.S required</strong>: HALCoGen's HL_sys_startup.c doesn't work with tiarmclang on LaunchPad</li>
+<li><strong>Entry point</strong>: <code>_c_int00</code> (not <code>main()</code>) — sc_startup.S branches to it</li>
+<li><strong>HALCoGen all RX mailboxes</strong>: Must manually set Dir=TX in IF1ARB after canInit()</li>
+<li><strong>DCAN1 loopback PASS, external TX PASS</strong> (after VCC fix)</li>
+<li><strong>Production SC blinks but no CAN TX</strong> — separate bug in dcan1_transmit(), not yet debugged</li>
+</ul>
+<h2 id="foxbms-on-ubuntu-laptop">foxBMS on Ubuntu Laptop</h2>
+<ul>
+<li>Cloned at <code>/home/an-dao/foxbms-2</code> (v1.10.0)</li>
+<li>Python venv: <code>/home/an-dao/foxbms-2/.venv/</code></li>
+<li>Ruby 3.2.3 + Ceedling 1.0.1 installed</li>
+<li>waf configure fails (no TI CGT) — needs patching for host-only build</li>
+</ul>
+<h2 id="foxbms-posix-vecu-working-2026-03-20">foxBMS POSIX vECU — WORKING (2026-03-20)</h2>
+<h3 id="achievement">Achievement</h3>
+<p>foxBMS 2 v1.10.0 running as a native Linux x86-64 process on Ubuntu laptop.
+Sends CAN messages (0x220 BMS State, 0x600/0x601 debug AFE) on vcan0.</p>
+<h3 id="how-it-works">How It Works</h3>
+<ul>
+<li>FreeRTOS POSIX port (ThirdParty/GCC/Posix) provides real task scheduling via pthreads</li>
+<li>7 FreeRTOS threads created: TaskEngine, Task1ms, Task10ms, Task100ms, TaskAlgo, TaskAFE, TaskI2C</li>
+<li>foxBMS's own main.c drives initialization (not custom entry point)</li>
+<li>HAL stubs replace hardware register access (IO, CRC, SPI, I2C, ADC, etc.)</li>
+<li>SocketCAN via canInit() stub opens vcan0 automatically</li>
+</ul>
+<h3 id="files-in-foxbms-2posix">Files (in foxbms-2/posix/)</h3>
+<ul>
+<li><code>Makefile</code> — builds 170+ foxBMS source files with GCC</li>
+<li><code>hal_stubs_posix.c</code> — 50+ HAL function stubs</li>
+<li><code>posix_overrides.h</code> — force-included, stubs <code>__asm</code> and <code>__curpc</code></li>
+<li><code>foxbms_posix_main.c</code> — SocketCAN helper functions</li>
+<li><code>config_cpu_clock_hz.h</code> — defines CPU clock for FreeRTOS config</li>
+</ul>
+<h3 id="excluded-source-files-variants-we-dont-use">Excluded Source Files (variants we don't use)</h3>
+<ul>
+<li>AFE: adi, nxp, maxim, ltc, ti, debug/default (keep debug/can only)</li>
+<li>IMD: bender, no-imd (keep imd.c with none config)</li>
+<li>SOC/SOE/SOH: debug and none variants (keep counting)</li>
+<li>TS: all except epcos b57251v5103j060</li>
+<li>Others: ethernet, bal/history, bal/none, polynomial, fstartup, io.c, crc.c</li>
+</ul>
+<h3 id="build-run">Build &amp; Run</h3>
+<pre><code class="language-bash">cd /home/an-dao/foxbms-2/posix
+make -j4                              # Build
+sudo ip link add vcan0 type vcan      # Create virtual CAN
+sudo ip link set vcan0 up
+./foxbms-vecu                         # Run (Ctrl+C to stop)
+candump vcan0                         # See CAN output in another terminal
+</code></pre>
+<h3 id="environment-variable">Environment Variable</h3>
+<p><code>FOXBMS_CAN_IF=can0</code> to use real CAN instead of vcan0</p>
+<h2 id="foxbms-posix-vecu-can-tx-verified-2026-03-20-late">foxBMS POSIX vECU — CAN TX VERIFIED (2026-03-20 late)</h2>
+<h3 id="proof">Proof</h3>
+<pre><code>(000.000000)  vcan1  222   [8]  01 00 00 00 00 00 00 00
+</code></pre>
+<p>foxBMS CAN ID 0x222 captured on isolated vcan1 with candump. No other processes on this bus.</p>
+<h3 id="fixes-required-for-freertos-posix-port">Fixes Required for FreeRTOS POSIX Port</h3>
+<ol>
+<li><strong>Engine task vTaskDelay(10)</strong>: Engine runs at REAL_TIME priority. Without delay, it monopolizes CPU and lower-priority tasks never run.</li>
+<li><strong>All busy-waits need vTaskDelay(1)</strong>: foxBMS uses <code>while(condition) {}</code> busy-waits between task phases. POSIX port's signal-based preemption doesn't interrupt these.</li>
+<li><strong>portGET_HIGHEST_PRIORITY macro</strong>: ARM CLZ instruction replaced with <code>__builtin_clz</code> for x86.</li>
+<li><strong>Early SocketCAN open</strong>: foxBMS sends CAN before SYS state machine calls canInit(). Open socket in constructor.</li>
+<li><strong>SPS_Initialize stub</strong>: SPS driver accesses GIO hardware registers directly — must exclude sps.c and stub.</li>
+<li><strong>SBC_GetState → RUNNING</strong>: System state machine waits for SBC. Bypass with #ifdef FOXBMS_POSIX.</li>
+<li><strong>RTC_IsRtcModuleInitialized → true</strong>: State machine waits for RTC. Bypass.</li>
+</ol>
+<h3 id="source-files-modified-on-laptop-not-committed-upstream">Source Files Modified (on laptop, not committed upstream)</h3>
+<ul>
+<li><code>src/app/task/ftask/ftask.c</code> — vTaskDelay in busy-waits and engine loop</li>
+<li><code>src/app/task/config/ftask_cfg.c</code> — trace prints</li>
+<li><code>src/app/task/os/freertos/os_freertos.c</code> — trace prints</li>
+<li><code>src/app/driver/sbc/sbc.c</code> — FOXBMS_POSIX bypasses for SBC state</li>
+<li><code>src/app/driver/rtc/rtc.c</code> — FOXBMS_POSIX bypass for RTC init</li>
+<li><code>src/app/engine/sys/sys.c</code> — state machine trace</li>
+</ul>
+<h2 id="foxbms-posix-vecu-fully-running-2026-03-20-final">foxBMS POSIX vECU — FULLY RUNNING (2026-03-20 final)</h2>
+<h3 id="proof_1">Proof</h3>
+<pre><code> (000.000000)  vcan1  222   [8]  42 00 00 00 00 00 00 00
+ (000.000142)  vcan1  222   [8]  44 00 00 00 00 00 00 00
+ (000.240355)  vcan1  222   [8]  54 00 00 00 00 00 00 00
+ (000.456715)  vcan1  222   [8]  35 00 00 00 00 00 00 00
+ (000.951944)  vcan1  222   [8]  06 00 00 00 00 00 00 00
+</code></pre>
+<p>Multiple CAN 0x222 frames on isolated vcan1.</p>
+<h3 id="working-architecture-cooperative-mode-no-freertos-scheduler">Working Architecture: Cooperative Mode (No FreeRTOS Scheduler)</h3>
+<ul>
+<li>foxBMS's own <code>main.c</code> replaced with cooperative <code>foxbms_posix_main.c</code></li>
+<li>No FreeRTOS scheduler — simple <code>while(1)</code> loop calls cyclic functions</li>
+<li>FreeRTOS kernel compiled but scheduler never started</li>
+<li>Queue operations stubbed as no-op (data flows directly through database)</li>
+<li><code>OS_DelayTaskUntil</code> → <code>usleep()</code></li>
+<li><code>OS_GetTickCount</code> → <code>clock_gettime(CLOCK_MONOTONIC)</code></li>
+<li><code>FAS_ASSERT</code> set to NO_OPERATION level (asserts fire but don't halt)</li>
+</ul>
+<h3 id="sys-state-machine">SYS State Machine</h3>
+<ul>
+<li>Progresses through INITIALIZATION substates (0→5)</li>
+<li>Reaches SYS_FSM_STATE_RUNNING (state=6, sub=21)</li>
+<li>canInit() called (via SYS substate INITIALIZATION_CAN)</li>
+</ul>
+<h3 id="excluded-source-files-hardware-dependent">Excluded Source Files (hardware-dependent)</h3>
+<ul>
+<li><code>main.c</code>, <code>fstartup.c</code> — replaced by foxbms_posix_main.c</li>
+<li><code>io.c</code> — register dereference for GPIO</li>
+<li><code>crc.c</code> — hardware CRC peripheral → software CRC stub</li>
+<li><code>spi.c</code>, <code>spi_cfg.c</code> — SPI register access</li>
+<li><code>dma.c</code> — DMA register access</li>
+<li><code>i2c.c</code> — I2C register access</li>
+<li><code>fram.c</code> — SPI FRAM</li>
+<li><code>sps.c</code>, <code>sps_cfg.c</code> — Smart Power Switch (GIO register access)</li>
+<li><code>pex.c</code>, <code>pex_cfg.c</code> — Port Expander (I2C)</li>
+<li><code>htsensor.c</code> — Humidity/Temp sensor (I2C)</li>
+<li><code>sbc/*</code> — NXP FS85xx Safety Basis Chip (SPI)</li>
+<li><code>os_freertos.c</code>, <code>ftask_freertos.c</code> — FreeRTOS OS wrapper (replaced by stubs)</li>
+</ul>
+<h3 id="key-lesson-fas_assert-no_operation">Key Lesson: FAS_ASSERT = NO_OPERATION</h3>
+<p>foxBMS has ~100+ assert checks during init for hardware that doesn't exist on POSIX. With assert level 0 (infinite loop), ANY hardware-related check hangs forever. Setting <code>FAS_ASSERT_LEVEL=2</code> (no-op) lets foxBMS continue past all hardware checks and reach the running state.</p>
+<h2 id="foxbms-posix-bms-in-idle-state-soc-50-2026-03-21">foxBMS POSIX — BMS in IDLE State, SOC 50% (2026-03-21)</h2>
+<h3 id="achieved">Achieved</h3>
+<ul>
+<li>SYS state machine reaches RUNNING (state=5)</li>
+<li>BMS state: IDLE (CAN state 3) — ready for standby request</li>
+<li>SOC: 50% (default counting method)</li>
+<li>2375 CAN frames in 10 seconds (15+ message types)</li>
+<li>Plant model sends IVT current (0x521) and voltage (0x522)</li>
+</ul>
+<h3 id="fixes-applied">Fixes Applied</h3>
+<ul>
+<li>SBC_STATEMACHINE_RUNNING enum value corrected (2 not 3)</li>
+<li>CAN_IsCurrentSensorPresent bypassed (return true)</li>
+<li>All 60+ TMS570 register bases redirected to RAM via HALCoGen header patches</li>
+<li>DIAG_Handler stubbed to always return OK</li>
+</ul>
+<h3 id="next-steps">Next Steps</h3>
+<ul>
+<li>Send BMS state request (0x210) to transition IDLE → STANDBY → NORMAL</li>
+<li>Implement CAN RX from SocketCAN so foxBMS receives plant data</li>
+<li>Fault injection testing</li>
+</ul></div>
+<div class="nav-buttons"><a href="build-guide.html">&larr; Build Guide</a><a href="10-role-audit-v1.html">10-Role Audit v1 &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

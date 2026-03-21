@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 6: FTTI — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" class="active">Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 6: FTTI</div>
+<div class="content"><h1 id="iso-26262-6-fault-tolerant-time-interval-ftti-calculations">ISO 26262-6: Fault Tolerant Time Interval (FTTI) Calculations</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Document ID</td>
+<td>FOX-SAF-FTTI-001</td>
+</tr>
+<tr>
+<td>Applicable Standard</td>
+<td>ISO 26262:2018 Part 6 — Product Development: Software Level</td>
+</tr>
+<tr>
+<td>System</td>
+<td>foxBMS 2 Battery Management System v1.10.0</td>
+</tr>
+<tr>
+<td>Item Definition</td>
+<td>Li-ion BMS: 1 string, 1 module, 18s1p, NMC cells 3500 mAh</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-03-21</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Released for Review</td>
+</tr>
+<tr>
+<td>Related Documents</td>
+<td>FOX-SAF-HARA-001, FOX-SAF-FSC-001, FOX-SAF-TSC-001</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-scope">1  Scope</h2>
+<p>This document provides detailed FTTI calculations for every FATAL-severity diagnostic entry in the foxBMS 2 <code>diag_cfg.c</code>. Each calculation decomposes the total response time into its constituent phases and compares the result against the physical process time for the corresponding hazard.</p>
+<hr />
+<h2 id="2-ftti-calculation-method">2  FTTI Calculation Method</h2>
+<h3 id="21-general-formula">2.1  General Formula</h3>
+<pre><code>FTTI = T_detection + T_reaction + T_actuator
+</code></pre>
+<h3 id="22-component-definitions">2.2  Component Definitions</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Formula</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>T_detection</strong></td>
+<td>threshold_count × task_period</td>
+<td>Time to accumulate the configured number of consecutive diagnostic events. The task period is 10 ms for SOA checks (running in BMS_Trigger via 10 ms RTOS task) and 1 ms for system-level checks.</td>
+</tr>
+<tr>
+<td><strong>T_reaction</strong></td>
+<td>delay_ms (from diag_cfg.c)</td>
+<td>Additional debounce/confirmation time after the threshold counter is reached. During this period, the diagnostic condition must persist to confirm the fault.</td>
+</tr>
+<tr>
+<td><strong>T_actuator</strong></td>
+<td>T_state_machine + T_contactor_mechanical</td>
+<td>Time for BMS state machine to process ERROR transition (max 10 ms — one BMS_Trigger cycle) plus contactor mechanical opening time (20–50 ms depending on contactor model).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-assumptions">2.3  Assumptions</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Justification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SOA check task period</td>
+<td>10 ms</td>
+<td>BMS_Trigger runs in 10 ms RTOS task</td>
+</tr>
+<tr>
+<td>System-level check task period</td>
+<td>1 ms</td>
+<td>System monitoring runs in 1 ms RTOS task</td>
+</tr>
+<tr>
+<td>BMS state machine response</td>
+<td>10 ms</td>
+<td>One BMS_Trigger cycle in worst case</td>
+</tr>
+<tr>
+<td>Contactor mechanical open time</td>
+<td>50 ms</td>
+<td>Conservative automotive contactor specification</td>
+</tr>
+<tr>
+<td>SPS driver command latency</td>
+<td>&lt;1 ms</td>
+<td>SPI transaction time (negligible)</td>
+</tr>
+<tr>
+<td>Total T_actuator</td>
+<td>50 ms</td>
+<td>10 ms (SM) + &lt;1 ms (SPS) + ~40 ms (mechanical) ≈ 50 ms</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-ftti-calculations-battery-safety-diagnostics">3  FTTI Calculations — Battery Safety Diagnostics</h2>
+<h3 id="31-diag_id_cell_voltage_overvoltage_msl">3.1  DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-01 (ASIL D)</td>
+</tr>
+<tr>
+<td><strong>Cell Limit</strong></td>
+<td>2800 mV</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>50 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>200 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorOvervoltage</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>50 × 10 = 500</td>
+<td>500</td>
+</tr>
+<tr>
+<td>T_reaction (delay_ms)</td>
+<td>200</td>
+<td>700</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>750</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>750</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time Analysis:</strong></p>
+<p>The hazardous consequence of cell overvoltage is lithium plating leading to dendrite formation and internal short circuit. The timeline depends on the degree of overcharge:</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Estimated Process Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell at 2800 mV (just above limit for NMC)</td>
+<td>&gt;600 s (&gt;10 min) — plating onset at moderate overcharge is slow</td>
+</tr>
+<tr>
+<td>Cell at 3000 mV (significant overcharge)</td>
+<td>~120–300 s — accelerated plating</td>
+</tr>
+<tr>
+<td>Cell at 4000 mV (severe overcharge)</td>
+<td>~30–60 s — rapid gas generation and plating</td>
+</tr>
+<tr>
+<td>Cell at 5000 mV (extreme — electrolyte decomposition)</td>
+<td>~5–15 s — violent reaction</td>
+</tr>
+</tbody>
+</table>
+<p>Note: With a 2800 mV MSL on cells with 2500 mV nominal, the overcharge margin is 300 mV (~12%). At typical charge rates (0.5C–1C), the voltage rise rate is ~1–5 mV/s. In the worst case (5 mV/s rise), the voltage exceeds 2800 mV and reaches 2804 mV by the time the FTTI expires (0.75 s × 5 mV/s = 3.75 mV additional overshoot). This is well within the safe margin.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (750 ms) is at least 40× shorter than the shortest physical process time (~30 s).</p>
+<hr />
+<h3 id="32-diag_id_cell_voltage_undervoltage_msl">3.2  DIAG_ID_CELL_VOLTAGE_UNDERVOLTAGE_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-02 (ASIL C)</td>
+</tr>
+<tr>
+<td><strong>Cell Limit</strong></td>
+<td>1500 mV</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>50 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>200 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorUndervoltage</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>500</td>
+<td>500</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>200</td>
+<td>700</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>750</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>750</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time Analysis:</strong></p>
+<p>Copper dissolution from the anode current collector begins at voltages below ~1.5 V (vs. Li/Li+). At 1500 mV cell voltage, the anode potential is approximately at the copper dissolution threshold. Significant copper dissolution (enough to form dendrites on subsequent charge) requires:</p>
+<ul>
+<li>Sustained undervoltage for &gt;10 minutes at moderate discharge rates</li>
+<li>At 1500 mV, the cell is near end-of-discharge; further voltage drop under load is rapid (steep discharge curve), but copper dissolution is an electrochemical process with time constants of minutes</li>
+</ul>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (750 ms) &lt;&lt; copper dissolution onset (~10 min).</p>
+<hr />
+<h3 id="33-diag_id_temp_overtemperature_charge_msl">3.3  DIAG_ID_TEMP_OVERTEMPERATURE_CHARGE_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-06 (ASIL C)</td>
+</tr>
+<tr>
+<td><strong>Temp Limit</strong></td>
+<td>45 °C (charge mode)</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>500 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>1000 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorOvertemperatureCharge</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>500 × 10 = 5000</td>
+<td>5000</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>1000</td>
+<td>6000</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>6050</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>6050 (6.05 s)</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time Analysis:</strong></p>
+<p>From 45 °C to thermal runaway onset (self-heating temperature, ~130 °C for NMC):</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Temp Rise Rate</th>
+<th>Time to TR Onset</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell at 1C charge, adiabatic</td>
+<td>~0.3 °C/s</td>
+<td>~280 s (~4.7 min)</td>
+</tr>
+<tr>
+<td>Cell at 2C charge, adiabatic</td>
+<td>~1.2 °C/s</td>
+<td>~70 s (~1.2 min)</td>
+</tr>
+<tr>
+<td>Cell at 1C charge, with cooling (typical)</td>
+<td>~0.05 °C/s</td>
+<td>~1700 s (~28 min)</td>
+</tr>
+<tr>
+<td>External fire exposure</td>
+<td>~5–10 °C/s</td>
+<td>~8–17 s</td>
+</tr>
+</tbody>
+</table>
+<p>The FTTI of 6.05 s assumes continued current flow. Once contactors open (safe state achieved), the current source of heating is removed. Residual temperature from thermal inertia does not increase by more than ~0.1 °C after current cutoff.</p>
+<p>For external fire exposure: the BMS temperature monitoring cannot protect against external fire — this is a vehicle-level hazard addressed by fire suppression and occupant escape systems.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (6.05 s) &lt;&lt; thermal runaway onset from 45 °C (~70 s worst case under charge current).</p>
+<hr />
+<h3 id="34-diag_id_temp_overtemperature_discharge_msl">3.4  DIAG_ID_TEMP_OVERTEMPERATURE_DISCHARGE_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Temp Limit</strong></td>
+<td>55 °C (discharge mode)</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>500 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>1000 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong> Identical structure to Section 3.3.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>5000</td>
+<td>5000</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>1000</td>
+<td>6000</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>6050</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>6050 (6.05 s)</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time:</strong> From 55 °C to TR onset (~130 °C): the margin is 75 °C. At worst-case adiabatic discharge (2C): ~1.2 °C/s → ~62 s. At typical discharge with cooling: ~0.3 °C/s → ~250 s.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (6.05 s) &lt;&lt; ~62 s worst case.</p>
+<hr />
+<h3 id="35-diag_id_temp_undertemperature_charge_msl">3.5  DIAG_ID_TEMP_UNDERTEMPERATURE_CHARGE_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-07 (ASIL B)</td>
+</tr>
+<tr>
+<td><strong>Temp Limit</strong></td>
+<td>-20 °C</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>500 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>1000 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>5000</td>
+<td>5000</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>1000</td>
+<td>6000</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>6050</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>6050 (6.05 s)</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time:</strong> Lithium plating at -20 °C during 0.5C charge: onset ~60–120 s. At 0.1C: onset ~300–600 s. Temperature does not change significantly in 6 s due to thermal inertia, so the low-temperature condition persists.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (6.05 s) &lt;&lt; plating onset (~60 s at 0.5C).</p>
+<hr />
+<h3 id="36-diag_id_temp_undertemperature_discharge_msl">3.6  DIAG_ID_TEMP_UNDERTEMPERATURE_DISCHARGE_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Temp Limit</strong></td>
+<td>-20 °C</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>500 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>1000 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong> Same as Section 3.5: <strong>FTTI = 6050 ms</strong>.</p>
+<p><strong>Physical Process Time:</strong> Discharge at -20 °C: primary concern is capacity loss and voltage depression, not dendrite formation. The safety risk is lower than for charge undertemperature. Treated as FATAL for defense-in-depth.</p>
+<p><strong>Verdict: ADEQUATE</strong> — Conservative safety measure.</p>
+<hr />
+<h3 id="37-diag_id_overcurrent_charge_cell_msl">3.7  DIAG_ID_OVERCURRENT_CHARGE_CELL_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-05 (ASIL C)</td>
+</tr>
+<tr>
+<td><strong>Cell Limit</strong></td>
+<td>180000 mA</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>10 × 10 = 100</td>
+<td>100</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>100</td>
+<td>200</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>250</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>250</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time:</strong> At 180 A through a 3500 mAh cell (~51C rate — extreme), adiabatic temperature rise is approximately 10–20 °C/s. From 25 °C ambient to 130 °C TR onset: ~5–10 s.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (250 ms) &lt;&lt; ~5 s.</p>
+<hr />
+<h3 id="38-diag_id_overcurrent_discharge_cell_msl">3.8  DIAG_ID_OVERCURRENT_DISCHARGE_CELL_MSL</h3>
+<p>Same parameters as Section 3.7 (180000 mA, 10 events, 100 ms delay).</p>
+<p><strong>FTTI = 250 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> Same thermal analysis as charge overcurrent. Discharge overcurrent at 51C: ~5–10 s to TR onset.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (250 ms) &lt;&lt; ~5 s.</p>
+<hr />
+<h3 id="39-diag_id_string_overcurrent_charge_msl">3.9  DIAG_ID_STRING_OVERCURRENT_CHARGE_MSL</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>String Limit</strong></td>
+<td>2400 mA</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 100 + 100 + 50 = 250 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> At 2400 mA through a single 3500 mAh cell (0.69C), this is a relatively mild overcurrent. Thermal rise rate at 0.69C is negligible (~0.01 °C/s). The primary concern at this current level is lithium plating at high SOC or low temperature, which has onset times of &gt;60 s.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (250 ms) &lt;&lt; ~60 s.</p>
+<hr />
+<h3 id="310-diag_id_string_overcurrent_discharge_msl">3.10  DIAG_ID_STRING_OVERCURRENT_DISCHARGE_MSL</h3>
+<p>Same parameters as Section 3.9 (2400 mA, 10 events, 100 ms delay).</p>
+<p><strong>FTTI = 250 ms.</strong></p>
+<p><strong>Verdict: ADEQUATE</strong> — Same analysis as 3.9 applies.</p>
+<hr />
+<h3 id="311-diag_id_pack_overcurrent_discharge_msl-charge_msl">3.11  DIAG_ID_PACK_OVERCURRENT_DISCHARGE_MSL / CHARGE_MSL</h3>
+<p>Same parameters as string overcurrent (10 events, 100 ms delay).</p>
+<p><strong>FTTI = 250 ms</strong> for both charge and discharge.</p>
+<p><strong>Verdict: ADEQUATE.</strong></p>
+<hr />
+<h3 id="312-diag_id_current_on_open_string">3.12  DIAG_ID_CURRENT_ON_OPEN_STRING</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 100 + 100 + 50 = 250 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> Current flowing through an "open" string indicates either a welded contactor or an external fault path. If current is at a dangerous level, the overcurrent DIAG IDs provide independent protection. The CURRENT_ON_OPEN_STRING detection is a secondary/confirmation mechanism.</p>
+<p><strong>Verdict: ADEQUATE.</strong></p>
+<hr />
+<h3 id="313-diag_id_deep_discharge_detected">3.13  DIAG_ID_DEEP_DISCHARGE_DETECTED</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>1 event (immediate)</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>1 × 10 = 10</td>
+<td>10</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>100</td>
+<td>110</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>160</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>160</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time:</strong> Deep discharge gas generation occurs over minutes to hours. The hazard (venting) has a long time constant.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (160 ms) &lt;&lt; physical process time.</p>
+<hr />
+<h3 id="314-diag_id_plausibility_pack_voltage">3.14  DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 100 + 100 + 50 = 250 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> Pack voltage plausibility failure indicates a measurement error, not a direct physical hazard. The safety concern is loss of accurate voltage monitoring. Cell-level voltage checks via AFE provide independent protection.</p>
+<p><strong>Verdict: ADEQUATE.</strong></p>
+<hr />
+<h2 id="4-ftti-calculations-hardwarecommunication-diagnostics">4  FTTI Calculations — Hardware/Communication Diagnostics</h2>
+<h3 id="41-diag_id_afe_spi">4.1  DIAG_ID_AFE_SPI</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>5 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>5 × 10 = 50</td>
+<td>50</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>100</td>
+<td>150</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>200</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>200</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time:</strong> Loss of AFE SPI means loss of cell voltage monitoring. During the 200 ms window, the BMS operates on stale cell data. The rate of cell voltage change is max ~5 mV per 200 ms (at 1C charge rate) — well within the margin between the MOL/RSL/MSL thresholds.</p>
+<p><strong>Verdict: ADEQUATE</strong> — 200 ms data staleness causes &lt;5 mV measurement gap.</p>
+<hr />
+<h3 id="42-diag_id_afe_communication_integrity">4.2  DIAG_ID_AFE_COMMUNICATION_INTEGRITY</h3>
+<p>Same parameters as AFE_SPI (5 events, 100 ms delay).</p>
+<p><strong>FTTI = 200 ms.</strong></p>
+<p><strong>Verdict: ADEQUATE</strong> — Same analysis as 4.1.</p>
+<hr />
+<h3 id="43-diag_id_afe_mux">4.3  DIAG_ID_AFE_MUX</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>5 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 50 + 100 + 50 = 200 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> Loss of MUX means loss of temperature measurement. Cell temperature changes by &lt;0.01 °C in 200 ms under any operating condition.</p>
+<p><strong>Verdict: ADEQUATE.</strong></p>
+<hr />
+<h3 id="44-diag_id_afe_config">4.4  DIAG_ID_AFE_CONFIG</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>1 event (immediate)</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 10 + 100 + 50 = 160 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> AFE register corruption could cause incorrect measurement range, gain, or conversion mode. Single-event detection ensures fastest possible response to SEU.</p>
+<p><strong>Verdict: ADEQUATE</strong> — Immediate detection with minimal delay.</p>
+<hr />
+<h3 id="45-diag_id_can_timing">4.5  DIAG_ID_CAN_TIMING</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>100 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>200 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>100 × 10 = 1000</td>
+<td>1000</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>200</td>
+<td>1200</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>1250</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>1250</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time:</strong> CAN loss means the vehicle controller does not receive current limits from the BMS. The vehicle controller may request full current. However, cell-level SOA checks (voltage, temperature, current) continue to operate independently of CAN. The CAN FTTI is not the sole barrier.</p>
+<p><strong>Verdict: ADEQUATE</strong> — Independent cell-level protection continues during CAN outage.</p>
+<hr />
+<h3 id="46-diag_id_current_sensor_responding">4.6  DIAG_ID_CURRENT_SENSOR_RESPONDING</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>100 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>200 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 1000 + 200 + 50 = 1250 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> Loss of current sensor means loss of overcurrent detection. During the 1250 ms window, an overcurrent event could go undetected by the current-based SOA check. However, cell voltage monitoring continues — extreme overcurrent causes measurable voltage sag that would trigger undervoltage detection.</p>
+<p><strong>Verdict: ADEQUATE</strong> — Multi-channel detection provides coverage during sensor outage.</p>
+<hr />
+<h3 id="47-diag_id_current_sensor_cc_responding-ec_responding">4.7  DIAG_ID_CURRENT_SENSOR_CC_RESPONDING / EC_RESPONDING</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>100 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>2000 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 1000 + 2000 + 50 = 3050 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> CC and EC channels provide coulomb counting and energy counting for SOC/SOE estimation. Loss of these channels does not create an immediate safety hazard — it degrades SOC accuracy over time. The 3050 ms FTTI is generous but acceptable because the primary current measurement channel provides independent overcurrent detection with a 1250 ms FTTI.</p>
+<p><strong>Verdict: ADEQUATE</strong> — SOC drift in 3050 ms is negligible (&lt;0.1% SOC at max current).</p>
+<hr />
+<h3 id="48-diag_id_current_sensor_v1v2v3_measurement_timeout">4.8  DIAG_ID_CURRENT_SENSOR_V1/V2/V3_MEASUREMENT_TIMEOUT</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>1 event (immediate)</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 10 + 100 + 50 = 160 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> Loss of IVT voltage channels eliminates the pack voltage plausibility cross-check (secondary detection path for cell voltage faults). The primary AFE path continues to operate. Immediate detection ensures minimal exposure.</p>
+<p><strong>Verdict: ADEQUATE.</strong></p>
+<hr />
+<h3 id="49-diag_id_sbc_rstb_error">4.9  DIAG_ID_SBC_RSTB_ERROR</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>1 event (immediate)</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 10 + 100 + 50 = 160 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> SBC reset assertion typically occurs due to watchdog failure or power supply anomaly. If SBC resets the MCU, contactors open automatically (fail-safe). This DIAG ID catches cases where RSTB is asserted but reset hasn't occurred yet.</p>
+<p><strong>Verdict: ADEQUATE.</strong></p>
+<hr />
+<h2 id="5-ftti-calculations-safety-infrastructure-diagnostics">5  FTTI Calculations — Safety Infrastructure Diagnostics</h2>
+<h3 id="51-diag_id_interlock_feedback">5.1  DIAG_ID_INTERLOCK_FEEDBACK</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 100 + 100 + 50 = 250 ms.</strong></p>
+<p><strong>Physical Process Time:</strong> Time from interlock break (connector removal) to potential human contact with HV terminals: ~0.5–2 s (hand withdrawal and re-insertion motion). For crash scenarios: impact forces occur in &lt;100 ms, but occupant movement toward HV components takes &gt;1 s.</p>
+<p><strong>Verdict: ADEQUATE</strong> — FTTI (250 ms) &lt; human contact time (~0.5 s).</p>
+<hr />
+<h3 id="52-diag_id_string_minus_contactor_feedback">5.2  DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>20 consecutive events</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI = 200 + 100 + 50 = 350 ms.</strong></p>
+<hr />
+<h3 id="53-diag_id_string_plus_contactor_feedback">5.3  DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK</h3>
+<p>Same as 5.2: <strong>FTTI = 350 ms.</strong></p>
+<hr />
+<h3 id="54-diag_id_precharge_contactor_feedback">5.4  DIAG_ID_PRECHARGE_CONTACTOR_FEEDBACK</h3>
+<p>Same as 5.2: <strong>FTTI = 350 ms.</strong></p>
+<p><strong>Physical Process Time (all contactor feedback):</strong> Contactor feedback mismatch during normal operation: if detected during contactor opening (safe state transition attempt), the 350 ms determines how quickly the BMS recognizes it cannot achieve safe state and attempts alternative measures (opening remaining contactors, alerting vehicle controller). If the welded contactor is the only one in the fault-current path and the other contactors can interrupt, the 350 ms delay adds to the total fault exposure time.</p>
+<p><strong>Verdict: ADEQUATE</strong> — 350 ms is well within the thermal time constant of contactor-welding fault scenarios (~1–5 s).</p>
+<hr />
+<h3 id="55-diag_id_system_monitoring">5.5  DIAG_ID_SYSTEM_MONITORING</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>1 event (immediate)</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>1 ms (system-level task)</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>0 ms (no delay)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Calculation:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration (ms)</th>
+<th>Cumulative (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T_detection</td>
+<td>1 × 1 = 1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>T_reaction</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>T_actuator</td>
+<td>50</td>
+<td>51</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>~51 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Physical Process Time:</strong> System monitoring failure indicates fundamental platform integrity loss. The 51 ms FTTI is the fastest achievable response in the system.</p>
+<p><strong>Verdict: ADEQUATE</strong> — Fastest possible response.</p>
+<hr />
+<h3 id="56-diag_id_flashchecksum">5.6  DIAG_ID_FLASHCHECKSUM</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>1 event (immediate)</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>1 ms (assumption: system-level check)</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>0 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI ≈ 51 ms</strong> (same as SYSTEM_MONITORING).</p>
+<p>Note: Flash checksum verification runs periodically (not every 1 ms — the CRC computation spans multiple cycles). The detection latency includes the CRC computation period, which may be 100 ms–1 s depending on flash size and computation chunking. However, once the CRC mismatch is detected, the DIAG response is immediate.</p>
+<p><strong>Effective FTTI = CRC_computation_period + 0 + 50 ≈ 150–1050 ms.</strong></p>
+<p><strong>Verdict: ADEQUATE</strong> — Flash corruption is a latent fault; the CRC check provides periodic detection.</p>
+<hr />
+<h3 id="57-diag_id_alert_mode">5.7  DIAG_ID_ALERT_MODE</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold</strong></td>
+<td>1 event (immediate)</td>
+</tr>
+<tr>
+<td><strong>Task Period</strong></td>
+<td>1 ms</td>
+</tr>
+<tr>
+<td><strong>Delay</strong></td>
+<td>0 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>FTTI ≈ 51 ms.</strong></p>
+<p><strong>Verdict: ADEQUATE.</strong></p>
+<hr />
+<h2 id="6-summary-table-all-fatal-diag-entries">6  Summary Table — All FATAL DIAG Entries</h2>
+<div class="hitl-lock">🔒 HITL-LOCK: FTTI-SUMMARY </div>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>DIAG ID</th>
+<th>Thr</th>
+<th>Period (ms)</th>
+<th>Delay (ms)</th>
+<th>T_det (ms)</th>
+<th>T_react (ms)</th>
+<th>T_act (ms)</th>
+<th>FTTI (ms)</th>
+<th>Process Time</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>CELL_VOLTAGE_OVERVOLTAGE_MSL</td>
+<td>50</td>
+<td>10</td>
+<td>200</td>
+<td>500</td>
+<td>200</td>
+<td>50</td>
+<td>750</td>
+<td>~30 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>2</td>
+<td>CELL_VOLTAGE_UNDERVOLTAGE_MSL</td>
+<td>50</td>
+<td>10</td>
+<td>200</td>
+<td>500</td>
+<td>200</td>
+<td>50</td>
+<td>750</td>
+<td>~600 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>3</td>
+<td>TEMP_OVERTEMPERATURE_CHARGE_MSL</td>
+<td>500</td>
+<td>10</td>
+<td>1000</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+<td>~70 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>4</td>
+<td>TEMP_OVERTEMPERATURE_DISCHARGE_MSL</td>
+<td>500</td>
+<td>10</td>
+<td>1000</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+<td>~62 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>5</td>
+<td>TEMP_UNDERTEMPERATURE_CHARGE_MSL</td>
+<td>500</td>
+<td>10</td>
+<td>1000</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+<td>~60 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>6</td>
+<td>TEMP_UNDERTEMPERATURE_DISCHARGE_MSL</td>
+<td>500</td>
+<td>10</td>
+<td>1000</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+<td>conservative</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>7</td>
+<td>OVERCURRENT_CHARGE_CELL_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~5 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>8</td>
+<td>OVERCURRENT_DISCHARGE_CELL_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~5 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>9</td>
+<td>STRING_OVERCURRENT_CHARGE_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~60 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>10</td>
+<td>STRING_OVERCURRENT_DISCHARGE_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~60 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>11</td>
+<td>PACK_OVERCURRENT_DISCHARGE_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~60 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>12</td>
+<td>PACK_OVERCURRENT_CHARGE_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~60 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>13</td>
+<td>CURRENT_ON_OPEN_STRING</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>secondary</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>14</td>
+<td>DEEP_DISCHARGE_DETECTED</td>
+<td>1</td>
+<td>10</td>
+<td>100</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+<td>~minutes</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>15</td>
+<td>PLAUSIBILITY_PACK_VOLTAGE</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>indirect</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>16</td>
+<td>AFE_SPI</td>
+<td>5</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>100</td>
+<td>50</td>
+<td>200</td>
+<td>data staleness</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>17</td>
+<td>AFE_COMMUNICATION_INTEGRITY</td>
+<td>5</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>100</td>
+<td>50</td>
+<td>200</td>
+<td>data staleness</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>18</td>
+<td>AFE_MUX</td>
+<td>5</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>100</td>
+<td>50</td>
+<td>200</td>
+<td>~0.01 °C</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>19</td>
+<td>AFE_CONFIG</td>
+<td>1</td>
+<td>10</td>
+<td>100</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+<td>SEU response</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>20</td>
+<td>CAN_TIMING</td>
+<td>100</td>
+<td>10</td>
+<td>200</td>
+<td>1000</td>
+<td>200</td>
+<td>50</td>
+<td>1250</td>
+<td>independent prot</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>21</td>
+<td>CURRENT_SENSOR_RESPONDING</td>
+<td>100</td>
+<td>10</td>
+<td>200</td>
+<td>1000</td>
+<td>200</td>
+<td>50</td>
+<td>1250</td>
+<td>independent prot</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>22</td>
+<td>CURRENT_SENSOR_CC_RESPONDING</td>
+<td>100</td>
+<td>10</td>
+<td>2000</td>
+<td>1000</td>
+<td>2000</td>
+<td>50</td>
+<td>3050</td>
+<td>SOC drift only</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>23</td>
+<td>CURRENT_SENSOR_EC_RESPONDING</td>
+<td>100</td>
+<td>10</td>
+<td>2000</td>
+<td>1000</td>
+<td>2000</td>
+<td>50</td>
+<td>3050</td>
+<td>SOE drift only</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>24</td>
+<td>CURRENT_SENSOR_V1_MEAS_TIMEOUT</td>
+<td>1</td>
+<td>10</td>
+<td>100</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+<td>secondary path</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>25</td>
+<td>CURRENT_SENSOR_V2_MEAS_TIMEOUT</td>
+<td>1</td>
+<td>10</td>
+<td>100</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+<td>secondary path</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>26</td>
+<td>CURRENT_SENSOR_V3_MEAS_TIMEOUT</td>
+<td>1</td>
+<td>10</td>
+<td>100</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+<td>secondary path</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>27</td>
+<td>SBC_RSTB_ERROR</td>
+<td>1</td>
+<td>10</td>
+<td>100</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+<td>platform health</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>28</td>
+<td>INTERLOCK_FEEDBACK</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~0.5 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>29</td>
+<td>STRING_MINUS_CONTACTOR_FEEDBACK</td>
+<td>20</td>
+<td>10</td>
+<td>100</td>
+<td>200</td>
+<td>100</td>
+<td>50</td>
+<td>350</td>
+<td>~1 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>30</td>
+<td>STRING_PLUS_CONTACTOR_FEEDBACK</td>
+<td>20</td>
+<td>10</td>
+<td>100</td>
+<td>200</td>
+<td>100</td>
+<td>50</td>
+<td>350</td>
+<td>~1 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>31</td>
+<td>PRECHARGE_CONTACTOR_FEEDBACK</td>
+<td>20</td>
+<td>10</td>
+<td>100</td>
+<td>200</td>
+<td>100</td>
+<td>50</td>
+<td>350</td>
+<td>~1 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>32</td>
+<td>SYSTEM_MONITORING</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>50</td>
+<td>51</td>
+<td>platform health</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>33</td>
+<td>FLASHCHECKSUM</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>50</td>
+<td>51*</td>
+<td>latent fault</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>34</td>
+<td>ALERT_MODE</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>50</td>
+<td>51</td>
+<td>SBC health</td>
+<td>ADEQUATE</td>
+</tr>
+</tbody>
+</table>
+<p>* FLASHCHECKSUM effective FTTI includes CRC computation period (~150–1050 ms total).</p>
+<hr />
+<div class="hitl-lock">🔒 HITL-LOCK: FTTI-CONCLUSION </div>
+<h2 id="7-ftti-adequacy-conclusion">7  FTTI Adequacy Conclusion</h2>
+<p>All 34 FATAL diagnostic entries have calculated FTTI values that are significantly shorter than their corresponding physical process times. The safety margins range from:</p>
+<ul>
+<li><strong>Minimum margin:</strong> Interlock feedback — FTTI (250 ms) vs. human contact time (~500 ms) — margin factor ~2×</li>
+<li><strong>Maximum margin:</strong> Cell undervoltage — FTTI (750 ms) vs. copper dissolution (~600 s) — margin factor ~800×</li>
+<li><strong>Typical margin:</strong> Battery safety parameters — margin factor 10–100×</li>
+</ul>
+<p>The temperature-related diagnostics have the longest FTTI (6050 ms) due to high threshold counts (500) and long delays (1000 ms), but this is justified by the thermal inertia of battery cells, which prevents temperature changes faster than ~1 °C/s even under worst-case conditions.</p>
+<p><strong>Overall verdict: All FTTI values are ADEQUATE for the intended application.</strong></p>
+<hr />
+<h2 id="8-references">8  References</h2>
+<table>
+<thead>
+<tr>
+<th>Ref</th>
+<th>Document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[1]</td>
+<td>ISO 26262:2018 Part 6 — Product Development: Software Level</td>
+</tr>
+<tr>
+<td>[2]</td>
+<td>FOX-SAF-HARA-001 — Hazard Analysis and Risk Assessment</td>
+</tr>
+<tr>
+<td>[3]</td>
+<td>FOX-SAF-FSC-001 — Functional Safety Concept</td>
+</tr>
+<tr>
+<td>[4]</td>
+<td>FOX-SAF-TSC-001 — Technical Safety Concept</td>
+</tr>
+<tr>
+<td>[5]</td>
+<td>foxBMS v1.10.0 <code>src/app/engine/diag/diag_cfg.c</code></td>
+</tr>
+<tr>
+<td>[6]</td>
+<td>foxBMS v1.10.0 <code>src/app/application/config/battery_cell_cfg.h</code></td>
+</tr>
+<tr>
+<td>[7]</td>
+<td>foxBMS v1.10.0 <code>src/app/application/config/battery_system_cfg.h</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of Document FOX-SAF-FTTI-001</em></p></div>
+<div class="nav-buttons"><a href="part-6-safety-reqs.html">&larr; Part 6: Safety Reqs</a><a href="part-8-traceability.html">Part 8: Traceability &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

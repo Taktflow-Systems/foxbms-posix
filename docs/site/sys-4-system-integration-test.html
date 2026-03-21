@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYS.4 System Integration Test — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" class="active">SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — System / SYS.4 System Integration Test</div>
+<div class="content"><h1 id="system-integration-test-specification">System Integration Test Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.4-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies the system integration tests for the foxBMS 2 POSIX vECU project in accordance with ASPICE SYS.4 (System Integration and System Integration Test). These tests verify that the system components -- the vECU binary, the Python plant model, and the SocketCAN communication layer -- integrate correctly and produce the expected end-to-end behavior.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>System integration testing verifies the interactions between:
+- foxbms-vecu (compiled BMS application) and plant_model.py (battery/sensor simulation)
+- CAN message flow over SocketCAN (vcan0)
+- State machine transitions driven by cross-component communication
+- Closed-loop contactor feedback between vECU and plant model
+- Fault injection via SIL probe overrides (CAN 0x7E0)</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.3-001]</td>
+<td>System Architecture Description</td>
+</tr>
+<tr>
+<td>[SWE.5-001]</td>
+<td>Software Integration Test Specification</td>
+</tr>
+<tr>
+<td>[SWE.6-001]</td>
+<td>Software Qualification Test Specification</td>
+</tr>
+<tr>
+<td>[SYS.2-001]</td>
+<td>System Requirements Specification</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-test-environment">4. Test Environment</h2>
+<h3 id="41-hardware">4.1 Hardware</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host machine</td>
+<td>x86-64 Linux workstation</td>
+</tr>
+<tr>
+<td>CAN interface</td>
+<td>SocketCAN virtual CAN (vcan0)</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Loopback (no external network required)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-software">4.2 Software</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operating system</td>
+<td>Ubuntu 24.04 LTS</td>
+</tr>
+<tr>
+<td>foxbms-vecu</td>
+<td>Built from foxBMS v1.10.0 + 13 patches</td>
+</tr>
+<tr>
+<td>plant_model.py</td>
+<td>Current version with OCV(SOC), IR drop, trip replay</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.12</td>
+</tr>
+<tr>
+<td>python-can</td>
+<td>Latest (SocketCAN backend)</td>
+</tr>
+<tr>
+<td>can-utils</td>
+<td>System package</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-prerequisites">4.3 Prerequisites</h3>
+<ol>
+<li>vcan0 interface is up: <code>sudo ip link add dev vcan0 type vcan &amp;&amp; sudo ip link set up vcan0</code></li>
+<li>foxbms-vecu binary is compiled: <code>make -C build/</code></li>
+<li>Plant model dependencies installed: <code>pip install python-can</code></li>
+</ol>
+<h2 id="5-test-strategy">5. Test Strategy</h2>
+<p>System integration tests are implemented in two test scripts:</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Focus</th>
+<th>Criteria Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test_integration.py</td>
+<td>Component integration and CAN message flow</td>
+<td>21</td>
+</tr>
+<tr>
+<td>test_asil.py</td>
+<td>Safety-critical fault injection paths</td>
+<td>50</td>
+</tr>
+</tbody>
+</table>
+<p>Tests are executed automatically. Each test criterion produces a PASS/FAIL verdict. The test scripts manage process lifecycle (start plant model, start vECU, monitor CAN, stop both).</p>
+<h2 id="6-integration-test-cases-test_integrationpy">6. Integration Test Cases (test_integration.py)</h2>
+<h3 id="61-component-startup-and-communication">6.1 Component Startup and Communication</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-001</td>
+<td>Plant model starts and transmits cell voltage CAN messages within 2 seconds</td>
+<td>SYS-REQ-010</td>
+<td>CAN messages with cell voltage data observed on vcan0</td>
+</tr>
+<tr>
+<td>SIT-002</td>
+<td>vECU starts and begins transmitting BMS status CAN messages within 5 seconds</td>
+<td>SYS-REQ-011</td>
+<td>CAN ID 0x220 (or BMS state message) observed on vcan0</td>
+</tr>
+<tr>
+<td>SIT-003</td>
+<td>vECU receives and processes plant model CAN messages</td>
+<td>SYS-REQ-020</td>
+<td>Database entries updated with plant model values</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-state-machine-integration">6.2 State Machine Integration</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-004</td>
+<td>BMS transitions from IDLE to STANDBY upon receiving STANDBY request from plant model</td>
+<td>SYS-REQ-011</td>
+<td>BMS state CAN message shows STANDBY state</td>
+</tr>
+<tr>
+<td>SIT-005</td>
+<td>BMS transitions from STANDBY to PRECHARGE and closes precharge contactor</td>
+<td>SYS-REQ-011, SYS-REQ-012</td>
+<td>Precharge contactor state = CLOSED in CAN output</td>
+</tr>
+<tr>
+<td>SIT-006</td>
+<td>BMS completes precharge and transitions to NORMAL</td>
+<td>SYS-REQ-011</td>
+<td>BMS state CAN message shows NORMAL within 15 seconds</td>
+</tr>
+<tr>
+<td>SIT-007</td>
+<td>String contactors (positive and negative) are closed when BMS is in NORMAL state</td>
+<td>SYS-REQ-012</td>
+<td>Contactor state messages show all three contactors closed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-can-message-flow-end-to-end">6.3 CAN Message Flow End-to-End</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-008</td>
+<td>Cell voltage CAN messages (0x240-0x24F) contain non-zero voltage values</td>
+<td>SYS-REQ-020</td>
+<td>All 18 cell voltages &gt; 1000 mV</td>
+</tr>
+<tr>
+<td>SIT-009</td>
+<td>IVT current CAN message reflects plant model current injection</td>
+<td>SYS-REQ-020</td>
+<td>Current value matches plant model output within 100 mA</td>
+</tr>
+<tr>
+<td>SIT-010</td>
+<td>Pack voltage CAN message reflects sum of cell voltages</td>
+<td>SYS-REQ-020</td>
+<td>Pack voltage = 18 * cell voltage (within 500 mV tolerance)</td>
+</tr>
+<tr>
+<td>SIT-011</td>
+<td>Temperature CAN messages contain valid temperature values</td>
+<td>SYS-REQ-020</td>
+<td>Temperatures in range 0-60 degC</td>
+</tr>
+<tr>
+<td>SIT-012</td>
+<td>SOC CAN message (0x235) reports non-zero SOC when in NORMAL state</td>
+<td>SYS-REQ-030</td>
+<td>SOC &gt; 0%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="64-closed-loop-contactor-feedback">6.4 Closed-Loop Contactor Feedback</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-013</td>
+<td>Plant model receives contactor close command and updates feedback</td>
+<td>SYS-REQ-012</td>
+<td>Contactor feedback CAN message reflects closed state</td>
+</tr>
+<tr>
+<td>SIT-014</td>
+<td>vECU reads contactor feedback and proceeds with state transition</td>
+<td>SYS-REQ-012</td>
+<td>BMS does not stall in PRECHARGE due to missing feedback</td>
+</tr>
+<tr>
+<td>SIT-015</td>
+<td>Contactor delay simulation matches configured delay (10 cycles)</td>
+<td>SYS-REQ-012</td>
+<td>Contactor state transitions after expected delay</td>
+</tr>
+</tbody>
+</table>
+<h3 id="65-diagnostic-integration">6.5 Diagnostic Integration</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-016</td>
+<td>SOA overvoltage detection triggers when plant model sends voltage &gt; 2800 mV</td>
+<td>SYS-REQ-040</td>
+<td>DIAG event logged; BMS transitions toward ERROR state</td>
+</tr>
+<tr>
+<td>SIT-017</td>
+<td>SOA undervoltage detection triggers when plant model sends voltage &lt; 1500 mV</td>
+<td>SYS-REQ-040</td>
+<td>DIAG event logged</td>
+</tr>
+<tr>
+<td>SIT-018</td>
+<td>SOA overcurrent detection triggers when plant model sends current &gt; limit</td>
+<td>SYS-REQ-040</td>
+<td>DIAG event logged</td>
+</tr>
+</tbody>
+</table>
+<h3 id="66-process-lifecycle">6.6 Process Lifecycle</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-019</td>
+<td>vECU shuts down cleanly on SIGINT (contactors opened, timing summary printed)</td>
+<td>SYS-REQ-061</td>
+<td>Exit code 0; contactor-open message in log</td>
+</tr>
+<tr>
+<td>SIT-020</td>
+<td>vECU exits after --timeout N seconds</td>
+<td>SYS-REQ-061</td>
+<td>Process terminates within N+2 seconds</td>
+</tr>
+<tr>
+<td>SIT-021</td>
+<td>Plant model and vECU can be restarted without stale CAN state</td>
+<td>SYS-REQ-001</td>
+<td>Second run produces same results as first</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-asil-fault-injection-tests-test_asilpy">7. ASIL Fault Injection Tests (test_asil.py)</h2>
+<p>The test_asil.py script exercises 50 safety-critical fault injection criteria using the SIL probe override system (CAN 0x7E0). These tests verify that the integrated system correctly detects and responds to injected faults.</p>
+<h3 id="71-test-categories">7.1 Test Categories</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Criteria Count</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overvoltage faults</td>
+<td>8</td>
+<td>MSL/RSL/MOL thresholds for cell overvoltage</td>
+</tr>
+<tr>
+<td>Undervoltage faults</td>
+<td>8</td>
+<td>MSL/RSL/MOL thresholds for cell undervoltage</td>
+</tr>
+<tr>
+<td>Overcurrent faults</td>
+<td>6</td>
+<td>Charge/discharge current limit violations</td>
+</tr>
+<tr>
+<td>Overtemperature faults</td>
+<td>6</td>
+<td>Charge/discharge temperature limit violations</td>
+</tr>
+<tr>
+<td>Undertemperature faults</td>
+<td>6</td>
+<td>Charge/discharge temperature limit violations</td>
+</tr>
+<tr>
+<td>Plausibility faults</td>
+<td>8</td>
+<td>Voltage spread, temperature spread, pack voltage</td>
+</tr>
+<tr>
+<td>IVT redundancy faults</td>
+<td>4</td>
+<td>V1/V2/V3 mismatch scenarios</td>
+</tr>
+<tr>
+<td>Interlock faults</td>
+<td>2</td>
+<td>Interlock break via probe override</td>
+</tr>
+<tr>
+<td>Watchdog faults</td>
+<td>2</td>
+<td>Main loop stall detection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-fault-injection-mechanism">7.2 Fault Injection Mechanism</h3>
+<p>Each test follows the pattern:
+1. Start plant model and vECU; wait for BMS NORMAL state
+2. Send SIL probe override message on CAN 0x7E0 with fault parameters
+3. Monitor DIAG_Handler response via CAN output or log
+4. Verify BMS state transition (NORMAL -&gt; ERROR for MSL faults)
+5. Restore nominal values and verify recovery (where applicable)</p>
+<h2 id="8-test-execution-and-reporting">8. Test Execution and Reporting</h2>
+<h3 id="81-execution-command">8.1 Execution Command</h3>
+<pre><code class="language-bash"># Integration tests
+python3 tests/test_integration.py --timeout 30
+
+# ASIL fault injection tests
+python3 tests/test_asil.py --timeout 60
+
+# Both via make
+make test-integration
+make test-asil
+</code></pre>
+<h3 id="82-passfail-criteria">8.2 Pass/Fail Criteria</h3>
+<ul>
+<li><strong>Overall PASS</strong>: All criteria within a test script pass</li>
+<li><strong>Overall FAIL</strong>: Any criterion fails</li>
+<li>Exit code: 0 = PASS, 1 = FAIL, 2 = ERROR (infrastructure failure)</li>
+</ul>
+<h3 id="83-current-results">8.3 Current Results</h3>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Criteria</th>
+<th>Passing</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test_integration.py</td>
+<td>21</td>
+<td>21</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>test_asil.py</td>
+<td>50</td>
+<td>50</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-traceability">9. Traceability</h2>
+<p>All SIT-xxx test cases trace back to SYS-REQ-xxx system requirements in [SYS.2-001]. The bidirectional traceability matrix in ISO26262-part8-traceability.md provides the complete chain from stakeholder requirements through system tests.</p></div>
+<div class="nav-buttons"><a href="sys-3-system-architecture.html">&larr; SYS.3 System Architecture</a><a href="sys-5-system-qualification.html">SYS.5 System Qualification &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

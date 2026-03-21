@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUP.10 Change Request — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" class="active">SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Management / SUP.10 Change Request</div>
+<div class="content"><h1 id="change-request-management-process">Change Request Management Process</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.10-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document defines the change request management process for the foxBMS 2 POSIX vECU project in accordance with ASPICE SUP.10 (Change Request Management). It establishes how changes to baselined configuration items are proposed, analyzed, approved, implemented, and verified.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>The process covers changes to all baselined configuration items: foxBMS source patches, POSIX HAL stubs, plant model, test scripts, build scripts, and ASPICE documentation. It does not cover the upstream foxBMS v1.10.0 source (which is treated as an immutable dependency).</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SUP.8-001]</td>
+<td>Configuration Management Plan</td>
+</tr>
+<tr>
+<td>[SUP.9-001]</td>
+<td>Problem Resolution Management Process</td>
+</tr>
+<tr>
+<td>[MAN.3-001]</td>
+<td>Project Management Plan</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-change-categories">4. Change Categories</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Description</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Corrective</td>
+<td>Fix a defect or gap identified in GAP-ANALYSIS.md</td>
+<td>Fix DIAG_Handler, add cycle timing</td>
+</tr>
+<tr>
+<td>Adaptive</td>
+<td>Modify system to accommodate new requirements or environments</td>
+<td>Add SIL probe override, add --timeout flag</td>
+</tr>
+<tr>
+<td>Perfective</td>
+<td>Improve quality, performance, or maintainability</td>
+<td>Refactor plant model, improve documentation</td>
+</tr>
+<tr>
+<td>Preventive</td>
+<td>Prevent potential future problems</td>
+<td>Add version check to apply_all.sh</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-change-request-workflow">5. Change Request Workflow</h2>
+<h3 id="51-process-flow">5.1 Process Flow</h3>
+<pre><code>  REQUEST (describe change, category, rationale)
+      |
+      v
+  IMPACT ANALYSIS
+  - Which patches affected?
+  - Which DIAG IDs affected?
+  - Which test criteria need re-run?
+  - Which documents need update?
+      |
+      v
+  APPROVAL (code review + smoke test pass)
+      |
+      v
+  IMPLEMENTATION
+  - Modify patch file(s) or source
+  - Update affected tests
+  - Update affected documentation
+      |
+      v
+  VERIFICATION
+  - apply_all.sh passes
+  - test_smoke.py PASS
+  - Affected test suites pass
+      |
+      v
+  CLOSURE (commit, update GAP-ANALYSIS if applicable)
+</code></pre>
+<h3 id="52-step-details">5.2 Step Details</h3>
+<h4 id="521-request">5.2.1 Request</h4>
+<p>A change request is initiated when:
+- A gap in GAP-ANALYSIS.md requires a code change
+- A new feature or capability is needed for the next phase
+- A test failure reveals a needed correction
+- An ASPICE assessment finding requires a process or artifact change</p>
+<p>The request is documented in the Git commit message and, for significant changes, in GAP-ANALYSIS.md.</p>
+<h4 id="522-impact-analysis">5.2.2 Impact Analysis</h4>
+<p>Before implementing a change, the following impact analysis is performed:</p>
+<table>
+<thead>
+<tr>
+<th>Analysis Area</th>
+<th>Questions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Patches</td>
+<td>Which of the 13 patches are affected? Will the change create a new patch or modify an existing one?</td>
+</tr>
+<tr>
+<td>DIAG IDs</td>
+<td>Does the change affect any of the 61 enabled or 24 suppressed DIAG IDs?</td>
+</tr>
+<tr>
+<td>Safety</td>
+<td>Does the change affect ASIL-classified requirements? Is HARA impacted?</td>
+</tr>
+<tr>
+<td>Test criteria</td>
+<td>Which of the 147 integration/ASIL criteria need re-execution?</td>
+</tr>
+<tr>
+<td>Unit tests</td>
+<td>Which of the 183+ Ceedling tests are affected?</td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td>Which ASPICE documents need updating (requirements, architecture, test specs)?</td>
+</tr>
+<tr>
+<td>Build</td>
+<td>Does the change affect setup.sh, apply_all.sh, or Makefile?</td>
+</tr>
+<tr>
+<td>Traceability</td>
+<td>Which requirement-to-test traces are affected?</td>
+</tr>
+</tbody>
+</table>
+<h4 id="523-approval">5.2.3 Approval</h4>
+<p>Changes are approved through:</p>
+<table>
+<thead>
+<tr>
+<th>Approval Gate</th>
+<th>Criterion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Code review</td>
+<td>Change reviewed against QA checklist (SUP.1-001)</td>
+</tr>
+<tr>
+<td>Build verification</td>
+<td>apply_all.sh completes without error</td>
+</tr>
+<tr>
+<td>Smoke test</td>
+<td>test_smoke.py reports PASS</td>
+</tr>
+<tr>
+<td>Safety review</td>
+<td>For ASIL-relevant changes: DIAG ID list verified, test_asil.py pass</td>
+</tr>
+</tbody>
+</table>
+<h4 id="524-implementation">5.2.4 Implementation</h4>
+<p>Changes follow the patch workflow:</p>
+<p><strong>For foxBMS source modifications</strong>:
+1. Identify which patch file to modify (or create new patch)
+2. Apply change to working copy
+3. Regenerate patch file with <code>diff -u</code>
+4. Update apply_all.sh if patch count or order changes
+5. Verify: <code>./apply_all.sh</code> on clean foxBMS checkout</p>
+<p><strong>For POSIX-specific source files</strong> (src/):
+1. Modify source directly
+2. Ensure compilation with -Wall -Wextra (zero warnings)
+3. Run affected unit tests</p>
+<p><strong>For test scripts</strong>:
+1. Add or modify test criteria
+2. Ensure test still runs within timeout
+3. Verify pass/fail verdicts are correct</p>
+<p><strong>For documentation</strong>:
+1. Update affected ASPICE work product
+2. Update revision history
+3. Verify cross-references</p>
+<h4 id="525-verification">5.2.5 Verification</h4>
+<table>
+<thead>
+<tr>
+<th>Verification Activity</th>
+<th>When Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>apply_all.sh passes</td>
+<td>Every patch change</td>
+</tr>
+<tr>
+<td>test_smoke.py PASS</td>
+<td>Every change</td>
+</tr>
+<tr>
+<td>test_integration.py 21/21</td>
+<td>Integration-affecting changes</td>
+</tr>
+<tr>
+<td>test_asil.py 50/50</td>
+<td>Safety-affecting changes</td>
+</tr>
+<tr>
+<td>Ceedling unit tests pass</td>
+<td>Module-level changes</td>
+</tr>
+<tr>
+<td>Document review</td>
+<td>Documentation changes</td>
+</tr>
+</tbody>
+</table>
+<h4 id="526-closure">5.2.6 Closure</h4>
+<ul>
+<li>Commit to Git with descriptive message</li>
+<li>Update GAP-ANALYSIS.md if change resolves a gap</li>
+<li>Update COVERAGE.md if change affects feature status</li>
+</ul>
+<h2 id="6-patch-change-register">6. Patch Change Register</h2>
+<p>The following table records significant changes to the patch set:</p>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Patch #</th>
+<th>Change</th>
+<th>Category</th>
+<th>Trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-02-01</td>
+<td>01-04</td>
+<td>Initial POSIX HAL patches</td>
+<td>Adaptive</td>
+<td>Phase 1 start</td>
+</tr>
+<tr>
+<td>2026-02-15</td>
+<td>03</td>
+<td>Selective DIAG_Handler (24/61 split)</td>
+<td>Corrective</td>
+<td>GA-06</td>
+</tr>
+<tr>
+<td>2026-02-20</td>
+<td>07</td>
+<td>FAS_ASSERT log + exit(1)</td>
+<td>Corrective</td>
+<td>GA-07</td>
+</tr>
+<tr>
+<td>2026-02-25</td>
+<td>05</td>
+<td>Contactor delay simulation</td>
+<td>Perfective</td>
+<td>GA-05</td>
+</tr>
+<tr>
+<td>2026-03-01</td>
+<td>09</td>
+<td>Cycle time measurement</td>
+<td>Corrective</td>
+<td>GA-01</td>
+</tr>
+<tr>
+<td>2026-03-05</td>
+<td>10</td>
+<td>Timeout flag (--timeout N)</td>
+<td>Adaptive</td>
+<td>GA-28</td>
+</tr>
+<tr>
+<td>2026-03-14</td>
+<td>12</td>
+<td>SIL probe override system (CAN 0x7E0)</td>
+<td>Adaptive</td>
+<td>GA-29</td>
+</tr>
+<tr>
+<td>2026-03-17</td>
+<td>11</td>
+<td>Software watchdog (100ms stall)</td>
+<td>Corrective</td>
+<td>GA-24</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-change-impact-on-diag-ids">7. Change Impact on DIAG IDs</h2>
+<p>When a change affects diagnostic behavior, the following matrix is consulted:</p>
+<table>
+<thead>
+<tr>
+<th>Change Type</th>
+<th>Affected DIAG IDs</th>
+<th>Required Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New DIAG ID suppression</td>
+<td>Add to 24-ID suppressed list</td>
+<td>test_asil.py re-run; update COVERAGE.md</td>
+</tr>
+<tr>
+<td>New DIAG ID enablement</td>
+<td>Add to 61-ID enabled list</td>
+<td>test_asil.py re-run; verify fault injection path</td>
+</tr>
+<tr>
+<td>Threshold change</td>
+<td>Affected SOA threshold IDs</td>
+<td>test_asil.py re-run with new threshold values</td>
+</tr>
+<tr>
+<td>State machine change</td>
+<td>BMS/CONT state transitions</td>
+<td>test_integration.py re-run</td>
+</tr>
+<tr>
+<td>Plant model change</td>
+<td>Indirectly all enabled IDs</td>
+<td>test_smoke.py + test_integration.py re-run</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-emergency-change-process">8. Emergency Change Process</h2>
+<p>For CRITICAL severity problems requiring immediate resolution:</p>
+<ol>
+<li>Fix is implemented directly on main branch</li>
+<li>Smoke test must pass before commit</li>
+<li>Full test suite (integration + ASIL) run immediately after commit</li>
+<li>GAP-ANALYSIS.md updated with resolution</li>
+<li>Change documented retroactively in this register</li>
+</ol>
+<h2 id="9-cl2-gaps-for-sup10">9. CL2 Gaps for SUP.10</h2>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Description</th>
+<th>Action Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No formal CR form</td>
+<td>Changes tracked in Git commits and GAP-ANALYSIS, not formal CR forms</td>
+<td>Create CR template with ID, requester, impact, approval</td>
+</tr>
+<tr>
+<td>No CR status tracking</td>
+<td>No separate CR register with status tracking</td>
+<td>Maintain CR log in this document or separate register</td>
+</tr>
+<tr>
+<td>No approval records</td>
+<td>Approval is implicit (smoke test pass + commit)</td>
+<td>Add explicit approval field to CR records</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="sup-9-problem-resolution.html">&larr; SUP.9 Problem Resolution</a><a href="sys-1-stakeholder-reqs.html">SYS.1 Stakeholder Reqs &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10-Role Audit v2 — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" class="active">10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Documentation / 10-Role Audit v2</div>
+<div class="content"><h1 id="foxbms-posix-vecu-10-role-audit-report-v2">foxBMS POSIX vECU — 10-Role Audit Report v2</h1>
+<p><strong>Date</strong>: 2026-03-21
+<strong>Scope</strong>: Full project re-audit after documentation overhaul, ASPICE CL2 package, traceability automation, CI pipeline, and HITL locks.
+<strong>Delta from v1</strong>: v1 had 1 CRITICAL + 9 HIGH. This audit re-evaluates all findings.</p>
+<p><strong>Project metrics at time of audit:</strong>
+- 203 project files (excl. foxbms-2 submodule)
+- 73 documentation files (29 ASPICE CL2, 24 upstream reference, 20 project/business/test/archive)
+- 308 traced requirement IDs, 0 broken links, 24 orphans, 15 untested leaves
+- 37 HITL locks across 10 files protecting safety-critical content
+- 4 test suites: 147+ criteria (smoke, integration, ASIL, SIL probes)
+- CI pipeline: 3 jobs (smoke test, traceability check, full test suite)
+- Phase 1-2.5 COMPLETE (94/112 criteria), Phase 3-4 NOT STARTED</p>
+<hr />
+<h2 id="auditor-1-sil-system-architect">Auditor 1: SIL System Architect</h2>
+<h3 id="v1-findings-status">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1-01: No fidelity boundary document</td>
+<td>HIGH</td>
+<td><strong>FIXED</strong> — docs/aspice-cl2/18-safety/part5-hardware/ISO26262-part5-hardware-software-interface.md maps every hardware dependency to its POSIX stub. Explicitly states what transfers (state machine logic, CAN content) and what doesn't (CAN timing, task scheduling, hardware register access).</td>
+</tr>
+<tr>
+<td>A1-02: Cooperative loop masks concurrency bugs</td>
+<td>MEDIUM</td>
+<td><strong>DOCUMENTED</strong> — SWE.2 software architecture explicitly calls out single-threaded limitation. COVERAGE.md lists it as architectural gap. HITL-locked in gap-analysis.md (GA-02).</td>
+</tr>
+<tr>
+<td>A1-03: No back-to-back comparison with production</td>
+<td>MEDIUM</td>
+<td>REMAINS — still no production TMS570 comparison data. Mitigated by HSI document listing all differences.</td>
+</tr>
+<tr>
+<td>A1-04: SIL probes add non-production code</td>
+<td>LOW</td>
+<td>REMAINS — <code>#ifdef FOXBMS_SIL_PROBES</code> blocks still in main.c. Acceptable for SIL.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-findings">New Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1-05</td>
+<td><strong>LOW</strong></td>
+<td>SWE.2 architecture document describes module dependencies but no formal interface control document (ICD) with function signatures and data types. For CL2 this is acceptable; CL3 would require it.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-pass-was-pass-with-conditions-fidelity-boundary-document-now-exists">Verdict: <strong>PASS</strong> (was: PASS with conditions). Fidelity boundary document now exists.</h3>
+<hr />
+<h2 id="auditor-2-hil-test-engineer">Auditor 2: HIL Test Engineer</h2>
+<h3 id="v1-findings-status_1">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A2-01: No SIL-to-bench test mapping</td>
+<td>HIGH</td>
+<td><strong>PARTIAL</strong> — SWE.5 integration test spec and SWE.6 qualification test spec exist with test case IDs. Still no explicit "SIL test X replaces bench test Y" document.</td>
+</tr>
+<tr>
+<td>A2-02: Phase 3 fault injection 0/11</td>
+<td>HIGH</td>
+<td>REMAINS — Phase 3 still 0/11. This is the core value proposition gap.</td>
+</tr>
+<tr>
+<td>A2-03: No DBC for SIL probe messages</td>
+<td>MEDIUM</td>
+<td>REMAINS — SIL probes documented in sil_layer.h but no machine-readable DBC.</td>
+</tr>
+<tr>
+<td>A2-04: No pass/fail criteria linked to bench acceptance</td>
+<td>MEDIUM</td>
+<td><strong>IMPROVED</strong> — SWE.6 has 8 qualification scenarios with acceptance criteria. Not yet mapped to customer bench acceptance criteria.</td>
+</tr>
+<tr>
+<td>A2-05: No signal logging to standard formats</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-conditional-pass-unchanged-phase-3-is-still-the-blocker">Verdict: <strong>CONDITIONAL PASS</strong> (unchanged). Phase 3 is still the blocker.</h3>
+<hr />
+<h2 id="auditor-3-functional-safety-engineer-iso-26262">Auditor 3: Functional Safety Engineer (ISO 26262)</h2>
+<h3 id="v1-findings-status_2">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A3-01: DIAG → safe-state path non-functional</td>
+<td><strong>CRITICAL</strong></td>
+<td>REMAINS — DIAG_Handler still logs-only, threshold counters not propagating. <strong>Still the #1 priority.</strong> However, the path is now fully documented: HARA (12 hazards) → FSC (12 requirements) → TSC (15 requirements) → DIAG config table (85 entries) → FTTI calculations (34 FATAL entries verified ADEQUATE). The fix is engineering work, not discovery.</td>
+</tr>
+<tr>
+<td>A3-02: No safe-state verification</td>
+<td>HIGH</td>
+<td>REMAINS — blocked by A3-01. Test cases written in SWE.6 (QT-004 through QT-008) but can't execute until DIAG propagation works.</td>
+</tr>
+<tr>
+<td>A3-03: Interlock hardcoded</td>
+<td>HIGH</td>
+<td>REMAINS — documented in HSI as stub. SIL override exists (0x7E0) but untested.</td>
+</tr>
+<tr>
+<td>A3-04: No watchdog equivalent</td>
+<td>HIGH</td>
+<td>REMAINS — documented in HSI. No software watchdog added.</td>
+</tr>
+<tr>
+<td>A3-05: No FMEA/FMEDA traceability</td>
+<td>MEDIUM</td>
+<td><strong>FIXED</strong> — Full FMEA with 19 failure modes (ISO26262-part5-FMEA.md). Traceability matrix links failure modes to DIAG IDs to tests. HITL-locked FTTI verdicts.</td>
+</tr>
+<tr>
+<td>A3-06: IVT redundancy untested</td>
+<td>MEDIUM</td>
+<td>REMAINS — documented in HSI.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A3-07</td>
+<td><strong>POSITIVE</strong></td>
+<td>HARA with 12 hazards, ASIL determinations, safety goals — all HITL-locked. This is assessor-ready. Reverse-engineered from code but technically sound.</td>
+</tr>
+<tr>
+<td>A3-08</td>
+<td><strong>POSITIVE</strong></td>
+<td>FTTI calculations for all 34 FATAL DIAG entries, all verified ADEQUATE against physical process times. HITL-locked.</td>
+</tr>
+<tr>
+<td>A3-09</td>
+<td><strong>POSITIVE</strong></td>
+<td>ASIL decomposition document explains MOL/RSL/MSL → QM/B(D)/D(D) allocation.</td>
+</tr>
+<tr>
+<td>A3-10</td>
+<td><strong>MEDIUM</strong></td>
+<td>HARA, FSC, TSC, FMEA are reverse-engineered, not from a formal HAZOP session. An assessor may question the method. Add a "Method" section to HARA stating it was derived from diagnostic configuration analysis + public battery safety literature.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-fail-for-safety-validation-unchanged-a3-01-diag-propagation-but-the-documentation-is-now-assessor-ready-once-the-engineering-fix-is-in-place">Verdict: <strong>FAIL for safety validation</strong> (unchanged — A3-01 DIAG propagation). But the documentation is now <strong>assessor-ready</strong> once the engineering fix is in place.</h3>
+<hr />
+<h2 id="auditor-4-bms-algorithm-developer">Auditor 4: BMS Algorithm Developer</h2>
+<h3 id="v1-findings-status_3">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A4-01: No reference SOC for accuracy measurement</td>
+<td>HIGH</td>
+<td>REMAINS — plant model still doesn't publish ground-truth SOC on CAN.</td>
+</tr>
+<tr>
+<td>A4-02: Balancing never exercises</td>
+<td>HIGH</td>
+<td>REMAINS — per-cell noise NOT DONE (PLAN.md 2.5).</td>
+</tr>
+<tr>
+<td>A4-03: No charge scenario</td>
+<td>MEDIUM</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A4-04: SOE/SOF on static values</td>
+<td>MEDIUM</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A4-05: No algorithm comparison framework</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment_1">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A4-06</td>
+<td><strong>POSITIVE</strong></td>
+<td>foxbms-upstream/software/application/algorithm.md and balancing.md now document the SOC counting method and balancing strategies. A student knows what to implement.</td>
+</tr>
+<tr>
+<td>A4-07</td>
+<td><strong>POSITIVE</strong></td>
+<td>ML integration proposal (docs/business/proposal-ml-integration.md) provides a clear path to SOC LSTM comparison. Not implemented but well-designed.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-partial-pass-unchanged-algorithm-work-blocked-on-plant-model-improvements">Verdict: <strong>PARTIAL PASS</strong> (unchanged). Algorithm work blocked on plant model improvements.</h3>
+<hr />
+<h2 id="auditor-5-can-protocol-engineer">Auditor 5: CAN Protocol Engineer</h2>
+<h3 id="v1-findings-status_4">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A5-01: No CAN TX period validation</td>
+<td>HIGH</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A5-02: No E2E protection</td>
+<td>HIGH</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A5-03: No DBC verification</td>
+<td>MEDIUM</td>
+<td><strong>IMPROVED</strong> — foxbms-upstream/dbc/foxbms-signals-summary.md documents all CAN IDs, signals, and encoding from the official DBC. Still no automated round-trip decode test.</td>
+</tr>
+<tr>
+<td>A5-04: canTransmit doesn't simulate TX failure</td>
+<td>MEDIUM</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A5-05: CAN FD not supported</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment_2">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A5-06</td>
+<td><strong>POSITIVE</strong></td>
+<td>CAN module fully documented in foxbms-upstream/software/driver/can.md — TX/RX callbacks, mailbox config, helper functions, reception flow.</td>
+</tr>
+<tr>
+<td>A5-07</td>
+<td><strong>POSITIVE</strong></td>
+<td>HITL lock on CAN_BIG_ENDIAN_TABLE and DECAN_DATA_IS_VALID — the two discoveries most likely to be accidentally reverted.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-conditional-pass-unchanged-can-content-is-correct-protocol-behavior-not-simulated">Verdict: <strong>CONDITIONAL PASS</strong> (unchanged). CAN content is correct; protocol behavior not simulated.</h3>
+<hr />
+<h2 id="auditor-6-test-automation-engineer">Auditor 6: Test Automation Engineer</h2>
+<h3 id="v1-findings-status_5">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A6-01: No CI pipeline</td>
+<td>HIGH</td>
+<td><strong>FIXED</strong> — <code>.github/workflows/ci.yml</code> with 3 jobs: smoke test (build + vcan + test_smoke.py), traceability (trace-gen.py --check), full test suite (4 suites).</td>
+</tr>
+<tr>
+<td>A6-02: Test independence not verified</td>
+<td>MEDIUM</td>
+<td>REMAINS — no explicit cleanup between suites in CI.</td>
+</tr>
+<tr>
+<td>A6-03: No test coverage measurement</td>
+<td>MEDIUM</td>
+<td>REMAINS — no gcov/lcov.</td>
+</tr>
+<tr>
+<td>A6-04: No test result history</td>
+<td>LOW</td>
+<td><strong>IMPROVED</strong> — CI uploads artifacts. No JUnit XML yet.</td>
+</tr>
+<tr>
+<td>A6-05: Flaky test risk</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment_3">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A6-06</td>
+<td><strong>POSITIVE</strong></td>
+<td>trace-gen.py scans 308 IDs across 29 documents, validates bidirectional links, detects broken refs and untested leaves. Runs in CI. Pure stdlib, no pip deps.</td>
+</tr>
+<tr>
+<td>A6-07</td>
+<td><strong>POSITIVE</strong></td>
+<td>Traceability guide (docs/aspice-cl2/00-assessment/traceability-guide.md) explains how to add trace tags and fix issues.</td>
+</tr>
+<tr>
+<td>A6-08</td>
+<td><strong>MEDIUM</strong></td>
+<td>CI workflow references <code>test_integration.py</code>, <code>test_asil.py</code>, <code>test_sil_probes.py</code> but these require the foxbms-vecu binary built on Ubuntu with vcan. CI runner must support <code>sudo modprobe vcan</code>. GitHub-hosted runners may not allow this. Self-hosted runner or Docker-based CI needed.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-pass-was-not-ready-ci-exists-traceability-is-automated-minor-runner-configuration-needed">Verdict: <strong>PASS</strong> (was: NOT READY). CI exists, traceability is automated. Minor runner configuration needed.</h3>
+<hr />
+<h2 id="auditor-7-devops-build-engineer">Auditor 7: DevOps / Build Engineer</h2>
+<h3 id="v1-findings-status_6">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A7-01: No Docker build</td>
+<td>HIGH</td>
+<td>REMAINS — PLAN.md 4.1 still NOT DONE.</td>
+</tr>
+<tr>
+<td>A7-02: Patch fragility</td>
+<td>MEDIUM</td>
+<td>REMAINS — apply_all.sh has version check but patches could break on foxBMS update.</td>
+</tr>
+<tr>
+<td>A7-03: No pinned compiler version</td>
+<td>MEDIUM</td>
+<td><strong>IMPROVED</strong> — CI pins Ubuntu 24.04 + GCC 13 + Python 3.12. Local builds still depend on system GCC.</td>
+</tr>
+<tr>
+<td>A7-04: HALCoGen headers are binary blob</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A7-05: No Makefile install target</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment_4">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A7-06</td>
+<td><strong>POSITIVE</strong></td>
+<td>Configuration management plan (docs/aspice-cl2/15-SUP.8/) documents Git workflow, patch management, tool versions, release process.</td>
+</tr>
+<tr>
+<td>A7-07</td>
+<td><strong>POSITIVE</strong></td>
+<td>File organization clean — 73 docs properly categorized in docs/ subdirectories. No scattered files at root.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-conditional-pass-improved-from-v1-docker-is-still-the-main-gap">Verdict: <strong>CONDITIONAL PASS</strong> (improved from v1). Docker is still the main gap.</h3>
+<hr />
+<h2 id="auditor-8-data-observability-engineer">Auditor 8: Data / Observability Engineer</h2>
+<h3 id="v1-findings-status_7">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A8-01: No time-series logging to file</td>
+<td>MEDIUM</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A8-02: No DBC for probe messages</td>
+<td>MEDIUM</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A8-03: Probe rate fixed at 100ms</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+<tr>
+<td>A8-04: No Grafana/InfluxDB integration</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment_5">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A8-05</td>
+<td><strong>POSITIVE</strong></td>
+<td>Auto-generated traceability matrix (380 lines) provides observability into documentation health — 308 IDs, coverage percentages, gap lists.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-conditional-pass-unchanged-probe-infrastructure-works-exporttooling-missing">Verdict: <strong>CONDITIONAL PASS</strong> (unchanged). Probe infrastructure works; export/tooling missing.</h3>
+<hr />
+<h2 id="auditor-9-new-team-member-student-onboarding">Auditor 9: New Team Member / Student (Onboarding)</h2>
+<h3 id="v1-findings-status_8">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A9-01: No architecture diagram</td>
+<td>MEDIUM</td>
+<td><strong>FIXED</strong> — SYS.3 system architecture has full ASCII block diagram, task allocation table, CAN interface spec, safety path diagram. SWE.2 has module dependency diagram.</td>
+</tr>
+<tr>
+<td>A9-02: No "how to add a stub" guide</td>
+<td>MEDIUM</td>
+<td><strong>IMPROVED</strong> — foxbms-upstream docs cover every module. HSI document maps all stubs. Not a step-by-step procedure but enough to follow the pattern.</td>
+</tr>
+<tr>
+<td>A9-03: No glossary</td>
+<td>LOW</td>
+<td><strong>IMPROVED</strong> — SWE.1 has a Definitions section. foxbms-upstream/INDEX.md has a quick-reference table. Not a standalone glossary but covers the key terms.</td>
+</tr>
+<tr>
+<td>A9-04: Phase 3 blockers unexplained</td>
+<td>LOW</td>
+<td><strong>FIXED</strong> — foxbms-upstream/software/engine/diag.md explains threshold counters in detail. PLAN.md Phase 3 blockers reference specific DIAG mechanisms. docs/aspice-cl2/10-SWE.3 has the complete 85-entry DIAG table.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment_6">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A9-05</td>
+<td><strong>POSITIVE</strong></td>
+<td>24 foxBMS upstream reference docs — a student can understand BMS state machine, DIAG handler, CAN protocol, SOA checks, balancing, precharging without reading source code.</td>
+</tr>
+<tr>
+<td>A9-06</td>
+<td><strong>POSITIVE</strong></td>
+<td>Traceability guide teaches the requirement ID scheme and how to add trace tags.</td>
+</tr>
+<tr>
+<td>A9-07</td>
+<td><strong>POSITIVE</strong></td>
+<td>HITL locks prevent a student from accidentally breaking debugged values (SBC=2, DECAN=1, main loop timing).</td>
+</tr>
+<tr>
+<td>A9-08</td>
+<td><strong>POSITIVE</strong></td>
+<td>docs/business/ contains the strategic context (ML integration, customer pipeline, HIL plan) — student understands WHY this project exists, not just HOW.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-pass-was-challenging-documentation-is-now-comprehensive-enough-for-student-handoff">Verdict: <strong>PASS</strong> (was: CHALLENGING). Documentation is now comprehensive enough for student handoff.</h3>
+<hr />
+<h2 id="auditor-10-product-owner-customer-facing">Auditor 10: Product Owner / Customer-Facing</h2>
+<h3 id="v1-findings-status_9">v1 Findings Status</h3>
+<table>
+<thead>
+<tr>
+<th>v1 Finding</th>
+<th>v1 Severity</th>
+<th>v2 Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A10-01: No demo script</td>
+<td>HIGH</td>
+<td>REMAINS — still no rehearsed 5-minute demo.</td>
+</tr>
+<tr>
+<td>A10-02: No visual output</td>
+<td>HIGH</td>
+<td>REMAINS — still terminal + hex CAN frames.</td>
+</tr>
+<tr>
+<td>A10-03: Phase 3 is the customer's question</td>
+<td>MEDIUM</td>
+<td>REMAINS — fault injection still 0/11.</td>
+</tr>
+<tr>
+<td>A10-04: No comparison slide</td>
+<td>MEDIUM</td>
+<td><strong>FIXED</strong> — docs/business/pipeline-reusable.md has the complete competitive comparison (dSPACE, Vector, ETAS, MathWorks, in-house, consulting firms). docs/business/plan-hil-data-capture.md has the service tiers and pricing signals.</td>
+</tr>
+<tr>
+<td>A10-05: License clarity</td>
+<td>LOW</td>
+<td>REMAINS</td>
+</tr>
+</tbody>
+</table>
+<h3 id="new-assessment_7">New Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A10-06</td>
+<td><strong>POSITIVE</strong></td>
+<td>27 ASPICE documents + 6 ISO 26262 safety analyses = credibility package. "We have a HARA, FSC, TSC, FMEA, and FTTI for our demo BMS" is something no other open-source BMS project can claim.</td>
+</tr>
+<tr>
+<td>A10-07</td>
+<td><strong>POSITIVE</strong></td>
+<td>Business docs (pipeline, feasibility, HIL plan, service tiers) form a complete consulting pitch. Not just a tech demo.</td>
+</tr>
+<tr>
+<td>A10-08</td>
+<td><strong>MEDIUM</strong></td>
+<td>The ASPICE package is impressive but could be perceived as AI-generated (which it is). Need to add review records and sign-off dates to make it credible to an assessor.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict-conditional-pass-improved-from-not-ready-credibility-package-exists-demo-and-visual-still-missing">Verdict: <strong>CONDITIONAL PASS</strong> (improved from NOT READY). Credibility package exists. Demo and visual still missing.</h3>
+<hr />
+<h2 id="cross-auditor-summary-v1-v2-delta">Cross-Auditor Summary: v1 → v2 Delta</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>v1</th>
+<th>v2</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRITICAL findings</td>
+<td>1</td>
+<td><strong>1</strong></td>
+<td>A3-01 DIAG propagation remains — this is engineering work, not documentation</td>
+</tr>
+<tr>
+<td>HIGH findings</td>
+<td>9</td>
+<td><strong>4</strong></td>
+<td>5 resolved (fidelity doc, CI, FMEA, Phase 3 docs, comparison doc)</td>
+</tr>
+<tr>
+<td>MEDIUM findings</td>
+<td>12</td>
+<td><strong>8</strong></td>
+<td>4 resolved (architecture diagram, glossary, Phase 3 explanation, CAN docs)</td>
+</tr>
+<tr>
+<td>LOW findings</td>
+<td>5</td>
+<td><strong>4</strong></td>
+<td>1 resolved</td>
+</tr>
+<tr>
+<td>POSITIVE findings</td>
+<td>0</td>
+<td><strong>16</strong></td>
+<td>New category — things that exceed expectations</td>
+</tr>
+<tr>
+<td>ASPICE documents</td>
+<td>0</td>
+<td><strong>29</strong></td>
+<td>Complete CL2 package</td>
+</tr>
+<tr>
+<td>ISO 26262 safety docs</td>
+<td>0</td>
+<td><strong>9</strong></td>
+<td>HARA, FSC, TSC, FMEA, FTTI, HSI, safety reqs, traceability, ASIL decomp</td>
+</tr>
+<tr>
+<td>Traced requirement IDs</td>
+<td>0</td>
+<td><strong>308</strong></td>
+<td>Automated bidirectional traceability</td>
+</tr>
+<tr>
+<td>HITL-protected sections</td>
+<td>0</td>
+<td><strong>37</strong></td>
+<td>Safety-critical content locked</td>
+</tr>
+<tr>
+<td>CI pipeline</td>
+<td>None</td>
+<td><strong>3 jobs</strong></td>
+<td>Smoke test + traceability + full suite</td>
+</tr>
+<tr>
+<td>foxBMS upstream docs</td>
+<td>0</td>
+<td><strong>24</strong></td>
+<td>Complete module reference</td>
+</tr>
+<tr>
+<td>Business/service docs</td>
+<td>0</td>
+<td><strong>4</strong></td>
+<td>Pipeline, proposals, HIL plan, feasibility</td>
+</tr>
+</tbody>
+</table>
+<h2 id="top-5-priorities-unchanged-order-reduced-count">Top 5 Priorities (unchanged order, reduced count)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Finding</th>
+<th>Severity</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>A3-01: DIAG → safe-state propagation</strong></td>
+<td>CRITICAL</td>
+<td>2-3 days</td>
+<td>Unblocks Phase 3, validates all safety docs</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>A2-02: Phase 3 fault injection 0/11</strong></td>
+<td>HIGH</td>
+<td>2-3 weeks</td>
+<td>Core value proposition</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>A7-01: Dockerfile</strong></td>
+<td>HIGH</td>
+<td>Half day</td>
+<td>Reproducible builds, enables CI</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>A10-01/02: Demo script + visual</strong></td>
+<td>HIGH</td>
+<td>1 day</td>
+<td>Enables customer conversations</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>A4-01: Plant model ground-truth SOC</strong></td>
+<td>HIGH</td>
+<td>10 lines</td>
+<td>Enables algorithm validation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="bottom-line">Bottom Line</h2>
+<p><strong>v1</strong>: Technically sound, documentation gap, no process evidence.
+<strong>v2</strong>: Technically sound, <strong>documentation complete</strong>, process evidence emerging, <strong>1 engineering blocker remains</strong> (DIAG propagation). The project went from "good SIL with no docs" to "auditable ASPICE CL2 package waiting for one code fix."</p>
+<p>The 63-hour CL2 gap estimate from <code>cl2-gap-assessment.md</code> is now down to roughly <strong>40 hours</strong> — the documentation, traceability, and CI work done in this session eliminated ~23 hours of the original estimate.</p></div>
+<div class="nav-buttons"><a href="10-role-audit-v1.html">&larr; 10-Role Audit v1</a><a href="munich-electrification.html">Munich Electrification &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

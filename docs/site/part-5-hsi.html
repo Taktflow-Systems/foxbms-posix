@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 5: HSI — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" class="active">Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 5: HSI</div>
+<div class="content"><h1 id="hardware-software-interface-specification">Hardware-Software Interface Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ISO-HSI-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies the Hardware-Software Interface (HSI) for the foxBMS 2 POSIX
+port, as required by ISO 26262 Part 5 Clause 7. It maps every hardware dependency in
+the foxBMS software to its POSIX stub implementation, providing the technical
+justification for executing the BMS software in a SIL environment without physical
+hardware.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>The HSI covers all hardware interfaces used by the foxBMS 2 v1.10.0 software when
+running on the TMS570LC4357 MCU, and their corresponding POSIX replacements.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.3-001]</td>
+<td>System Architecture Description</td>
+</tr>
+<tr>
+<td>[SWE.2-001]</td>
+<td>Software Architecture Description</td>
+</tr>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>TMS570-DS</td>
+<td>TI TMS570LC4357 Data Sheet</td>
+</tr>
+<tr>
+<td>foxBMS-HAL</td>
+<td>foxBMS 2 HAL documentation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-definitions">4. Definitions</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HSI</td>
+<td>Hardware-Software Interface</td>
+</tr>
+<tr>
+<td>Stub</td>
+<td>A minimal implementation that satisfies the API contract without real hardware</td>
+</tr>
+<tr>
+<td>RAM-mapped register</td>
+<td>A software variable that occupies the same memory layout as a hardware register, enabling register access code to execute on a host CPU</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-hsi-mapping-overview">5. HSI Mapping Overview</h2>
+<p>The foxBMS 2 software accesses hardware through the following interface categories.
+Each is mapped to a POSIX equivalent.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>TMS570 (Production)</th>
+<th>POSIX (SIL)</th>
+<th>Stub Count</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MCU Registers</td>
+<td>Memory-mapped I/O at fixed addresses</td>
+<td>RAM buffers at allocated addresses</td>
+<td>60+ register bases</td>
+<td>Register read/write executes without fault</td>
+</tr>
+<tr>
+<td>CAN</td>
+<td>TMS570 DCAN peripheral</td>
+<td>Linux SocketCAN (vcan0)</td>
+<td>1 module</td>
+<td>Full CAN frame TX/RX functional</td>
+</tr>
+<tr>
+<td>SPI</td>
+<td>TMS570 MibSPI peripheral</td>
+<td>No-op stub returning configurable data</td>
+<td>5+ modules</td>
+<td>AFE data path tested via CAN injection</td>
+</tr>
+<tr>
+<td>I2C</td>
+<td>TMS570 I2C peripheral</td>
+<td>No-op stub</td>
+<td>3+ modules</td>
+<td>I2C-dependent features not exercised</td>
+</tr>
+<tr>
+<td>GPIO</td>
+<td>TMS570 GIO peripheral</td>
+<td>RAM-mapped register</td>
+<td>10+ modules</td>
+<td>Pin state readable/writable in software</td>
+</tr>
+<tr>
+<td>ADC</td>
+<td>TMS570 ADC peripheral</td>
+<td>RAM-mapped register with static values</td>
+<td>5+ modules</td>
+<td>ADC values configurable for test</td>
+</tr>
+<tr>
+<td>DMA</td>
+<td>TMS570 DMA peripheral</td>
+<td>No-op stub</td>
+<td>3+ modules</td>
+<td>DMA transfers replaced by direct copy</td>
+</tr>
+<tr>
+<td>Timer</td>
+<td>TMS570 RTI/Timer peripheral</td>
+<td>POSIX clock_gettime / gettimeofday</td>
+<td>2+ modules</td>
+<td>Timing functional on host</td>
+</tr>
+<tr>
+<td>Watchdog</td>
+<td>TMS570 RTI Watchdog</td>
+<td>No-op stub (always satisfied)</td>
+<td>1 module</td>
+<td>Watchdog disabled for SIL</td>
+</tr>
+<tr>
+<td>Interrupt Controller</td>
+<td>TMS570 VIM</td>
+<td>No-op (cooperative loop, no interrupts)</td>
+<td>2+ modules</td>
+<td>All processing synchronous</td>
+</tr>
+<tr>
+<td>Flash</td>
+<td>TMS570 Flash/ECC</td>
+<td>No-op stub</td>
+<td>2+ modules</td>
+<td>Flash checksum DIAG suppressed</td>
+</tr>
+<tr>
+<td>Power Supply</td>
+<td>TMS570 voltage regulators</td>
+<td>No-op stub</td>
+<td>1 module</td>
+<td>Power monitoring DIAG suppressed</td>
+</tr>
+<tr>
+<td>SBC</td>
+<td>NXP SBC chip via SPI</td>
+<td>No-op stub returning OK status</td>
+<td>3+ modules</td>
+<td>SBC state machine stubs</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-detailed-hsi-mapping">6. Detailed HSI Mapping</h2>
+<h3 id="61-mcu-register-bases">6.1 MCU Register Bases</h3>
+<p>The TMS570LC4357 uses memory-mapped registers. In the POSIX port, each register base
+is replaced by a <code>malloc</code>-allocated RAM buffer of the same structure size.</p>
+<table>
+<thead>
+<tr>
+<th>Register Base</th>
+<th>TMS570 Address</th>
+<th>POSIX Replacement</th>
+<th>Size (bytes)</th>
+<th>Used By</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>systemREG1</td>
+<td>0xFFFFFF00</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>System module</td>
+</tr>
+<tr>
+<td>systemREG2</td>
+<td>0xFFFFE100</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>System module</td>
+</tr>
+<tr>
+<td>gioREG</td>
+<td>0xFFF7BC00</td>
+<td>RAM buffer</td>
+<td>128</td>
+<td>GPIO driver</td>
+</tr>
+<tr>
+<td>gioPORTA</td>
+<td>0xFFF7BC34</td>
+<td>RAM buffer</td>
+<td>64</td>
+<td>Interlock, SPS</td>
+</tr>
+<tr>
+<td>gioPORTB</td>
+<td>0xFFF7BC54</td>
+<td>RAM buffer</td>
+<td>64</td>
+<td>Contactor feedback</td>
+</tr>
+<tr>
+<td>spiREG1</td>
+<td>0xFFF7F400</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>AFE SPI</td>
+</tr>
+<tr>
+<td>spiREG2</td>
+<td>0xFFF7F600</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>SBC SPI</td>
+</tr>
+<tr>
+<td>spiREG3</td>
+<td>0xFFF7F800</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>SPS SPI</td>
+</tr>
+<tr>
+<td>spiREG4</td>
+<td>0xFFF7FA00</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>Spare SPI</td>
+</tr>
+<tr>
+<td>spiREG5</td>
+<td>0xFFF7FC00</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>Spare SPI</td>
+</tr>
+<tr>
+<td>canREG1</td>
+<td>0xFFF7DC00</td>
+<td>SocketCAN fd</td>
+<td>512</td>
+<td>CAN driver</td>
+</tr>
+<tr>
+<td>canREG2</td>
+<td>0xFFF7DE00</td>
+<td>SocketCAN fd</td>
+<td>512</td>
+<td>CAN driver</td>
+</tr>
+<tr>
+<td>i2cREG1</td>
+<td>0xFFF7D400</td>
+<td>RAM buffer</td>
+<td>128</td>
+<td>I2C driver</td>
+</tr>
+<tr>
+<td>i2cREG2</td>
+<td>0xFFF7D500</td>
+<td>RAM buffer</td>
+<td>128</td>
+<td>I2C driver</td>
+</tr>
+<tr>
+<td>adcREG1</td>
+<td>0xFFF7C000</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>ADC driver</td>
+</tr>
+<tr>
+<td>adcREG2</td>
+<td>0xFFF7C200</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>ADC driver</td>
+</tr>
+<tr>
+<td>hetREG1</td>
+<td>0xFFF7B800</td>
+<td>RAM buffer</td>
+<td>512</td>
+<td>HET timer</td>
+</tr>
+<tr>
+<td>hetREG2</td>
+<td>0xFFF7B900</td>
+<td>RAM buffer</td>
+<td>512</td>
+<td>HET timer</td>
+</tr>
+<tr>
+<td>rtiREG1</td>
+<td>0xFFFFFC00</td>
+<td>RAM buffer + clock_gettime</td>
+<td>256</td>
+<td>RTI timer, OS tick</td>
+</tr>
+<tr>
+<td>dmaREG</td>
+<td>0xFFFFF000</td>
+<td>RAM buffer (no-op)</td>
+<td>512</td>
+<td>DMA controller</td>
+</tr>
+<tr>
+<td>vimREG</td>
+<td>0xFFFFFE00</td>
+<td>RAM buffer (no-op)</td>
+<td>256</td>
+<td>Interrupt controller</td>
+</tr>
+<tr>
+<td>esmREG</td>
+<td>0xFFFFF500</td>
+<td>RAM buffer</td>
+<td>256</td>
+<td>Error signaling</td>
+</tr>
+<tr>
+<td>pmmREG</td>
+<td>0xFFFF0000</td>
+<td>RAM buffer</td>
+<td>128</td>
+<td>Power management</td>
+</tr>
+<tr>
+<td>pcr1REG</td>
+<td>0xFFFFE000</td>
+<td>RAM buffer</td>
+<td>128</td>
+<td>Peripheral clock</td>
+</tr>
+<tr>
+<td>pcr2REG</td>
+<td>0xFCFF1000</td>
+<td>RAM buffer</td>
+<td>128</td>
+<td>Peripheral clock</td>
+</tr>
+<tr>
+<td>pcr3REG</td>
+<td>0xFFF78000</td>
+<td>RAM buffer</td>
+<td>128</td>
+<td>Peripheral clock</td>
+</tr>
+</tbody>
+</table>
+<p>Note: The full set of 60+ register bases follows the same pattern. The above table
+shows the primary bases. Each is allocated via <code>malloc(sizeof(struct))</code> during
+initialization.</p>
+<h3 id="62-can-interface">6.2 CAN Interface</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>TMS570</th>
+<th>POSIX</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Physical layer</td>
+<td>DCAN peripheral + CAN transceiver</td>
+<td>Linux SocketCAN</td>
+<td>Standard Linux CAN API</td>
+</tr>
+<tr>
+<td>Initialization</td>
+<td>DCAN register configuration</td>
+<td><code>socket(PF_CAN, SOCK_RAW, CAN_RAW)</code> + <code>bind()</code></td>
+<td>Direct API mapping</td>
+</tr>
+<tr>
+<td>Transmit</td>
+<td>Write to DCAN TX message object</td>
+<td><code>write(sockfd, &amp;frame, sizeof(frame))</code></td>
+<td>Equivalent semantics</td>
+</tr>
+<tr>
+<td>Receive</td>
+<td>DCAN RX interrupt + message object</td>
+<td><code>read(sockfd, &amp;frame, sizeof(frame))</code> non-blocking</td>
+<td>Polled in cooperative loop</td>
+</tr>
+<tr>
+<td>Filtering</td>
+<td>DCAN acceptance mask registers</td>
+<td><code>setsockopt()</code> CAN filters</td>
+<td>Equivalent functionality</td>
+</tr>
+<tr>
+<td>Bus speed</td>
+<td>500 kbit/s on physical bus</td>
+<td>Unlimited (virtual CAN)</td>
+<td>No bus load limitation in SIL</td>
+</tr>
+<tr>
+<td>Error handling</td>
+<td>DCAN error and status register</td>
+<td><code>ioctl()</code> for error frames</td>
+<td>Partial equivalence</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-spi-interface-afe-communication">6.3 SPI Interface (AFE Communication)</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>TMS570</th>
+<th>POSIX</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Physical layer</td>
+<td>MibSPI with DMA</td>
+<td>No-op stub</td>
+<td>No actual SPI communication</td>
+</tr>
+<tr>
+<td>Data path</td>
+<td>SPI to LTC6813 AFE IC</td>
+<td>CAN injection via 0x270/0x280</td>
+<td>Cell data injected externally</td>
+</tr>
+<tr>
+<td>Transfer initiation</td>
+<td>SPI register write</td>
+<td>Function returns immediately</td>
+<td>No latency modeling</td>
+</tr>
+<tr>
+<td>Response data</td>
+<td>SPI RXRAM</td>
+<td>Pre-configured return values</td>
+<td>Test controllable</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>AFE data validated by plausibility module</td>
+<td>Same plausibility code executes</td>
+<td>Safety logic preserved</td>
+</tr>
+</tbody>
+</table>
+<h3 id="64-i2c-interface">6.4 I2C Interface</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>TMS570</th>
+<th>POSIX</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Physical layer</td>
+<td>I2C peripheral</td>
+<td>No-op stub</td>
+<td>No actual I2C communication</td>
+</tr>
+<tr>
+<td>Connected devices</td>
+<td>EEPROM, port expanders</td>
+<td>Not emulated</td>
+<td>I2C features not exercised</td>
+</tr>
+<tr>
+<td>Transfer</td>
+<td>I2C register write/read</td>
+<td>Returns STD_OK immediately</td>
+<td>No functional testing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="65-gpio-interface">6.5 GPIO Interface</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>TMS570</th>
+<th>POSIX</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pin read</td>
+<td>GIO register read</td>
+<td>RAM buffer read</td>
+<td>Pin state software-controllable</td>
+</tr>
+<tr>
+<td>Pin write</td>
+<td>GIO register write</td>
+<td>RAM buffer write</td>
+<td>Output state stored in RAM</td>
+</tr>
+<tr>
+<td>Interlock</td>
+<td>GIO pin input</td>
+<td>RAM buffer (default: interlock OK)</td>
+<td>Interlock testable via buffer</td>
+</tr>
+<tr>
+<td>Contactor feedback</td>
+<td>GIO pin input</td>
+<td>RAM buffer (configurable)</td>
+<td>Feedback testable via buffer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="66-timer-os-tick">6.6 Timer / OS Tick</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>TMS570</th>
+<th>POSIX</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RTI counter</td>
+<td>Hardware counter at MCU clock</td>
+<td>clock_gettime(CLOCK_MONOTONIC)</td>
+<td>Millisecond resolution sufficient</td>
+</tr>
+<tr>
+<td>OS tick</td>
+<td>FreeRTOS tick interrupt</td>
+<td>usleep(1000) in cooperative loop</td>
+<td>~1 ms tick approximation</td>
+</tr>
+<tr>
+<td>Timestamp</td>
+<td>RTI free-running counter</td>
+<td>gettimeofday()</td>
+<td>Real-time timestamps</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-posix-port-justification">7. POSIX Port Justification</h2>
+<h3 id="71-what-is-preserved">7.1 What Is Preserved</h3>
+<p>The POSIX port preserves the following safety-relevant software behaviors:</p>
+<ol>
+<li><strong>SOA threshold checking logic</strong>: All comparison operations against MOL/RSL/MSL values execute identically.</li>
+<li><strong>DIAG threshold counting</strong>: Counter increment/decrement logic, threshold comparison, and FATAL flagging are unchanged.</li>
+<li><strong>BMS state machine</strong>: All state transitions and guard conditions are identical.</li>
+<li><strong>Contactor command logic</strong>: Open/close commands are issued through the same API.</li>
+<li><strong>Database producer/consumer pattern</strong>: Single-writer discipline is maintained.</li>
+<li><strong>CAN message encoding/decoding</strong>: Frame packing and unpacking code is unchanged.</li>
+</ol>
+<h3 id="72-what-is-not-preserved">7.2 What Is Not Preserved</h3>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Reason</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Real-time guarantees</td>
+<td>POSIX host is not real-time</td>
+<td>Timing tests verify approximate behavior</td>
+</tr>
+<tr>
+<td>Interrupt latency</td>
+<td>No interrupts in cooperative model</td>
+<td>All processing is sequential</td>
+</tr>
+<tr>
+<td>Hardware fault injection</td>
+<td>No physical AFE, SBC, IMD</td>
+<td>24 DIAG IDs suppressed; hardware faults planned for Phase 3</td>
+</tr>
+<tr>
+<td>EMC/ESD behavior</td>
+<td>No physical environment</td>
+<td>Out of scope for SIL</td>
+</tr>
+<tr>
+<td>Flash integrity</td>
+<td>No physical flash</td>
+<td>FLASHCHECKSUM DIAG suppressed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-diagnostic-coverage-impact">7.3 Diagnostic Coverage Impact</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Total DIAG IDs</th>
+<th>Retained</th>
+<th>Suppressed</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell voltage</td>
+<td>6</td>
+<td>6</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Temperature</td>
+<td>12</td>
+<td>12</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Current</td>
+<td>8</td>
+<td>8</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Contactor</td>
+<td>3</td>
+<td>3</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>CAN/sensor</td>
+<td>4</td>
+<td>4</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Plausibility</td>
+<td>2</td>
+<td>2</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>AFE communication</td>
+<td>4</td>
+<td>4</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>System critical</td>
+<td>3</td>
+<td>3</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Hardware-specific</td>
+<td>24</td>
+<td>0</td>
+<td>24</td>
+<td>0% (by design)</td>
+</tr>
+<tr>
+<td>Other SW-checkable</td>
+<td>19</td>
+<td>19</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>85</strong></td>
+<td><strong>61</strong></td>
+<td><strong>24</strong></td>
+<td><strong>72% overall; 100% of SW-checkable</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-acceptance-criteria">8. Acceptance Criteria</h2>
+<p>This HSI specification is accepted when:</p>
+<ol>
+<li>All 80+ HAL stub modules compile without errors.</li>
+<li>All 60+ register bases are allocated and accessible.</li>
+<li>The SIL binary starts and reaches SYS RUNNING state.</li>
+<li>All 61 retained DIAG IDs can be triggered through their software paths.</li>
+<li>No segfaults or undefined behavior occur during test execution.</li>
+</ol>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="part-4-tsc.html">&larr; Part 4: TSC</a><a href="part-5-fmea.html">Part 5: FMEA &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

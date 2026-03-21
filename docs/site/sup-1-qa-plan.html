@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUP.1 QA Plan — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" class="active">SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Management / SUP.1 QA Plan</div>
+<div class="content"><h1 id="quality-assurance-plan">Quality Assurance Plan</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.1-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document defines the quality assurance plan for the foxBMS 2 POSIX vECU project in accordance with ASPICE SUP.1 (Quality Assurance). It establishes the processes, reviews, and verification activities that ensure work products and processes conform to defined standards and plans.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>Quality assurance activities cover all engineering work products (requirements, architecture, design, code, test specifications, test results), all supporting process outputs (configuration items, gap analyses, change records), and the processes themselves.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[MAN.3-001]</td>
+<td>Project Management Plan</td>
+</tr>
+<tr>
+<td>[SUP.8-001]</td>
+<td>Configuration Management Plan</td>
+</tr>
+<tr>
+<td>[ASMT-SCOPE-001]</td>
+<td>ASPICE CL2 Assessment Scope</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-quality-objectives">4. Quality Objectives</h2>
+<table>
+<thead>
+<tr>
+<th>Objective</th>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Process compliance</td>
+<td>ASPICE criteria met / total criteria</td>
+<td>&gt;= 95% (106/112)</td>
+</tr>
+<tr>
+<td>Defect containment</td>
+<td>Open CRITICAL/HIGH gaps</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Test coverage</td>
+<td>Test criteria passing</td>
+<td>147/147 (100%)</td>
+</tr>
+<tr>
+<td>Unit test coverage</td>
+<td>Ceedling unit tests passing</td>
+<td>183+/183+ (100%)</td>
+</tr>
+<tr>
+<td>Build reproducibility</td>
+<td>setup.sh success on fresh clone</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Documentation completeness</td>
+<td>ASPICE work products produced</td>
+<td>18/18</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-quality-assurance-activities">5. Quality Assurance Activities</h2>
+<h3 id="51-code-review">5.1 Code Review</h3>
+<p>All code changes are subject to review before integration into the main branch.</p>
+<p><strong>Review Checklist for C Source Changes</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Check Item</th>
+<th>Verification Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Code compiles with -Wall -Wextra and zero warnings</td>
+<td>GCC build output</td>
+</tr>
+<tr>
+<td>2</td>
+<td>No new FAS_ASSERT violations introduced</td>
+<td>Smoke test pass</td>
+</tr>
+<tr>
+<td>3</td>
+<td>DIAG_Handler selective list is correct (24 HW suppressed, 61 SW enabled)</td>
+<td>Code inspection of diag_cfg.c</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CAN message encoding matches DBC specification</td>
+<td>CAN log comparison</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Database entry access follows foxBMS patterns (DATA_Read/DATA_Write)</td>
+<td>Code inspection</td>
+</tr>
+<tr>
+<td>6</td>
+<td>HAL stub functions match production function signatures</td>
+<td>Header comparison</td>
+</tr>
+<tr>
+<td>7</td>
+<td>No memory leaks or buffer overflows in new code</td>
+<td>Static analysis, code review</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Patch applies cleanly to foxBMS v1.10.0</td>
+<td>apply_all.sh test</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Review Checklist for Python Changes (Plant Model, Tests)</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Check Item</th>
+<th>Verification Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>CAN message IDs match foxBMS DBC</td>
+<td>Code inspection</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Physical values are in correct units (mV, mA, 0.01 degC)</td>
+<td>Code inspection</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Test criteria have clear pass/fail conditions</td>
+<td>Code review</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Process lifecycle (start, monitor, stop) handles timeouts</td>
+<td>Code review</td>
+</tr>
+<tr>
+<td>5</td>
+<td>No hardcoded absolute paths</td>
+<td>Code inspection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-static-analysis">5.2 Static Analysis</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Configuration</th>
+<th>Scope</th>
+<th>Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GCC -Wall -Wextra</td>
+<td>All warnings enabled</td>
+<td>All C source files</td>
+<td>Every build</td>
+</tr>
+<tr>
+<td>GCC -Werror (selective)</td>
+<td>Critical warnings as errors</td>
+<td>New/modified files</td>
+<td>Every build</td>
+</tr>
+<tr>
+<td>Python linting</td>
+<td>Standard PEP 8</td>
+<td>Plant model, test scripts</td>
+<td>Before commit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-unit-testing">5.3 Unit Testing</h3>
+<table>
+<thead>
+<tr>
+<th>Framework</th>
+<th>Test Count</th>
+<th>Scope</th>
+<th>Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ceedling</td>
+<td>183+ tests</td>
+<td>foxBMS modules (SOA, SOC, BMS, DIAG, etc.)</td>
+<td>Before each integration</td>
+</tr>
+</tbody>
+</table>
+<p>Unit tests verify individual module behavior in isolation using mock/stub dependencies. Test results are captured as Ceedling output.</p>
+<h3 id="54-integration-testing">5.4 Integration Testing</h3>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Criteria</th>
+<th>Scope</th>
+<th>Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test_integration.py</td>
+<td>21 criteria</td>
+<td>vECU + plant model end-to-end</td>
+<td>After code changes</td>
+</tr>
+<tr>
+<td>test_asil.py</td>
+<td>50 criteria</td>
+<td>ASIL-D fault injection paths</td>
+<td>After safety-relevant changes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="55-smoke-testing">5.5 Smoke Testing</h3>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Scope</th>
+<th>Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test_smoke.py</td>
+<td>BMS NORMAL, contactors, SOC</td>
+<td>Every build (included in setup.sh)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="56-documentation-review">5.6 Documentation Review</h3>
+<p>All ASPICE work products are reviewed against the following criteria:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Check Item</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Document has revision history with author and date</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Document has unique document ID</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Requirements have unique IDs and traceability references</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Test cases trace to requirements</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Technical content is accurate (matches current implementation)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>ASIL classifications are consistent with HARA</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Cross-references to other documents are valid</td>
+</tr>
+</tbody>
+</table>
+<h3 id="57-gap-analysis-review">5.7 Gap Analysis Review</h3>
+<p>The GAP-ANALYSIS.md document is the quality backbone of the project. Quality assurance activities include:</p>
+<table>
+<thead>
+<tr>
+<th>Activity</th>
+<th>Frequency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Review all open gaps for severity accuracy</td>
+<td>Each phase gate</td>
+</tr>
+<tr>
+<td>Verify FIXED gaps with test evidence</td>
+<td>Upon gap closure</td>
+</tr>
+<tr>
+<td>Verify ACCEPTED gaps have documented rationale</td>
+<td>Upon acceptance</td>
+</tr>
+<tr>
+<td>Update gap counts in project metrics</td>
+<td>Weekly</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-non-conformance-handling">6. Non-Conformance Handling</h2>
+<h3 id="61-process">6.1 Process</h3>
+<ol>
+<li><strong>Detection</strong>: Non-conformance identified during review, testing, or gap analysis</li>
+<li><strong>Recording</strong>: Logged in GAP-ANALYSIS.md with GA-xx identifier and severity</li>
+<li><strong>Analysis</strong>: Root cause determined; impact assessed</li>
+<li><strong>Correction</strong>: Fix implemented and tested</li>
+<li><strong>Verification</strong>: Fix verified by re-running relevant tests</li>
+<li><strong>Closure</strong>: GAP-ANALYSIS.md updated to FIXED with evidence</li>
+</ol>
+<h3 id="62-severity-classification">6.2 Severity Classification</h3>
+<table>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Definition</th>
+<th>Response Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRITICAL</td>
+<td>Safety function incorrect or missing</td>
+<td>Immediate (block release)</td>
+</tr>
+<tr>
+<td>HIGH</td>
+<td>Core functionality broken or significant deviation from specification</td>
+<td>Within current phase</td>
+</tr>
+<tr>
+<td>MEDIUM</td>
+<td>Deviation from specification with workaround available</td>
+<td>Within next phase</td>
+</tr>
+<tr>
+<td>LOW</td>
+<td>Minor deviation or cosmetic issue</td>
+<td>Tracked for future resolution</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-quality-records">7. Quality Records</h2>
+<p>The following quality records are maintained:</p>
+<table>
+<thead>
+<tr>
+<th>Record</th>
+<th>Location</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GAP-ANALYSIS.md</td>
+<td>Repository root</td>
+<td>Issue tracking and resolution</td>
+</tr>
+<tr>
+<td>COVERAGE.md</td>
+<td>Repository root</td>
+<td>Feature coverage verification</td>
+</tr>
+<tr>
+<td>Test output logs</td>
+<td>tests/ output</td>
+<td>Test execution evidence</td>
+</tr>
+<tr>
+<td>Build logs</td>
+<td>build/ output</td>
+<td>Compilation evidence</td>
+</tr>
+<tr>
+<td>ASPICE documents (18)</td>
+<td>docs/aspice/</td>
+<td>Process compliance evidence</td>
+</tr>
+<tr>
+<td>CL2 gap assessment</td>
+<td>docs/aspice-cl2/00-assessment/</td>
+<td>Capability level evidence</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-quality-assurance-schedule">8. Quality Assurance Schedule</h2>
+<table>
+<thead>
+<tr>
+<th>Activity</th>
+<th>Trigger</th>
+<th>Responsible</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Code review</td>
+<td>Every code change</td>
+<td>An Dao (self-review + checklist)</td>
+</tr>
+<tr>
+<td>Static analysis</td>
+<td>Every build</td>
+<td>Automated (GCC flags)</td>
+</tr>
+<tr>
+<td>Unit test execution</td>
+<td>Before integration</td>
+<td>An Dao</td>
+</tr>
+<tr>
+<td>Smoke test</td>
+<td>Every build (setup.sh)</td>
+<td>Automated</td>
+</tr>
+<tr>
+<td>Integration test</td>
+<td>After code changes</td>
+<td>An Dao</td>
+</tr>
+<tr>
+<td>ASIL test</td>
+<td>After safety changes</td>
+<td>An Dao</td>
+</tr>
+<tr>
+<td>Gap analysis review</td>
+<td>Phase gate</td>
+<td>An Dao</td>
+</tr>
+<tr>
+<td>Document review</td>
+<td>Before CL2 assessment</td>
+<td>An Dao</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-limitations-and-improvement-actions">9. Limitations and Improvement Actions</h2>
+<h3 id="91-current-limitations">9.1 Current Limitations</h3>
+<table>
+<thead>
+<tr>
+<th>Limitation</th>
+<th>Impact</th>
+<th>Planned Improvement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Single-person team limits independent review</td>
+<td>Reviews are self-reviews</td>
+<td>Seek peer review for CL2 evidence</td>
+</tr>
+<tr>
+<td>No automated CI pipeline yet</td>
+<td>Tests run manually</td>
+<td>Phase 4: Docker + CI integration</td>
+</tr>
+<tr>
+<td>No formal review records (minutes, sign-off)</td>
+<td>CL2 GP 2.2 gap</td>
+<td>Create review record templates</td>
+</tr>
+<tr>
+<td>No code coverage measurement tool</td>
+<td>Cannot quantify unit test coverage %</td>
+<td>Integrate gcov/lcov</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92-cl2-actions-required">9.2 CL2 Actions Required</h3>
+<p>To achieve CL2 for SUP.1, the following additional evidence is needed:
+1. Documented review records with reviewer name and date
+2. QA audit trail showing process adherence checks
+3. Escalation records for non-conformances
+4. Periodic QA status reports</p></div>
+<div class="nav-buttons"><a href="man-3-project-plan.html">&larr; MAN.3 Project Plan</a><a href="sup-8-cm-plan.html">SUP.8 CM Plan &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

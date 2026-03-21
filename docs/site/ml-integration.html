@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Integration — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" class="active">ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Business & Service / ML Integration</div>
+<div class="content"><h1 id="proposal-integrating-taktflow-bms-ml-with-foxbms-posix-vecu">Proposal: Integrating taktflow-bms-ml with foxBMS POSIX vECU</h1>
+<p><strong>Date</strong>: 2026-03-21
+<strong>Status</strong>: PROPOSAL
+<strong>Dependencies</strong>: foxbms-posix (BMS in NORMAL), taktflow-bms-ml (5 models trained)</p>
+<hr />
+<h2 id="the-opportunity">The Opportunity</h2>
+<p>We have two working systems that don't talk to each other:</p>
+<table>
+<thead>
+<tr>
+<th>foxbms-posix</th>
+<th>taktflow-bms-ml</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Real BMS firmware running on Linux</td>
+<td>5 trained ML models (ONNX)</td>
+</tr>
+<tr>
+<td>Outputs 15+ CAN messages with battery state</td>
+<td>Inputs: pack V/I/T time series</td>
+</tr>
+<tr>
+<td>Uses coulomb counting for SOC (drifts)</td>
+<td>SOC LSTM: 1.83% RMSE</td>
+</tr>
+<tr>
+<td>No degradation awareness</td>
+<td>SOH LSTM: 0.85% RMSE</td>
+</tr>
+<tr>
+<td>No predictive capability</td>
+<td>RUL Transformer: 16% MAPE</td>
+</tr>
+<tr>
+<td>Threshold-only fault detection</td>
+<td>Thermal CNN: F1=1.000</td>
+</tr>
+<tr>
+<td>Static plant model (constant values)</td>
+<td>Trained on real BMW i3 driving data</td>
+</tr>
+</tbody>
+</table>
+<p>Connecting them creates something neither can do alone: a <strong>BMS with ML-augmented intelligence</strong>, testable end-to-end without hardware.</p>
+<hr />
+<h2 id="three-integration-layers">Three Integration Layers</h2>
+<h3 id="layer-1-ml-driven-plant-model-replace-static-data-with-realistic-behavior">Layer 1: ML-Driven Plant Model (replace static data with realistic behavior)</h3>
+<p><strong>Problem now</strong>: <code>plant_model.py</code> sends constant 3700mV, 0A, 25C. foxBMS reaches NORMAL but nothing interesting happens — SOC stays at 50% forever, no faults, no degradation.</p>
+<p><strong>Solution</strong>: Use the SOC LSTM model <em>in reverse</em> — instead of predicting SOC from measurements, replay the BMW i3 training data through the plant model to feed foxBMS with real driving profiles.</p>
+<pre><code>BMW i3 trip CSV ──→ plant_model.py ──→ SocketCAN ──→ foxBMS vECU
+  72 real trips        encodes to           CAN         processes real
+  V, I, T, SOC        foxBMS CAN format    frames      driving data
+</code></pre>
+<p><strong>What this enables</strong>:
+- foxBMS SOC changes over time (charge/discharge cycles)
+- foxBMS sees realistic temperature variation
+- foxBMS precharge/contactor logic exercised with real voltage profiles
+- foxBMS plausibility checks tested against real cell behavior</p>
+<p><strong>Implementation</strong>:</p>
+<pre><code class="language-python"># plant_model_replay.py — new file, ~80 lines
+import csv
+import onnxruntime  # not needed for replay, but available
+
+class TripReplay:
+    &quot;&quot;&quot;Replay BMW i3 trip through foxBMS CAN interface.&quot;&quot;&quot;
+    def __init__(self, trip_csv):
+        self.data = load_trip(trip_csv)  # reuse prepare_soc_dataset.py loader
+        self.idx = 0
+        self.num_cells = 18
+
+    def step(self):
+        &quot;&quot;&quot;Return one timestep of battery data for CAN encoding.&quot;&quot;&quot;
+        row = self.data[self.idx]
+        pack_v = row[0]  # Battery Voltage [V]
+        pack_i = row[1]  # Battery Current [A]
+        temp   = row[2]  # Battery Temperature [C]
+        # Derive cell voltages from pack voltage
+        cell_v_mv = int(pack_v / self.num_cells * 1000)
+        self.idx = (self.idx + 1) % len(self.data)
+        return cell_v_mv, int(pack_i * 1000), int(temp * 10)
+</code></pre>
+<p><strong>Effort</strong>: 1-2 days
+<strong>Risk</strong>: Low — plant model changes only, no foxBMS code changes
+<strong>Value</strong>: Immediately makes every demo and test run realistic</p>
+<hr />
+<h3 id="layer-2-ml-sidecar-run-inference-alongside-foxbms-compare-results">Layer 2: ML Sidecar (run inference alongside foxBMS, compare results)</h3>
+<p><strong>Problem</strong>: foxBMS uses coulomb counting for SOC. It works but drifts over time. We have a 1.83% RMSE LSTM but no way to use it.</p>
+<p><strong>Solution</strong>: A Python sidecar process that reads foxBMS CAN output, runs ONNX inference, and publishes ML predictions on a separate CAN ID or MQTT topic.</p>
+<pre><code>foxBMS vECU ──→ CAN TX ──→ ML Sidecar (Python) ──→ CAN TX (new IDs)
+  0x233 pack V/I           reads SocketCAN             0x700 ML SOC
+  0x250 cell V             builds 200-step window       0x701 ML SOH
+  0x260 cell T             ONNX inference (5 models)    0x702 ML thermal risk
+  0x235 BMS SOC            every 1 second               0x703 ML RUL
+</code></pre>
+<p><strong>What this enables</strong>:
+- Side-by-side SOC comparison: foxBMS coulomb counting vs ML LSTM
+- Early degradation detection (SOH drops before capacity fades visibly)
+- Thermal anomaly scoring (0-1 risk level, not just threshold)
+- RUL estimation for predictive maintenance
+- All observable via standard CAN tools (candump, CANape)</p>
+<p><strong>Implementation</strong>:</p>
+<pre><code class="language-python"># ml_sidecar.py — new file, ~150 lines
+import onnxruntime as ort
+import numpy as np
+import socket, struct, collections
+
+# Load all 5 ONNX models
+soc_model = ort.InferenceSession(&quot;taktflow-bms-ml/models/bms/soc_lstm.onnx&quot;)
+soh_model = ort.InferenceSession(&quot;taktflow-bms-ml/models/bms/soh_lstm.onnx&quot;)
+thermal_model = ort.InferenceSession(&quot;taktflow-bms-ml/models/bms/thermal_cnn.onnx&quot;)
+
+# Sliding window buffer (200 timesteps × 5 features)
+window = collections.deque(maxlen=200)
+
+# Read foxBMS CAN → extract V, I, T → build window → infer
+while True:
+    frame = read_can_frame(sock)
+    if frame.id == 0x233:  # Pack Values P0: voltage + current
+        pack_v, pack_i = decode_0x233(frame.data)
+    if frame.id == 0x260:  # Cell Temperatures
+        temp, temp_max = decode_0x260(frame.data)
+
+    window.append([pack_v, pack_i, temp, temp_max, 0.0])  # velocity=0 for SIL
+
+    if len(window) == 200:
+        # SOC inference
+        x = np.array(window, dtype=np.float32).reshape(1, 200, 5)
+        x = (x - norm_mean) / norm_std  # normalize with training stats
+        soc_pred = soc_model.run(None, {&quot;bms_window&quot;: x})[0][0]
+
+        # Publish on CAN
+        can_send(0x700, encode_soc(soc_pred))  # ML SOC
+</code></pre>
+<p><strong>Input mapping</strong> (foxBMS CAN → LSTM features):</p>
+<table>
+<thead>
+<tr>
+<th>LSTM Feature</th>
+<th>foxBMS CAN Source</th>
+<th>Signal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pack_V (V)</td>
+<td>0x233 Pack Values P0</td>
+<td>packVoltage_mV / 1000</td>
+</tr>
+<tr>
+<td>pack_I (A)</td>
+<td>0x233 Pack Values P0</td>
+<td>packCurrent_mA / 1000</td>
+</tr>
+<tr>
+<td>T_avg (C)</td>
+<td>0x260 Cell Temperatures</td>
+<td>average of decoded temps</td>
+</tr>
+<tr>
+<td>T_max (C)</td>
+<td>0x260 Cell Temperatures</td>
+<td>max of decoded temps</td>
+</tr>
+<tr>
+<td>velocity (km/h)</td>
+<td>not available in foxBMS</td>
+<td>set to 0 (SIL) or inject from plant</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key detail</strong>: The LSTM was trained with normalization. The sidecar must apply the same <code>soc_norm_mean.npy</code> and <code>soc_norm_std.npy</code> from <code>data/bms-processed/</code>. Without normalization, predictions will be garbage.</p>
+<p><strong>Effort</strong>: 3-5 days
+<strong>Risk</strong>: Medium — needs CAN signal decoding to match foxBMS DBC exactly
+<strong>Value</strong>: High — demonstrates ML+firmware co-simulation, directly portfolio-worthy</p>
+<hr />
+<h3 id="layer-3-ml-enhanced-fault-injection-use-models-to-generate-realistic-faults">Layer 3: ML-Enhanced Fault Injection (use models to generate realistic faults)</h3>
+<p><strong>Problem</strong>: PLAN.md Phase 3 (fault injection) currently means manually setting one cell to 4.5V. That's unrealistic — real faults develop gradually.</p>
+<p><strong>Solution</strong>: Use the ML models to generate <em>realistic</em> fault progression scenarios based on patterns in the training data.</p>
+<pre><code>Fault Scenario Engine ──→ plant_model.py ──→ foxBMS ──→ ML Sidecar
+                                                            ↓
+  &quot;thermal runaway at t=300s&quot;     gradually increasing    detects anomaly
+  &quot;capacity fade over 500 cycles&quot; temperature + voltage   at t=280s (20s early)
+  &quot;cell imbalance developing&quot;     drop following NREL     triggers CAN alert
+                                  failure profiles
+</code></pre>
+<p><strong>Scenarios</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Data Source</th>
+<th>Plant Model Behavior</th>
+<th>foxBMS Expected Response</th>
+<th>ML Expected Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Thermal runaway</td>
+<td>NREL failure profiles</td>
+<td>Cell temp ramp 2C/min → 100C</td>
+<td>Opens contactors at 80C threshold</td>
+<td>Thermal CNN detects at 60C (20s earlier)</td>
+</tr>
+<tr>
+<td>Capacity fade</td>
+<td>SOH training data</td>
+<td>Slowly reduce cell voltage range</td>
+<td>No response (below threshold)</td>
+<td>SOH LSTM tracks degradation trend</td>
+</tr>
+<tr>
+<td>Cell imbalance</td>
+<td>Imbalance CNN training data</td>
+<td>1 cell drifts 50mV/cycle</td>
+<td>Balancing activates</td>
+<td>Imbalance CNN predicts which cell</td>
+</tr>
+<tr>
+<td>Sensor drift</td>
+<td>Synthetic</td>
+<td>IVT current offset +5A gradually</td>
+<td>SOC drifts</td>
+<td>SOC LSTM disagrees with BMS SOC</td>
+</tr>
+<tr>
+<td>Fast charge stress</td>
+<td>BMW i3 high-current profiles</td>
+<td>High current + temp rise</td>
+<td>SOF limits power</td>
+<td>Thermal risk score rises</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effort</strong>: 1-2 weeks
+<strong>Risk</strong>: High — requires careful scenario design and validation
+<strong>Value</strong>: Very high — proves ML catches faults that threshold logic misses</p>
+<hr />
+<h2 id="architecture-summary">Architecture Summary</h2>
+<pre><code>                        Layer 1                Layer 2              Layer 3
+                    (Plant Model)           (ML Sidecar)       (Fault Injection)
+                         |                       |                    |
+  BMW i3 trip data       |    foxBMS CAN output  |   NREL failure     |
+  or fault scenario ─────+────────────────────── | ── profiles ───────+
+                         |                       |                    |
+                         v                       v                    v
+              +--------------------+   +------------------+  +----------------+
+              | plant_model.py     |   | ml_sidecar.py    |  | fault_engine.py|
+              | (enhanced)         |   | ONNX Runtime     |  | scenario       |
+              | trip replay        |   | 5 models loaded  |  | generator      |
+              | fault injection    |   | reads foxBMS CAN |  | gradual faults |
+              +--------+-----------+   | publishes ML CAN |  +-------+--------+
+                       |               +--------+---------+          |
+                       | 0x270,0x521           | 0x700-703           |
+                       v                       v                     |
+              +----------------------------------------+             |
+              |           SocketCAN (vcan1)             | &lt;-----------+
+              +------------------+---------------------+
+                                 |
+                                 v
+              +----------------------------------------+
+              |        foxbms-vecu (C binary)           |
+              |  BMS state machine + SOC counting       |
+              |  15+ CAN TX messages                    |
+              +----------------------------------------+
+</code></pre>
+<hr />
+<h2 id="recommended-implementation-order">Recommended Implementation Order</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>What</th>
+<th>Effort</th>
+<th>Depends On</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>L1.1</strong></td>
+<td>Trip replay plant model</td>
+<td>2 days</td>
+<td>—</td>
+<td><code>plant_model_replay.py</code></td>
+</tr>
+<tr>
+<td><strong>L1.2</strong></td>
+<td>Dynamic current → SOC changes</td>
+<td>1 day</td>
+<td>L1.1</td>
+<td>CAN 0x235 SOC changing over time</td>
+</tr>
+<tr>
+<td><strong>L2.1</strong></td>
+<td>ML sidecar skeleton (CAN read + ONNX load)</td>
+<td>2 days</td>
+<td>—</td>
+<td><code>ml_sidecar.py</code></td>
+</tr>
+<tr>
+<td><strong>L2.2</strong></td>
+<td>SOC LSTM inference + CAN publish</td>
+<td>2 days</td>
+<td>L2.1</td>
+<td>CAN 0x700 with ML SOC</td>
+</tr>
+<tr>
+<td><strong>L2.3</strong></td>
+<td>SOC comparison dashboard</td>
+<td>1 day</td>
+<td>L1.2 + L2.2</td>
+<td>foxBMS SOC vs ML SOC plot</td>
+</tr>
+<tr>
+<td><strong>L2.4</strong></td>
+<td>Thermal CNN + SOH LSTM inference</td>
+<td>2 days</td>
+<td>L2.1</td>
+<td>CAN 0x701, 0x702</td>
+</tr>
+<tr>
+<td><strong>L3.1</strong></td>
+<td>Thermal runaway scenario from NREL data</td>
+<td>3 days</td>
+<td>L1.1 + L2.4</td>
+<td>Fault detected 20s early</td>
+</tr>
+<tr>
+<td><strong>L3.2</strong></td>
+<td>Cell imbalance + capacity fade scenarios</td>
+<td>3 days</td>
+<td>L3.1</td>
+<td>Full fault test suite</td>
+</tr>
+<tr>
+<td><strong>Docker</strong></td>
+<td>Compose: foxbms-vecu + plant + sidecar</td>
+<td>1 day</td>
+<td>L2.2</td>
+<td><code>docker-compose.yml</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total</strong>: ~3 weeks for a student to deliver L1 + L2, ~5 weeks for all three layers.</p>
+<hr />
+<h2 id="what-makes-this-valuable">What Makes This Valuable</h2>
+<h3 id="for-the-foxbms-project">For the foxBMS project</h3>
+<ul>
+<li>Realistic test data instead of constant values → actual validation</li>
+<li>Predictive capability that foxBMS doesn't have natively</li>
+<li>Fault injection with realistic profiles instead of step functions</li>
+</ul>
+<h3 id="for-the-ml-project">For the ML project</h3>
+<ul>
+<li>Real firmware to validate against (not just offline evaluation)</li>
+<li>CAN-based deployment pipeline (ONNX → sidecar → CAN bus)</li>
+<li>Cross-validation: ML SOC vs foxBMS coulomb counting vs BMW i3 ground truth</li>
+</ul>
+<h3 id="for-a-student-thesis">For a student thesis</h3>
+<ul>
+<li><strong>Claim</strong>: "ML-augmented BMS achieves 1.83% SOC RMSE vs 5-10% coulomb counting drift"</li>
+<li><strong>Claim</strong>: "Thermal anomaly detected 20 seconds before threshold-based detection"</li>
+<li><strong>Deliverable</strong>: Working demo — foxBMS + ML sidecar + fault injection, all on SocketCAN</li>
+<li><strong>Comparison</strong>: dSPACE VEOS + MATLAB = $150k+; this setup = $0 (open source + SocketCAN)</li>
+</ul>
+<h3 id="for-portfolio-interviews">For portfolio / interviews</h3>
+<ul>
+<li>Embedded firmware + ML + CAN protocol + Docker → full-stack automotive</li>
+<li>Not a toy: real foxBMS (Fraunhofer), real driving data (BMW i3), production models (ONNX)</li>
+<li>Reproducible: clone, build, run, see CAN output in 10 minutes</li>
+</ul>
+<hr />
+<h2 id="technical-risks">Technical Risks</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LSTM velocity feature missing in SIL</td>
+<td>SOC accuracy degrades</td>
+<td>Retrain with 4 features (drop velocity) or set to 0</td>
+</tr>
+<tr>
+<td>Normalization stats mismatch</td>
+<td>Predictions are random</td>
+<td>Ship <code>soc_norm_mean.npy</code> + <code>soc_norm_std.npy</code> with sidecar</td>
+</tr>
+<tr>
+<td>CAN signal decoding mismatch</td>
+<td>Wrong input to model</td>
+<td>Use foxBMS DBC file for both plant model and sidecar</td>
+</tr>
+<tr>
+<td>ONNX Runtime on ARM (future)</td>
+<td>Won't run on embedded</td>
+<td>CPU ONNX Runtime works on x86 and ARM64; tested</td>
+</tr>
+<tr>
+<td>200-step window = 200 seconds at 1Hz</td>
+<td>3+ minutes to first prediction</td>
+<td>Use smaller window (50 steps) with reduced accuracy, or warm-start from plant data</td>
+</tr>
+<tr>
+<td>foxBMS cycle rate (1ms) vs ML inference (~10ms)</td>
+<td>Sidecar can't keep up</td>
+<td>Run inference at 1Hz, not per CAN frame — 200x reduction</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="files-to-create">Files to Create</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Location</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>plant_model_replay.py</code></td>
+<td>foxbms-posix/src/</td>
+<td>Trip replay from BMW i3 CSV</td>
+</tr>
+<tr>
+<td><code>ml_sidecar.py</code></td>
+<td>foxbms-posix/src/</td>
+<td>ONNX inference from foxBMS CAN</td>
+</tr>
+<tr>
+<td><code>fault_engine.py</code></td>
+<td>foxbms-posix/src/</td>
+<td>Realistic fault scenario generator</td>
+</tr>
+<tr>
+<td><code>decode_foxbms_can.py</code></td>
+<td>foxbms-posix/src/</td>
+<td>foxBMS CAN message decoder (shared)</td>
+</tr>
+<tr>
+<td><code>docker-compose.yml</code></td>
+<td>foxbms-posix/</td>
+<td>Compose: vECU + plant + sidecar</td>
+</tr>
+<tr>
+<td><code>requirements.txt</code></td>
+<td>foxbms-posix/src/</td>
+<td>onnxruntime, python-can, numpy</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="reusable-pipeline.html">&larr; Reusable Pipeline</a><a href="ml-feasibility.html">ML Feasibility &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

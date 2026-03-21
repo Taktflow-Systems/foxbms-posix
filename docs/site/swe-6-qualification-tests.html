@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWE.6 Qualification Tests — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" class="active">SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Software / SWE.6 Qualification Tests</div>
+<div class="content"><h1 id="system-qualification-test-specification">System Qualification Test Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.6-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies system-level qualification tests for the foxBMS 2 POSIX port,
+satisfying ASPICE SWE.6 (software qualification test) and ISO 26262 Part 6 Clause 10.
+Qualification tests verify end-to-end system behavior against system requirements
+(SYS.2-001) in the target SIL environment.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>Qualification tests exercise the full BMS software stack through its external interfaces
+(SocketCAN) using realistic operational scenarios. Each test traces to one or more system
+requirements.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.2-001]</td>
+<td>System Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.5-001]</td>
+<td>Integration Test Specification</td>
+</tr>
+<tr>
+<td>[ISO-SSR-001]</td>
+<td>Software Safety Requirements</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-test-environment">4. Test Environment</h2>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIL binary</td>
+<td>foxBMS POSIX build (x86-64, GCC 13)</td>
+</tr>
+<tr>
+<td>CAN interface</td>
+<td>SocketCAN (vcan0)</td>
+</tr>
+<tr>
+<td>Test orchestration</td>
+<td>pytest + python-can</td>
+</tr>
+<tr>
+<td>Stimulus generation</td>
+<td>Python test scripts simulating vehicle controller and sensors</td>
+</tr>
+<tr>
+<td>Duration per scenario</td>
+<td>10-60 seconds</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-qualification-test-scenarios">5. Qualification Test Scenarios</h2>
+<h3 id="51-scenario-qt-001-normal-startup-and-operation">5.1 Scenario QT-001: Normal Startup and Operation</h3>
+<p><strong>Objective</strong>: Verify the complete startup sequence from power-on to NORMAL operation.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Launch SIL binary</td>
+<td>Process starts without error</td>
+<td>SYS-REQ-080</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Wait 2 seconds</td>
+<td>CAN 0x220 reports SYS state == RUNNING (5)</td>
+<td>SYS-REQ-070</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Observe CAN 0x220</td>
+<td>BMS state == STANDBY (5)</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Send CAN 0x210: request NORMAL</td>
+<td>BMS state transitions to PRECHARGE (6)</td>
+<td>SYS-REQ-072</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Inject IVT voltage matching string voltage</td>
+<td>BMS state transitions to NORMAL (7)</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Inject normal cell voltages (2500 mV) via CAN 0x270</td>
+<td>Cell voltages appear on CAN 0x240-0x245</td>
+<td>SYS-REQ-060</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Inject normal temperatures (25 deg C) via CAN 0x280</td>
+<td>Temperatures appear on CAN 0x260</td>
+<td>SYS-REQ-060</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Inject IVT current (500 mA) via CAN 0x521</td>
+<td>Current reflected in CAN 0x221</td>
+<td>SYS-REQ-062</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Run for 30 seconds</td>
+<td>No ERROR, no crash, continuous CAN TX</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Send CAN 0x210: request STANDBY</td>
+<td>BMS transitions to STANDBY</td>
+<td>SYS-REQ-071</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: All 10 steps observed correctly. No FATAL diagnostics triggered.</p>
+<h3 id="52-scenario-qt-002-overvoltage-fault-injection-and-recovery">5.2 Scenario QT-002: Overvoltage Fault Injection and Recovery</h3>
+<p><strong>Objective</strong>: Verify that an overvoltage condition triggers ERROR and that recovery
+follows the dual-condition protocol.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Start in NORMAL state (via QT-001 steps 1-5)</td>
+<td>BMS == NORMAL</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inject cell voltage 2850 mV (above MSL 2800 mV) via CAN 0x270</td>
+<td>SOA detects overvoltage</td>
+<td>SYS-REQ-020</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Wait for DIAG threshold (50 events x 200 ms delay = ~10 seconds max)</td>
+<td>CAN 0x220 shows BMS == ERROR (9)</td>
+<td>SYS-REQ-053</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Verify contactors open</td>
+<td>CAN 0x220 contactor flags show all open</td>
+<td>SYS-REQ-054</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Send CAN 0x210: request NORMAL</td>
+<td>BMS remains in ERROR (fault not cleared)</td>
+<td>SYS-REQ-055</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Inject normal voltage (2500 mV)</td>
+<td>Fault condition clears</td>
+<td>SYS-REQ-055</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Wait for DIAG counter to decrement to zero</td>
+<td>FATAL flag clears</td>
+<td>SYS-REQ-055</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Send CAN 0x210: request STANDBY</td>
+<td>BMS transitions to STANDBY</td>
+<td>SYS-REQ-055</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: ERROR entered on overvoltage. ERROR persists until both conditions met.</p>
+<h3 id="53-scenario-qt-003-undervoltage-and-deep-discharge">5.3 Scenario QT-003: Undervoltage and Deep Discharge</h3>
+<p><strong>Objective</strong>: Verify undervoltage detection and deep discharge latching behavior.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Start in NORMAL state</td>
+<td>BMS == NORMAL</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inject cell voltage 1450 mV (below MSL 1500 mV)</td>
+<td>SOA detects undervoltage and deep discharge</td>
+<td>SYS-REQ-021, SYS-REQ-022</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Wait for DIAG thresholds</td>
+<td>BMS enters ERROR</td>
+<td>SYS-REQ-053</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Inject normal voltage (2500 mV)</td>
+<td>Undervoltage clears but deep discharge latched (threshold=1)</td>
+<td>SYS-REQ-022</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Send CAN 0x210: request STANDBY</td>
+<td>BMS remains in ERROR (deep discharge latched)</td>
+<td>SYS-REQ-055</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: Deep discharge latch prevents recovery even with normal voltage restored.</p>
+<h3 id="54-scenario-qt-004-overcurrent-fault-fast-response">5.4 Scenario QT-004: Overcurrent Fault (Fast Response)</h3>
+<p><strong>Objective</strong>: Verify that overcurrent is detected quickly due to low threshold (10 events).</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Start in NORMAL state</td>
+<td>BMS == NORMAL</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inject current 190000 mA via CAN 0x521</td>
+<td>SOA detects overcurrent</td>
+<td>SYS-REQ-030</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Wait (10 events x 100 ms = ~1 second max)</td>
+<td>BMS enters ERROR within 2 seconds</td>
+<td>SYS-REQ-053</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Verify contactors open</td>
+<td>All contactors commanded OPEN</td>
+<td>SYS-REQ-054</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: ERROR entered within 2 seconds of overcurrent injection.</p>
+<h3 id="55-scenario-qt-005-temperature-fault-slow-response">5.5 Scenario QT-005: Temperature Fault (Slow Response)</h3>
+<p><strong>Objective</strong>: Verify that temperature faults use the high debounce threshold (500 events).</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Start in NORMAL state</td>
+<td>BMS == NORMAL</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inject temperature 60 deg C (above discharge MSL 55 deg C)</td>
+<td>SOA detects overtemperature</td>
+<td>SYS-REQ-040</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Wait for DIAG threshold (500 events x 1000 ms delay)</td>
+<td>BMS enters ERROR (extended debounce period)</td>
+<td>SYS-REQ-053</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Verify contactors open</td>
+<td>All contactors commanded OPEN</td>
+<td>SYS-REQ-054</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: ERROR entered after extended debounce period. System does not false-trip.</p>
+<h3 id="56-scenario-qt-006-can-communication-loss">5.6 Scenario QT-006: CAN Communication Loss</h3>
+<p><strong>Objective</strong>: Verify detection of CAN communication failure.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Start in NORMAL state with active IVT data</td>
+<td>BMS == NORMAL</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Stop sending IVT CAN frames</td>
+<td>Current sensor timeout begins</td>
+<td>SYS-REQ-063</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Wait for DIAG threshold (100 events x 200 ms delay)</td>
+<td>CURRENT_SENSOR_RESPONDING triggers FATAL</td>
+<td>SYS-REQ-063</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Verify BMS enters ERROR</td>
+<td>CAN 0x220 shows ERROR (9)</td>
+<td>SYS-REQ-053</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: Communication loss detected and ERROR state entered.</p>
+<h3 id="57-scenario-qt-007-multiple-simultaneous-faults">5.7 Scenario QT-007: Multiple Simultaneous Faults</h3>
+<p><strong>Objective</strong>: Verify correct behavior when multiple faults occur simultaneously.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Start in NORMAL state</td>
+<td>BMS == NORMAL</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inject overvoltage (2850 mV) AND overcurrent (190000 mA) simultaneously</td>
+<td>Both SOA checks detect violations</td>
+<td>SYS-REQ-020, SYS-REQ-030</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Wait for first FATAL (overcurrent: 10 events)</td>
+<td>BMS enters ERROR</td>
+<td>SYS-REQ-053</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Verify both diagnostics are flagged</td>
+<td>Both DIAG entries show non-zero counters</td>
+<td>SYS-REQ-050</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Clear only overcurrent (inject normal current)</td>
+<td>Overcurrent FATAL clears, overvoltage still active</td>
+<td>SYS-REQ-055</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Send STANDBY request</td>
+<td>BMS remains in ERROR (overvoltage still FATAL)</td>
+<td>SYS-REQ-055</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Clear overvoltage (inject normal voltage) + send STANDBY</td>
+<td>BMS transitions to STANDBY</td>
+<td>SYS-REQ-055</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: System handles multiple faults correctly. All faults must clear before recovery.</p>
+<h3 id="58-scenario-qt-008-steady-state-endurance">5.8 Scenario QT-008: Steady-State Endurance</h3>
+<p><strong>Objective</strong>: Verify stable long-duration operation without degradation.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>Expected Observation</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Start in NORMAL state</td>
+<td>BMS == NORMAL</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Inject normal measurements continuously</td>
+<td>All values within SOA limits</td>
+<td>SYS-REQ-020 to SYS-REQ-043</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Run for 60 seconds</td>
+<td>No ERROR, no crash, no memory leak</td>
+<td>SYS-REQ-080</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Verify CAN TX message count</td>
+<td>Approximately 600 frames at 100 ms interval (within 10%)</td>
+<td>SYS-REQ-060</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Verify no DIAG counters have incremented</td>
+<td>All counters == 0</td>
+<td>SYS-REQ-050</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pass criteria</strong>: 60-second stable operation with no anomalies.</p>
+<h2 id="6-phase-3-planned-qualification-tests">6. Phase 3 Planned Qualification Tests</h2>
+<p>The following tests are planned for future implementation and are documented here for
+traceability completeness.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Scenario</th>
+<th>Status</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QT-009</td>
+<td>Hardware fault emulation via stub injection</td>
+<td>Planned</td>
+<td>SYS-REQ-083</td>
+</tr>
+<tr>
+<td>QT-010</td>
+<td>AFE SPI failure simulation</td>
+<td>Planned</td>
+<td>SYS-REQ-050</td>
+</tr>
+<tr>
+<td>QT-011</td>
+<td>Interlock circuit break simulation</td>
+<td>Planned</td>
+<td>SYS-REQ-050</td>
+</tr>
+<tr>
+<td>QT-012</td>
+<td>SBC watchdog timeout simulation</td>
+<td>Planned</td>
+<td>SYS-REQ-050</td>
+</tr>
+<tr>
+<td>QT-013</td>
+<td>Contactor weld detection simulation</td>
+<td>Planned</td>
+<td>SYS-REQ-006</td>
+</tr>
+<tr>
+<td>QT-014</td>
+<td>Insulation monitoring failure simulation</td>
+<td>Planned</td>
+<td>SYS-REQ-050</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-test-execution-and-reporting">7. Test Execution and Reporting</h2>
+<h3 id="71-execution-procedure">7.1 Execution Procedure</h3>
+<ol>
+<li>Set up virtual CAN interface: <code>ip link add dev vcan0 type vcan &amp;&amp; ip link set up vcan0</code></li>
+<li>Launch SIL binary: <code>./foxbms_posix &amp;</code></li>
+<li>Execute test suite: <code>pytest test_qualification.py -v --junitxml=report.xml</code></li>
+<li>Collect results and CAN trace logs.</li>
+</ol>
+<h3 id="72-reporting">7.2 Reporting</h3>
+<p>Test results shall be recorded in JUnit XML format and include:
+- Test case ID and name
+- Pass/fail status
+- Execution duration
+- Failure details (if any)
+- CAN trace log reference</p>
+<h2 id="8-passfail-criteria">8. Pass/Fail Criteria</h2>
+<ul>
+<li>All qualification tests (QT-001 through QT-008) shall pass.</li>
+<li>No test shall cause a crash, segfault, or unhandled exception.</li>
+<li>All state transitions shall occur within documented timing bounds.</li>
+<li>CAN communication shall be continuous throughout each scenario.</li>
+</ul>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="swe-5-integration-tests.html">&larr; SWE.5 Integration Tests</a><a href="part-3-hara.html">Part 3: HARA &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

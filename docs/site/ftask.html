@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>FTASK — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -151,14 +151,14 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
 <a href="diag-handler.html" >DIAG Handler</a>
 <a href="database.html" >Database</a>
 <a href="can-module.html" >CAN Module</a>
-<a href="ftask.html" >FTASK</a>
+<a href="ftask.html" class="active">FTASK</a>
 <a href="soa.html" >SOA</a>
 <a href="balancing.html" >Balancing</a>
 <a href="sbc.html" >SBC</a>
@@ -173,130 +173,167 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
+<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / FTASK</div>
+<div class="content"><h1 id="ftask-module-task-configuration">FTASK Module (Task Configuration)</h1>
+<p><strong>Source</strong>: <a href="https://iisb-foxbms.iisb.fraunhofer.de/foxbms/docs/latest/software/modules/task/ftask/ftask.html">docs.foxbms.org — FTASK</a>
+<strong>Files</strong>: <code>src/app/task/ftask/ftask.c</code>, <code>ftask.h</code>, <code>ftask_freertos.c</code>, <code>ftask_cfg.c</code>, <code>ftask_cfg.h</code></p>
 <hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
-</code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
+<h2 id="task-structure-7-tasks">Task Structure (7 Tasks)</h2>
 <table>
 <thead>
 <tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
+<th>Task</th>
+<th>Period</th>
+<th>Priority</th>
+<th>Creator</th>
+<th>User Code Function</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
+<td><strong>Engine</strong></td>
+<td>Event-driven</td>
+<td>Highest</td>
+<td><code>FTSK_CreateTaskEngine</code></td>
+<td><code>FTSK_RunUserCodeEngine</code></td>
 </tr>
 <tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
+<td><strong>1ms Cyclic</strong></td>
+<td>1ms</td>
+<td>High</td>
+<td><code>FTSK_CreateTaskCyclic1ms</code></td>
+<td><code>FTSK_RunUserCodeCyclic1ms</code></td>
 </tr>
 <tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
+<td><strong>AFE</strong></td>
+<td>Non-cyclic</td>
+<td>Above-normal</td>
+<td><code>FTSK_CreateTaskAfe</code></td>
+<td><code>FTSK_RunUserCodeAfe</code></td>
 </tr>
 <tr>
-<td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
+<td><strong>10ms Cyclic</strong></td>
+<td>10ms</td>
+<td>Normal</td>
+<td><code>FTSK_CreateTaskCyclic10ms</code></td>
+<td><code>FTSK_RunUserCodeCyclic10ms</code></td>
 </tr>
 <tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
+<td><strong>100ms Cyclic</strong></td>
+<td>100ms</td>
+<td>Below-normal</td>
+<td><code>FTSK_CreateTaskCyclic100ms</code></td>
+<td><code>FTSK_RunUserCodeCyclic100ms</code></td>
 </tr>
 <tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
+<td><strong>I2C</strong></td>
+<td>Non-cyclic</td>
+<td>Low</td>
+<td><code>FTSK_CreateTaskI2c</code></td>
+<td><code>FTSK_RunUserCodeI2c</code></td>
 </tr>
 <tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
-</tr>
-<tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
-</tr>
-<tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
-</tr>
-<tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
-</tr>
-<tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
+<td><strong>100ms Algorithm</strong></td>
+<td>100ms</td>
+<td>Lowest</td>
+<td><code>FTSK_CreateTaskCyclicAlgorithm100ms</code></td>
+<td><code>FTSK_RunUserCodeCyclicAlgorithm100ms</code></td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<h2 id="what-runs-where">What Runs Where</h2>
+<h3 id="engine-task-do-not-modify">Engine Task (DO NOT MODIFY)</h3>
+<ul>
+<li><code>DATA_Task()</code> — copies queue data into database variables</li>
+<li><code>SYSM_CheckNotifications()</code> — system monitoring</li>
+<li>Triggered by database queue events</li>
+</ul>
+<h3 id="1ms-task">1ms Task</h3>
+<ul>
+<li><code>FTSK_RunUserCodeCyclic1ms()</code></li>
+<li>OS timer tick</li>
+<li>DIAG flag evaluation</li>
+<li>CAN RX buffer processing (<code>CAN_ReadRxBuffer()</code>)</li>
+</ul>
+<h3 id="10ms-task">10ms Task</h3>
+<ul>
+<li><code>FTSK_RunUserCodeCyclic10ms()</code></li>
+<li><code>SYS_Trigger()</code> — system state machine</li>
+<li><code>BMS_Trigger()</code> — BMS state machine</li>
+<li><code>CAN_MainFunction()</code> — CAN periodic TX</li>
+</ul>
+<h3 id="100ms-task">100ms Task</h3>
+<ul>
+<li><code>FTSK_RunUserCodeCyclic100ms()</code></li>
+<li>Balancing, LED, SPS contactor control</li>
+</ul>
+<h3 id="100ms-algorithm-task">100ms Algorithm Task</h3>
+<ul>
+<li><code>FTSK_RunUserCodeCyclicAlgorithm100ms()</code></li>
+<li>SOC/SOE/SOF estimation</li>
+<li>Lower priority than 100ms task</li>
+</ul>
+<h3 id="afe-task">AFE Task</h3>
+<ul>
+<li><code>FTSK_RunUserCodeAfe()</code></li>
+<li><code>MEAS_Control()</code> — triggers AFE measurement cycle</li>
+<li>Non-cyclic, must yield CPU</li>
+</ul>
+<h3 id="i2c-task">I2C Task</h3>
+<ul>
+<li><code>FTSK_RunUserCodeI2c()</code></li>
+<li>PEX, RTC, humidity sensor communication</li>
+</ul>
+<h2 id="initialization-sequence">Initialization Sequence</h2>
+<pre><code>1. FTSK_InitializeUserCodeEngine()    → DATA_Initialize(), etc.
+   os_boot = OS_ENGINE_RUNNING
+
+2. FTSK_InitializeUserCodePreCyclicTasks()  → CAN_Initialize(), SPI_Initialize(), etc.
+   os_boot = OS_PRE_CYCLIC_INIT_DONE
+
+3. Cyclic tasks start running
+</code></pre>
+<h2 id="posix-port-mapping">POSIX Port Mapping</h2>
+<table>
+<thead>
+<tr>
+<th>Production Task</th>
+<th>POSIX Equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Engine task (event-driven)</td>
+<td>Called in 1ms loop: <code>FTSK_RunUserCodeEngine()</code></td>
+</tr>
+<tr>
+<td>1ms cyclic</td>
+<td><code>if (now - last_1ms &gt;= 1000)</code></td>
+</tr>
+<tr>
+<td>10ms cyclic</td>
+<td><code>if (now - last_10ms &gt;= 10000)</code></td>
+</tr>
+<tr>
+<td>100ms cyclic</td>
+<td><code>if (now - last_100ms &gt;= 100000)</code></td>
+</tr>
+<tr>
+<td>100ms algorithm</td>
+<td>Called after 100ms cyclic</td>
+</tr>
+<tr>
+<td>AFE task</td>
+<td><code>MEAS_Control()</code> called in 1ms loop</td>
+</tr>
+<tr>
+<td>I2C task</td>
+<td>Not needed (no I2C hardware)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key difference</strong>: All tasks run sequentially in one thread. No preemption. No priority. No concurrent database access. This is GAP-ANALYSIS GA-02 (accepted).</p></div>
+<div class="nav-buttons"><a href="can-module.html">&larr; CAN Module</a><a href="soa.html">SOA &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

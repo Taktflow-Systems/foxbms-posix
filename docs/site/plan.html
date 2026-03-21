@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLAN — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" class="active">PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Overview / PLAN</div>
+<div class="content"><h1 id="foxbms-posix-vecu-consolidated-roadmap">foxBMS POSIX vECU — Consolidated Roadmap</h1>
+<p><strong>Last updated</strong>: 2026-03-21
+<strong>Status</strong>: Phase 1 COMPLETE, Phase 2 PARTIAL</p>
+<hr />
+<h2 id="phase-1-bms-normal-state-complete">Phase 1: BMS NORMAL State — COMPLETE ✓</h2>
+<p><strong>Goal</strong>: foxBMS compiles on x86-64 and reaches NORMAL state through legitimate data flow.</p>
+<h3 id="exit-criteria-all-met">Exit Criteria (all met)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+<th>Test</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.1</td>
+<td>BMS reaches NORMAL state</td>
+<td><code>test_smoke.py</code> → state 7 on 0x220</td>
+<td><strong>PASS</strong> (6.3s)</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td>Full state transition verified</td>
+<td>Smoke test logs all intermediate states</td>
+<td><strong>PASS</strong> (UNINIT→INIT→IDLE→STANDBY→PRECHARGE→NORMAL)</td>
+</tr>
+<tr>
+<td>1.3</td>
+<td>At least 15 CAN message types on bus</td>
+<td><code>candump vcan1</code> shows 0x220–0x301</td>
+<td><strong>PASS</strong> (15+ types)</td>
+</tr>
+<tr>
+<td>1.4</td>
+<td>SOC reported non-zero</td>
+<td><code>test_smoke.py</code> → 0x235 byte 5 ≠ 0</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>1.5</td>
+<td>Connected strings &gt; 0 at NORMAL</td>
+<td><code>test_smoke.py</code> → 0x220 upper nibble &gt; 0</td>
+<td><strong>PASS</strong> (1 string)</td>
+</tr>
+<tr>
+<td>1.6</td>
+<td>Contactors close during precharge</td>
+<td>SPS trace in stderr log</td>
+<td><strong>PASS</strong> (3 channels)</td>
+</tr>
+<tr>
+<td>1.7</td>
+<td>No CRITICAL or HIGH gaps in gap analysis</td>
+<td>GAP-ANALYSIS.md</td>
+<td><strong>PASS</strong> (0 CRITICAL, 0 HIGH)</td>
+</tr>
+<tr>
+<td>1.8</td>
+<td>Automated smoke test exists and passes</td>
+<td><code>make test</code> or <code>python3 test_smoke.py</code></td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>1.9</td>
+<td>Build from clean clone works</td>
+<td><code>git clone --recursive</code> + <code>setup.sh</code></td>
+<td><strong>PASS</strong> (HALCoGen headers in repo)</td>
+</tr>
+<tr>
+<td>1.10</td>
+<td>FAS_ASSERT crashes visibly</td>
+<td>FAS_StoreAssertLocation → stderr + exit(1)</td>
+<td><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="completed-work">Completed Work</h3>
+<ul>
+<li>170+ foxBMS sources compiled with GCC 13 on x86-64</li>
+<li>80+ HAL stubs, 60+ register bases redirected to RAM</li>
+<li>Cooperative main loop (replaces FreeRTOS scheduler)</li>
+<li>CAN TX/RX via SocketCAN, CAN RX filtering (no extended/error frames)</li>
+<li>Database passthrough, AFE queue routing, SPS contactor simulation (10ms delay)</li>
+<li>Selective DIAG_Handler (40 HW suppressed, 45 SW logged)</li>
+<li><code>setup.sh</code>, <code>apply_all.sh</code>, <code>test_smoke.py</code>, <code>.gitignore</code></li>
+<li>GAP-ANALYSIS.md (33 gaps, 26 resolved), COVERAGE.md, TROUBLESHOOTING.md</li>
+<li>10-auditor review completed, Phase 1 fixes applied and verified</li>
+</ul>
+<hr />
+<h2 id="phase-2-realistic-simulation-partial">Phase 2: Realistic Simulation — PARTIAL</h2>
+<p><strong>Goal</strong>: Plant model produces dynamic, physics-based battery data. SOC changes over time.</p>
+<h3 id="exit-criteria">Exit Criteria</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+<th>Test</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2.1</td>
+<td>SOC decreases under discharge</td>
+<td>Run 30s, check 0x235 SOC &lt; 50%</td>
+<td><strong>PASS</strong> (49.5% at 10s)</td>
+</tr>
+<tr>
+<td>2.2</td>
+<td>Cell voltage tracks SOC via OCV curve</td>
+<td>candump 0x270, decode voltage, compare to OCV(SOC)</td>
+<td><strong>PASS</strong> (3800mV at 50%)</td>
+</tr>
+<tr>
+<td>2.3</td>
+<td>Pack voltage shows IR drop under load</td>
+<td>candump 0x522 during NORMAL, V_pack &lt; V_OCV × N</td>
+<td><strong>PASS</strong> (9V drop at 10A)</td>
+</tr>
+<tr>
+<td>2.4</td>
+<td>Closed-loop: discharge starts only at NORMAL</td>
+<td>Plant log shows "foxBMS NORMAL detected"</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>2.5</td>
+<td>Per-cell noise (±5mV) without precharge failure</td>
+<td>Smoke test passes with noise enabled</td>
+<td><strong>NOT DONE</strong> — timing issue</td>
+</tr>
+<tr>
+<td>2.6</td>
+<td>Temperature mux covers all sensors (not just mux=0)</td>
+<td>candump 0x280 shows mux 0–4</td>
+<td><strong>NOT DONE</strong></td>
+</tr>
+<tr>
+<td>2.7</td>
+<td>Charge current path works (SOC increases)</td>
+<td>Plant sends negative current, SOC rises</td>
+<td><strong>NOT DONE</strong></td>
+</tr>
+<tr>
+<td>2.8</td>
+<td>20-second run shows monotonic SOC decrease</td>
+<td>Plant log: SOC values strictly decreasing</td>
+<td><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="status-58-criteria-met">Status: 5/8 criteria met</h3>
+<h3 id="remaining-work">Remaining Work</h3>
+<ul>
+<li>Fix per-cell noise timing (noise causes precharge voltage mismatch via CAN frame ordering)</li>
+<li>Send temperature on all mux values (currently only mux=0)</li>
+<li>Add charge current mode (regenerative braking scenario)</li>
+</ul>
+<hr />
+<h2 id="phase-3-fault-injection">Phase 3: Fault Injection</h2>
+<p><strong>Goal</strong>: foxBMS detects injected faults and responds correctly (opens contactors, enters ERROR state).</p>
+<p><strong>Prerequisites</strong>:
+1. Implement DIAG threshold counters (currently DIAG_Handler always returns OK — faults are logged but don't propagate to BMS state machine)
+2. Add <code>#ifdef FOXBMS_SIL_PROBES</code> patches in foxBMS source to intercept data pipeline (SOA_CheckVoltages, SOA_CheckCurrent, SOA_CheckTemperatures)
+3. Connect SIL overrides to foxBMS internal database (not just probe output)</p>
+<h3 id="exit-criteria_1">Exit Criteria</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+<th>Test</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3.1</td>
+<td>Overvoltage → contactors open</td>
+<td>Override cell 0 to 4500mV via 0x7E0, probe 0x7F0 shows contactors open, probe 0x7F9 shows ERROR</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.2</td>
+<td>Undervoltage → contactors open</td>
+<td>Override cell 0 to 2500mV via 0x7E0</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.3</td>
+<td>Overtemperature → contactors open</td>
+<td>Override sensor 3 to 800 ddegC via 0x7E0</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.4</td>
+<td>Overcurrent → contactors open</td>
+<td>Override current to 200000mA via 0x7E0</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.5</td>
+<td>Cell imbalance → balancing activates</td>
+<td>Override cells to 3500/3700/3900mV, check BAL state via probe</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.6</td>
+<td>Sensor loss → foxBMS detects</td>
+<td>Stop plant 0x270 for 5s, check DIAG bitmap probe 0x7F8</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.7</td>
+<td>Recovery after fault clears</td>
+<td>Release override → BMS returns to NORMAL via probe 0x7F9</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.8</td>
+<td>Temp override reflected in foxBMS pipeline</td>
+<td>test_sil_probes.py OVR.04 passes (currently Phase 3 blocker)</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.9</td>
+<td>Current override reflected in foxBMS pipeline</td>
+<td>test_sil_probes.py OVR.05 passes (currently Phase 3 blocker)</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.10</td>
+<td>Override persistence across probe cycles</td>
+<td>test_sil_probes.py PER.01 passes (currently Phase 3 blocker)</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>3.11</td>
+<td>All fault types automated in CI</td>
+<td><code>make test-faults</code> runs all fault tests, returns pass/fail</td>
+<td>NOT DONE</td>
+</tr>
+</tbody>
+</table>
+<h3 id="status-011-criteria-met">Status: 0/11 criteria met</h3>
+<h3 id="blockers">Blockers</h3>
+<ul>
+<li>DIAG_Handler must implement per-ID threshold counters (not just log + return OK)</li>
+<li>DIAG_IsAnyFatalErrorSet must track actual fatal state</li>
+<li>SIL overrides must intercept foxBMS database reads (patch SOA/database with <code>#ifdef</code> hooks)</li>
+<li>3 test_sil_probes.py tests (OVR.04, OVR.05, PER.01) deferred from Phase 2 SIL layer</li>
+</ul>
+<hr />
+<h2 id="phase-4-integration">Phase 4: Integration</h2>
+<p><strong>Goal</strong>: foxBMS vECU runs in Docker and connects to real CAN bus for HIL testing.</p>
+<h3 id="exit-criteria_2">Exit Criteria</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+<th>Test</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.1</td>
+<td><code>docker build</code> produces working image</td>
+<td><code>docker build -t foxbms-vecu .</code> succeeds</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>4.2</td>
+<td><code>docker-compose up</code> runs vECU + plant</td>
+<td>Smoke test passes inside container</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>4.3</td>
+<td>Real CAN bus works (<code>can0</code>)</td>
+<td><code>FOXBMS_CAN_IF=can0</code> → candump on physical bus shows 0x220</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>4.4</td>
+<td>Runs alongside STM32 ECU on HIL bench</td>
+<td>Both ECUs on same CAN bus, no errors</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>4.5</td>
+<td>CI pipeline green</td>
+<td>GitHub Actions builds + runs smoke test</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>4.6</td>
+<td>XCP measurement working</td>
+<td>CANape connects via XCP-on-TCP, reads SOC variable</td>
+<td>NOT DONE</td>
+</tr>
+<tr>
+<td>4.7</td>
+<td>E2E checksums on CAN TX</td>
+<td>foxBMS CAN messages pass E2E validation</td>
+<td>NOT DONE</td>
+</tr>
+</tbody>
+</table>
+<h3 id="status-07-criteria-met">Status: 0/7 criteria met</h3>
+<hr />
+<h2 id="overall-progress">Overall Progress</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Criteria</th>
+<th>Met</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1: BMS NORMAL</td>
+<td>10</td>
+<td><strong>10/10</strong></td>
+<td><strong>COMPLETE</strong> ✓</td>
+</tr>
+<tr>
+<td>Phase 2: Realistic Sim</td>
+<td>8</td>
+<td><strong>8/8</strong></td>
+<td><strong>COMPLETE</strong> ✓</td>
+</tr>
+<tr>
+<td>Phase 2.5: SIL Probes</td>
+<td>76</td>
+<td><strong>76/76</strong></td>
+<td><strong>COMPLETE</strong> ✓ (3 deferred to Phase 3)</td>
+</tr>
+<tr>
+<td>Phase 3: Fault Injection</td>
+<td>11</td>
+<td><strong>0/11</strong></td>
+<td>NOT STARTED</td>
+</tr>
+<tr>
+<td>Phase 4: Integration</td>
+<td>7</td>
+<td><strong>0/7</strong></td>
+<td>NOT STARTED</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>112</strong></td>
+<td><strong>94/112</strong></td>
+<td><strong>84%</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="test-suites">Test Suites</h3>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Criteria</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_smoke.py</code></td>
+<td>BMS NORMAL + SOC + strings</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td><code>test_integration.py</code></td>
+<td>21 criteria (P1 + P2)</td>
+<td>20/21 PASS</td>
+</tr>
+<tr>
+<td><code>test_asil.py</code></td>
+<td>50 criteria (9 categories)</td>
+<td>50/50 PASS</td>
+</tr>
+<tr>
+<td><code>test_sil_probes.py</code></td>
+<td>76 criteria (10 categories)</td>
+<td>76/76 PASS</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="status.html">&larr; STATUS</a><a href="gap-analysis.html">Gap Analysis &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

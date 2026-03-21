@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUP.9 Problem Resolution — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" class="active">SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Management / SUP.9 Problem Resolution</div>
+<div class="content"><h1 id="problem-resolution-management-process">Problem Resolution Management Process</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.9-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document defines the problem resolution management process for the foxBMS 2 POSIX vECU project in accordance with ASPICE SUP.9 (Problem Resolution Management). It establishes how problems (defects, gaps, anomalies) are identified, recorded, analyzed, resolved, and closed.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>The process covers all problems discovered during development, testing, review, and assessment activities for the foxBMS POSIX vECU project. This includes code defects, specification gaps, test failures, process deviations, and architectural limitations.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SUP.1-001]</td>
+<td>Quality Assurance Plan</td>
+</tr>
+<tr>
+<td>[MAN.3-001]</td>
+<td>Project Management Plan</td>
+</tr>
+<tr>
+<td>[GAP-ANALYSIS]</td>
+<td>foxBMS POSIX vECU Gap Analysis</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-problem-tracking-system">4. Problem Tracking System</h2>
+<h3 id="41-primary-register">4.1 Primary Register</h3>
+<p>The GAP-ANALYSIS.md document serves as the project's problem register. Each problem is assigned a unique identifier and tracked through its lifecycle.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Format</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Problem ID</td>
+<td>GA-xx</td>
+<td>GA-06</td>
+</tr>
+<tr>
+<td>Severity</td>
+<td>CRITICAL / HIGH / MEDIUM / LOW</td>
+<td>CRITICAL</td>
+</tr>
+<tr>
+<td>Title</td>
+<td>Short description</td>
+<td>Selective DIAG_Handler</td>
+</tr>
+<tr>
+<td>What we claim</td>
+<td>Expected behavior</td>
+<td>BMS runs foxBMS safety logic</td>
+</tr>
+<tr>
+<td>What's actually true</td>
+<td>Actual behavior</td>
+<td>All DIAG IDs returning OK (including safety-critical ones)</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>OPEN / FIXED / ACCEPTED / CLOSED</td>
+<td>FIXED</td>
+</tr>
+<tr>
+<td>Resolution</td>
+<td>Description of fix or acceptance rationale</td>
+<td>24 HW suppressed, 61 SW enabled</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-problem-id-allocation">4.2 Problem ID Allocation</h3>
+<p>Problem IDs are allocated sequentially from GA-01. The current range is GA-01 through GA-33, with additional IDs available for future discoveries.</p>
+<h2 id="5-severity-classification">5. Severity Classification</h2>
+<table>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Definition</th>
+<th>Response</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRITICAL</td>
+<td>Safety function is incorrect, missing, or produces wrong results. System cannot fulfill its safety purpose.</td>
+<td>Immediate fix required. Blocks all releases.</td>
+<td>GA-06: DIAG_Handler returning OK for all IDs. GA-07: FAS_ASSERT silently continuing.</td>
+</tr>
+<tr>
+<td>HIGH</td>
+<td>Core functionality broken, significant deviation from specification, or build/test infrastructure failure.</td>
+<td>Fix within current phase.</td>
+<td>GA-01: No cycle time measurement. GA-13: No automated test. GA-17: 18 source files excluded.</td>
+</tr>
+<tr>
+<td>MEDIUM</td>
+<td>Deviation from specification with workaround available, or missing feature that does not affect core function.</td>
+<td>Fix or accept within next phase.</td>
+<td>GA-03: DB synchronous passthrough. GA-11: No CAN TX arbitration. GA-29: No fault injection API.</td>
+</tr>
+<tr>
+<td>LOW</td>
+<td>Minor deviation, cosmetic issue, or theoretical concern with no observed impact.</td>
+<td>Track for future resolution.</td>
+<td>GA-10: Balancing inactive (correct behavior). GA-12: CAN node pointer comparison.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-problem-resolution-workflow">6. Problem Resolution Workflow</h2>
+<h3 id="61-process-flow">6.1 Process Flow</h3>
+<pre><code>  IDENTIFY
+     |
+     v
+  RECORD (assign GA-xx ID, severity, description)
+     |
+     v
+  ANALYZE (root cause, impact, affected requirements)
+     |
+     v
+  RESOLVE -----&gt; ACCEPT (with documented rationale)
+     |                |
+     v                v
+  VERIFY          DOCUMENT (why accepted, what limitations)
+     |                |
+     v                v
+  CLOSE           CLOSE
+</code></pre>
+<h3 id="62-step-details">6.2 Step Details</h3>
+<h4 id="621-identify">6.2.1 Identify</h4>
+<p>Problems are discovered through:
+- Multi-perspective audit (10-role audit: Safety, CAN, Battery, RTOS, HW, Test, Build, Data, Contactor, Code Quality)
+- Test execution (smoke, integration, ASIL test failures)
+- Code review and static analysis
+- User feedback (build failures, unexpected behavior)
+- Gap analysis review at phase gates</p>
+<h4 id="622-record">6.2.2 Record</h4>
+<p>Each problem is recorded in GAP-ANALYSIS.md with:
+- Unique GA-xx identifier
+- Severity classification (CRITICAL/HIGH/MEDIUM/LOW)
+- "What we claim" vs. "What's actually true" comparison
+- Categorization by audit role (System Architect, HIL Test Engineer, etc.)</p>
+<h4 id="623-analyze">6.2.3 Analyze</h4>
+<p>Analysis determines:
+- Root cause of the problem
+- Affected requirements (SYS-REQ, SW-REQ, STKH-REQ)
+- Affected test criteria
+- Impact on safety (ASIL classification relevance)
+- Feasibility of fix vs. acceptance</p>
+<h4 id="624-resolve">6.2.4 Resolve</h4>
+<p>Resolution options:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Criteria</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FIX</td>
+<td>Root cause can be addressed; fix is feasible and tested</td>
+<td>Implement fix, update tests, verify</td>
+</tr>
+<tr>
+<td>ACCEPT</td>
+<td>Architectural limitation; fix is infeasible or unnecessary for SIL scope</td>
+<td>Document rationale, update COVERAGE.md</td>
+</tr>
+<tr>
+<td>CLOSE</td>
+<td>Problem is not a real gap (e.g., correct behavior, out of scope)</td>
+<td>Document reasoning</td>
+</tr>
+</tbody>
+</table>
+<h4 id="625-verify">6.2.5 Verify</h4>
+<p>For FIXED problems:
+- Run relevant test suite (smoke, integration, or ASIL)
+- Verify the specific scenario that exposed the problem
+- Confirm no regression in related functionality</p>
+<h4 id="626-close">6.2.6 Close</h4>
+<p>Update GAP-ANALYSIS.md:
+- Strike through original severity: <code>~~CRITICAL~~ **FIXED**</code>
+- Add resolution description
+- Update summary table counts</p>
+<h2 id="7-current-problem-status">7. Current Problem Status</h2>
+<h3 id="71-summary">7.1 Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FIXED</td>
+<td>23</td>
+</tr>
+<tr>
+<td>ACCEPTED (architectural/SIL-valid)</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Open CRITICAL</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Open HIGH</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Open MEDIUM</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Open LOW</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>33</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-resolution-history">7.2 Resolution History</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Problems Found</th>
+<th>Fixed</th>
+<th>Accepted</th>
+<th>Remaining</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1 (BMS NORMAL)</td>
+<td>20</td>
+<td>12</td>
+<td>5</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Phase 2 (Realistic Sim)</td>
+<td>5</td>
+<td>4</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Phase 2.5 (SIL Probes)</td>
+<td>8</td>
+<td>7</td>
+<td>4</td>
+<td>0</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>33</strong></td>
+<td><strong>23</strong></td>
+<td><strong>10</strong></td>
+<td><strong>0</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-severity-resolution">7.3 Severity Resolution</h3>
+<table>
+<thead>
+<tr>
+<th>Original Severity</th>
+<th>Count</th>
+<th>All Resolved</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRITICAL</td>
+<td>2</td>
+<td>Yes (GA-06 FIXED, GA-07 FIXED)</td>
+</tr>
+<tr>
+<td>HIGH</td>
+<td>6</td>
+<td>Yes (3 FIXED, 3 ACCEPTED)</td>
+</tr>
+<tr>
+<td>MEDIUM</td>
+<td>17</td>
+<td>Yes (all FIXED or ACCEPTED)</td>
+</tr>
+<tr>
+<td>LOW</td>
+<td>8</td>
+<td>Yes (all FIXED or ACCEPTED)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-accepted-problems-register">8. Accepted Problems Register</h2>
+<p>The following problems are permanently accepted with documented rationale:</p>
+<table>
+<thead>
+<tr>
+<th>GA ID</th>
+<th>Problem</th>
+<th>Rationale for Acceptance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GA-02</td>
+<td>Single-threaded cooperative mode</td>
+<td>FreeRTOS POSIX port unreliable. Cooperative mode is deterministic for SIL.</td>
+</tr>
+<tr>
+<td>GA-08</td>
+<td>BMS bypasses (SBC, RTC, current sensor)</td>
+<td>Hardware does not exist on POSIX; bypasses are required.</td>
+</tr>
+<tr>
+<td>GA-17</td>
+<td>18 source files excluded</td>
+<td>TMS570-specific hardware access; cannot compile on x86.</td>
+</tr>
+<tr>
+<td>GA-03</td>
+<td>DB synchronous passthrough</td>
+<td>Single-threaded = no data races = deterministic. Better for SIL.</td>
+</tr>
+<tr>
+<td>GA-11</td>
+<td>No CAN TX arbitration</td>
+<td>Single sender on vcan; no contention. HIL-only concern.</td>
+</tr>
+<tr>
+<td>GA-18</td>
+<td>AFE queue 16-byte copy</td>
+<td>Works on x86-64 GCC. Theoretical padding concern only.</td>
+</tr>
+<tr>
+<td>GA-26</td>
+<td>No CAN TX period enforcement</td>
+<td>1ms cooperative loop matches cycle rate. SIL tests logic, not bus timing.</td>
+</tr>
+<tr>
+<td>GA-27</td>
+<td>No E2E protection</td>
+<td>SocketCAN pipe has zero corruption. Bus noise is a HIL concern.</td>
+</tr>
+<tr>
+<td>GA-10</td>
+<td>Balancing inactive</td>
+<td>Correct behavior: identical cells = nothing to balance.</td>
+</tr>
+<tr>
+<td>GA-12</td>
+<td>CAN node pointer comparison</td>
+<td>Single CAN node in SIL. Works for CAN_NODE_1.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-escalation-process">9. Escalation Process</h2>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Escalation Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRITICAL problem discovered</td>
+<td>Block current phase; fix immediately</td>
+</tr>
+<tr>
+<td>HIGH problem not resolved within phase</td>
+<td>Escalate to phase gate review for accept/defer decision</td>
+</tr>
+<tr>
+<td>Accepted problem impacts safety claim</td>
+<td>Review HARA and ASIL decomposition; update safety case</td>
+</tr>
+<tr>
+<td>Problem recurs after fix</td>
+<td>Root cause analysis; strengthen verification</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-cl2-gaps-for-sup9">10. CL2 Gaps for SUP.9</h2>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Description</th>
+<th>Action Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No trend analysis</td>
+<td>Problem discovery rate not tracked over time</td>
+<td>Create problem trend chart</td>
+</tr>
+<tr>
+<td>No formal escalation records</td>
+<td>Escalation decisions not documented separately</td>
+<td>Add escalation log to GAP-ANALYSIS.md</td>
+</tr>
+<tr>
+<td>No problem review meetings</td>
+<td>Single-person team; no meeting minutes</td>
+<td>Document review decisions with date/rationale</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="sup-8-cm-plan.html">&larr; SUP.8 CM Plan</a><a href="sup-10-change-request.html">SUP.10 Change Request &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

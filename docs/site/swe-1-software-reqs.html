@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWE.1 Software Reqs — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" class="active">SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Software / SWE.1 Software Reqs</div>
+<div class="content"><h1 id="software-requirements-specification">Software Requirements Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.1-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies the software-level requirements for the foxBMS 2 POSIX port.
+Each requirement is derived from the system requirements in SYS.2-001 and is
+traceable forward to detailed design (SWE.3-001) and test cases (SWE.4-001 through
+SWE.6-001). This document satisfies ASPICE SWE.1 and ISO 26262 Part 6 Clause 6.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>All software requirements for the BMS application, engine, and driver layers running
+on the POSIX SIL target.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.2-001]</td>
+<td>System Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.2-001]</td>
+<td>Software Architecture Description</td>
+</tr>
+<tr>
+<td>[SWE.3-001]</td>
+<td>Software Detailed Design</td>
+</tr>
+<tr>
+<td>[ISO-SSR-001]</td>
+<td>Software Safety Requirements</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-definitions">4. Definitions</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ASIL</td>
+<td>Automotive Safety Integrity Level</td>
+</tr>
+<tr>
+<td>FATAL</td>
+<td>Highest DIAG severity; triggers ERROR state</td>
+</tr>
+<tr>
+<td>DB entry</td>
+<td>A typed data structure in the foxBMS database</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-safety-requirements">5. Safety Requirements</h2>
+<h3 id="51-voltage-safety">5.1 Voltage Safety</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-001</td>
+<td>The SOA module shall compare each cell voltage against the overvoltage MSL threshold of 2800 mV. If any cell exceeds this value, SOA shall call DIAG_Handler with the CELL_VOLTAGE_OVERVOLTAGE_MSL event.</td>
+<td>SYS-REQ-020</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-002</td>
+<td>The SOA module shall compare each cell voltage against the undervoltage MSL threshold of 1500 mV. If any cell falls below this value, SOA shall call DIAG_Handler with the CELL_VOLTAGE_UNDERVOLTAGE_MSL event.</td>
+<td>SYS-REQ-021</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-003</td>
+<td>The SOA module shall compare each cell voltage against the overvoltage RSL threshold of 2750 mV and MOL threshold of 2720 mV, reporting the corresponding events.</td>
+<td>SYS-REQ-020</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-004</td>
+<td>The SOA module shall compare each cell voltage against the undervoltage RSL threshold of 1550 mV and MOL threshold of 1580 mV, reporting the corresponding events.</td>
+<td>SYS-REQ-021</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-005</td>
+<td>The SOA module shall detect deep discharge when any cell voltage falls to or below 1500 mV and report DEEP_DISCHARGE_DETECTED. This event shall latch and not auto-clear.</td>
+<td>SYS-REQ-022</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-current-safety">5.2 Current Safety</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-010</td>
+<td>The SOA module shall compare cell discharge current against MSL threshold of 180000 mA. If exceeded, SOA shall report OVERCURRENT_DISCHARGE_CELL_MSL.</td>
+<td>SYS-REQ-030</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-011</td>
+<td>The SOA module shall compare cell charge current against MSL threshold of 180000 mA. If exceeded, SOA shall report OVERCURRENT_CHARGE_CELL_MSL.</td>
+<td>SYS-REQ-031</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-012</td>
+<td>The SOA module shall compare string current against the string overcurrent discharge and charge thresholds, reporting STRING_OVERCURRENT_DISCHARGE_MSL and STRING_OVERCURRENT_CHARGE_MSL respectively.</td>
+<td>SYS-REQ-013</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-013</td>
+<td>The SOA module shall compare pack current against the pack overcurrent thresholds, reporting PACK_OVERCURRENT_DISCHARGE_MSL and PACK_OVERCURRENT_CHARGE_MSL.</td>
+<td>SYS-REQ-014</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-014</td>
+<td>The SOA module shall detect current flow on an open string and report CURRENT_ON_OPEN_STRING.</td>
+<td>SYS-REQ-013</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-temperature-safety">5.3 Temperature Safety</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-020</td>
+<td>The SOA module shall compare each cell temperature against the overtemperature discharge MSL threshold of 55 deg C. If exceeded, SOA shall report TEMP_OVERTEMPERATURE_DISCHARGE_MSL.</td>
+<td>SYS-REQ-040</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-021</td>
+<td>The SOA module shall compare each cell temperature against the undertemperature discharge MSL threshold of -20 deg C. If below, SOA shall report TEMP_UNDERTEMPERATURE_DISCHARGE_MSL.</td>
+<td>SYS-REQ-041</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-022</td>
+<td>The SOA module shall compare each cell temperature against the overtemperature charge MSL threshold of 45 deg C. If exceeded, SOA shall report TEMP_OVERTEMPERATURE_CHARGE_MSL.</td>
+<td>SYS-REQ-042</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-023</td>
+<td>The SOA module shall compare each cell temperature against the undertemperature charge MSL threshold of -20 deg C. If below, SOA shall report TEMP_UNDERTEMPERATURE_CHARGE_MSL.</td>
+<td>SYS-REQ-043</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-diagnostic-handling">5.4 Diagnostic Handling</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-030</td>
+<td>The DIAG module shall maintain a table of at least 85 diagnostic identifiers, each with a configurable threshold counter and evaluation delay.</td>
+<td>SYS-REQ-050, SYS-REQ-051, SYS-REQ-052</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-031</td>
+<td>When DIAG_Handler is called for a diagnostic event, it shall increment the threshold counter for that event. When the counter reaches the configured threshold, the event shall be flagged as FATAL.</td>
+<td>SYS-REQ-053</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-032</td>
+<td>A FATAL diagnostic flag shall cause the BMS state machine to transition to the ERROR state within the next 100ms task cycle.</td>
+<td>SYS-REQ-053</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-033</td>
+<td>The DIAG module shall support a configurable evaluation delay per diagnostic ID. The handler shall not re-evaluate the same event more frequently than this delay.</td>
+<td>SYS-REQ-052</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-034</td>
+<td>The POSIX port shall suppress 24 hardware-absent diagnostic IDs by setting their severity to non-FATAL or disabling evaluation.</td>
+<td>SYS-REQ-083</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-035</td>
+<td>The POSIX port shall retain 61 software-checkable diagnostic IDs with their original severity and thresholds.</td>
+<td>SYS-REQ-084</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="55-bms-state-machine">5.5 BMS State Machine</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-040</td>
+<td>The BMS state machine shall implement the states: STANDBY (5), PRECHARGE (6), NORMAL (7), ERROR (9).</td>
+<td>SYS-REQ-071</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-041</td>
+<td>Transition from STANDBY to PRECHARGE shall occur only upon receipt of a valid state request via CAN ID 0x210.</td>
+<td>SYS-REQ-072</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-042</td>
+<td>Transition from PRECHARGE to NORMAL shall occur when precharge conditions are met (voltage within tolerance).</td>
+<td>SYS-REQ-071</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-043</td>
+<td>Transition from any operational state to ERROR shall occur when any FATAL diagnostic flag is set.</td>
+<td>SYS-REQ-073</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-044</td>
+<td>In ERROR state, the BMS shall command all three contactors (string+, string-, precharge) to open.</td>
+<td>SYS-REQ-054</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-045</td>
+<td>The BMS shall not exit ERROR state until both conditions are met: (a) the originating fault is cleared, and (b) an explicit STANDBY request is received via CAN.</td>
+<td>SYS-REQ-055</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="56-system-state-machine">5.6 System State Machine</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-050</td>
+<td>The SYS state machine shall implement states: UNINITIALIZED (0), INITIALIZATION (1), INITIALIZED (2), IDLE (3), RUNNING (5).</td>
+<td>SYS-REQ-070</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-051</td>
+<td>SYS shall transition from UNINITIALIZED to INITIALIZATION on system startup.</td>
+<td>SYS-REQ-070</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-052</td>
+<td>SYS shall transition from INITIALIZATION to INITIALIZED after all module initialization completes successfully.</td>
+<td>SYS-REQ-070</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-053</td>
+<td>SYS shall transition from IDLE to RUNNING when all subsystems report ready.</td>
+<td>SYS-REQ-070</td>
+<td>C</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-functional-requirements">6. Functional Requirements</h2>
+<h3 id="61-database">6.1 Database</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-060</td>
+<td>The database shall implement a producer/consumer pattern with single-writer per entry.</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-061</td>
+<td>Database read operations shall return the most recent complete write. Partial writes shall not be visible to readers.</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-062</td>
+<td>The database shall provide typed entries for cell voltages (18 cells), cell temperatures (8 sensors), string current, pack current, and pack voltage.</td>
+<td>SYS-REQ-001 to SYS-REQ-007</td>
+<td>B</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-soc-estimation">6.2 SOC Estimation</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-070</td>
+<td>The algorithm module shall compute state of charge (SOC) using coulomb counting integrated with the current sensor data from CAN IDs 0x521-0x527.</td>
+<td>SYS-REQ-010, SYS-REQ-062</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-071</td>
+<td>The algorithm module shall compute state of energy (SOE) based on SOC and cell voltage.</td>
+<td>SYS-REQ-011</td>
+<td>B</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-balancing">6.3 Balancing</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-080</td>
+<td>The balancing module shall identify cells whose voltage exceeds the mean cell voltage by more than a configurable threshold.</td>
+<td>SYS-REQ-003</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-081</td>
+<td>The balancing module shall activate passive balancing for identified cells when the BMS is in NORMAL state and current is below the rest current threshold (200 mA).</td>
+<td>SYS-REQ-016</td>
+<td>QM</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-interface-requirements">7. Interface Requirements</h2>
+<h3 id="71-can-transmit">7.1 CAN Transmit</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-090</td>
+<td>The CAN module shall transmit BMS state on CAN ID 0x220 every 100 ms.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-091</td>
+<td>The CAN module shall transmit pack details on CAN ID 0x221 every 100 ms.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-092</td>
+<td>The CAN module shall transmit individual cell voltages on CAN IDs 0x240 through 0x245 every 100 ms.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-093</td>
+<td>The CAN module shall transmit multiplexed voltage data on CAN ID 0x250 and temperature data on 0x260 every 100 ms.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-can-receive">7.2 CAN Receive</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-100</td>
+<td>The CAN module shall receive and decode state requests from CAN ID 0x210.</td>
+<td>SYS-REQ-061</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-101</td>
+<td>The CAN module shall receive and decode IVT current sensor frames from CAN IDs 0x521 through 0x527.</td>
+<td>SYS-REQ-062</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-102</td>
+<td>The CAN module shall receive and decode AFE cell voltages from CAN ID 0x270 (50 mux x 4 voltages).</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-103</td>
+<td>The CAN module shall receive and decode AFE cell temperatures from CAN ID 0x280 (30 mux x 6 temperatures).</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-can-timing-supervision">7.3 CAN Timing Supervision</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-110</td>
+<td>The CAN module shall monitor message reception timing. If CAN timing exceeds the threshold (100 events, 200 ms delay), DIAG shall flag CAN_TIMING as FATAL.</td>
+<td>SYS-REQ-063</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-111</td>
+<td>The CAN module shall monitor current sensor response. If the current sensor stops responding (100 events, 200 ms delay), DIAG shall flag CURRENT_SENSOR_RESPONDING as FATAL.</td>
+<td>SYS-REQ-062</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-posix-port-specific-requirements">8. POSIX Port-Specific Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-120</td>
+<td>The POSIX cooperative main loop shall call task functions in priority order: Engine, 1ms, AFE, 10ms, 100ms, I2C, 100ms-Algorithm.</td>
+<td>SYS-REQ-081</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-121</td>
+<td>The SocketCAN interface shall provide send and receive operations compatible with the foxBMS CAN driver API.</td>
+<td>SYS-REQ-082</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-122</td>
+<td>HAL stubs shall implement all function signatures of the TMS570 HAL with no-op or RAM-mapped behavior.</td>
+<td>SYS-REQ-085, SYS-REQ-086</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-123</td>
+<td>The POSIX build shall compile 170+ source files with GCC 13 for x86-64 without errors.</td>
+<td>SYS-REQ-080</td>
+<td>QM</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-acceptance-criteria">9. Acceptance Criteria</h2>
+<p>Each software requirement is accepted when:</p>
+<ol>
+<li>It is traced backward to at least one system requirement in SYS.2-001.</li>
+<li>It is traced forward to detailed design in SWE.3-001.</li>
+<li>It is covered by at least one test case in SWE.4-001, SWE.5-001, or SWE.6-001.</li>
+<li>The covering test case passes on the POSIX SIL target.</li>
+</ol>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="sys-5-system-qualification.html">&larr; SYS.5 System Qualification</a><a href="swe-2-sw-architecture.html">SWE.2 SW Architecture &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

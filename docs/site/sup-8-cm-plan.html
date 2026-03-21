@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUP.8 CM Plan — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" class="active">SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Management / SUP.8 CM Plan</div>
+<div class="content"><h1 id="configuration-management-plan">Configuration Management Plan</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.8-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document defines the configuration management plan for the foxBMS 2 POSIX vECU project in accordance with ASPICE SUP.8 (Configuration Management). It establishes how configuration items are identified, controlled, versioned, and maintained throughout the project lifecycle.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>Configuration management covers all project artifacts: source code, patches, build scripts, test scripts, documentation, plant model, and third-party dependencies.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[MAN.3-001]</td>
+<td>Project Management Plan</td>
+</tr>
+<tr>
+<td>[SUP.1-001]</td>
+<td>Quality Assurance Plan</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-configuration-items">4. Configuration Items</h2>
+<h3 id="41-item-identification">4.1 Item Identification</h3>
+<table>
+<thead>
+<tr>
+<th>CI Category</th>
+<th>Items</th>
+<th>Naming Convention</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>foxBMS base</td>
+<td>foxBMS v1.10.0 source</td>
+<td>Git submodule</td>
+<td>foxbms-2/</td>
+</tr>
+<tr>
+<td>POSIX patches</td>
+<td>13 patch files</td>
+<td>NN-description.patch</td>
+<td>patches/</td>
+</tr>
+<tr>
+<td>HAL stubs</td>
+<td>hal_stubs_posix.c, posix_can.c, etc.</td>
+<td>Module name</td>
+<td>src/</td>
+</tr>
+<tr>
+<td>Plant model</td>
+<td>plant_model.py</td>
+<td>Script name</td>
+<td>plant/ or root</td>
+</tr>
+<tr>
+<td>Test scripts</td>
+<td>test_smoke.py, test_integration.py, test_asil.py</td>
+<td>test_*.py</td>
+<td>tests/</td>
+</tr>
+<tr>
+<td>Build system</td>
+<td>Makefile, setup.sh, apply_all.sh</td>
+<td>Standard names</td>
+<td>Root</td>
+</tr>
+<tr>
+<td>HALCoGen headers</td>
+<td>91 header files (BSD-licensed)</td>
+<td>Original names</td>
+<td>halcogen-headers/</td>
+</tr>
+<tr>
+<td>ASPICE documents</td>
+<td>18 work products</td>
+<td>AREA-description.md</td>
+<td>docs/aspice/</td>
+</tr>
+<tr>
+<td>CL2 evidence</td>
+<td>Assessment documents</td>
+<td>Per folder convention</td>
+<td>docs/aspice-cl2/</td>
+</tr>
+<tr>
+<td>Gap analysis</td>
+<td>GAP-ANALYSIS.md</td>
+<td>Fixed name</td>
+<td>Root</td>
+</tr>
+<tr>
+<td>Coverage matrix</td>
+<td>COVERAGE.md</td>
+<td>Fixed name</td>
+<td>Root</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-configuration-item-states">4.2 Configuration Item States</h3>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DRAFT</td>
+<td>Work in progress, not yet reviewed</td>
+</tr>
+<tr>
+<td>REVIEWED</td>
+<td>Reviewed against checklist, ready for baseline</td>
+</tr>
+<tr>
+<td>BASELINED</td>
+<td>Part of a release baseline, changes require CR</td>
+</tr>
+<tr>
+<td>SUPERSEDED</td>
+<td>Replaced by a newer version</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-git-workflow">5. Git Workflow</h2>
+<h3 id="51-repository-structure">5.1 Repository Structure</h3>
+<pre><code>foxbms-posix/                    # Main repository
+  foxbms-2/                      # Git submodule (pinned to v1.10.0)
+  patches/                       # POSIX adaptation patches
+  src/                           # POSIX-specific source files
+  tests/                         # Test scripts
+  docs/                          # Documentation
+    aspice/                      # ASPICE work products (flat)
+    aspice-cl2/                  # CL2 assessor hierarchy
+  halcogen-headers/              # HALCoGen-generated headers
+  build/                         # Build output (not tracked)
+</code></pre>
+<h3 id="52-branch-strategy">5.2 Branch Strategy</h3>
+<table>
+<thead>
+<tr>
+<th>Branch</th>
+<th>Purpose</th>
+<th>Protection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>main</td>
+<td>Stable, tested code; each commit passes smoke test</td>
+<td>Default branch</td>
+</tr>
+<tr>
+<td>feature/*</td>
+<td>Development branches for new capabilities</td>
+<td>Merge to main after test pass</td>
+</tr>
+<tr>
+<td>phase/*</td>
+<td>Phase-level development branches</td>
+<td>Merge at phase gate</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-commit-conventions">5.3 Commit Conventions</h3>
+<ul>
+<li>Each commit message describes the change purpose</li>
+<li>Safety-relevant changes reference the affected DIAG IDs or requirements</li>
+<li>Patch modifications include the patch number in the commit message</li>
+</ul>
+<h3 id="54-submodule-management">5.4 Submodule Management</h3>
+<p>The foxBMS 2 source is included as a Git submodule pinned to version v1.10.0.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Submodule path</td>
+<td>foxbms-2/</td>
+</tr>
+<tr>
+<td>Remote URL</td>
+<td>foxBMS 2 official repository</td>
+</tr>
+<tr>
+<td>Pinned version</td>
+<td>v1.10.0</td>
+</tr>
+<tr>
+<td>Version verification</td>
+<td>apply_all.sh checks version before patching</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rationale</strong>: Pinning to v1.10.0 ensures build reproducibility. The version check in apply_all.sh prevents accidental patching of a different foxBMS version.</p>
+<h2 id="6-patch-management">6. Patch Management</h2>
+<h3 id="61-patch-workflow">6.1 Patch Workflow</h3>
+<p>The POSIX adaptation requires 13 patches applied to the foxBMS v1.10.0 source tree. These patches are managed as discrete files in the patches/ directory.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Patch</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td>POSIX HAL types</td>
+<td>Replace TMS570 types with POSIX equivalents</td>
+</tr>
+<tr>
+<td>02</td>
+<td>CAN SocketCAN</td>
+<td>Replace HW CAN with SocketCAN</td>
+</tr>
+<tr>
+<td>03</td>
+<td>DIAG selective</td>
+<td>Selective DIAG_Handler (24 HW suppressed)</td>
+</tr>
+<tr>
+<td>04</td>
+<td>OS cooperative</td>
+<td>Cooperative loop replacing FreeRTOS</td>
+</tr>
+<tr>
+<td>05</td>
+<td>SPS simulation</td>
+<td>Contactor delay simulation</td>
+</tr>
+<tr>
+<td>06</td>
+<td>Database passthrough</td>
+<td>Synchronous DB access</td>
+</tr>
+<tr>
+<td>07</td>
+<td>Assert handler</td>
+<td>FAS_ASSERT log + exit(1)</td>
+</tr>
+<tr>
+<td>08</td>
+<td>AFE stub</td>
+<td>AFE measurement stub</td>
+</tr>
+<tr>
+<td>09</td>
+<td>Timing measurement</td>
+<td>Cycle time tracking</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Timeout flag</td>
+<td>--timeout N support</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Watchdog</td>
+<td>Software watchdog (100ms stall detection)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>SIL probes</td>
+<td>CAN 0x7E0 override system</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Build fixes</td>
+<td>Miscellaneous compilation fixes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-patch-application">6.2 Patch Application</h3>
+<pre><code class="language-bash">./apply_all.sh
+</code></pre>
+<p>The apply_all.sh script:
+1. Checks foxBMS version is v1.10.0
+2. Applies patches 01-13 in order
+3. Reports success or failure for each patch
+4. Exits with non-zero code if any patch fails</p>
+<h3 id="63-patch-integrity">6.3 Patch Integrity</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Version check</td>
+<td>apply_all.sh verifies foxBMS v1.10.0 before patching</td>
+</tr>
+<tr>
+<td>Order enforcement</td>
+<td>Patches numbered 01-13; applied sequentially</td>
+</tr>
+<tr>
+<td>Idempotency</td>
+<td>Script detects already-applied patches</td>
+</tr>
+<tr>
+<td>Failure handling</td>
+<td>Stops on first failure; reports which patch failed</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-build-reproducibility">7. Build Reproducibility</h2>
+<h3 id="71-deterministic-build">7.1 Deterministic Build</h3>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Control</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source version</td>
+<td>foxBMS v1.10.0 (Git submodule, pinned)</td>
+</tr>
+<tr>
+<td>Compiler</td>
+<td>GCC 13</td>
+</tr>
+<tr>
+<td>OS</td>
+<td>Ubuntu 24.04 LTS</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.12</td>
+</tr>
+<tr>
+<td>Build command</td>
+<td><code>make -C build/</code></td>
+</tr>
+<tr>
+<td>Full setup</td>
+<td><code>./setup.sh</code> (clone, patch, build, test)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-build-verification">7.2 Build Verification</h3>
+<p>The setup.sh script performs the complete build and verification:</p>
+<ol>
+<li>Initialize and update Git submodules</li>
+<li>Apply all patches via apply_all.sh</li>
+<li>Compile foxbms-vecu with GCC 13</li>
+<li>Configure vcan0 interface</li>
+<li>Run smoke test (test_smoke.py)</li>
+</ol>
+<p>A successful setup.sh run is the baseline verification that the build is reproducible.</p>
+<h2 id="8-tool-environment">8. Tool Environment</h2>
+<h3 id="81-tool-versions">8.1 Tool Versions</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Required Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GCC</td>
+<td>13.x</td>
+<td>C compilation</td>
+</tr>
+<tr>
+<td>GNU Make</td>
+<td>4.x</td>
+<td>Build orchestration</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.12.x</td>
+<td>Plant model, test scripts</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>2.43+</td>
+<td>Version control</td>
+</tr>
+<tr>
+<td>python-can</td>
+<td>Latest</td>
+<td>SocketCAN Python binding</td>
+</tr>
+<tr>
+<td>can-utils</td>
+<td>System</td>
+<td>CAN debugging tools</td>
+</tr>
+<tr>
+<td>Ceedling</td>
+<td>Latest</td>
+<td>Unit test framework</td>
+</tr>
+<tr>
+<td>Ubuntu</td>
+<td>24.04 LTS</td>
+<td>Host operating system</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-tool-qualification">8.2 Tool Qualification</h3>
+<p>For ASIL-D development per ISO 26262 Part 8, the following tool classifications apply:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>TCL</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GCC 13</td>
+<td>TCL2</td>
+<td>Compiler output directly affects safety function</td>
+</tr>
+<tr>
+<td>Ceedling</td>
+<td>TCL1</td>
+<td>Test tool; does not generate production code</td>
+</tr>
+<tr>
+<td>python-can</td>
+<td>TCL1</td>
+<td>Test infrastructure only</td>
+</tr>
+<tr>
+<td>SocketCAN</td>
+<td>TCL1</td>
+<td>Simulation interface only</td>
+</tr>
+</tbody>
+</table>
+<p>TCL2 tools require qualification or validation. GCC is validated through the comprehensive test suite (183+ unit tests, 147 integration/ASIL criteria) which serves as a back-to-back test of compiler correctness.</p>
+<h2 id="9-release-process">9. Release Process</h2>
+<h3 id="91-release-criteria">9.1 Release Criteria</h3>
+<p>A release baseline is established when:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>setup.sh passes on a fresh clone</td>
+<td>Manual test on clean machine</td>
+</tr>
+<tr>
+<td>2</td>
+<td>test_smoke.py reports PASS</td>
+<td>Automated</td>
+</tr>
+<tr>
+<td>3</td>
+<td>test_integration.py 21/21 pass</td>
+<td>Automated</td>
+</tr>
+<tr>
+<td>4</td>
+<td>test_asil.py 50/50 pass</td>
+<td>Automated</td>
+</tr>
+<tr>
+<td>5</td>
+<td>GAP-ANALYSIS.md has 0 open CRITICAL/HIGH</td>
+<td>Manual review</td>
+</tr>
+<tr>
+<td>6</td>
+<td>All ASPICE documents reviewed and current</td>
+<td>Manual review</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92-baseline-identification">9.2 Baseline Identification</h3>
+<p>Baselines are identified by Git tags:</p>
+<table>
+<thead>
+<tr>
+<th>Tag Format</th>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>vX.Y.Z</td>
+<td>v1.0.0</td>
+<td>Release version</td>
+</tr>
+<tr>
+<td>phase-N</td>
+<td>phase-3</td>
+<td>Phase gate baseline</td>
+</tr>
+</tbody>
+</table>
+<h3 id="93-current-baseline-status">9.3 Current Baseline Status</h3>
+<table>
+<thead>
+<tr>
+<th>Baseline</th>
+<th>Tag</th>
+<th>Date</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1: BMS NORMAL</td>
+<td>phase-1</td>
+<td>2026-03-01</td>
+<td>Released</td>
+</tr>
+<tr>
+<td>Phase 2: Realistic Sim</td>
+<td>phase-2</td>
+<td>2026-03-10</td>
+<td>Released</td>
+</tr>
+<tr>
+<td>Phase 2.5: SIL Probes</td>
+<td>phase-2.5</td>
+<td>2026-03-17</td>
+<td>Released</td>
+</tr>
+<tr>
+<td>Phase 3: Fault Injection</td>
+<td>phase-3</td>
+<td>2026-03-21</td>
+<td>In progress</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-cl2-gaps-for-sup8">10. CL2 Gaps for SUP.8</h2>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Description</th>
+<th>Action Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No formal baseline record</td>
+<td>Git tags exist but no baseline report document</td>
+<td>Create baseline report template</td>
+</tr>
+<tr>
+<td>No configuration audit</td>
+<td>Items not formally audited against baseline</td>
+<td>Perform configuration audit at Phase 3 gate</td>
+</tr>
+<tr>
+<td>No CM status accounting</td>
+<td>No report of CI states and changes over time</td>
+<td>Generate CM status report</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="sup-1-qa-plan.html">&larr; SUP.1 QA Plan</a><a href="sup-9-problem-resolution.html">SUP.9 Problem Resolution &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

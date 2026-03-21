@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 5: FMEA — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" class="active">Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 5: FMEA</div>
+<div class="content"><h1 id="iso-26262-5-software-failure-mode-and-effects-analysis-fmea">ISO 26262-5: Software Failure Mode and Effects Analysis (FMEA)</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Document ID</td>
+<td>FOX-SAF-FMEA-001</td>
+</tr>
+<tr>
+<td>Applicable Standard</td>
+<td>ISO 26262:2018 Part 5 — Product Development: Hardware Level</td>
+</tr>
+<tr>
+<td>Method</td>
+<td>FMEA per IEC 60812 adapted for software-intensive systems</td>
+</tr>
+<tr>
+<td>System</td>
+<td>foxBMS 2 Battery Management System v1.10.0</td>
+</tr>
+<tr>
+<td>Item Definition</td>
+<td>Li-ion BMS: 1 string, 1 module, 18s1p, NMC cells 3500 mAh</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-03-21</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Released for Review</td>
+</tr>
+<tr>
+<td>Related Documents</td>
+<td>FOX-SAF-HARA-001, FOX-SAF-FSC-001, FOX-SAF-TSC-001</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-scope">1  Scope</h2>
+<p>This Software FMEA analyzes failure modes of the foxBMS 2 diagnostic subsystem and its monitored elements. Each failure mode is assessed for its local effect, system-level effect, and end effect on vehicle occupants or persons. The Risk Priority Number (RPN) is calculated using:</p>
+<pre><code>RPN = Severity (S) × Occurrence (O) × Detection (D)
+</code></pre>
+<p>Where:
+- <strong>Severity (S):</strong> 1–10 scale (1 = no effect, 10 = hazard without warning)
+- <strong>Occurrence (O):</strong> 1–10 scale (1 = extremely unlikely, 10 = almost certain)
+- <strong>Detection (D):</strong> 1–10 scale (1 = almost certain detection, 10 = no detection)</p>
+<p>RPN threshold for action: <strong>RPN &gt; 100</strong> requires risk reduction measures.</p>
+<hr />
+<h2 id="2-severity-rating-scale">2  Severity Rating Scale</h2>
+<table>
+<thead>
+<tr>
+<th>Rating</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>No effect</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Very minor effect — cosmetic defect, no functional impact</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Minor effect — reduced comfort, no safety impact</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Moderate effect — degraded performance, customer dissatisfaction</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Significant effect — partial loss of function, customer complaint</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Major effect — loss of primary function, regulatory non-compliance</td>
+</tr>
+<tr>
+<td>7</td>
+<td>High severity — potential for injury (non-life-threatening)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Very high severity — potential for serious injury</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Hazardous with warning — potential for life-threatening injury</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Hazardous without warning — potential for fatal injury</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-occurrence-rating-scale">3  Occurrence Rating Scale</h2>
+<table>
+<thead>
+<tr>
+<th>Rating</th>
+<th>Description</th>
+<th>Approximate Failure Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Extremely unlikely</td>
+<td>&lt; 1 in 1,500,000</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Remote</td>
+<td>1 in 150,000</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Very low</td>
+<td>1 in 15,000</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Low</td>
+<td>1 in 2,000</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Moderate</td>
+<td>1 in 400</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Moderately high</td>
+<td>1 in 80</td>
+</tr>
+<tr>
+<td>7</td>
+<td>High</td>
+<td>1 in 20</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Very high</td>
+<td>1 in 8</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Extremely high</td>
+<td>1 in 3</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Almost certain</td>
+<td>&gt; 1 in 2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-detection-rating-scale">4  Detection Rating Scale</h2>
+<table>
+<thead>
+<tr>
+<th>Rating</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Almost certain detection — continuous automated monitoring with proven mechanism</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Very high — automated detection with redundant check</td>
+</tr>
+<tr>
+<td>3</td>
+<td>High — automated detection with single mechanism</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Moderately high — automated detection with time delay</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Moderate — automated detection but with significant latency</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Low — detection relies on indirect measurement</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Very low — detection relies on manual inspection or external report</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Remote — detection only during specific test conditions</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Very remote — no systematic detection, found by chance</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Absolute uncertainty — no detection mechanism exists</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-fmea-worksheets">5  FMEA Worksheets</h2>
+<h3 id="51-battery-cell-voltage-monitoring">5.1  Battery Cell Voltage Monitoring</h3>
+<h4 id="fm-01-cell-overvoltage-undetected">FM-01: Cell Overvoltage — Undetected</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>SOA_CheckCellVoltage() — overvoltage monitoring</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>AFE reports cell voltage below actual value (offset error), causing overvoltage to go undetected</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>SOA check passes despite cell being above 2800 mV</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>BMS remains in NORMAL state, charging continues</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Lithium plating → dendrite → internal short → thermal runaway → fire</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>9</strong> — Life-threatening with warning (other cells may trigger)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>3</strong> — AFE ADC drift beyond 100 mV is very low probability with periodic calibration</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_AFE_COMMUNICATION_INTEGRITY (PEC check), DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE (cross-check AFE sum vs IVT), DIAG_ID_AFE_CONFIG (register readback)</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Redundant detection via IVT pack voltage plausibility check</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>9 × 3 × 2 = 54</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). Current controls adequate.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-02-cell-overvoltage-detected-but-reaction-fails">FM-02: Cell Overvoltage — Detected but Reaction Fails</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>DIAG_Handler() → BMS_ERROR → contactor open</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>DIAG correctly sets FATAL flag but contactor fails to open (welded contactor)</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>BMS in ERROR state but current path remains closed</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>Overvoltage condition continues despite BMS detecting it</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Thermal runaway — fire, potential injury</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>10</strong> — Hazardous without further warning (BMS has exhausted its reaction)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>2</strong> — Contactor welding during normal operation is remote; requires prior high-current event</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK (20 events, 100 ms), DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK, DIAG_ID_PRECHARGE_CONTACTOR_FEEDBACK</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Contactor feedback monitoring detects welding within 350 ms</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>10 × 2 × 2 = 40</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). Contactor feedback provides adequate detection. Recommendation: Add pyro-fuse as secondary disconnection device for ASIL D systems.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-03-cell-undervoltage-false-positive">FM-03: Cell Undervoltage — False Positive</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>SOA_CheckCellVoltage() — undervoltage monitoring</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>AFE reports cell voltage below actual value (noise, EMC, loose connector), triggering spurious undervoltage fault</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>DIAG threshold counter increments on valid cells</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>BMS transitions to ERROR, contactors open unnecessarily</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of vehicle propulsion (availability impact). No safety hazard — safe state is achieved.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>5</strong> — Significant nuisance (stranded vehicle), no safety impact</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>4</strong> — Low probability with 50-event threshold providing noise filtering</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>50-event threshold + 200 ms delay filters transient measurement errors. AFE open-wire detection identifies loose connections.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>3</strong> — High detection of false positive via threshold filter</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>5 × 4 × 3 = 60</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). Threshold provides adequate filtering.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="52-temperature-monitoring">5.2  Temperature Monitoring</h3>
+<h4 id="fm-04-overtemperature-sensor-open-circuit">FM-04: Overtemperature — Sensor Open Circuit</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>NTC temperature sensor (1 of 8)</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>NTC open circuit — AFE reads maximum ADC value, interpreted as extremely low temperature (NTC has negative coefficient) or as out-of-range value</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>If interpreted as low temperature: undertemperature fault triggered (charge inhibit). If out-of-range: AFE MUX fault triggered.</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>BMS enters ERROR state. False positive (no actual temperature hazard).</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion. No safety impact — system fails to safe state.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>5</strong> — Availability impact only</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>5</strong> — Moderate probability over vehicle life. NTC wire connectors subject to vibration, corrosion.</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_AFE_MUX detects out-of-range measurements. 500-event threshold filters intermittent connections. Multiple sensors (8) provide spatial redundancy.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Multiple detection paths (MUX check, range check)</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>5 × 5 × 2 = 50</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-05-overtemperature-sensor-short-circuit">FM-05: Overtemperature — Sensor Short Circuit</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>NTC temperature sensor (1 of 8)</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>NTC short circuit — AFE reads minimum ADC value, interpreted as extremely high temperature</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>Overtemperature fault triggered on one sensor</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>BMS enters ERROR state. If actual temperature is normal: false positive.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion. No safety impact.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>5</strong> — Availability impact only</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>4</strong> — Lower probability than open circuit (NTC short requires insulation failure)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>500-event threshold filters transient shorts. Range check on ADC value.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Immediate detection via range check</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>5 × 4 × 2 = 40</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-06-overtemperature-all-sensors-fail-low-dangerous">FM-06: Overtemperature — All Sensors Fail Low (Dangerous)</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>All 8 NTC temperature sensors simultaneously</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>Common-cause failure: all 8 sensors report lower-than-actual temperature (e.g., due to systematic placement error, thermal coupling degradation, or AFE MUX stuck on a cold reference channel)</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>SOA temperature check passes despite actual temperature exceeding limits</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>BMS remains in NORMAL state during overtemperature condition</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Thermal runaway — fire, injury</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>9</strong> — Life-threatening</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>1</strong> — Common-cause failure of all 8 independent sensors is extremely unlikely</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_AFE_MUX checks MUX channel switching. Spatial distribution of 8 sensors reduces common-cause. No independent temperature measurement path (only AFE-based).</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>6</strong> — Low detection capability for systematic sensor underreading. No independent temperature measurement.</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>9 × 1 × 6 = 54</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). Recommendation: Consider adding an independent temperature sensor on a separate ADC channel for ASIL C/D applications.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="53-current-monitoring">5.3  Current Monitoring</h3>
+<h4 id="fm-07-overcurrent-current-sensor-offset-drift">FM-07: Overcurrent — Current Sensor Offset Drift</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>IVT current sensor — current measurement</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>Current sensor develops positive offset, causing measured current to appear lower than actual. Overcurrent condition goes undetected or is detected late.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>SOA current check threshold effectively shifted higher</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>Overcurrent detection delayed or missed</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>I²R heating → potential thermal runaway at extreme currents</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>8</strong> — Very high severity (thermal runaway possible)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>2</strong> — IVT shunt-based sensors have excellent long-term stability (&lt;0.1% drift per year)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>IVT internal self-calibration. DIAG_ID_CURRENT_ON_OPEN_STRING detects non-zero current when contactors are open (reveals offset). Pack voltage plausibility provides indirect current detection via voltage drop.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>4</strong> — Moderately high detection via open-string current check and IVT self-cal</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>8 × 2 × 4 = 64</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). IVT shunt sensor stability is adequate.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-08-overcurrent-current-sensor-total-loss">FM-08: Overcurrent — Current Sensor Total Loss</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>IVT current sensor — communication</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>IVT stops transmitting CAN messages (hardware failure, CAN bus fault, power supply loss)</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>No current measurement updates received by BMS</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>DIAG_ID_CURRENT_SENSOR_RESPONDING triggers after 100 × 10 ms + 200 ms = 1200 ms. BMS transitions to ERROR.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion (safe state). If a concurrent overcurrent event occurs during the 1200 ms detection window, it goes undetected.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>7</strong> — High severity (overcurrent exposure during detection window)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>3</strong> — IVT hardware failure rate is very low, but CAN bus faults are possible (connector, wiring)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_CURRENT_SENSOR_RESPONDING (100 events, 200 ms). DIAG_ID_CURRENT_SENSOR_V1/V2/V3_MEASUREMENT_TIMEOUT (1 event, 100 ms — faster detection for voltage channels). Cell voltage monitoring provides indirect overcurrent detection (voltage sag under load).</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Very high detection via CAN timeout monitoring</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>7 × 3 × 2 = 42</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="54-communication-failures">5.4  Communication Failures</h3>
+<h4 id="fm-09-afe-spi-communication-loss">FM-09: AFE SPI Communication Loss</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>AFE SPI interface — cell voltage/temperature data transport</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>SPI bus failure (open, short, EMC-induced errors). No valid cell data received.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>AFE driver reports SPI error</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>DIAG_ID_AFE_SPI triggers after 5 × 10 ms + 100 ms = 150 ms. FATAL → ERROR.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion. During 150 ms detection window: BMS operates on stale cell voltage data. If a cell was trending toward overvoltage, the stale data will not reflect the continued rise.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>8</strong> — Very high (loss of primary ASIL D sensing path)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>3</strong> — SPI is a board-level bus (short physical distance, no connectors in typical design), making failures very low</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_AFE_SPI (5 events, 100 ms — fast detection). AFE PEC (Packet Error Code) provides per-transaction error detection. IVT pack voltage provides independent voltage measurement.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>1</strong> — Almost certain detection via SPI error flag + PEC</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>8 × 3 × 1 = 24</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-10-afe-data-corruption-undetected">FM-10: AFE Data Corruption (Undetected)</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>AFE SPI data — cell voltage values</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>SPI data corrupted in transit but PEC check passes (PEC collision — extremely rare). Corrupted data interpreted as valid cell voltage.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>Incorrect cell voltage value used by SOA check</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>Potential missed overvoltage or false undervoltage</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Depends on direction of corruption. If voltage appears lower: missed overvoltage → thermal runaway risk. If voltage appears higher: false undervoltage → availability loss.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>9</strong> — Life-threatening if overvoltage missed</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>1</strong> — PEC collision probability for 8-bit PEC is 1/256 per transaction. Multi-bit errors required. With CRC-based PEC, Hamming distance provides robust detection. Undetected corruption is extremely unlikely.</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>AFE PEC (CRC-8) on every SPI transaction. DIAG_ID_AFE_COMMUNICATION_INTEGRITY. Pack voltage plausibility cross-check.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>3</strong> — High detection via PEC + plausibility</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>9 × 1 × 3 = 27</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-11-can-bus-loss">FM-11: CAN Bus Loss</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>CAN bus — vehicle communication</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>CAN bus failure (bus-off, wiring fault, termination resistor failure). BMS cannot send warnings or receive vehicle commands.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>CAN TX/RX timeout detected</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>DIAG_ID_CAN_TIMING triggers after 100 × 10 ms + 200 ms = 1200 ms. FATAL → ERROR. Vehicle controller loses BMS current limits.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion. Vehicle may request currents beyond BMS limits during the 1200 ms detection window, but cell-level SOA checks (voltage, temperature, current) remain active and provide independent protection.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>6</strong> — Major (loss of communication, but independent protection active)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>4</strong> — CAN bus faults are low probability but higher than board-level SPI (connectors, harness routing, EMC susceptibility)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_CAN_TIMING (100 events, 200 ms). BMS cell-level monitoring is independent of CAN bus health.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Very high detection via CAN timeout</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>6 × 4 × 2 = 48</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="55-contactor-and-power-path-failures">5.5  Contactor and Power Path Failures</h3>
+<h4 id="fm-12-contactor-welding-string-plus">FM-12: Contactor Welding — String Plus</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>String-plus contactor</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>Contactor contacts weld closed due to inrush current or arc erosion. BMS cannot open the positive current path.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>String-plus contactor remains closed when BMS commands open</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>Safe state (contactor open) cannot be fully achieved for the positive side. String-minus or precharge contactor opening may still interrupt current if they are not also welded.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>If only one contactor welds: remaining contactors can still interrupt current (reduced safety margin). If multiple contactors weld: complete loss of disconnection capability.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>9</strong> — Life-threatening (loss of primary safety mechanism)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>2</strong> — Contactor welding requires high-energy arcing events. Proper precharge sequencing reduces inrush.</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK (20 events, 100 ms). Precharge sequence limits inrush current. Three independent contactors provide N-1 redundancy for current interruption.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Very high detection via feedback GPIO comparison</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>9 × 2 × 2 = 36</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). N-1 contactor redundancy is adequate.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-13-contactor-stuck-open-string-minus">FM-13: Contactor Stuck Open — String Minus</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>String-minus contactor</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>Contactor fails to close when commanded (coil failure, mechanical jam, SPS driver fault)</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>String-minus contactor remains open. BMS cannot complete the current path.</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>BMS cannot transition from STANDBY to PRECHARGE/NORMAL. Battery pack is non-functional.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of vehicle propulsion (availability). No safety hazard — system is in open-circuit state.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>5</strong> — Significant nuisance (stranded vehicle)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>3</strong> — Very low probability (contactor coil failure, SPS MOSFET failure)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK detects mismatch. BMS state machine times out if precharge does not complete within expected duration.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>2</strong> — Very high detection via feedback</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>5 × 3 × 2 = 30</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-14-current-on-open-string">FM-14: Current on Open String</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>Current measurement during STANDBY (contactors open)</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>IVT detects non-zero current flow when all contactors are commanded open</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>Indicates either: (a) welded contactor allowing current through external load, (b) current sensor offset error, or (c) external fault path bypassing contactors</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>DIAG_ID_CURRENT_ON_OPEN_STRING triggers after 10 × 10 ms + 100 ms = 200 ms. FATAL → ERROR (already in safe state if contactors are truly open).</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>If caused by welded contactor: escalation to permanent fault, service required. If sensor offset: nuisance fault.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>8</strong> — Very high (may indicate welded contactor — loss of disconnection)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>2</strong> — Remote (requires preceding high-current fault event or sensor failure)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_CURRENT_ON_OPEN_STRING (10 events, 100 ms). Cross-referenced with contactor feedback for root cause identification.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>1</strong> — Almost certain (direct current measurement)</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>8 × 2 × 1 = 16</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="56-safety-infrastructure-failures">5.6  Safety Infrastructure Failures</h3>
+<h4 id="fm-15-sbc-watchdog-failure">FM-15: SBC Watchdog Failure</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>SBC (FS8x) — watchdog supervision</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>SBC watchdog does not trigger reset on BMS software hang (SBC internal failure or watchdog window misconfiguration)</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>BMS software hangs; no watchdog reset occurs</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>BMS stops executing SOA checks, DIAG processing, and contactor control. Contactors remain in last commanded state (potentially closed).</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>All safety monitoring lost. Any subsequent battery fault goes undetected.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>10</strong> — Hazardous without warning</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>1</strong> — SBC is a safety-qualified component (ASIL D). Internal watchdog failure rate is extremely low (&lt; 1 FIT).</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_SBC_RSTB_ERROR (1 event, 100 ms). DIAG_ID_ALERT_MODE monitors SBC alert state. SBC has independent internal monitoring. TMS570 lockstep provides secondary hang detection.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>3</strong> — High detection via SBC self-monitoring and ALERT_MODE</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>10 × 1 × 3 = 30</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). SBC is designed to ASIL D safety standards.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-16-flash-memory-corruption">FM-16: Flash Memory Corruption</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>TMS570 MCU — program flash memory</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>Single Event Upset (SEU) or retention failure corrupts program code. SOA threshold values, DIAG configuration, or BMS state machine logic altered.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>Incorrect program execution</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>DIAG_ID_FLASHCHECKSUM triggers immediately (threshold=1, no delay). BMS → ERROR. If corruption affects FLASHCHECKSUM logic itself: lockstep CPU detects divergent execution.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion (safe state). If both detection mechanisms fail: unpredictable BMS behavior.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>9</strong> — Life-threatening (if undetected, arbitrary code execution)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>2</strong> — SEU rate for automotive flash at ground level is ~1 bit/Mbit/1000 hours. TMS570 ECC provides single-bit correction.</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_FLASHCHECKSUM (CRC over program area). TMS570 ECC on flash (SECDED — Single Error Correction, Double Error Detection). Lockstep CPU compares execution cycle-by-cycle.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>1</strong> — Almost certain (ECC + CRC + lockstep = three independent mechanisms)</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>9 × 2 × 1 = 18</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). Triple detection mechanism is comprehensive.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-17-system-monitoring-task-overrun">FM-17: System Monitoring — Task Overrun</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>RTOS task scheduling — 1 ms and 10 ms tasks</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>A task exceeds its execution deadline. SOA checks, DIAG processing, or contactor control delayed beyond worst-case execution time.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>DIAG_ID_SYSTEM_MONITORING triggers (threshold=1, no delay)</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>Immediate FATAL → ERROR → contactors open</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion. If the overrun prevented a critical SOA check from executing, the brief gap is covered by the FTTI margin.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>7</strong> — High (loss of function, safety margin reduced during overrun)</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>2</strong> — RTOS task timing is verified by static analysis (WCET) and tested. Overruns indicate a software defect or excessive interrupt load.</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>DIAG_ID_SYSTEM_MONITORING (immediate detection). RTOS deadline monitoring. TMS570 RTI (Real Time Interrupt) hardware timer.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>1</strong> — Almost certain (hardware timer + RTOS kernel check)</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>7 × 2 × 1 = 14</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="57-interlock-and-isolation-failures">5.7  Interlock and Isolation Failures</h3>
+<h4 id="fm-18-interlock-loop-false-open-detection">FM-18: Interlock Loop — False Open Detection</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>Interlock feedback circuit</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>Interlock feedback signal intermittently drops due to connector vibration, EMC, or wire chafing. Loop is physically intact but electrical signal is noisy.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>DIAG_ID_INTERLOCK_FEEDBACK counter increments on noise spikes</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>If 10 consecutive events occur: FATAL → ERROR → contactors open. False positive shutdown.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion. No safety hazard.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>5</strong> — Significant nuisance</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>5</strong> — Moderate (interlock connectors on battery packs are subject to vibration and thermal cycling)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>10-event threshold provides debounce filtering. Shielded interlock wiring reduces EMC susceptibility.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>3</strong> — High detection of false positive via threshold filter</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>5 × 5 × 3 = 75</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100). Monitor field return data for interlock connector reliability.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="fm-19-pack-voltage-plausibility-false-failure">FM-19: Pack Voltage Plausibility — False Failure</h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component/Function</strong></td>
+<td>DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE — AFE sum vs IVT comparison</td>
+</tr>
+<tr>
+<td><strong>Failure Mode</strong></td>
+<td>AFE and IVT voltage measurements drift in opposite directions due to independent calibration errors, producing a plausibility error despite both measurements being individually within specification.</td>
+</tr>
+<tr>
+<td><strong>Local Effect</strong></td>
+<td>Plausibility check fails</td>
+</tr>
+<tr>
+<td><strong>System Effect</strong></td>
+<td>DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE triggers after 10 × 10 ms + 100 ms = 200 ms. FATAL → ERROR.</td>
+</tr>
+<tr>
+<td><strong>End Effect</strong></td>
+<td>Loss of propulsion. No safety hazard — both sensors are actually functional.</td>
+</tr>
+<tr>
+<td><strong>Severity (S)</strong></td>
+<td><strong>5</strong> — Significant nuisance</td>
+</tr>
+<tr>
+<td><strong>Occurrence (O)</strong></td>
+<td><strong>3</strong> — Very low probability (requires opposite drift in two independent sensors)</td>
+</tr>
+<tr>
+<td><strong>Current Controls</strong></td>
+<td>10-event threshold filters transient disagreements. Plausibility tolerance band accounts for measurement uncertainty.</td>
+</tr>
+<tr>
+<td><strong>Detection (D)</strong></td>
+<td><strong>4</strong> — Moderately high (root cause analysis after shutdown can identify drift direction)</td>
+</tr>
+<tr>
+<td><strong>RPN</strong></td>
+<td><strong>5 × 3 × 4 = 60</strong></td>
+</tr>
+<tr>
+<td><strong>Action Required</strong></td>
+<td>No (RPN &lt; 100).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-fmea-summary-and-rpn-ranking">6  FMEA Summary and RPN Ranking</h2>
+<table>
+<thead>
+<tr>
+<th>FM ID</th>
+<th>Failure Mode</th>
+<th>S</th>
+<th>O</th>
+<th>D</th>
+<th>RPN</th>
+<th>Action Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FM-01</td>
+<td>Cell OV undetected (AFE offset)</td>
+<td>9</td>
+<td>3</td>
+<td>2</td>
+<td>54</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-02</td>
+<td>Cell OV detected, contactor welded</td>
+<td>10</td>
+<td>2</td>
+<td>2</td>
+<td>40</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-03</td>
+<td>Cell UV false positive</td>
+<td>5</td>
+<td>4</td>
+<td>3</td>
+<td>60</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-04</td>
+<td>NTC open circuit</td>
+<td>5</td>
+<td>5</td>
+<td>2</td>
+<td>50</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-05</td>
+<td>NTC short circuit</td>
+<td>5</td>
+<td>4</td>
+<td>2</td>
+<td>40</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-06</td>
+<td>All NTCs fail low (common cause)</td>
+<td>9</td>
+<td>1</td>
+<td>6</td>
+<td>54</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-07</td>
+<td>Current sensor offset drift</td>
+<td>8</td>
+<td>2</td>
+<td>4</td>
+<td>64</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-08</td>
+<td>Current sensor total loss</td>
+<td>7</td>
+<td>3</td>
+<td>2</td>
+<td>42</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-09</td>
+<td>AFE SPI communication loss</td>
+<td>8</td>
+<td>3</td>
+<td>1</td>
+<td>24</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-10</td>
+<td>AFE data corruption (undetected PEC)</td>
+<td>9</td>
+<td>1</td>
+<td>3</td>
+<td>27</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-11</td>
+<td>CAN bus loss</td>
+<td>6</td>
+<td>4</td>
+<td>2</td>
+<td>48</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-12</td>
+<td>Contactor welding (string+)</td>
+<td>9</td>
+<td>2</td>
+<td>2</td>
+<td>36</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-13</td>
+<td>Contactor stuck open (string-)</td>
+<td>5</td>
+<td>3</td>
+<td>2</td>
+<td>30</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-14</td>
+<td>Current on open string</td>
+<td>8</td>
+<td>2</td>
+<td>1</td>
+<td>16</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-15</td>
+<td>SBC watchdog failure</td>
+<td>10</td>
+<td>1</td>
+<td>3</td>
+<td>30</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-16</td>
+<td>Flash memory corruption</td>
+<td>9</td>
+<td>2</td>
+<td>1</td>
+<td>18</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-17</td>
+<td>Task overrun</td>
+<td>7</td>
+<td>2</td>
+<td>1</td>
+<td>14</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-18</td>
+<td>Interlock false open</td>
+<td>5</td>
+<td>5</td>
+<td>3</td>
+<td>75</td>
+<td>No</td>
+</tr>
+<tr>
+<td>FM-19</td>
+<td>Pack voltage plausibility false fail</td>
+<td>5</td>
+<td>3</td>
+<td>4</td>
+<td>60</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Maximum RPN: 75</strong> (FM-18: Interlock false open). All failure modes are below the RPN action threshold of 100.</p>
+<hr />
+<h2 id="7-recommendations">7  Recommendations</h2>
+<p>Although no failure modes exceed the RPN action threshold, the following recommendations are made for ASIL D deployments:</p>
+<ol>
+<li>
+<p><strong>R-01:</strong> Add a pyro-fuse (pyrotechnic disconnect) as a secondary current interruption device independent of the contactors. This addresses FM-02 (contactor welding during overvoltage) and reduces the severity of FM-12.</p>
+</li>
+<li>
+<p><strong>R-02:</strong> Add an independent temperature sensor (not routed through the AFE MUX) on a separate MCU ADC channel. This addresses FM-06 (common-cause NTC failure through AFE MUX).</p>
+</li>
+<li>
+<p><strong>R-03:</strong> Implement IVT current plausibility cross-check using the relationship between voltage drop (V_pack - V_sum_cells) and measured current (V = I × R_total). This improves detection of FM-07 (current sensor offset drift).</p>
+</li>
+<li>
+<p><strong>R-04:</strong> Consider reducing the CURRENT_SENSOR_RESPONDING threshold from 100 to 50 events to reduce the detection window for FM-08 from 1200 ms to 700 ms.</p>
+</li>
+</ol>
+<hr />
+<h2 id="8-references">8  References</h2>
+<table>
+<thead>
+<tr>
+<th>Ref</th>
+<th>Document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[1]</td>
+<td>ISO 26262:2018 Part 5 — Product Development: Hardware Level</td>
+</tr>
+<tr>
+<td>[2]</td>
+<td>IEC 60812:2018 — Failure modes and effects analysis (FMEA and FMECA)</td>
+</tr>
+<tr>
+<td>[3]</td>
+<td>FOX-SAF-HARA-001 — Hazard Analysis and Risk Assessment</td>
+</tr>
+<tr>
+<td>[4]</td>
+<td>FOX-SAF-TSC-001 — Technical Safety Concept</td>
+</tr>
+<tr>
+<td>[5]</td>
+<td>FOX-SAF-FTTI-001 — FTTI Calculation Report</td>
+</tr>
+<tr>
+<td>[6]</td>
+<td>foxBMS v1.10.0 <code>src/app/engine/diag/diag_cfg.c</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of Document FOX-SAF-FMEA-001</em></p></div>
+<div class="nav-buttons"><a href="part-5-hsi.html">&larr; Part 5: HSI</a><a href="part-6-safety-reqs.html">Part 6: Safety Reqs &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

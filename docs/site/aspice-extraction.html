@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASPICE Extraction — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" class="active">ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / ASPICE Extraction</div>
+<div class="content"><h1 id="foxbms-2-aspice-work-products-extracted-from-source-code">foxBMS 2 — ASPICE Work Products Extracted from Source Code</h1>
+<p><strong>Date</strong>: 2026-03-21
+<strong>foxBMS version</strong>: v1.10.0
+<strong>Method</strong>: Reverse-engineered from source code, DBC, and config headers
+<strong>Purpose</strong>: Demonstrate ASPICE-level documentation can be derived from open-source BMS code</p>
+<hr />
+<h2 id="swe1-software-requirements-from-battery_cell_cfgh-battery_system_cfgh-soa_cfgc">SWE.1: Software Requirements (from <code>battery_cell_cfg.h</code>, <code>battery_system_cfg.h</code>, <code>soa_cfg.c</code>)</h2>
+<h3 id="req-bms-sys-system-configuration">REQ-BMS-SYS: System Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Value</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REQ-SYS-001</td>
+<td>Number of strings: 1</td>
+<td><code>BS_NR_OF_STRINGS = 1u</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-002</td>
+<td>Modules per string: 1</td>
+<td><code>BS_NR_OF_MODULES_PER_STRING = 1u</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-003</td>
+<td>Cells per module: 18</td>
+<td><code>BS_NR_OF_CELL_BLOCKS_PER_MODULE = 18u</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-004</td>
+<td>Parallel cells per block: 1</td>
+<td><code>BS_NR_OF_PARALLEL_CELLS_PER_CELL_BLOCK = 1u</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-005</td>
+<td>Temperature sensors per module: 8</td>
+<td><code>BS_NR_OF_TEMP_SENSORS_PER_MODULE = 8u</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-006</td>
+<td>Total contactors: 3 (string+, string-, precharge)</td>
+<td><code>contactor_cfg.c</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-007</td>
+<td>Cell capacity: 3500 mAh</td>
+<td><code>BC_CAPACITY_mAh</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-008</td>
+<td>Cell energy: 10.0 Wh</td>
+<td><code>BC_ENERGY_Wh</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-009</td>
+<td>Nominal cell voltage: 2500 mV</td>
+<td><code>BC_VOLTAGE_NOMINAL_mV</code></td>
+</tr>
+<tr>
+<td>REQ-SYS-010</td>
+<td>HV voltage inputs from current sensor: 3</td>
+<td><code>BS_NR_OF_VOLTAGES_FROM_CURRENT_SENSOR = 3u</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="req-bms-volt-cell-voltage-safety-limits">REQ-BMS-VOLT: Cell Voltage Safety Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>MOL</th>
+<th>RSL</th>
+<th>MSL</th>
+<th>Unit</th>
+<th>DIAG Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REQ-VOLT-001: Overvoltage</td>
+<td>2720</td>
+<td>2750</td>
+<td><strong>2800</strong></td>
+<td>mV</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-VOLT-002: Undervoltage</td>
+<td>1580</td>
+<td>1550</td>
+<td><strong>1500</strong></td>
+<td>mV</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-VOLT-003: Deep discharge</td>
+<td>—</td>
+<td>—</td>
+<td><strong>1500</strong></td>
+<td>mV</td>
+<td><strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-VOLT-004: OV threshold count</td>
+<td>—</td>
+<td>—</td>
+<td><strong>50</strong></td>
+<td>events</td>
+<td><code>EVENT_50</code></td>
+</tr>
+<tr>
+<td>REQ-VOLT-005: OV MSL → ERROR delay</td>
+<td>—</td>
+<td>—</td>
+<td><strong>200</strong></td>
+<td>ms</td>
+<td><code>diag_cfg.c</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="req-bms-curr-current-safety-limits">REQ-BMS-CURR: Current Safety Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>MOL</th>
+<th>RSL</th>
+<th>MSL</th>
+<th>Unit</th>
+<th>DIAG Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REQ-CURR-001: Max discharge current (cell)</td>
+<td>170000</td>
+<td>175000</td>
+<td><strong>180000</strong></td>
+<td>mA</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-CURR-002: Max charge current (cell)</td>
+<td>170000</td>
+<td>175000</td>
+<td><strong>180000</strong></td>
+<td>mA</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-CURR-003: Max string current</td>
+<td>—</td>
+<td>—</td>
+<td><strong>2400</strong></td>
+<td>mA</td>
+<td><code>BS_MAXIMUM_STRING_CURRENT_mA</code></td>
+</tr>
+<tr>
+<td>REQ-CURR-004: Max pack current</td>
+<td>—</td>
+<td>—</td>
+<td><strong>2400</strong></td>
+<td>mA</td>
+<td><code>BS_MAXIMUM_PACK_CURRENT_mA</code></td>
+</tr>
+<tr>
+<td>REQ-CURR-005: Contactor max break current</td>
+<td>—</td>
+<td>—</td>
+<td><strong>3500</strong></td>
+<td>mA</td>
+<td><code>BS_MAIN_CONTACTORS_MAXIMUM_BREAK_CURRENT_mA</code></td>
+</tr>
+<tr>
+<td>REQ-CURR-006: Rest current threshold</td>
+<td>—</td>
+<td>—</td>
+<td><strong>200</strong></td>
+<td>mA</td>
+<td><code>BS_REST_CURRENT_mA</code></td>
+</tr>
+<tr>
+<td>REQ-CURR-007: Current threshold count</td>
+<td>—</td>
+<td>—</td>
+<td><strong>10</strong></td>
+<td>events</td>
+<td><code>EVENT_10</code></td>
+</tr>
+<tr>
+<td>REQ-CURR-008: Overcurrent MSL → ERROR delay</td>
+<td>—</td>
+<td>—</td>
+<td><strong>100</strong></td>
+<td>ms</td>
+<td><code>diag_cfg.c</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="req-bms-temp-temperature-safety-limits">REQ-BMS-TEMP: Temperature Safety Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>MOL</th>
+<th>RSL</th>
+<th>MSL</th>
+<th>Unit</th>
+<th>DIAG Severity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REQ-TEMP-001: Overtemp discharge</td>
+<td>45</td>
+<td>50</td>
+<td><strong>55</strong></td>
+<td>°C</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-TEMP-002: Undertemp discharge</td>
+<td>-10</td>
+<td>-15</td>
+<td><strong>-20</strong></td>
+<td>°C</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-TEMP-003: Overtemp charge</td>
+<td>35</td>
+<td>40</td>
+<td><strong>45</strong></td>
+<td>°C</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-TEMP-004: Undertemp charge</td>
+<td>-10</td>
+<td>-15</td>
+<td><strong>-20</strong></td>
+<td>°C</td>
+<td>INFO / WARNING / <strong>FATAL</strong></td>
+</tr>
+<tr>
+<td>REQ-TEMP-005: Temp threshold count</td>
+<td>—</td>
+<td>—</td>
+<td><strong>500</strong></td>
+<td>events</td>
+<td><code>EVENT_500</code></td>
+</tr>
+<tr>
+<td>REQ-TEMP-006: Overtemp MSL → ERROR delay</td>
+<td>—</td>
+<td>—</td>
+<td><strong>1000</strong></td>
+<td>ms</td>
+<td><code>diag_cfg.c</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="req-bms-safe-safety-state-requirements">REQ-BMS-SAFE: Safety State Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Description</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REQ-SAFE-001</td>
+<td>MSL violation of voltage/current/temperature SHALL cause transition to ERROR state</td>
+<td><code>diag_cfg.c</code>: FATAL_ERROR entries</td>
+</tr>
+<tr>
+<td>REQ-SAFE-002</td>
+<td>ERROR state SHALL open all contactors</td>
+<td><code>bms.c</code>: ERROR handler calls contactor open</td>
+</tr>
+<tr>
+<td>REQ-SAFE-003</td>
+<td>Interlock break SHALL be detected and reported</td>
+<td><code>diag_cfg.c</code>: INTERLOCK_FEEDBACK, threshold=10, FATAL</td>
+</tr>
+<tr>
+<td>REQ-SAFE-004</td>
+<td>Precharge SHALL verify string voltage ≈ bus voltage before closing main contactors</td>
+<td><code>bms.c</code>: precharge state, <code>redundancy.c</code>: <code>highVoltage_mV[s][2]</code></td>
+</tr>
+<tr>
+<td>REQ-SAFE-005</td>
+<td>Precharge timeout SHALL trigger ERROR</td>
+<td><code>bms_cfg.h</code>: timeout configurable</td>
+</tr>
+<tr>
+<td>REQ-SAFE-006</td>
+<td>Overcurrent during contactor opening SHALL wait for fuse to blow</td>
+<td><code>bms.c</code>: overcurrent handling</td>
+</tr>
+<tr>
+<td>REQ-SAFE-007</td>
+<td>EXIT from ERROR SHALL require: fault cleared AND explicit STANDBY request</td>
+<td><code>bms.c</code>: ERROR exit conditions</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="swe2-software-architecture-from-module-structure-ftask_cfgc">SWE.2: Software Architecture (from module structure + <code>ftask_cfg.c</code>)</h2>
+<h3 id="static-architecture">Static Architecture</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                        APPLICATION LAYER                         │
+│  ┌─────────┐ ┌────────┐ ┌─────┐ ┌───────────┐ ┌──────────┐    │
+│  │Algorithm │ │Balancing│ │ BMS │ │Plausibility│ │Redundancy│    │
+│  │SOC/SOE  │ │V-based  │ │State│ │ Sensor    │ │IVT cross-│    │
+│  │SOF      │ │H-based  │ │Mach │ │ validation│ │ check    │    │
+│  └────┬────┘ └────┬────┘ └──┬──┘ └─────┬─────┘ └────┬─────┘    │
+│       │           │         │           │            │           │
+│  ┌────┴───────────┴─────────┴───────────┴────────────┴─────┐    │
+│  │                  SOA (Safe Operating Area)                │    │
+│  │          MOL / RSL / MSL threshold checking               │    │
+│  └──────────────────────────┬────────────────────────────────┘    │
+├──────────────────────────────┼────────────────────────────────────┤
+│                        ENGINE LAYER   │                           │
+│  ┌──────────┐  ┌─────────┐  │  ┌──────────┐                     │
+│  │ Database  │  │  DIAG   │←─┘  │   SYS    │                     │
+│  │Producer/  │  │Threshold│      │  State   │                     │
+│  │Consumer   │  │Counters │      │  Machine │                     │
+│  │Queue-based│  │85 IDs   │      │Init→RUN  │                     │
+│  └─────┬─────┘  └────┬────┘      └────┬─────┘                     │
+├────────┼──────────────┼───────────────┼────────────────────────────┤
+│                        DRIVER LAYER                               │
+│  ┌───┐ ┌───┐ ┌───┐ ┌────┐ ┌────┐ ┌────────┐ ┌────┐ ┌─────┐    │
+│  │CAN│ │SPI│ │I2C│ │ SBC│ │ SPS│ │Contactor│ │ IMD│ │Inter│    │
+│  │TX │ │AFE│ │RTC│ │NXP │ │Cont│ │Feedback │ │Bend│ │lock │    │
+│  │RX │ │   │ │PEX│ │FS8x│ │ctrl│ │Weld det │ │er  │ │     │    │
+│  └───┘ └───┘ └───┘ └────┘ └────┘ └────────┘ └────┘ └─────┘    │
+├──────────────────────────────────────────────────────────────────┤
+│                        TASK LAYER (FreeRTOS)                      │
+│  Engine(Q) │ 1ms │ AFE │ 10ms │ 100ms │ I2C │ 100ms-Algo        │
+├──────────────────────────────────────────────────────────────────┤
+│                        HAL (TMS570 / POSIX)                       │
+│  Registers │ GPIO │ ADC │ DMA │ CRC │ SocketCAN (POSIX)          │
+└──────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3 id="dynamic-architecture-task-allocation">Dynamic Architecture (Task Allocation)</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Period</th>
+<th>What Runs</th>
+<th>Data Flow</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Engine</td>
+<td>Event</td>
+<td><code>DATA_Task()</code></td>
+<td>Queue → Database</td>
+</tr>
+<tr>
+<td>1ms</td>
+<td>1ms</td>
+<td>DIAG flags, CAN RX dequeue</td>
+<td>CAN → Ring buffer → Callbacks → Database</td>
+</tr>
+<tr>
+<td>AFE</td>
+<td>Async</td>
+<td><code>MEAS_Control()</code></td>
+<td>AFE queue → Database</td>
+</tr>
+<tr>
+<td>10ms</td>
+<td>10ms</td>
+<td><code>SYS_Trigger()</code>, <code>BMS_Trigger()</code>, <code>CAN_PeriodicTransmit()</code></td>
+<td>Database → State machine → CAN TX</td>
+</tr>
+<tr>
+<td>100ms</td>
+<td>100ms</td>
+<td>Balancing, LED, SPS contactor</td>
+<td>Database → SPS → Contactors</td>
+</tr>
+<tr>
+<td>100ms-Algo</td>
+<td>100ms</td>
+<td>SOC, SOE, SOF</td>
+<td>Database → Algorithms → Database</td>
+</tr>
+<tr>
+<td>I2C</td>
+<td>Async</td>
+<td>PEX, RTC, humidity</td>
+<td>I2C → Database</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-flow-critical-safety-path">Data Flow (Critical Safety Path)</h3>
+<pre><code>Plant/Sensor → CAN RX → Database → SOA Check → DIAG_Handler
+                                                     │
+                                        threshold counter++
+                                                     │
+                                     counter &gt;= threshold?
+                                          │           │
+                                          no          yes
+                                          │           │
+                                     return OK    set FATAL flag
+                                                     │
+                                              DIAG_IsAnyFatalErrorSet()
+                                                     │
+                                              BMS → ERROR state
+                                                     │
+                                              Open all contactors
+                                                     │
+                                              EmergencyShutoff on CAN 0x220
+</code></pre>
+<hr />
+<h2 id="swe3-detailed-design-from-diag_cfgc-complete-diag-table">SWE.3: Detailed Design (from <code>diag_cfg.c</code> — complete DIAG table)</h2>
+<h3 id="85-diagnostic-ids-complete-configuration">85 Diagnostic IDs — Complete Configuration</h3>
+<h4 id="battery-safety-36-ids">Battery Safety (36 IDs)</h4>
+<table>
+<thead>
+<tr>
+<th>DIAG ID</th>
+<th>Threshold</th>
+<th>Severity</th>
+<th>Delay</th>
+<th>Callback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CELL_VOLTAGE_OVERVOLTAGE_MSL</td>
+<td>50</td>
+<td>FATAL</td>
+<td>200ms</td>
+<td>DIAG_ErrorOvervoltage</td>
+</tr>
+<tr>
+<td>CELL_VOLTAGE_OVERVOLTAGE_RSL</td>
+<td>50</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorOvervoltage</td>
+</tr>
+<tr>
+<td>CELL_VOLTAGE_OVERVOLTAGE_MOL</td>
+<td>50</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorOvervoltage</td>
+</tr>
+<tr>
+<td>CELL_VOLTAGE_UNDERVOLTAGE_MSL</td>
+<td>50</td>
+<td>FATAL</td>
+<td>200ms</td>
+<td>DIAG_ErrorUndervoltage</td>
+</tr>
+<tr>
+<td>CELL_VOLTAGE_UNDERVOLTAGE_RSL</td>
+<td>50</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorUndervoltage</td>
+</tr>
+<tr>
+<td>CELL_VOLTAGE_UNDERVOLTAGE_MOL</td>
+<td>50</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorUndervoltage</td>
+</tr>
+<tr>
+<td>TEMP_OVERTEMPERATURE_CHARGE_MSL</td>
+<td>500</td>
+<td>FATAL</td>
+<td>1000ms</td>
+<td>DIAG_ErrorOvertemperatureCharge</td>
+</tr>
+<tr>
+<td>TEMP_OVERTEMPERATURE_CHARGE_RSL</td>
+<td>500</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorOvertemperatureCharge</td>
+</tr>
+<tr>
+<td>TEMP_OVERTEMPERATURE_CHARGE_MOL</td>
+<td>500</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorOvertemperatureCharge</td>
+</tr>
+<tr>
+<td>TEMP_OVERTEMPERATURE_DISCHARGE_MSL</td>
+<td>500</td>
+<td>FATAL</td>
+<td>1000ms</td>
+<td>DIAG_ErrorOvertemperatureDischarge</td>
+</tr>
+<tr>
+<td>TEMP_OVERTEMPERATURE_DISCHARGE_RSL</td>
+<td>500</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorOvertemperatureDischarge</td>
+</tr>
+<tr>
+<td>TEMP_OVERTEMPERATURE_DISCHARGE_MOL</td>
+<td>500</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorOvertemperatureDischarge</td>
+</tr>
+<tr>
+<td>TEMP_UNDERTEMPERATURE_CHARGE_MSL</td>
+<td>500</td>
+<td>FATAL</td>
+<td>1000ms</td>
+<td>DIAG_ErrorUndertemperatureCharge</td>
+</tr>
+<tr>
+<td>TEMP_UNDERTEMPERATURE_CHARGE_RSL</td>
+<td>500</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorUndertemperatureCharge</td>
+</tr>
+<tr>
+<td>TEMP_UNDERTEMPERATURE_CHARGE_MOL</td>
+<td>500</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorUndertemperatureCharge</td>
+</tr>
+<tr>
+<td>TEMP_UNDERTEMPERATURE_DISCHARGE_MSL</td>
+<td>500</td>
+<td>FATAL</td>
+<td>1000ms</td>
+<td>DIAG_ErrorUndertemperatureDischarge</td>
+</tr>
+<tr>
+<td>TEMP_UNDERTEMPERATURE_DISCHARGE_RSL</td>
+<td>500</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorUndertemperatureDischarge</td>
+</tr>
+<tr>
+<td>TEMP_UNDERTEMPERATURE_DISCHARGE_MOL</td>
+<td>500</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorUndertemperatureDischarge</td>
+</tr>
+<tr>
+<td>OVERCURRENT_CHARGE_CELL_MSL</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td>OVERCURRENT_CHARGE_CELL_RSL</td>
+<td>10</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td>OVERCURRENT_CHARGE_CELL_MOL</td>
+<td>10</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td>OVERCURRENT_DISCHARGE_CELL_MSL</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+<tr>
+<td>OVERCURRENT_DISCHARGE_CELL_RSL</td>
+<td>10</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+<tr>
+<td>OVERCURRENT_DISCHARGE_CELL_MOL</td>
+<td>10</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+<tr>
+<td>STRING_OVERCURRENT_CHARGE_MSL</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td>STRING_OVERCURRENT_CHARGE_RSL</td>
+<td>10</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td>STRING_OVERCURRENT_CHARGE_MOL</td>
+<td>10</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td>STRING_OVERCURRENT_DISCHARGE_MSL</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+<tr>
+<td>STRING_OVERCURRENT_DISCHARGE_RSL</td>
+<td>10</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+<tr>
+<td>STRING_OVERCURRENT_DISCHARGE_MOL</td>
+<td>10</td>
+<td>INFO</td>
+<td>—</td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+<tr>
+<td>PACK_OVERCURRENT_DISCHARGE_MSL</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+<tr>
+<td>PACK_OVERCURRENT_CHARGE_MSL</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td>CURRENT_ON_OPEN_STRING</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorCurrentOnOpenString</td>
+</tr>
+<tr>
+<td>DEEP_DISCHARGE_DETECTED</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorDeepDischarge</td>
+</tr>
+<tr>
+<td>PLAUSIBILITY_PACK_VOLTAGE</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorPlausibility</td>
+</tr>
+<tr>
+<td>PLAUSIBILITY_CELL_VOLTAGE</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_PlausibilityCheck</td>
+</tr>
+</tbody>
+</table>
+<h4 id="hardwarecommunication-29-ids">Hardware/Communication (29 IDs)</h4>
+<table>
+<thead>
+<tr>
+<th>DIAG ID</th>
+<th>Threshold</th>
+<th>Severity</th>
+<th>Delay</th>
+<th>Callback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFE_SPI</td>
+<td>5</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorAfeDriver</td>
+</tr>
+<tr>
+<td>AFE_COMMUNICATION_INTEGRITY</td>
+<td>5</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorAfeDriver</td>
+</tr>
+<tr>
+<td>AFE_MUX</td>
+<td>5</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorAfeDriver</td>
+</tr>
+<tr>
+<td>AFE_CONFIG</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorAfeDriver</td>
+</tr>
+<tr>
+<td>AFE_OPEN_WIRE</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorAfeDriver</td>
+</tr>
+<tr>
+<td>CAN_TIMING</td>
+<td>100</td>
+<td>FATAL</td>
+<td>200ms</td>
+<td>DIAG_ErrorCanTiming</td>
+</tr>
+<tr>
+<td>CAN_RX_QUEUE_FULL</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorCanRxQueueFull</td>
+</tr>
+<tr>
+<td>CAN_TX_QUEUE_FULL</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorCanTxQueueFull</td>
+</tr>
+<tr>
+<td>CURRENT_SENSOR_RESPONDING</td>
+<td>100</td>
+<td>FATAL</td>
+<td>200ms</td>
+<td>DIAG_ErrorCurrentSensor</td>
+</tr>
+<tr>
+<td>CURRENT_SENSOR_CC_RESPONDING</td>
+<td>100</td>
+<td>FATAL</td>
+<td>2000ms</td>
+<td>DIAG_ErrorCurrentSensor</td>
+</tr>
+<tr>
+<td>CURRENT_SENSOR_EC_RESPONDING</td>
+<td>100</td>
+<td>FATAL</td>
+<td>2000ms</td>
+<td>DIAG_ErrorCurrentSensor</td>
+</tr>
+<tr>
+<td>CURRENT_SENSOR_V1_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorHighVoltageMeasurement</td>
+</tr>
+<tr>
+<td>CURRENT_SENSOR_V2_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorHighVoltageMeasurement</td>
+</tr>
+<tr>
+<td>CURRENT_SENSOR_V3_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorHighVoltageMeasurement</td>
+</tr>
+<tr>
+<td>SBC_FIN_ERROR</td>
+<td>1</td>
+<td>WARNING</td>
+<td>100ms</td>
+<td>DIAG_Sbc</td>
+</tr>
+<tr>
+<td>SBC_RSTB_ERROR</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_Sbc</td>
+</tr>
+<tr>
+<td>INTERLOCK_FEEDBACK</td>
+<td>10</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorInterlock</td>
+</tr>
+<tr>
+<td>STRING_MINUS_CONTACTOR_FEEDBACK</td>
+<td>20</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_StringContactorFeedback</td>
+</tr>
+<tr>
+<td>STRING_PLUS_CONTACTOR_FEEDBACK</td>
+<td>20</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_StringContactorFeedback</td>
+</tr>
+<tr>
+<td>PRECHARGE_CONTACTOR_FEEDBACK</td>
+<td>20</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_PrechargeContactorFeedback</td>
+</tr>
+<tr>
+<td>CURRENT_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorCurrentMeasurement</td>
+</tr>
+<tr>
+<td>CURRENT_MEASUREMENT_ERROR</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorCurrentMeasurement</td>
+</tr>
+<tr>
+<td>CURRENT_SENSOR_POWER_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorPowerMeasurement</td>
+</tr>
+<tr>
+<td>POWER_MEASUREMENT_ERROR</td>
+<td>1</td>
+<td>FATAL</td>
+<td>100ms</td>
+<td>DIAG_ErrorPowerMeasurement</td>
+</tr>
+</tbody>
+</table>
+<h4 id="systemmonitoring-20-ids">System/Monitoring (20 IDs)</h4>
+<table>
+<thead>
+<tr>
+<th>DIAG ID</th>
+<th>Threshold</th>
+<th>Severity</th>
+<th>Delay</th>
+<th>Callback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FLASHCHECKSUM</td>
+<td>1</td>
+<td>FATAL</td>
+<td>—</td>
+<td>DIAG_DummyCallback</td>
+</tr>
+<tr>
+<td>SYSTEM_MONITORING</td>
+<td>1</td>
+<td>FATAL</td>
+<td>—</td>
+<td>DIAG_ErrorSystemMonitoring</td>
+</tr>
+<tr>
+<td>SUPPLY_VOLTAGE_CLAMP_30C_LOST</td>
+<td>3</td>
+<td>FATAL</td>
+<td>—</td>
+<td>DIAG_SupplyVoltageClamp30c</td>
+</tr>
+<tr>
+<td>PLAUSIBILITY_CELL_VOLTAGE_SPREAD</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_PlausibilityCheck</td>
+</tr>
+<tr>
+<td>PLAUSIBILITY_CELL_TEMP</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_PlausibilityCheck</td>
+</tr>
+<tr>
+<td>PLAUSIBILITY_CELL_TEMPERATURE_SPREAD</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_PlausibilityCheck</td>
+</tr>
+<tr>
+<td>AFE_CELL_VOLTAGE_MEAS_ERROR</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorAfe</td>
+</tr>
+<tr>
+<td>AFE_CELL_TEMPERATURE_MEAS_ERROR</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorAfe</td>
+</tr>
+<tr>
+<td>BASE_CELL_VOLTAGE_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorAfe</td>
+</tr>
+<tr>
+<td>REDUNDANCY0_CELL_VOLTAGE_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorAfe</td>
+</tr>
+<tr>
+<td>BASE_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorAfe</td>
+</tr>
+<tr>
+<td>REDUNDANCY0_CELL_TEMPERATURE_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_ErrorAfe</td>
+</tr>
+<tr>
+<td>PRECHARGE_ABORT_REASON_VOLTAGE</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_PrechargeProcess</td>
+</tr>
+<tr>
+<td>PRECHARGE_ABORT_REASON_CURRENT</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_PrechargeProcess</td>
+</tr>
+<tr>
+<td>INSULATION_MEASUREMENT_VALID</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_Insulation</td>
+</tr>
+<tr>
+<td>LOW_INSULATION_RESISTANCE_ERROR</td>
+<td>5</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_Insulation</td>
+</tr>
+<tr>
+<td>LOW_INSULATION_RESISTANCE_WARNING</td>
+<td>5</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_Insulation</td>
+</tr>
+<tr>
+<td>INSULATION_GROUND_ERROR</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_Insulation</td>
+</tr>
+<tr>
+<td>ALERT_MODE</td>
+<td>1</td>
+<td>FATAL</td>
+<td>—</td>
+<td>DIAG_AlertFlag</td>
+</tr>
+<tr>
+<td>AEROSOL_ALERT</td>
+<td>1</td>
+<td>WARNING</td>
+<td>—</td>
+<td>DIAG_AerosolAlert</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="swe4-unit-verification-from-testsunit">SWE.4: Unit Verification (from <code>tests/unit/</code>)</h2>
+<p>foxBMS ships with 183+ Ceedling unit tests. Test coverage per module:</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Test File</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BMS</td>
+<td><code>test_bms.c</code></td>
+<td>State transitions, error handling</td>
+</tr>
+<tr>
+<td>DIAG</td>
+<td><code>test_diag.c</code></td>
+<td>Threshold counting, flag setting</td>
+</tr>
+<tr>
+<td>Database</td>
+<td><code>test_database.c</code></td>
+<td>Read/write, queue</td>
+</tr>
+<tr>
+<td>CAN</td>
+<td><code>test_can.c</code></td>
+<td>TX/RX callbacks, encoding</td>
+</tr>
+<tr>
+<td>SOA</td>
+<td><code>test_soa.c</code></td>
+<td>Voltage/current/temp checks</td>
+</tr>
+<tr>
+<td>SBC</td>
+<td><code>test_sbc.c</code>, <code>test_nxpfs85xx.c</code></td>
+<td>State machine</td>
+</tr>
+<tr>
+<td>Contactor</td>
+<td><code>test_contactor.c</code></td>
+<td>Open/close, feedback</td>
+</tr>
+<tr>
+<td>Balancing</td>
+<td><code>test_bal.c</code></td>
+<td>Strategy selection</td>
+</tr>
+<tr>
+<td>fassert</td>
+<td><code>test_fassert.c</code></td>
+<td>Assert levels</td>
+</tr>
+<tr>
+<td>All others</td>
+<td><code>tests/unit/app/*/test_*.c</code></td>
+<td>Per-module unit tests</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="swe5-integration-specification-from-can-dbc-database">SWE.5: Integration Specification (from CAN DBC + Database)</h2>
+<h3 id="external-interface-can">External Interface (CAN)</h3>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>CAN IDs</th>
+<th>Data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>foxBMS → Vehicle</td>
+<td>0x220-0x301 (15+ message types)</td>
+<td>BMS state, SOC, cell voltages, temperatures, error flags</td>
+</tr>
+<tr>
+<td>Vehicle → foxBMS</td>
+<td>0x210</td>
+<td>State request (STANDBY/NORMAL), balancing control</td>
+</tr>
+<tr>
+<td>IVT → foxBMS</td>
+<td>0x521-0x527</td>
+<td>Current, voltages (3 channels), temperature</td>
+</tr>
+<tr>
+<td>AFE → foxBMS</td>
+<td>0x270, 0x280</td>
+<td>Cell voltages (18 cells, muxed), cell temperatures</td>
+</tr>
+</tbody>
+</table>
+<h3 id="internal-interface-database">Internal Interface (Database)</h3>
+<table>
+<thead>
+<tr>
+<th>Producer</th>
+<th>Database Entry</th>
+<th>Consumer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CAN RX callback</td>
+<td>Cell voltages</td>
+<td>SOA, Redundancy, Plausibility, BMS</td>
+</tr>
+<tr>
+<td>CAN RX callback</td>
+<td>IVT current</td>
+<td>SOA, SOC algorithm</td>
+</tr>
+<tr>
+<td>CAN RX callback</td>
+<td>State request</td>
+<td>BMS state machine</td>
+</tr>
+<tr>
+<td>AFE driver</td>
+<td>AFE measurements</td>
+<td>Redundancy → validated DB entries</td>
+</tr>
+<tr>
+<td>SOC algorithm</td>
+<td>SOC values</td>
+<td>CAN TX callback → 0x235</td>
+</tr>
+<tr>
+<td>BMS state machine</td>
+<td>BMS state</td>
+<td>CAN TX callback → 0x220</td>
+</tr>
+<tr>
+<td>DIAG</td>
+<td>Error flags</td>
+<td>BMS state machine</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="traceability-matrix-requirements-code-test">Traceability Matrix (Requirements → Code → Test)</h2>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Source Code</th>
+<th>DIAG Config</th>
+<th>Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REQ-VOLT-001 (OV MSL 2800mV)</td>
+<td><code>soa.c: SOA_CheckVoltages()</code></td>
+<td><code>CELL_VOLTAGE_OVERVOLTAGE_MSL</code>, thresh=50, FATAL, 200ms</td>
+<td><code>test_soa.c</code></td>
+</tr>
+<tr>
+<td>REQ-VOLT-002 (UV MSL 1500mV)</td>
+<td><code>soa.c: SOA_CheckVoltages()</code></td>
+<td><code>CELL_VOLTAGE_UNDERVOLTAGE_MSL</code>, thresh=50, FATAL, 200ms</td>
+<td><code>test_soa.c</code></td>
+</tr>
+<tr>
+<td>REQ-CURR-001 (OC discharge 180A)</td>
+<td><code>soa.c: SOA_CheckCurrent()</code></td>
+<td><code>OVERCURRENT_DISCHARGE_CELL_MSL</code>, thresh=10, FATAL, 100ms</td>
+<td><code>test_soa.c</code></td>
+</tr>
+<tr>
+<td>REQ-TEMP-001 (OT discharge 55°C)</td>
+<td><code>soa.c: SOA_CheckTemperatures()</code></td>
+<td><code>TEMP_OVERTEMPERATURE_DISCHARGE_MSL</code>, thresh=500, FATAL, 1000ms</td>
+<td><code>test_soa.c</code></td>
+</tr>
+<tr>
+<td>REQ-SAFE-001 (MSL → ERROR)</td>
+<td><code>bms.c: BMS_Trigger()</code></td>
+<td><code>DIAG_IsAnyFatalErrorSet()</code></td>
+<td><code>test_bms.c</code></td>
+</tr>
+<tr>
+<td>REQ-SAFE-002 (ERROR → open contactors)</td>
+<td><code>bms.c</code> → <code>CONT_OpenContactor()</code></td>
+<td>—</td>
+<td><code>test_bms.c</code></td>
+</tr>
+<tr>
+<td>REQ-SAFE-003 (Interlock → DIAG)</td>
+<td><code>interlock.c</code></td>
+<td><code>INTERLOCK_FEEDBACK</code>, thresh=10, FATAL, 100ms</td>
+<td><code>test_interlock.c</code></td>
+</tr>
+<tr>
+<td>REQ-SAFE-004 (Precharge voltage check)</td>
+<td><code>bms.c</code> precharge state</td>
+<td>—</td>
+<td>Our <code>test_smoke.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="what-this-proves">What This Proves</h2>
+<p>This document was extracted entirely from foxBMS 2 v1.10.0 open-source code. No proprietary information, no access to Fraunhofer internal documents.</p>
+<p><strong>For a customer or auditor</strong>: This demonstrates that:
+1. Requirements exist in the code (as configuration constants)
+2. Architecture exists in the module structure
+3. Detailed design exists in the DIAG configuration table
+4. Unit tests exist (183+)
+5. Traceability can be constructed from code references</p>
+<p><strong>For the POSIX port</strong>: This tells us exactly:
+- What thresholds to test in Phase 3 fault injection
+- What DIAG IDs to enable vs suppress
+- What delays to expect between fault detection and ERROR state
+- What the complete safety path looks like from sensor to contactor</p></div>
+<div class="nav-buttons"><a href="index.html">&larr; Index</a><a href="modules-index.html">Modules Index &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

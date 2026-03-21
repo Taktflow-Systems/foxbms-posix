@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWE.5 Integration Tests — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" class="active">SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Software / SWE.5 Integration Tests</div>
+<div class="content"><h1 id="integration-test-specification">Integration Test Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.5-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies integration-level tests for the foxBMS 2 POSIX port,
+satisfying ASPICE SWE.5 (software integration and integration test) and ISO 26262
+Part 6 Clause 10. Integration tests verify that modules interact correctly through
+their defined interfaces.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>Integration tests verify:
+- CAN interface data flow (external stimulus to internal database)
+- Database producer/consumer data integrity across modules
+- State machine transitions driven by inter-module interactions
+- Safety path: SOA to DIAG to BMS to Contactor</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.2-001]</td>
+<td>Software Architecture Description</td>
+</tr>
+<tr>
+<td>[SWE.4-001]</td>
+<td>Unit Test Specification</td>
+</tr>
+<tr>
+<td>[SWE.6-001]</td>
+<td>Qualification Test Specification</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-test-environment">4. Test Environment</h2>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Test framework</td>
+<td>pytest 8.x</td>
+</tr>
+<tr>
+<td>CAN interface</td>
+<td>SocketCAN (vcan0)</td>
+</tr>
+<tr>
+<td>SIL binary</td>
+<td>foxBMS POSIX build (x86-64, GCC 13)</td>
+</tr>
+<tr>
+<td>Stimulus</td>
+<td>python-can library injecting CAN frames</td>
+</tr>
+<tr>
+<td>Observation</td>
+<td>python-can listener capturing TX frames</td>
+</tr>
+<tr>
+<td>Timeout</td>
+<td>Per-test configurable, default 5 seconds</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-test-suites">5. Test Suites</h2>
+<h3 id="51-integration-test-suite-test_integrationpy">5.1 Integration Test Suite (test_integration.py)</h3>
+<h4 id="511-can-interface-integration">5.1.1 CAN Interface Integration</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Stimulus</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-001</td>
+<td>State request reception</td>
+<td>Send CAN 0x210 with NORMAL request</td>
+<td>BMS transitions from STANDBY; CAN 0x220 reflects new state</td>
+<td>SW-REQ-100, SW-REQ-041</td>
+</tr>
+<tr>
+<td>IT-002</td>
+<td>IVT current data reception</td>
+<td>Send CAN 0x521 with current value</td>
+<td>Database[CURRENT] updated; value appears in CAN 0x221 TX</td>
+<td>SW-REQ-101, SW-REQ-091</td>
+</tr>
+<tr>
+<td>IT-003</td>
+<td>IVT voltage data reception</td>
+<td>Send CAN 0x522-0x524 with voltage values</td>
+<td>Database entries updated; pack voltage reflected in TX</td>
+<td>SW-REQ-101</td>
+</tr>
+<tr>
+<td>IT-004</td>
+<td>IVT temperature data reception</td>
+<td>Send CAN 0x525 with temperature</td>
+<td>Database entry updated</td>
+<td>SW-REQ-101</td>
+</tr>
+<tr>
+<td>IT-005</td>
+<td>AFE cell voltage reception</td>
+<td>Send CAN 0x270 with multiplexed voltage data</td>
+<td>Cell voltages appear in CAN 0x240-0x245 TX messages</td>
+<td>SW-REQ-102, SW-REQ-092</td>
+</tr>
+<tr>
+<td>IT-006</td>
+<td>AFE cell temperature reception</td>
+<td>Send CAN 0x280 with multiplexed temp data</td>
+<td>Temperature data appears in CAN 0x260 TX</td>
+<td>SW-REQ-103, SW-REQ-093</td>
+</tr>
+<tr>
+<td>IT-007</td>
+<td>CAN TX periodicity</td>
+<td>Observe CAN 0x220 timing over 2 seconds</td>
+<td>Inter-frame interval approximately 100 ms (within 20%)</td>
+<td>SW-REQ-090</td>
+</tr>
+<tr>
+<td>IT-008</td>
+<td>Unknown CAN ID rejected</td>
+<td>Send CAN 0x999 (not in config)</td>
+<td>No crash, no state change, frame ignored</td>
+<td>SW-REQ-100</td>
+</tr>
+</tbody>
+</table>
+<h4 id="512-database-data-flow-integration">5.1.2 Database Data Flow Integration</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Stimulus</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-010</td>
+<td>Cell voltage flows from AFE to SOA</td>
+<td>Inject cell voltages via CAN 0x270</td>
+<td>SOA reads correct voltages from database</td>
+<td>SW-REQ-001, SW-REQ-062</td>
+</tr>
+<tr>
+<td>IT-011</td>
+<td>Current flows from IVT to SOA</td>
+<td>Inject current via CAN 0x521</td>
+<td>SOA reads correct current from database</td>
+<td>SW-REQ-010, SW-REQ-062</td>
+</tr>
+<tr>
+<td>IT-012</td>
+<td>Temperature flows from AFE to SOA</td>
+<td>Inject temperatures via CAN 0x280</td>
+<td>SOA reads correct temperatures from database</td>
+<td>SW-REQ-020, SW-REQ-062</td>
+</tr>
+<tr>
+<td>IT-013</td>
+<td>State request flows from CAN to BMS</td>
+<td>Send state request via CAN 0x210</td>
+<td>BMS reads correct request from database</td>
+<td>SW-REQ-100, SW-REQ-060</td>
+</tr>
+<tr>
+<td>IT-014</td>
+<td>BMS state flows to CAN TX</td>
+<td>Trigger BMS state change</td>
+<td>CAN 0x220 reflects updated BMS state</td>
+<td>SW-REQ-090, SW-REQ-040</td>
+</tr>
+</tbody>
+</table>
+<h4 id="513-state-machine-integration">5.1.3 State Machine Integration</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Stimulus</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-020</td>
+<td>SYS startup sequence</td>
+<td>Start binary, wait 2 seconds</td>
+<td>SYS progresses: UNINITIALIZED -&gt; INITIALIZATION -&gt; INITIALIZED -&gt; IDLE -&gt; RUNNING</td>
+<td>SW-REQ-050 to SW-REQ-053</td>
+</tr>
+<tr>
+<td>IT-021</td>
+<td>BMS STANDBY to PRECHARGE</td>
+<td>Send CAN 0x210 NORMAL request</td>
+<td>BMS state changes to PRECHARGE (6)</td>
+<td>SW-REQ-041</td>
+</tr>
+<tr>
+<td>IT-022</td>
+<td>BMS PRECHARGE to NORMAL</td>
+<td>Send state request + wait for precharge</td>
+<td>BMS state changes to NORMAL (7)</td>
+<td>SW-REQ-042</td>
+</tr>
+<tr>
+<td>IT-023</td>
+<td>BMS NORMAL to STANDBY</td>
+<td>Send CAN 0x210 STANDBY request</td>
+<td>BMS state changes to STANDBY (5)</td>
+<td>SW-REQ-041</td>
+</tr>
+<tr>
+<td>IT-024</td>
+<td>BMS any-state to ERROR</td>
+<td>Inject fault condition (e.g., overvoltage)</td>
+<td>BMS state changes to ERROR (9)</td>
+<td>SW-REQ-043</td>
+</tr>
+<tr>
+<td>IT-025</td>
+<td>BMS ERROR persistence</td>
+<td>In ERROR, send NORMAL request</td>
+<td>BMS remains in ERROR (dual condition required)</td>
+<td>SW-REQ-045</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-asil-test-suite-test_asilpy">5.2 ASIL Test Suite (test_asil.py)</h3>
+<h4 id="521-safety-path-integration">5.2.1 Safety Path Integration</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Stimulus</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-030</td>
+<td>Overvoltage MSL triggers ERROR</td>
+<td>Inject cell voltage &gt; 2800 mV via CAN 0x270 for 50+ evaluations</td>
+<td>DIAG FATAL set; BMS enters ERROR; contactors open</td>
+<td>SW-REQ-001, SW-REQ-032, SW-REQ-043, SW-REQ-044</td>
+</tr>
+<tr>
+<td>IT-031</td>
+<td>Undervoltage MSL triggers ERROR</td>
+<td>Inject cell voltage &lt; 1500 mV via CAN 0x270 for 50+ evaluations</td>
+<td>DIAG FATAL set; BMS enters ERROR; contactors open</td>
+<td>SW-REQ-002, SW-REQ-032, SW-REQ-043, SW-REQ-044</td>
+</tr>
+<tr>
+<td>IT-032</td>
+<td>Overtemperature discharge MSL triggers ERROR</td>
+<td>Inject temperature &gt; 55 deg C via CAN 0x280 for 500+ evaluations</td>
+<td>DIAG FATAL set; BMS enters ERROR</td>
+<td>SW-REQ-020, SW-REQ-032, SW-REQ-043</td>
+</tr>
+<tr>
+<td>IT-033</td>
+<td>Undertemperature discharge MSL triggers ERROR</td>
+<td>Inject temperature &lt; -20 deg C via CAN 0x280 for 500+ evaluations</td>
+<td>DIAG FATAL set; BMS enters ERROR</td>
+<td>SW-REQ-021, SW-REQ-032, SW-REQ-043</td>
+</tr>
+<tr>
+<td>IT-034</td>
+<td>Overtemperature charge MSL triggers ERROR</td>
+<td>Inject temperature &gt; 45 deg C during charge</td>
+<td>DIAG FATAL set; BMS enters ERROR</td>
+<td>SW-REQ-022, SW-REQ-032, SW-REQ-043</td>
+</tr>
+<tr>
+<td>IT-035</td>
+<td>Undertemperature charge MSL triggers ERROR</td>
+<td>Inject temperature &lt; -20 deg C during charge</td>
+<td>DIAG FATAL set; BMS enters ERROR</td>
+<td>SW-REQ-023, SW-REQ-032, SW-REQ-043</td>
+</tr>
+<tr>
+<td>IT-036</td>
+<td>Discharge overcurrent MSL triggers ERROR</td>
+<td>Inject current &gt; 180000 mA for 10+ evaluations</td>
+<td>DIAG FATAL set; BMS enters ERROR</td>
+<td>SW-REQ-010, SW-REQ-032, SW-REQ-043</td>
+</tr>
+<tr>
+<td>IT-037</td>
+<td>Charge overcurrent MSL triggers ERROR</td>
+<td>Inject charge current &gt; 180000 mA for 10+ evaluations</td>
+<td>DIAG FATAL set; BMS enters ERROR</td>
+<td>SW-REQ-011, SW-REQ-032, SW-REQ-043</td>
+</tr>
+<tr>
+<td>IT-038</td>
+<td>Deep discharge latches ERROR</td>
+<td>Inject cell voltage &lt;= 1500 mV</td>
+<td>FATAL set with threshold=1; BMS enters ERROR; does not auto-clear</td>
+<td>SW-REQ-005, SW-REQ-045</td>
+</tr>
+<tr>
+<td>IT-039</td>
+<td>Current on open string triggers ERROR</td>
+<td>Inject current &gt; 200 mA with contactors open</td>
+<td>DIAG FATAL set; BMS enters ERROR</td>
+<td>SW-REQ-014, SW-REQ-043</td>
+</tr>
+</tbody>
+</table>
+<h4 id="522-diagnostic-debounce-integration">5.2.2 Diagnostic Debounce Integration</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Stimulus</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-040</td>
+<td>Overvoltage below threshold count does not trigger ERROR</td>
+<td>Inject overvoltage for 49 evaluations, then normal</td>
+<td>BMS remains in current state; counter resets</td>
+<td>SW-REQ-031, SW-REQ-033</td>
+</tr>
+<tr>
+<td>IT-041</td>
+<td>Temperature below threshold count does not trigger ERROR</td>
+<td>Inject overtemp for 499 evaluations, then normal</td>
+<td>BMS remains in current state</td>
+<td>SW-REQ-031, SW-REQ-033</td>
+</tr>
+<tr>
+<td>IT-042</td>
+<td>Overcurrent reaches threshold quickly (10 events)</td>
+<td>Inject overcurrent continuously</td>
+<td>FATAL triggered after 10 events at 100 ms delay</td>
+<td>SW-REQ-031</td>
+</tr>
+</tbody>
+</table>
+<h4 id="523-contactor-integration">5.2.3 Contactor Integration</h4>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Stimulus</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-050</td>
+<td>Precharge sequence closes correct contactors</td>
+<td>Request NORMAL via CAN</td>
+<td>Precharge + string- close; string+ closes after precharge</td>
+<td>SW-REQ-041, SW-REQ-042</td>
+</tr>
+<tr>
+<td>IT-051</td>
+<td>ERROR opens all three contactors</td>
+<td>Trigger FATAL event</td>
+<td>String+, string-, precharge all commanded OPEN</td>
+<td>SW-REQ-044</td>
+</tr>
+<tr>
+<td>IT-052</td>
+<td>Contactor feedback mismatch detected</td>
+<td>Simulate feedback mismatch (via stub)</td>
+<td>DIAG reports contactor feedback event</td>
+<td>SW-REQ-044</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-sil-probe-test-suite-test_sil_probespy">5.3 SIL Probe Test Suite (test_sil_probes.py)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Test Case</th>
+<th>Stimulus</th>
+<th>Expected Result</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-060</td>
+<td>Database entry write observed</td>
+<td>Write known value to database entry</td>
+<td>SIL probe reads matching value</td>
+<td>SW-REQ-060</td>
+</tr>
+<tr>
+<td>IT-061</td>
+<td>DIAG counter observable</td>
+<td>Trigger diagnostic event</td>
+<td>SIL probe reads incremented counter</td>
+<td>SW-REQ-031</td>
+</tr>
+<tr>
+<td>IT-062</td>
+<td>BMS state observable</td>
+<td>Trigger state transition</td>
+<td>SIL probe reads new state value</td>
+<td>SW-REQ-040</td>
+</tr>
+<tr>
+<td>IT-063</td>
+<td>Contactor state observable</td>
+<td>Command contactor state</td>
+<td>SIL probe reads commanded state</td>
+<td>SW-REQ-044</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-integration-strategy">6. Integration Strategy</h2>
+<h3 id="61-integration-order">6.1 Integration Order</h3>
+<p>Integration follows a bottom-up approach:</p>
+<ol>
+<li><strong>Level 1</strong>: HAL stubs + Driver layer (CAN via SocketCAN, SPI/I2C stubs)</li>
+<li><strong>Level 2</strong>: Engine layer (Database, DIAG) on top of drivers</li>
+<li><strong>Level 3</strong>: Application layer (SOA, BMS, Algorithm) on top of engine</li>
+<li><strong>Level 4</strong>: Full system integration with CAN stimulus</li>
+</ol>
+<h3 id="62-integration-criteria">6.2 Integration Criteria</h3>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Entry Criteria</th>
+<th>Exit Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Level 1</td>
+<td>HAL stubs compile, driver unit tests pass</td>
+<td>IT-001 through IT-008 pass</td>
+</tr>
+<tr>
+<td>Level 2</td>
+<td>Level 1 exit, engine unit tests pass</td>
+<td>IT-010 through IT-014 pass</td>
+</tr>
+<tr>
+<td>Level 3</td>
+<td>Level 2 exit, application unit tests pass</td>
+<td>IT-020 through IT-025 pass</td>
+</tr>
+<tr>
+<td>Level 4</td>
+<td>Level 3 exit</td>
+<td>IT-030 through IT-063 all pass</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-passfail-criteria">7. Pass/Fail Criteria</h2>
+<ul>
+<li>All integration tests shall pass with zero failures.</li>
+<li>No test shall cause a crash, segfault, or timeout.</li>
+<li>CAN message timing shall be within 20% of specified periods.</li>
+<li>State transitions shall occur within 500 ms of stimulus injection.</li>
+</ul>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="swe-4-unit-tests.html">&larr; SWE.4 Unit Tests</a><a href="swe-6-qualification-tests.html">SWE.6 Qualification Tests &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

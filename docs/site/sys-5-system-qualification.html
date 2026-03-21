@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYS.5 System Qualification — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" class="active">SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — System / SYS.5 System Qualification</div>
+<div class="content"><h1 id="system-qualification-test-specification">System Qualification Test Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.5-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies the system qualification tests for the foxBMS 2 POSIX vECU project in accordance with ASPICE SYS.5 (System Qualification Test). These tests verify that the delivered system meets the stakeholder requirements and is fit for its intended purpose as a SIL pre-validation platform for HIL test engineers.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>System qualification testing demonstrates end-to-end acceptance of the system from the perspective of each stakeholder. Unlike integration tests (SYS.4), qualification tests focus on whether the system delivers its intended value, not on component interaction mechanics.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.1-001]</td>
+<td>Stakeholder Requirements Specification</td>
+</tr>
+<tr>
+<td>[SYS.4-001]</td>
+<td>System Integration Test Specification</td>
+</tr>
+<tr>
+<td>[SYS.2-001]</td>
+<td>System Requirements Specification</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-test-environment">4. Test Environment</h2>
+<p>Identical to SYS.4 test environment (see SYS.4-001, Section 4). All qualification tests execute on the same Ubuntu 24.04 workstation with SocketCAN.</p>
+<h2 id="5-qualification-test-strategy">5. Qualification Test Strategy</h2>
+<p>Qualification tests are the highest-level acceptance gate. They verify that:
+1. A fresh clone of the repository can be built and tested with a single command
+2. The BMS reaches its operational state within acceptable time
+3. Core BMS functions (SOC, contactor control, diagnostics) operate correctly
+4. The system meets timing requirements</p>
+<p>The primary test vehicle is <strong>test_smoke.py</strong>, which serves as the end-to-end acceptance test.</p>
+<h2 id="6-qualification-test-cases">6. Qualification Test Cases</h2>
+<h3 id="61-build-and-deploy-acceptance">6.1 Build and Deploy Acceptance</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQT-001</td>
+<td>Fresh clone: <code>git clone --recursive</code> completes without error</td>
+<td>STKH-REQ-001</td>
+<td>Exit code 0</td>
+</tr>
+<tr>
+<td>SQT-002</td>
+<td>Setup: <code>./setup.sh</code> applies patches, builds vECU, configures vcan0, runs smoke test -- all in one command</td>
+<td>STKH-REQ-002</td>
+<td>Exit code 0; "PASS" in output</td>
+</tr>
+<tr>
+<td>SQT-003</td>
+<td>Build time is under 60 seconds on reference workstation</td>
+<td>STKH-REQ-003</td>
+<td>Wall clock time &lt; 60s</td>
+</tr>
+<tr>
+<td>SQT-004</td>
+<td>foxBMS version check: apply_all.sh verifies v1.10.0 before patching</td>
+<td>STKH-REQ-004</td>
+<td>Version check message in output</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-bms-operational-acceptance">6.2 BMS Operational Acceptance</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQT-005</td>
+<td>BMS reaches NORMAL state within 15 seconds of vECU start</td>
+<td>STKH-REQ-006</td>
+<td>BMS state = NORMAL observed in CAN within 15s</td>
+</tr>
+<tr>
+<td>SQT-006</td>
+<td>BMS transitions through all expected states: UNINIT -&gt; INIT -&gt; IDLE -&gt; STANDBY -&gt; PRECHARGE -&gt; NORMAL</td>
+<td>STKH-REQ-005</td>
+<td>All intermediate states observed in sequence</td>
+</tr>
+<tr>
+<td>SQT-007</td>
+<td>At least 15 distinct CAN message IDs transmitted during a 20-second run</td>
+<td>STKH-REQ-007</td>
+<td>&gt;= 15 unique CAN IDs on vcan0</td>
+</tr>
+<tr>
+<td>SQT-008</td>
+<td>connected_strings = 1 when BMS is in NORMAL state</td>
+<td>STKH-REQ-005</td>
+<td>CAN message confirms connected_strings &gt; 0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-battery-state-acceptance">6.3 Battery State Acceptance</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQT-009</td>
+<td>SOC is non-zero and reported on CAN 0x235</td>
+<td>STKH-REQ-008</td>
+<td>SOC value &gt; 0% in CAN message</td>
+</tr>
+<tr>
+<td>SQT-010</td>
+<td>SOC decreases over a 20-second discharge run</td>
+<td>STKH-REQ-008</td>
+<td>SOC at t=20s &lt; SOC at t=5s</td>
+</tr>
+<tr>
+<td>SQT-011</td>
+<td>Cell voltages are within valid range (1500 mV - 4200 mV)</td>
+<td>STKH-REQ-005</td>
+<td>All 18 cell voltages within range</td>
+</tr>
+<tr>
+<td>SQT-012</td>
+<td>Cell temperatures are within valid range (0 - 60 degC)</td>
+<td>STKH-REQ-005</td>
+<td>All temperature readings within range</td>
+</tr>
+</tbody>
+</table>
+<h3 id="64-timing-and-performance-acceptance">6.4 Timing and Performance Acceptance</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQT-013</td>
+<td>Cooperative loop executes 1ms tick without deadline violations during 20-second run</td>
+<td>STKH-REQ-005</td>
+<td>Zero deadline violations in timing summary</td>
+</tr>
+<tr>
+<td>SQT-014</td>
+<td>vECU exits cleanly after --timeout 20</td>
+<td>STKH-REQ-015</td>
+<td>Process exits with code 0 within 22 seconds</td>
+</tr>
+<tr>
+<td>SQT-015</td>
+<td>Timing summary printed at exit shows max execution times</td>
+<td>STKH-REQ-015</td>
+<td>Timing summary present in stdout</td>
+</tr>
+</tbody>
+</table>
+<h3 id="65-safety-acceptance">6.5 Safety Acceptance</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQT-016</td>
+<td>Selective DIAG_Handler is active: 61 SW-checkable IDs enabled, 24 HW IDs suppressed</td>
+<td>STKH-REQ-009, STKH-REQ-010</td>
+<td>DIAG configuration log confirms counts</td>
+</tr>
+<tr>
+<td>SQT-017</td>
+<td>FAS_ASSERT violation causes visible crash with file/line information</td>
+<td>STKH-REQ-013</td>
+<td>Assert test produces error message and exit code 1</td>
+</tr>
+<tr>
+<td>SQT-018</td>
+<td>Software watchdog triggers if main loop stalls &gt; 100ms</td>
+<td>STKH-REQ-013</td>
+<td>Watchdog message in output when stall injected</td>
+</tr>
+</tbody>
+</table>
+<h3 id="66-fault-injection-acceptance">6.6 Fault Injection Acceptance</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQT-019</td>
+<td>SIL probe override (CAN 0x7E0) can inject overvoltage fault and BMS detects it</td>
+<td>STKH-REQ-011, STKH-REQ-012</td>
+<td>DIAG event for CELL_VOLTAGE_OVERVOLTAGE_MSL logged</td>
+</tr>
+<tr>
+<td>SQT-020</td>
+<td>Fault injection test suite (test_asil.py) achieves 50/50 criteria pass</td>
+<td>STKH-REQ-017</td>
+<td>test_asil.py exit code 0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="67-documentation-and-usability-acceptance">6.7 Documentation and Usability Acceptance</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQT-021</td>
+<td>TROUBLESHOOTING.md exists and covers &gt;= 10 failure modes</td>
+<td>STKH-REQ-018</td>
+<td>File exists; &gt;= 10 sections</td>
+</tr>
+<tr>
+<td>SQT-022</td>
+<td>Architecture documentation includes block diagrams</td>
+<td>STKH-REQ-019</td>
+<td>SYS.3 and SWE.2 docs contain ASCII block diagrams</td>
+</tr>
+<tr>
+<td>SQT-023</td>
+<td>COVERAGE.md tracks all features with working/suppressed/not-implemented status</td>
+<td>STKH-REQ-020</td>
+<td>File exists; summary table present</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-test-execution">7. Test Execution</h2>
+<h3 id="71-execution-command">7.1 Execution Command</h3>
+<pre><code class="language-bash"># Primary qualification test
+python3 tests/test_smoke.py --timeout 20
+
+# Full qualification (smoke + integration + ASIL)
+./setup.sh  # Includes smoke test
+python3 tests/test_integration.py --timeout 30
+python3 tests/test_asil.py --timeout 60
+</code></pre>
+<h3 id="72-acceptance-verdict">7.2 Acceptance Verdict</h3>
+<p>The system qualification is <strong>PASSED</strong> when:
+- test_smoke.py reports PASS
+- test_integration.py reports 21/21 criteria pass
+- test_asil.py reports 50/50 criteria pass
+- setup.sh completes on a fresh clone without manual intervention</p>
+<h3 id="73-current-results">7.3 Current Results</h3>
+<pre><code>[SMOKE] BMS reached NORMAL state after 6.3s (connected_strings=1)
+[SMOKE] OK: connected_strings=1 when NORMAL
+[SMOKE] OK: SOC non-zero seen on 0x235
+[SMOKE] PASS: BMS NORMAL, connected_strings &gt; 0, SOC &gt; 0% confirmed
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>test_smoke.py</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>test_integration.py</td>
+<td>21/21 PASS</td>
+</tr>
+<tr>
+<td>test_asil.py</td>
+<td>50/50 PASS</td>
+</tr>
+<tr>
+<td>setup.sh (fresh clone)</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-traceability">8. Traceability</h2>
+<p>All SQT-xxx test cases trace back to STKH-REQ-xxx stakeholder requirements in [SYS.1-001]. This provides the final link in the traceability chain: stakeholder requirements -&gt; system requirements -&gt; software requirements -&gt; design -&gt; implementation -&gt; unit test -&gt; integration test -&gt; qualification test.</p></div>
+<div class="nav-buttons"><a href="sys-4-system-integration-test.html">&larr; SYS.4 System Integration Test</a><a href="swe-1-software-reqs.html">SWE.1 Software Reqs &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

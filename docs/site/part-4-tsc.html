@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 4: TSC — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" class="active">Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 4: TSC</div>
+<div class="content"><h1 id="iso-26262-4-technical-safety-concept-tsc">ISO 26262-4: Technical Safety Concept (TSC)</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Document ID</td>
+<td>FOX-SAF-TSC-001</td>
+</tr>
+<tr>
+<td>Applicable Standard</td>
+<td>ISO 26262:2018 Part 4 — Product Development: System Level</td>
+</tr>
+<tr>
+<td>System</td>
+<td>foxBMS 2 Battery Management System v1.10.0</td>
+</tr>
+<tr>
+<td>Item Definition</td>
+<td>Li-ion BMS: 1 string, 1 module, 18s1p, NMC cells 3500 mAh</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-03-21</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Released for Review</td>
+</tr>
+<tr>
+<td>Related Documents</td>
+<td>FOX-SAF-HARA-001, FOX-SAF-FSC-001, FOX-SAF-FMEA-001</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-scope">1  Scope</h2>
+<p>This Technical Safety Concept (TSC) maps each functional safety requirement from the FSC (FOX-SAF-FSC-001) to specific hardware and software elements in the foxBMS 2 system. For each safety mechanism, the document identifies:</p>
+<ul>
+<li>The detection mechanism (DIAG ID, SOA check function, sensor element)</li>
+<li>The diagnostic threshold counter configuration</li>
+<li>The reaction chain (callback → BMS state transition → contactor command)</li>
+<li>The timing budget (detection time + reaction time = FTTI contribution)</li>
+<li>The hardware elements involved in the safety path</li>
+</ul>
+<hr />
+<h2 id="2-system-architecture-overview">2  System Architecture Overview</h2>
+<h3 id="21-hardware-safety-path">2.1  Hardware Safety Path</h3>
+<pre><code>┌──────────┐    SPI     ┌──────────┐   GPIO/SPI   ┌──────────────┐
+│  Battery  │◄─────────►│   AFE     │◄────────────►│              │
+│  Cells    │  (voltage, │ (LTC681x) │              │              │
+│  18s1p    │   temp)    └──────────┘              │  TMS570       │
+│           │                                      │  Micro-       │
+│           │            ┌──────────┐    CAN       │  controller   │
+│           │◄──────────►│  IVT     │◄────────────►│              │
+│  Current  │  (shunt)   │ Current  │              │  (ARM Cortex  │
+│  path     │            │ Sensor   │              │   R4F, dual   │
+│           │            └──────────┘              │   core,       │
+│           │                                      │   lockstep)   │
+└─────┬─────┘            ┌──────────┐   SPI       │              │
+      │                  │  SPS     │◄────────────►│              │
+      │    ┌──────────┐  │  Smart   │              │              │
+      ├───►│Contactor  │◄─┤  Power   │              │              │
+      │    │String +   │  │  Switch  │              │              │
+      │    └──────────┘  └──────────┘              │              │
+      │    ┌──────────┐                            │              │
+      ├───►│Contactor  │◄──────────────────────────┤              │
+      │    │String -   │  (via SPS)                │              │
+      │    └──────────┘                            │              │
+      │    ┌──────────┐                            │              │
+      └───►│Precharge  │◄──────────────────────────┤              │
+           │Contactor  │  (via SPS)                │              │
+           └──────────┘                            │              │
+                                                   │              │
+           ┌──────────┐   SPI                      │              │
+           │  SBC     │◄──────────────────────────►│              │
+           │ (FS8x)   │  watchdog, Vdd, RSTB       │              │
+           └──────────┘                            └──────┬───────┘
+                                                          │
+           ┌──────────┐   GPIO                            │
+           │Interlock │◄──────────────────────────────────┘
+           │Loop      │
+           └──────────┘
+</code></pre>
+<h3 id="22-software-safety-path">2.2  Software Safety Path</h3>
+<pre><code>Sensor Acquisition → SOA Check → DIAG Handler → BMS State Machine → Contactor Control
+     (1ms/10ms)       (10ms)       (10ms)           (10ms)              (10ms)
+</code></pre>
+<p>Detailed call chain:
+1. AFE driver acquires cell voltages and temperatures (1 ms task triggers SPI transaction, results available within 1–3 ms)
+2. <code>SOA_CheckCellVoltage()</code> / <code>SOA_CheckTemperatures()</code> / <code>SOA_CheckCurrent()</code> called from 10 ms task context
+3. SOA check compares measured value against MOL/RSL/MSL thresholds from <code>soa_cfg.c</code>
+4. If MSL threshold violated: <code>DIAG_Handler(DIAG_ID_xxx_MSL, DIAG_EVENT_NOT_OK, ...)</code> called
+5. <code>DIAG_Handler()</code> increments threshold counter for the DIAG ID
+6. When counter reaches configured threshold: FATAL flag set, callback function executed
+7. Callback (e.g., <code>DIAG_ErrorOvervoltage()</code>) may perform additional actions
+8. <code>BMS_Trigger()</code> calls <code>DIAG_IsAnyFatalErrorSet()</code> every 10 ms
+9. If any FATAL flag is set: BMS transitions from current state to <code>BMS_STATEMACHINE_ERROR</code>
+10. Error state handler commands all contactors open via <code>CONT_OpenContactor()</code> → SPS driver</p>
+<hr />
+<h2 id="3-technical-safety-requirements">3  Technical Safety Requirements</h2>
+<h3 id="31-tsr-01-cell-overvoltage-detection-and-reaction-fsr-01-asil-d">3.1  TSR-01: Cell Overvoltage Detection and Reaction (FSR-01, ASIL D)</h3>
+<h4 id="311-detection-mechanism">3.1.1  Detection Mechanism</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sensor</strong></td>
+<td>AFE (LTC681x family) — per-cell voltage measurement</td>
+</tr>
+<tr>
+<td><strong>Measurement range</strong></td>
+<td>0–5000 mV, 16-bit ADC resolution (~0.1 mV/LSB)</td>
+</tr>
+<tr>
+<td><strong>Measurement rate</strong></td>
+<td>Every AFE conversion cycle (~1–3 ms per complete scan of 18 cells)</td>
+</tr>
+<tr>
+<td><strong>SOA Check Function</strong></td>
+<td><code>SOA_CheckCellVoltage()</code> in <code>soa_cfg.c</code></td>
+</tr>
+<tr>
+<td><strong>MSL Threshold</strong></td>
+<td>2800 mV (BC_VOLTAGE_MAX_MSL in <code>battery_cell_cfg.h</code>)</td>
+</tr>
+<tr>
+<td><strong>DIAG ID</strong></td>
+<td>DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>50 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>200 ms</td>
+</tr>
+<tr>
+<td><strong>DIAG Severity</strong></td>
+<td>FATAL</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorOvervoltage</td>
+</tr>
+</tbody>
+</table>
+<h4 id="312-reaction-chain">3.1.2  Reaction Chain</h4>
+<ol>
+<li><code>SOA_CheckCellVoltage()</code> detects cell_voltage &gt; 2800 mV</li>
+<li>Calls <code>DIAG_Handler(DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL, DIAG_EVENT_NOT_OK, ...)</code></li>
+<li>DIAG increments threshold counter (0 → 1 → ... → 50)</li>
+<li>After 50 consecutive NOT_OK events (500 ms at 10 ms period): threshold reached</li>
+<li>200 ms debounce delay elapses</li>
+<li>FATAL flag set for DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL</li>
+<li><code>DIAG_ErrorOvervoltage()</code> callback executed (sets SOF flags, updates CAN signals)</li>
+<li>Next <code>BMS_Trigger()</code> call: <code>DIAG_IsAnyFatalErrorSet()</code> returns true</li>
+<li>BMS transitions to BMS_STATEMACHINE_ERROR</li>
+<li>Error state opens string+, string-, and precharge contactors via SPS</li>
+</ol>
+<h4 id="313-timing-budget">3.1.3  Timing Budget</h4>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sensor acquisition</td>
+<td>1–3 ms</td>
+<td>AFE SPI transaction time</td>
+</tr>
+<tr>
+<td>SOA check execution</td>
+<td>&lt;1 ms</td>
+<td>Software comparison (negligible)</td>
+</tr>
+<tr>
+<td>Threshold accumulation</td>
+<td>500 ms</td>
+<td>50 × 10 ms task period</td>
+</tr>
+<tr>
+<td>Debounce delay</td>
+<td>200 ms</td>
+<td>diag_cfg.c delay_ms</td>
+</tr>
+<tr>
+<td>BMS state transition</td>
+<td>10 ms</td>
+<td>Next BMS_Trigger cycle</td>
+</tr>
+<tr>
+<td>Contactor command</td>
+<td>&lt;1 ms</td>
+<td>SPS SPI write</td>
+</tr>
+<tr>
+<td>Contactor mechanical</td>
+<td>20–50 ms</td>
+<td>Relay/contactor opening time</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td><strong>~750 ms</strong></td>
+<td>Detection + reaction + actuation</td>
+</tr>
+</tbody>
+</table>
+<h4 id="314-hardware-elements-in-safety-path">3.1.4  Hardware Elements in Safety Path</h4>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Function</th>
+<th>Failure Mode Covered By</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFE (LTC681x)</td>
+<td>Cell voltage measurement</td>
+<td>DIAG_ID_AFE_SPI, AFE_COMMUNICATION_INTEGRITY, AFE_MUX, AFE_CONFIG</td>
+</tr>
+<tr>
+<td>SPI Bus (AFE)</td>
+<td>Data transport AFE ↔ MCU</td>
+<td>DIAG_ID_AFE_SPI (CRC check)</td>
+</tr>
+<tr>
+<td>TMS570 MCU</td>
+<td>SOA comparison, DIAG logic, BMS SM</td>
+<td>DIAG_ID_SYSTEM_MONITORING, SBC watchdog, lockstep CPU</td>
+</tr>
+<tr>
+<td>SPS Driver</td>
+<td>Contactor power switching</td>
+<td>SPS feedback (implicit)</td>
+</tr>
+<tr>
+<td>Contactors</td>
+<td>Current path interruption</td>
+<td>DIAG_ID_STRING_*_CONTACTOR_FEEDBACK</td>
+</tr>
+<tr>
+<td>SBC (FS8x)</td>
+<td>Watchdog, power supply supervision</td>
+<td>DIAG_ID_SBC_RSTB_ERROR</td>
+</tr>
+</tbody>
+</table>
+<h4 id="315-redundancy-analysis-asil-d-requirement">3.1.5  Redundancy Analysis (ASIL D Requirement)</h4>
+<p>For ASIL D, ISO 26262 requires independence of safety mechanisms. The following redundancy is provided:</p>
+<ul>
+<li><strong>Primary detection:</strong> AFE per-cell voltage measurement → SOA_CheckCellVoltage → DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL</li>
+<li><strong>Secondary detection:</strong> IVT pack voltage (V1) → plausibility check (sum of AFE cells vs. IVT pack voltage) → DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE</li>
+<li><strong>Tertiary protection:</strong> SBC watchdog timeout (if software hangs due to fault) → MCU reset → contactors open (fail-safe default state)</li>
+<li><strong>Independence:</strong> AFE and IVT are physically separate devices with separate communication buses (SPI vs. CAN), separate power supplies, and independent measurement principles (direct cell tapping vs. pack-level shunt + ADC)</li>
+</ul>
+<hr />
+<h3 id="32-tsr-02-cell-undervoltage-detection-and-reaction-fsr-02-asil-c">3.2  TSR-02: Cell Undervoltage Detection and Reaction (FSR-02, ASIL C)</h3>
+<h4 id="321-detection-mechanism">3.2.1  Detection Mechanism</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sensor</strong></td>
+<td>AFE — per-cell voltage measurement</td>
+</tr>
+<tr>
+<td><strong>MSL Threshold</strong></td>
+<td>1500 mV (BC_VOLTAGE_MIN_MSL in <code>battery_cell_cfg.h</code>)</td>
+</tr>
+<tr>
+<td><strong>DIAG ID</strong></td>
+<td>DIAG_ID_CELL_VOLTAGE_UNDERVOLTAGE_MSL</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>50 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>200 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorUndervoltage</td>
+</tr>
+</tbody>
+</table>
+<h4 id="322-reaction-chain">3.2.2  Reaction Chain</h4>
+<p>Identical structure to TSR-01 with undervoltage-specific callback:
+1. <code>SOA_CheckCellVoltage()</code> detects cell_voltage &lt; 1500 mV
+2. DIAG threshold counter accumulates 50 events over 500 ms
+3. 200 ms debounce delay
+4. FATAL flag → BMS ERROR → contactors open</p>
+<h4 id="323-timing-budget">3.2.3  Timing Budget</h4>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Total FTTI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Threshold accumulation</td>
+<td>500 ms</td>
+<td></td>
+</tr>
+<tr>
+<td>Debounce delay</td>
+<td>200 ms</td>
+<td></td>
+</tr>
+<tr>
+<td>Actuation</td>
+<td>50 ms</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td></td>
+<td><strong>750 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="33-tsr-03-deep-discharge-detection-fsr-03-qm">3.3  TSR-03: Deep Discharge Detection (FSR-03, QM)</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DIAG ID</strong></td>
+<td>DIAG_ID_DEEP_DISCHARGE_DETECTED</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>1 event (immediate trigger)</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Deep discharge flag set by cell monitoring logic when cell voltage is critically low (well below UV cutoff) or when cell SOC indicates irreversible state</td>
+</tr>
+<tr>
+<td><strong>Reaction</strong></td>
+<td>Single event → FATAL → BMS ERROR → contactors open</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>10 ms + 100 ms + 50 ms = <strong>160 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="34-tsr-04-overcurrent-discharge-detection-fsr-04-asil-b">3.4  TSR-04: Overcurrent Discharge Detection (FSR-04, ASIL B)</h3>
+<h4 id="341-detection-mechanism">3.4.1  Detection Mechanism</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sensor</strong></td>
+<td>IVT current sensor (Isabellenhuette) via CAN</td>
+</tr>
+<tr>
+<td><strong>Cell-level DIAG ID</strong></td>
+<td>DIAG_ID_OVERCURRENT_DISCHARGE_CELL_MSL</td>
+</tr>
+<tr>
+<td><strong>Cell-level limit</strong></td>
+<td>180000 mA (BC_CURRENT_MAX_DISCHARGE_MSL)</td>
+</tr>
+<tr>
+<td><strong>String-level DIAG ID</strong></td>
+<td>DIAG_ID_STRING_OVERCURRENT_DISCHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>String-level limit</strong></td>
+<td>2400 mA (BS_MAX_DISCHARGE_CURRENT_MSL)</td>
+</tr>
+<tr>
+<td><strong>Pack-level DIAG ID</strong></td>
+<td>DIAG_ID_PACK_OVERCURRENT_DISCHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>10 consecutive events (all levels)</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>100 ms (all levels)</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorOvercurrentDischarge</td>
+</tr>
+</tbody>
+</table>
+<h4 id="342-timing-budget">3.4.2  Timing Budget</h4>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IVT measurement</td>
+<td>~1 ms</td>
+<td>Current sensor conversion time</td>
+</tr>
+<tr>
+<td>CAN transmission</td>
+<td>~1 ms</td>
+<td>CAN message latency</td>
+</tr>
+<tr>
+<td>SOA check</td>
+<td>&lt;1 ms</td>
+<td>Software comparison</td>
+</tr>
+<tr>
+<td>Threshold accumulation</td>
+<td>100 ms</td>
+<td>10 × 10 ms task period</td>
+</tr>
+<tr>
+<td>Debounce delay</td>
+<td>100 ms</td>
+<td>diag_cfg.c delay_ms</td>
+</tr>
+<tr>
+<td>Actuation</td>
+<td>50 ms</td>
+<td>Contactor opening</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>~250 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="343-hardware-elements">3.4.3  Hardware Elements</h4>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Function</th>
+<th>Safety Relevance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IVT Shunt</td>
+<td>Current-to-voltage conversion</td>
+<td>Primary current measurement</td>
+</tr>
+<tr>
+<td>IVT Electronics</td>
+<td>ADC, CAN transmission</td>
+<td>Signal conditioning</td>
+</tr>
+<tr>
+<td>CAN Bus</td>
+<td>IVT ↔ MCU data transport</td>
+<td>DIAG_ID_CAN_TIMING monitors bus health</td>
+</tr>
+<tr>
+<td>TMS570 MCU</td>
+<td>SOA comparison, DIAG logic</td>
+<td>Processing</td>
+</tr>
+<tr>
+<td>SPS + Contactors</td>
+<td>Current path interruption</td>
+<td>Actuation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="35-tsr-05-overcurrent-charge-detection-fsr-05-asil-c">3.5  TSR-05: Overcurrent Charge Detection (FSR-05, ASIL C)</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cell-level DIAG ID</strong></td>
+<td>DIAG_ID_OVERCURRENT_CHARGE_CELL_MSL</td>
+</tr>
+<tr>
+<td><strong>Cell-level limit</strong></td>
+<td>180000 mA (BC_CURRENT_MAX_CHARGE_MSL)</td>
+</tr>
+<tr>
+<td><strong>String-level DIAG ID</strong></td>
+<td>DIAG_ID_STRING_OVERCURRENT_CHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>String-level limit</strong></td>
+<td>2400 mA (BS_MAX_CHARGE_CURRENT_MSL)</td>
+</tr>
+<tr>
+<td><strong>Pack-level DIAG ID</strong></td>
+<td>DIAG_ID_PACK_OVERCURRENT_CHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorOvercurrentCharge</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>100 ms + 100 ms + 50 ms = <strong>250 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Detection and reaction chain identical to TSR-04 with charge-direction sign convention.</p>
+<hr />
+<h3 id="36-tsr-06-overtemperature-detection-fsr-06-asil-c">3.6  TSR-06: Overtemperature Detection (FSR-06, ASIL C)</h3>
+<h4 id="361-detection-mechanism">3.6.1  Detection Mechanism</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sensor</strong></td>
+<td>8× NTC thermistors connected via AFE multiplexer</td>
+</tr>
+<tr>
+<td><strong>Charge OT DIAG ID</strong></td>
+<td>DIAG_ID_TEMP_OVERTEMPERATURE_CHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>Charge OT limit</strong></td>
+<td>45 °C</td>
+</tr>
+<tr>
+<td><strong>Discharge OT DIAG ID</strong></td>
+<td>DIAG_ID_TEMP_OVERTEMPERATURE_DISCHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>Discharge OT limit</strong></td>
+<td>55 °C</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>500 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>1000 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorOvertemperatureCharge / DIAG_ErrorOvertemperatureDischarge</td>
+</tr>
+</tbody>
+</table>
+<h4 id="362-timing-budget">3.6.2  Timing Budget</h4>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NTC measurement</td>
+<td>~2 ms</td>
+<td>AFE MUX scan time</td>
+</tr>
+<tr>
+<td>Threshold accumulation</td>
+<td>5000 ms</td>
+<td>500 × 10 ms task period</td>
+</tr>
+<tr>
+<td>Debounce delay</td>
+<td>1000 ms</td>
+<td>diag_cfg.c delay_ms</td>
+</tr>
+<tr>
+<td>Actuation</td>
+<td>50 ms</td>
+<td>Contactor opening</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>~6050 ms (6.05 s)</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="363-rationale-for-extended-detection-time">3.6.3  Rationale for Extended Detection Time</h4>
+<p>The 500-event threshold with 1000 ms delay (total 6.05 s FTTI) is justified by:</p>
+<ol>
+<li><strong>Thermal inertia:</strong> Cell temperature change is a slow process. The thermal time constant of a pouch/prismatic cell is typically 30–120 s. Temperature cannot change by more than ~1 °C in 6 s under normal operating conditions.</li>
+<li><strong>Noise rejection:</strong> NTC measurement through the AFE MUX is susceptible to noise and transient errors. The high threshold count filters out measurement artifacts.</li>
+<li><strong>False positive prevention:</strong> In automotive environments with rapid ambient temperature changes (e.g., engine bay heat soak after parking), brief temperature excursions should not trigger unnecessary shutdowns.</li>
+</ol>
+<hr />
+<h3 id="37-tsr-07-undertemperature-detection-fsr-07-asil-b">3.7  TSR-07: Undertemperature Detection (FSR-07, ASIL B)</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Charge UT DIAG ID</strong></td>
+<td>DIAG_ID_TEMP_UNDERTEMPERATURE_CHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>Discharge UT DIAG ID</strong></td>
+<td>DIAG_ID_TEMP_UNDERTEMPERATURE_DISCHARGE_MSL</td>
+</tr>
+<tr>
+<td><strong>Limit</strong></td>
+<td>-20 °C (both charge and discharge)</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>500 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>1000 ms</td>
+</tr>
+<tr>
+<td><strong>Callback</strong></td>
+<td>DIAG_ErrorUndertemperatureCharge / DIAG_ErrorUndertemperatureDischarge</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>5000 ms + 1000 ms + 50 ms = <strong>6050 ms (6.05 s)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Same thermal inertia justification as TSR-06 applies. Ambient temperature changes that would push cell temperature through the -20 °C threshold occur over minutes, not seconds.</p>
+<hr />
+<h3 id="38-tsr-08-contactor-feedback-monitoring-fsr-08-asil-b">3.8  TSR-08: Contactor Feedback Monitoring (FSR-08, ASIL B)</h3>
+<h4 id="381-detection-mechanism">3.8.1  Detection Mechanism</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>String- DIAG ID</strong></td>
+<td>DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK</td>
+</tr>
+<tr>
+<td><strong>String+ DIAG ID</strong></td>
+<td>DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK</td>
+</tr>
+<tr>
+<td><strong>Precharge DIAG ID</strong></td>
+<td>DIAG_ID_PRECHARGE_CONTACTOR_FEEDBACK</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>20 consecutive events (all three)</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><strong>Detection principle</strong></td>
+<td>GPIO feedback pin from contactor auxiliary contact compared against SPS commanded state. Mismatch = fault.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="382-timing-budget">3.8.2  Timing Budget</h4>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Duration</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Feedback GPIO read</td>
+<td>&lt;1 ms</td>
+<td>Direct GPIO sampling</td>
+</tr>
+<tr>
+<td>Threshold accumulation</td>
+<td>200 ms</td>
+<td>20 × 10 ms task period</td>
+</tr>
+<tr>
+<td>Debounce delay</td>
+<td>100 ms</td>
+<td>diag_cfg.c delay_ms</td>
+</tr>
+<tr>
+<td>Actuation</td>
+<td>50 ms</td>
+<td>Open remaining contactors</td>
+</tr>
+<tr>
+<td><strong>Total FTTI</strong></td>
+<td></td>
+<td><strong>350 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="383-welding-detection-logic">3.8.3  Welding Detection Logic</h4>
+<p>The 20-event threshold provides debounce against transient feedback signal glitches (contact bounce, EMC disturbance on feedback wiring). The detection covers two scenarios:</p>
+<ol>
+<li><strong>Open-command / closed-feedback (welding):</strong> BMS commands contactor open, but feedback indicates it remains closed. This indicates contact welding.</li>
+<li><strong>Close-command / open-feedback (sticking open):</strong> BMS commands contactor closed, but feedback indicates it remains open. This indicates a mechanical failure or wiring fault.</li>
+</ol>
+<p>Both cases result in FATAL flag and ERROR state transition.</p>
+<hr />
+<h3 id="39-tsr-09-current-sensor-communication-monitoring-fsr-09-asil-b">3.9  TSR-09: Current Sensor Communication Monitoring (FSR-09, ASIL B)</h3>
+<h4 id="391-detection-mechanism-multi-channel-monitoring">3.9.1  Detection Mechanism — Multi-Channel Monitoring</h4>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>DIAG ID</th>
+<th>Threshold</th>
+<th>Delay</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Main current</td>
+<td>DIAG_ID_CURRENT_SENSOR_RESPONDING</td>
+<td>100</td>
+<td>200 ms</td>
+</tr>
+<tr>
+<td>Coulomb counting</td>
+<td>DIAG_ID_CURRENT_SENSOR_CC_RESPONDING</td>
+<td>100</td>
+<td>2000 ms</td>
+</tr>
+<tr>
+<td>Energy counting</td>
+<td>DIAG_ID_CURRENT_SENSOR_EC_RESPONDING</td>
+<td>100</td>
+<td>2000 ms</td>
+</tr>
+<tr>
+<td>Voltage channel V1</td>
+<td>DIAG_ID_CURRENT_SENSOR_V1_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>Voltage channel V2</td>
+<td>DIAG_ID_CURRENT_SENSOR_V2_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>Voltage channel V3</td>
+<td>DIAG_ID_CURRENT_SENSOR_V3_MEASUREMENT_TIMEOUT</td>
+<td>1</td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<h4 id="392-timing-analysis">3.9.2  Timing Analysis</h4>
+<p><strong>Main current channel (critical for overcurrent protection):</strong>
+- T_detection = 100 × 10 ms = 1000 ms
+- T_reaction = 200 ms
+- T_actuator = 50 ms
+- <strong>FTTI = 1250 ms</strong></p>
+<p><strong>Voltage channels V1/V2/V3 (critical for pack voltage plausibility):</strong>
+- T_detection = 1 × 10 ms = 10 ms
+- T_reaction = 100 ms
+- T_actuator = 50 ms
+- <strong>FTTI = 160 ms</strong></p>
+<p><strong>Coulomb/Energy counting (critical for SOC accuracy):</strong>
+- T_detection = 100 × 10 ms = 1000 ms
+- T_reaction = 2000 ms
+- T_actuator = 50 ms
+- <strong>FTTI = 3050 ms</strong></p>
+<p>The longer FTTI for CC/EC channels is acceptable because loss of coulomb counting does not immediately create a hazardous condition — voltage-based SOA checks provide independent protection.</p>
+<hr />
+<h3 id="310-tsr-10-afe-communication-monitoring-asil-d-support">3.10  TSR-10: AFE Communication Monitoring (ASIL D Support)</h3>
+<p>The AFE is a critical element in the ASIL D safety path for cell voltage and temperature monitoring. Multiple DIAG IDs monitor AFE health:</p>
+<table>
+<thead>
+<tr>
+<th>DIAG ID</th>
+<th>Failure Mode</th>
+<th>Threshold</th>
+<th>Delay</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DIAG_ID_AFE_SPI</td>
+<td>SPI communication failure</td>
+<td>5</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>DIAG_ID_AFE_COMMUNICATION_INTEGRITY</td>
+<td>CRC/PEC error on AFE data</td>
+<td>5</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>DIAG_ID_AFE_MUX</td>
+<td>Temperature MUX failure</td>
+<td>5</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>DIAG_ID_AFE_CONFIG</td>
+<td>AFE register config mismatch</td>
+<td>1</td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AFE SPI / Communication Integrity FTTI:</strong>
+- T_detection = 5 × 10 ms = 50 ms
+- T_reaction = 100 ms
+- T_actuator = 50 ms
+- <strong>FTTI = 200 ms</strong></p>
+<p><strong>AFE Config FTTI:</strong>
+- T_detection = 1 × 10 ms = 10 ms
+- T_reaction = 100 ms
+- T_actuator = 50 ms
+- <strong>FTTI = 160 ms</strong></p>
+<p>AFE configuration mismatch (threshold=1) triggers on a single detection because it indicates either a register corruption (SEU — Single Event Upset) or a hardware fault that could cause incorrect voltage/temperature readings without detectable communication errors.</p>
+<hr />
+<h3 id="311-tsr-11-can-communication-monitoring">3.11  TSR-11: CAN Communication Monitoring</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DIAG ID</strong></td>
+<td>DIAG_ID_CAN_TIMING</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>100 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>200 ms</td>
+</tr>
+<tr>
+<td><strong>Detection principle</strong></td>
+<td>CAN message receive timeout. Expected messages from vehicle controller and/or charger not received within configured period.</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>100 × 10 ms + 200 ms + 50 ms = <strong>1250 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Loss of CAN communication means the BMS cannot communicate current limits or warnings to the vehicle controller. The BMS treats this as FATAL because the vehicle controller may request currents beyond safe limits without BMS guidance.</p>
+<hr />
+<h3 id="312-tsr-12-system-monitoring-and-flash-integrity">3.12  TSR-12: System Monitoring and Flash Integrity</h3>
+<table>
+<thead>
+<tr>
+<th>DIAG ID</th>
+<th>Failure Mode</th>
+<th>Threshold</th>
+<th>Delay</th>
+<th>FTTI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DIAG_ID_SYSTEM_MONITORING</td>
+<td>RTOS task overrun/hang</td>
+<td>1</td>
+<td>0 ms</td>
+<td>~60 ms</td>
+</tr>
+<tr>
+<td>DIAG_ID_FLASHCHECKSUM</td>
+<td>Flash memory corruption (SEU)</td>
+<td>1</td>
+<td>0 ms</td>
+<td>~60 ms</td>
+</tr>
+<tr>
+<td>DIAG_ID_ALERT_MODE</td>
+<td>SBC alert condition</td>
+<td>1</td>
+<td>0 ms</td>
+<td>~60 ms</td>
+</tr>
+</tbody>
+</table>
+<p>These system-level monitors have threshold=1 and no delay because they indicate fundamental integrity failures of the safety platform itself:</p>
+<ul>
+<li><strong>System monitoring:</strong> Uses the TMS570 hardware-supported system monitoring (memory protection, CPU self-test, ECC). A single violation indicates a hardware defect or SEU that compromises all safety functions.</li>
+<li><strong>Flash checksum:</strong> Runtime CRC verification of program code. A mismatch indicates flash corruption that could cause incorrect program execution.</li>
+<li><strong>Alert mode:</strong> SBC has entered alert mode due to watchdog failure or voltage supervisor trip.</li>
+</ul>
+<hr />
+<h3 id="313-tsr-13-interlock-loop-monitoring-fsr-10">3.13  TSR-13: Interlock Loop Monitoring (FSR-10)</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DIAG ID</strong></td>
+<td>DIAG_ID_INTERLOCK_FEEDBACK</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><strong>Detection principle</strong></td>
+<td>Interlock loop current/voltage monitoring via dedicated GPIO or ADC input. Open loop = fault.</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>10 × 10 ms + 100 ms + 50 ms = <strong>250 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="314-tsr-14-sbc-reset-monitoring">3.14  TSR-14: SBC Reset Monitoring</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DIAG ID</strong></td>
+<td>DIAG_ID_SBC_RSTB_ERROR</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>1 event</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><strong>Detection principle</strong></td>
+<td>SBC RSTB (Reset B) pin state monitoring. If SBC asserts reset, the MCU detects this before reset takes effect and logs the event.</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>1 × 10 ms + 100 ms + 50 ms = <strong>160 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="315-tsr-15-current-on-open-string-detection">3.15  TSR-15: Current on Open String Detection</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DIAG ID</strong></td>
+<td>DIAG_ID_CURRENT_ON_OPEN_STRING</td>
+</tr>
+<tr>
+<td><strong>DIAG Threshold</strong></td>
+<td>10 consecutive events</td>
+</tr>
+<tr>
+<td><strong>DIAG Delay</strong></td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td><strong>Detection principle</strong></td>
+<td>IVT measures non-zero current while all contactors are commanded open. This indicates a welded contactor, an external fault path, or a current sensor offset error.</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>10 × 10 ms + 100 ms + 50 ms = <strong>250 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-safety-path-timing-summary">4  Safety Path Timing Summary</h2>
+<table>
+<thead>
+<tr>
+<th>TSR</th>
+<th>DIAG ID(s)</th>
+<th>Threshold</th>
+<th>Task (ms)</th>
+<th>T_detect (ms)</th>
+<th>Delay (ms)</th>
+<th>T_act (ms)</th>
+<th>FTTI (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TSR-01</td>
+<td>CELL_VOLTAGE_OVERVOLTAGE_MSL</td>
+<td>50</td>
+<td>10</td>
+<td>500</td>
+<td>200</td>
+<td>50</td>
+<td>750</td>
+</tr>
+<tr>
+<td>TSR-02</td>
+<td>CELL_VOLTAGE_UNDERVOLTAGE_MSL</td>
+<td>50</td>
+<td>10</td>
+<td>500</td>
+<td>200</td>
+<td>50</td>
+<td>750</td>
+</tr>
+<tr>
+<td>TSR-03</td>
+<td>DEEP_DISCHARGE_DETECTED</td>
+<td>1</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+</tr>
+<tr>
+<td>TSR-04</td>
+<td>OVERCURRENT_DISCHARGE_*_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+</tr>
+<tr>
+<td>TSR-05</td>
+<td>OVERCURRENT_CHARGE_*_MSL</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+</tr>
+<tr>
+<td>TSR-06</td>
+<td>TEMP_OVERTEMPERATURE_*_MSL</td>
+<td>500</td>
+<td>10</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+</tr>
+<tr>
+<td>TSR-07</td>
+<td>TEMP_UNDERTEMPERATURE_*_MSL</td>
+<td>500</td>
+<td>10</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+</tr>
+<tr>
+<td>TSR-08</td>
+<td>*_CONTACTOR_FEEDBACK</td>
+<td>20</td>
+<td>10</td>
+<td>200</td>
+<td>100</td>
+<td>50</td>
+<td>350</td>
+</tr>
+<tr>
+<td>TSR-09</td>
+<td>CURRENT_SENSOR_RESPONDING</td>
+<td>100</td>
+<td>10</td>
+<td>1000</td>
+<td>200</td>
+<td>50</td>
+<td>1250</td>
+</tr>
+<tr>
+<td>TSR-10</td>
+<td>AFE_SPI / AFE_COMMUNICATION_INTEGRITY</td>
+<td>5</td>
+<td>10</td>
+<td>50</td>
+<td>100</td>
+<td>50</td>
+<td>200</td>
+</tr>
+<tr>
+<td>TSR-11</td>
+<td>CAN_TIMING</td>
+<td>100</td>
+<td>10</td>
+<td>1000</td>
+<td>200</td>
+<td>50</td>
+<td>1250</td>
+</tr>
+<tr>
+<td>TSR-12</td>
+<td>SYSTEM_MONITORING / FLASHCHECKSUM</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>50</td>
+<td>~51</td>
+</tr>
+<tr>
+<td>TSR-13</td>
+<td>INTERLOCK_FEEDBACK</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+</tr>
+<tr>
+<td>TSR-14</td>
+<td>SBC_RSTB_ERROR</td>
+<td>1</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+</tr>
+<tr>
+<td>TSR-15</td>
+<td>CURRENT_ON_OPEN_STRING</td>
+<td>10</td>
+<td>10</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-hardware-diagnostic-coverage">5  Hardware Diagnostic Coverage</h2>
+<h3 id="51-afe-diagnostic-coverage-asil-d">5.1  AFE Diagnostic Coverage (ASIL D)</h3>
+<table>
+<thead>
+<tr>
+<th>Failure Mode</th>
+<th>Detection Mechanism</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPI bus stuck/open</td>
+<td>DIAG_ID_AFE_SPI (timeout/CRC)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Data corruption</td>
+<td>DIAG_ID_AFE_COMMUNICATION_INTEGRITY (PEC)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>MUX channel stuck</td>
+<td>DIAG_ID_AFE_MUX (channel verification)</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Register SEU</td>
+<td>DIAG_ID_AFE_CONFIG (periodic readback)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>ADC offset drift</td>
+<td>Pack voltage plausibility (AFE vs IVT)</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>ADC gain drift</td>
+<td>Pack voltage plausibility (AFE vs IVT)</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Open sense wire</td>
+<td>AFE built-in open-wire detection</td>
+<td>High</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-ivt-diagnostic-coverage-asil-b">5.2  IVT Diagnostic Coverage (ASIL B)</h3>
+<table>
+<thead>
+<tr>
+<th>Failure Mode</th>
+<th>Detection Mechanism</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CAN communication loss</td>
+<td>DIAG_ID_CURRENT_SENSOR_RESPONDING</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Current channel failure</td>
+<td>DIAG_ID_CURRENT_SENSOR_CC_RESPONDING</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Voltage channel failure</td>
+<td>DIAG_ID_CURRENT_SENSOR_V*_TIMEOUT</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Measurement drift</td>
+<td>Plausibility (IVT voltage vs AFE sum)</td>
+<td>Medium</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-contactor-diagnostic-coverage-asil-b">5.3  Contactor Diagnostic Coverage (ASIL B)</h3>
+<table>
+<thead>
+<tr>
+<th>Failure Mode</th>
+<th>Detection Mechanism</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Welding (stuck closed)</td>
+<td>Contactor feedback vs. SPS command</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Stuck open</td>
+<td>Contactor feedback vs. SPS command</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Feedback wire broken</td>
+<td>Current-on-open-string detection</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>SPS driver failure</td>
+<td>Contactor feedback (indirect)</td>
+<td>Medium</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-mcu-diagnostic-coverage-asil-d">5.4  MCU Diagnostic Coverage (ASIL D)</h3>
+<table>
+<thead>
+<tr>
+<th>Failure Mode</th>
+<th>Detection Mechanism</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU logic fault</td>
+<td>TMS570 lockstep (hardware comparator)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>RAM corruption</td>
+<td>ECC (hardware) + periodic test</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Flash corruption</td>
+<td>DIAG_ID_FLASHCHECKSUM (CRC)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Task scheduling fault</td>
+<td>DIAG_ID_SYSTEM_MONITORING (RTOS check)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Software hang</td>
+<td>SBC watchdog (FS8x)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Power supply fault</td>
+<td>SBC voltage supervisor → ALERT_MODE</td>
+<td>High</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-references">6  References</h2>
+<table>
+<thead>
+<tr>
+<th>Ref</th>
+<th>Document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[1]</td>
+<td>ISO 26262:2018 Part 4 — Product Development: System Level</td>
+</tr>
+<tr>
+<td>[2]</td>
+<td>FOX-SAF-HARA-001 — Hazard Analysis and Risk Assessment</td>
+</tr>
+<tr>
+<td>[3]</td>
+<td>FOX-SAF-FSC-001 — Functional Safety Concept</td>
+</tr>
+<tr>
+<td>[4]</td>
+<td>FOX-SAF-FMEA-001 — Software FMEA</td>
+</tr>
+<tr>
+<td>[5]</td>
+<td>FOX-SAF-FTTI-001 — FTTI Calculation Report</td>
+</tr>
+<tr>
+<td>[6]</td>
+<td>foxBMS v1.10.0 <code>src/app/engine/diag/diag_cfg.c</code></td>
+</tr>
+<tr>
+<td>[7]</td>
+<td>foxBMS v1.10.0 <code>src/app/application/config/battery_cell_cfg.h</code></td>
+</tr>
+<tr>
+<td>[8]</td>
+<td>foxBMS v1.10.0 <code>src/app/application/config/battery_system_cfg.h</code></td>
+</tr>
+<tr>
+<td>[9]</td>
+<td>foxBMS v1.10.0 <code>src/app/application/config/soa_cfg.c</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of Document FOX-SAF-TSC-001</em></p></div>
+<div class="nav-buttons"><a href="part-4-fsc.html">&larr; Part 4: FSC</a><a href="part-5-hsi.html">Part 5: HSI &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

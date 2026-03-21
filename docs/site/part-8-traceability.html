@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 8: Traceability — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" class="active">Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 8: Traceability</div>
+<div class="content"><h1 id="bidirectional-traceability-matrix">Bidirectional Traceability Matrix</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ISO-TRC-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document provides the bidirectional traceability matrix required by ISO 26262
+Part 8 Clause 6 and ASPICE generic practices (GP 2.2.4). It traces from system
+requirements through software requirements, detailed design, implementation, and test
+cases, enabling complete forward and backward navigation of the requirement chain.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>The matrix covers all requirements from SYS.2-001 (system requirements), SWE.1-001
+(software requirements), ISO-SSR-001 (safety requirements), and their traces to design
+(SWE.3-001), code modules, and test cases (SWE.4-001, SWE.5-001, SWE.6-001).</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.2-001]</td>
+<td>System Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.3-001]</td>
+<td>Software Detailed Design</td>
+</tr>
+<tr>
+<td>[SWE.4-001]</td>
+<td>Unit Test Specification</td>
+</tr>
+<tr>
+<td>[SWE.5-001]</td>
+<td>Integration Test Specification</td>
+</tr>
+<tr>
+<td>[SWE.6-001]</td>
+<td>Qualification Test Specification</td>
+</tr>
+<tr>
+<td>[ISO-SSR-001]</td>
+<td>Software Safety Requirements</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-traceability-convention">4. Traceability Convention</h2>
+<p>Each row traces one requirement through the full chain:</p>
+<ul>
+<li><strong>System Req</strong> (SYS-REQ-xxx) -- from SYS.2-001</li>
+<li><strong>Software Req</strong> (SW-REQ-xxx) -- from SWE.1-001</li>
+<li><strong>Safety Req</strong> (SSR-xxx) -- from ISO-SSR-001 (where applicable)</li>
+<li><strong>Design</strong> -- detailed design section in SWE.3-001</li>
+<li><strong>Code Module</strong> -- implementation source file(s)</li>
+<li><strong>Unit Test</strong> (UT-xxx) -- from SWE.4-001</li>
+<li><strong>Integration Test</strong> (IT-xxx) -- from SWE.5-001</li>
+<li><strong>Qualification Test</strong> (QT-xxx) -- from SWE.6-001</li>
+</ul>
+<h2 id="5-forward-traceability-system-requirements-to-tests">5. Forward Traceability: System Requirements to Tests</h2>
+<h3 id="51-battery-pack-configuration-sys-req-001-to-sys-req-007">5.1 Battery Pack Configuration (SYS-REQ-001 to SYS-REQ-007)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-001</td>
+<td>SW-REQ-062</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>database.c, battery_system_cfg.h</td>
+<td>UT-042</td>
+<td>IT-010</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-002</td>
+<td>SW-REQ-062</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>database.c, battery_system_cfg.h</td>
+<td>UT-042</td>
+<td>IT-010</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-003</td>
+<td>SW-REQ-062, SW-REQ-080</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>database.c, balancing.c</td>
+<td>UT-042</td>
+<td>IT-010</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-004</td>
+<td>SW-REQ-062</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>battery_system_cfg.h</td>
+<td>UT-042</td>
+<td>IT-010</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-005</td>
+<td>SW-REQ-062</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>database.c, battery_system_cfg.h</td>
+<td>UT-042</td>
+<td>IT-012</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-006</td>
+<td>SW-REQ-044</td>
+<td>SSR-051</td>
+<td>Sec 6.4</td>
+<td>contactor.c</td>
+<td>UT-060, UT-061</td>
+<td>IT-050, IT-051</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-007</td>
+<td>SW-REQ-101</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>can.c, can_cfg.c</td>
+<td>UT-052</td>
+<td>IT-002</td>
+<td>QT-001</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-cell-electrical-parameters-sys-req-010-to-sys-req-016">5.2 Cell Electrical Parameters (SYS-REQ-010 to SYS-REQ-016)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-010</td>
+<td>SW-REQ-070</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>algorithm.c, battery_cell_cfg.h</td>
+<td>--</td>
+<td>IT-011</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-011</td>
+<td>SW-REQ-071</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>algorithm.c, battery_cell_cfg.h</td>
+<td>--</td>
+<td>IT-011</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-012</td>
+<td>SW-REQ-070</td>
+<td>--</td>
+<td>Sec 4.3</td>
+<td>battery_cell_cfg.h</td>
+<td>--</td>
+<td>IT-011</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-013</td>
+<td>SW-REQ-012</td>
+<td>SSR-003</td>
+<td>Sec 5.2.2</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-016</td>
+<td>IT-036</td>
+<td>QT-004</td>
+</tr>
+<tr>
+<td>SYS-REQ-014</td>
+<td>SW-REQ-013</td>
+<td>SSR-003</td>
+<td>Sec 5.2.2</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-016</td>
+<td>IT-036</td>
+<td>QT-004</td>
+</tr>
+<tr>
+<td>SYS-REQ-015</td>
+<td>SW-REQ-044</td>
+<td>SSR-052</td>
+<td>Sec 6.4</td>
+<td>contactor.c</td>
+<td>UT-060</td>
+<td>IT-051</td>
+<td>QT-002</td>
+</tr>
+<tr>
+<td>SYS-REQ-016</td>
+<td>SW-REQ-081</td>
+<td>--</td>
+<td>Sec 5.2.2</td>
+<td>balancing.c</td>
+<td>--</td>
+<td>IT-010</td>
+<td>QT-001</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-voltage-safety-thresholds-sys-req-020-to-sys-req-022">5.3 Voltage Safety Thresholds (SYS-REQ-020 to SYS-REQ-022)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-020</td>
+<td>SW-REQ-001, SW-REQ-003</td>
+<td>SSR-001</td>
+<td>Sec 5.2.1</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-010, UT-011, UT-012</td>
+<td>IT-030</td>
+<td>QT-002</td>
+</tr>
+<tr>
+<td>SYS-REQ-021</td>
+<td>SW-REQ-002, SW-REQ-004</td>
+<td>SSR-002</td>
+<td>Sec 5.2.1</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-013, UT-015</td>
+<td>IT-031</td>
+<td>QT-003</td>
+</tr>
+<tr>
+<td>SYS-REQ-022</td>
+<td>SW-REQ-005</td>
+<td>SSR-009</td>
+<td>Sec 5.2.1</td>
+<td>soa.c, diag.c</td>
+<td>UT-014</td>
+<td>IT-038</td>
+<td>QT-003</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-current-safety-thresholds-sys-req-030-to-sys-req-031">5.4 Current Safety Thresholds (SYS-REQ-030 to SYS-REQ-031)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-030</td>
+<td>SW-REQ-010</td>
+<td>SSR-003</td>
+<td>Sec 5.2.2</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-016</td>
+<td>IT-036</td>
+<td>QT-004</td>
+</tr>
+<tr>
+<td>SYS-REQ-031</td>
+<td>SW-REQ-011</td>
+<td>SSR-004</td>
+<td>Sec 5.2.2</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-017</td>
+<td>IT-037</td>
+<td>QT-004</td>
+</tr>
+</tbody>
+</table>
+<h3 id="55-temperature-safety-thresholds-sys-req-040-to-sys-req-043">5.5 Temperature Safety Thresholds (SYS-REQ-040 to SYS-REQ-043)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-040</td>
+<td>SW-REQ-020</td>
+<td>SSR-005</td>
+<td>Sec 5.2.3</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-018</td>
+<td>IT-032</td>
+<td>QT-005</td>
+</tr>
+<tr>
+<td>SYS-REQ-041</td>
+<td>SW-REQ-021</td>
+<td>SSR-006</td>
+<td>Sec 5.2.3</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-019</td>
+<td>IT-033</td>
+<td>QT-005</td>
+</tr>
+<tr>
+<td>SYS-REQ-042</td>
+<td>SW-REQ-022</td>
+<td>SSR-007</td>
+<td>Sec 5.2.3</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-020</td>
+<td>IT-034</td>
+<td>QT-005</td>
+</tr>
+<tr>
+<td>SYS-REQ-043</td>
+<td>SW-REQ-023</td>
+<td>SSR-008</td>
+<td>Sec 5.2.3</td>
+<td>soa.c, soa_cfg.c</td>
+<td>UT-021</td>
+<td>IT-035</td>
+<td>QT-005</td>
+</tr>
+</tbody>
+</table>
+<h3 id="56-diagnostic-system-sys-req-050-to-sys-req-055">5.6 Diagnostic System (SYS-REQ-050 to SYS-REQ-055)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-050</td>
+<td>SW-REQ-030</td>
+<td>SSR-030</td>
+<td>Sec 4.2, 4.3</td>
+<td>diag.c, diag_cfg.c</td>
+<td>UT-001, UT-007</td>
+<td>IT-040</td>
+<td>QT-007</td>
+</tr>
+<tr>
+<td>SYS-REQ-051</td>
+<td>SW-REQ-031</td>
+<td>SSR-032</td>
+<td>Sec 4.2</td>
+<td>diag.c</td>
+<td>UT-001, UT-003</td>
+<td>IT-042</td>
+<td>QT-004</td>
+</tr>
+<tr>
+<td>SYS-REQ-052</td>
+<td>SW-REQ-033</td>
+<td>SSR-031</td>
+<td>Sec 4.2</td>
+<td>diag.c</td>
+<td>UT-004</td>
+<td>IT-040, IT-041</td>
+<td>QT-005</td>
+</tr>
+<tr>
+<td>SYS-REQ-053</td>
+<td>SW-REQ-032</td>
+<td>SSR-020</td>
+<td>Sec 4.2, 6.3</td>
+<td>diag.c, bms.c</td>
+<td>UT-003, UT-005</td>
+<td>IT-030 to IT-039</td>
+<td>QT-002 to QT-005</td>
+</tr>
+<tr>
+<td>SYS-REQ-054</td>
+<td>SW-REQ-044</td>
+<td>SSR-021</td>
+<td>Sec 6.3, 6.4</td>
+<td>bms.c, contactor.c</td>
+<td>UT-034</td>
+<td>IT-051</td>
+<td>QT-002</td>
+</tr>
+<tr>
+<td>SYS-REQ-055</td>
+<td>SW-REQ-045</td>
+<td>SSR-022, SSR-023, SSR-024</td>
+<td>Sec 6.2, 6.3</td>
+<td>bms.c</td>
+<td>UT-035, UT-036</td>
+<td>IT-025</td>
+<td>QT-002, QT-007</td>
+</tr>
+</tbody>
+</table>
+<h3 id="57-communication-sys-req-060-to-sys-req-063">5.7 Communication (SYS-REQ-060 to SYS-REQ-063)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-060</td>
+<td>SW-REQ-090 to SW-REQ-093</td>
+<td>--</td>
+<td>Sec 4.1</td>
+<td>can.c, can_cfg.c</td>
+<td>UT-050</td>
+<td>IT-007</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-061</td>
+<td>SW-REQ-100</td>
+<td>--</td>
+<td>Sec 4.1</td>
+<td>can.c, can_cfg.c</td>
+<td>UT-051</td>
+<td>IT-001, IT-013</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-062</td>
+<td>SW-REQ-101, SW-REQ-111</td>
+<td>SSR-041</td>
+<td>Sec 4.1</td>
+<td>can.c, can_cfg.c</td>
+<td>UT-052</td>
+<td>IT-002 to IT-004</td>
+<td>QT-001, QT-006</td>
+</tr>
+<tr>
+<td>SYS-REQ-063</td>
+<td>SW-REQ-110</td>
+<td>SSR-040</td>
+<td>Sec 4.3</td>
+<td>can.c, diag.c</td>
+<td>--</td>
+<td>IT-007</td>
+<td>QT-006</td>
+</tr>
+</tbody>
+</table>
+<h3 id="58-state-machines-sys-req-070-to-sys-req-073">5.8 State Machines (SYS-REQ-070 to SYS-REQ-073)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-070</td>
+<td>SW-REQ-050 to SW-REQ-053</td>
+<td>--</td>
+<td>Sec 6.1</td>
+<td>sys.c</td>
+<td>--</td>
+<td>IT-020</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-071</td>
+<td>SW-REQ-040</td>
+<td>SSR-020, SSR-021</td>
+<td>Sec 6.2</td>
+<td>bms.c</td>
+<td>UT-030</td>
+<td>IT-021 to IT-024</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-072</td>
+<td>SW-REQ-041</td>
+<td>SSR-051</td>
+<td>Sec 6.2</td>
+<td>bms.c</td>
+<td>UT-031</td>
+<td>IT-021</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-073</td>
+<td>SW-REQ-043</td>
+<td>SSR-020</td>
+<td>Sec 6.2</td>
+<td>bms.c</td>
+<td>UT-033</td>
+<td>IT-024, IT-030 to IT-039</td>
+<td>QT-002 to QT-005</td>
+</tr>
+</tbody>
+</table>
+<h3 id="59-posix-port-sys-req-080-to-sys-req-086">5.9 POSIX Port (SYS-REQ-080 to SYS-REQ-086)</h3>
+<table>
+<thead>
+<tr>
+<th>System Req</th>
+<th>Software Req</th>
+<th>Safety Req</th>
+<th>Design</th>
+<th>Code Module</th>
+<th>Unit Test</th>
+<th>Integration Test</th>
+<th>Qualification Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-080</td>
+<td>SW-REQ-123</td>
+<td>--</td>
+<td>--</td>
+<td>Makefile, main.c</td>
+<td>UT-100</td>
+<td>--</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-081</td>
+<td>SW-REQ-120</td>
+<td>--</td>
+<td>--</td>
+<td>main.c</td>
+<td>UT-100, UT-101</td>
+<td>IT-020</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-082</td>
+<td>SW-REQ-121</td>
+<td>--</td>
+<td>--</td>
+<td>can_posix.c</td>
+<td>UT-103</td>
+<td>IT-001, IT-007</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-083</td>
+<td>SW-REQ-034</td>
+<td>--</td>
+<td>Sec 4.4</td>
+<td>diag_cfg.c</td>
+<td>UT-007</td>
+<td>--</td>
+<td>QT-008</td>
+</tr>
+<tr>
+<td>SYS-REQ-084</td>
+<td>SW-REQ-035</td>
+<td>--</td>
+<td>Sec 4.3, 4.4</td>
+<td>diag_cfg.c</td>
+<td>UT-007</td>
+<td>IT-030 to IT-039</td>
+<td>QT-002 to QT-005</td>
+</tr>
+<tr>
+<td>SYS-REQ-085</td>
+<td>SW-REQ-122</td>
+<td>--</td>
+<td>--</td>
+<td>80+ HAL stub files</td>
+<td>UT-110, UT-111</td>
+<td>--</td>
+<td>QT-001</td>
+</tr>
+<tr>
+<td>SYS-REQ-086</td>
+<td>SW-REQ-122</td>
+<td>--</td>
+<td>--</td>
+<td>hal_posix.c, register_stubs.c</td>
+<td>UT-112</td>
+<td>--</td>
+<td>QT-001</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-reverse-traceability-tests-to-system-requirements">6. Reverse Traceability: Tests to System Requirements</h2>
+<h3 id="61-qualification-tests">6.1 Qualification Tests</h3>
+<table>
+<thead>
+<tr>
+<th>QT ID</th>
+<th>Scenario</th>
+<th>System Requirements Verified</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QT-001</td>
+<td>Normal startup and operation</td>
+<td>SYS-REQ-001 to SYS-REQ-007, SYS-REQ-060 to SYS-REQ-062, SYS-REQ-070 to SYS-REQ-072, SYS-REQ-080 to SYS-REQ-086</td>
+</tr>
+<tr>
+<td>QT-002</td>
+<td>Overvoltage fault and recovery</td>
+<td>SYS-REQ-020, SYS-REQ-053 to SYS-REQ-055</td>
+</tr>
+<tr>
+<td>QT-003</td>
+<td>Undervoltage and deep discharge</td>
+<td>SYS-REQ-021, SYS-REQ-022, SYS-REQ-053, SYS-REQ-055</td>
+</tr>
+<tr>
+<td>QT-004</td>
+<td>Overcurrent fault (fast response)</td>
+<td>SYS-REQ-030, SYS-REQ-031, SYS-REQ-051, SYS-REQ-053, SYS-REQ-054</td>
+</tr>
+<tr>
+<td>QT-005</td>
+<td>Temperature fault (slow response)</td>
+<td>SYS-REQ-040 to SYS-REQ-043, SYS-REQ-052, SYS-REQ-053</td>
+</tr>
+<tr>
+<td>QT-006</td>
+<td>CAN communication loss</td>
+<td>SYS-REQ-063, SYS-REQ-053</td>
+</tr>
+<tr>
+<td>QT-007</td>
+<td>Multiple simultaneous faults</td>
+<td>SYS-REQ-050, SYS-REQ-053, SYS-REQ-055</td>
+</tr>
+<tr>
+<td>QT-008</td>
+<td>Steady-state endurance</td>
+<td>SYS-REQ-020 to SYS-REQ-043, SYS-REQ-080 to SYS-REQ-084</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-integration-tests">6.2 Integration Tests</h3>
+<table>
+<thead>
+<tr>
+<th>IT ID Range</th>
+<th>Category</th>
+<th>System Requirements Verified</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IT-001 to IT-008</td>
+<td>CAN interface</td>
+<td>SYS-REQ-060 to SYS-REQ-063</td>
+</tr>
+<tr>
+<td>IT-010 to IT-014</td>
+<td>Database data flow</td>
+<td>SYS-REQ-001 to SYS-REQ-007, SYS-REQ-060</td>
+</tr>
+<tr>
+<td>IT-020 to IT-025</td>
+<td>State machine</td>
+<td>SYS-REQ-070 to SYS-REQ-073</td>
+</tr>
+<tr>
+<td>IT-030 to IT-039</td>
+<td>Safety path (ASIL)</td>
+<td>SYS-REQ-020 to SYS-REQ-043, SYS-REQ-053, SYS-REQ-054</td>
+</tr>
+<tr>
+<td>IT-040 to IT-042</td>
+<td>Diagnostic debounce</td>
+<td>SYS-REQ-051, SYS-REQ-052</td>
+</tr>
+<tr>
+<td>IT-050 to IT-052</td>
+<td>Contactor</td>
+<td>SYS-REQ-006, SYS-REQ-054</td>
+</tr>
+<tr>
+<td>IT-060 to IT-063</td>
+<td>SIL probes</td>
+<td>SYS-REQ-050, SYS-REQ-071</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-safety-requirements-traceability">7. Safety Requirements Traceability</h2>
+<table>
+<thead>
+<tr>
+<th>Safety Req</th>
+<th>Software Req</th>
+<th>DIAG ID</th>
+<th>Test Cases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSR-001</td>
+<td>SW-REQ-001</td>
+<td>CELL_VOLTAGE_OVERVOLTAGE_MSL</td>
+<td>UT-012, IT-030, QT-002</td>
+</tr>
+<tr>
+<td>SSR-002</td>
+<td>SW-REQ-002</td>
+<td>CELL_VOLTAGE_UNDERVOLTAGE_MSL</td>
+<td>UT-013, IT-031, QT-003</td>
+</tr>
+<tr>
+<td>SSR-003</td>
+<td>SW-REQ-010, SW-REQ-012, SW-REQ-013</td>
+<td>OVERCURRENT_*_MSL</td>
+<td>UT-016, IT-036, QT-004</td>
+</tr>
+<tr>
+<td>SSR-004</td>
+<td>SW-REQ-011</td>
+<td>OVERCURRENT_CHARGE_CELL_MSL</td>
+<td>UT-017, IT-037, QT-004</td>
+</tr>
+<tr>
+<td>SSR-005</td>
+<td>SW-REQ-020</td>
+<td>TEMP_OVERTEMPERATURE_DISCHARGE_MSL</td>
+<td>UT-018, IT-032, QT-005</td>
+</tr>
+<tr>
+<td>SSR-006</td>
+<td>SW-REQ-021</td>
+<td>TEMP_UNDERTEMPERATURE_DISCHARGE_MSL</td>
+<td>UT-019, IT-033, QT-005</td>
+</tr>
+<tr>
+<td>SSR-007</td>
+<td>SW-REQ-022</td>
+<td>TEMP_OVERTEMPERATURE_CHARGE_MSL</td>
+<td>UT-020, IT-034, QT-005</td>
+</tr>
+<tr>
+<td>SSR-008</td>
+<td>SW-REQ-023</td>
+<td>TEMP_UNDERTEMPERATURE_CHARGE_MSL</td>
+<td>UT-021, IT-035, QT-005</td>
+</tr>
+<tr>
+<td>SSR-009</td>
+<td>SW-REQ-005</td>
+<td>DEEP_DISCHARGE_DETECTED</td>
+<td>UT-014, IT-038, QT-003</td>
+</tr>
+<tr>
+<td>SSR-010</td>
+<td>SW-REQ-014</td>
+<td>CURRENT_ON_OPEN_STRING</td>
+<td>-- , IT-039, --</td>
+</tr>
+<tr>
+<td>SSR-020</td>
+<td>SW-REQ-032, SW-REQ-043</td>
+<td>(all FATAL)</td>
+<td>UT-033, IT-024, QT-002 to QT-005</td>
+</tr>
+<tr>
+<td>SSR-021</td>
+<td>SW-REQ-044</td>
+<td>(all FATAL)</td>
+<td>UT-034, IT-051, QT-002</td>
+</tr>
+<tr>
+<td>SSR-022</td>
+<td>SW-REQ-045</td>
+<td>(all FATAL)</td>
+<td>UT-035, IT-025, QT-002</td>
+</tr>
+<tr>
+<td>SSR-023</td>
+<td>SW-REQ-045</td>
+<td>(all FATAL)</td>
+<td>UT-035, IT-025, QT-002</td>
+</tr>
+<tr>
+<td>SSR-024</td>
+<td>SW-REQ-045</td>
+<td>(all FATAL)</td>
+<td>UT-036, IT-025, QT-007</td>
+</tr>
+<tr>
+<td>SSR-030</td>
+<td>SW-REQ-030</td>
+<td>(all)</td>
+<td>UT-007, IT-040, QT-007</td>
+</tr>
+<tr>
+<td>SSR-031</td>
+<td>SW-REQ-033</td>
+<td>(all)</td>
+<td>UT-004, IT-040, IT-041, QT-005</td>
+</tr>
+<tr>
+<td>SSR-032</td>
+<td>SW-REQ-031</td>
+<td>(all)</td>
+<td>UT-001, UT-003, IT-042, QT-004</td>
+</tr>
+<tr>
+<td>SSR-033</td>
+<td>SW-REQ-031</td>
+<td>(all)</td>
+<td>UT-002, IT-040, QT-002</td>
+</tr>
+<tr>
+<td>SSR-040</td>
+<td>SW-REQ-110</td>
+<td>CAN_TIMING</td>
+<td>-- , -- , QT-006</td>
+</tr>
+<tr>
+<td>SSR-041</td>
+<td>SW-REQ-111</td>
+<td>CURRENT_SENSOR_RESPONDING</td>
+<td>-- , -- , QT-006</td>
+</tr>
+<tr>
+<td>SSR-042</td>
+<td>SW-REQ-030</td>
+<td>AFE_SPI, AFE_COMMUNICATION_INTEGRITY</td>
+<td>UT-007, -- , --</td>
+</tr>
+<tr>
+<td>SSR-050</td>
+<td>SW-REQ-044</td>
+<td>*_CONTACTOR_FEEDBACK</td>
+<td>UT-062, IT-052, --</td>
+</tr>
+<tr>
+<td>SSR-051</td>
+<td>SW-REQ-041</td>
+<td>--</td>
+<td>UT-031, IT-021, QT-001</td>
+</tr>
+<tr>
+<td>SSR-052</td>
+<td>SW-REQ-044</td>
+<td>--</td>
+<td>UT-060, IT-051, QT-002</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-coverage-analysis">8. Coverage Analysis</h2>
+<h3 id="81-forward-coverage-requirements-to-tests">8.1 Forward Coverage (Requirements to Tests)</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement Set</th>
+<th>Total</th>
+<th>Traced to SW Req</th>
+<th>Traced to Design</th>
+<th>Traced to Test</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>System Requirements (SYS-REQ)</td>
+<td>36</td>
+<td>36 (100%)</td>
+<td>36 (100%)</td>
+<td>36 (100%)</td>
+<td>Complete</td>
+</tr>
+<tr>
+<td>Software Requirements (SW-REQ)</td>
+<td>42</td>
+<td>--</td>
+<td>42 (100%)</td>
+<td>40 (95%)</td>
+<td>2 pending (Phase 3)</td>
+</tr>
+<tr>
+<td>Safety Requirements (SSR)</td>
+<td>24</td>
+<td>24 (100%)</td>
+<td>24 (100%)</td>
+<td>22 (92%)</td>
+<td>2 pending (Phase 3)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-backward-coverage-tests-to-requirements">8.2 Backward Coverage (Tests to Requirements)</h3>
+<table>
+<thead>
+<tr>
+<th>Test Suite</th>
+<th>Total Tests</th>
+<th>Traced to SW Req</th>
+<th>Traced to SYS Req</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unit Tests (UT)</td>
+<td>45</td>
+<td>45 (100%)</td>
+<td>45 (100%)</td>
+<td>Complete</td>
+</tr>
+<tr>
+<td>Integration Tests (IT)</td>
+<td>34</td>
+<td>34 (100%)</td>
+<td>34 (100%)</td>
+<td>Complete</td>
+</tr>
+<tr>
+<td>Qualification Tests (QT)</td>
+<td>8</td>
+<td>8 (100%)</td>
+<td>8 (100%)</td>
+<td>Complete</td>
+</tr>
+</tbody>
+</table>
+<h3 id="83-gaps-and-planned-remediation">8.3 Gaps and Planned Remediation</h3>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Requirement(s)</th>
+<th>Planned Resolution</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hardware fault injection tests</td>
+<td>SSR-042 (AFE), SSR-050 (contactor feedback)</td>
+<td>Phase 3: QT-009 to QT-014</td>
+<td>Phase 3</td>
+</tr>
+<tr>
+<td>CAN timing stress test</td>
+<td>SSR-040</td>
+<td>Phase 3: extended QT-006</td>
+<td>Phase 3</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-acceptance-criteria">9. Acceptance Criteria</h2>
+<p>This traceability matrix is accepted when:</p>
+<ol>
+<li>Every system requirement (SYS-REQ-xxx) traces forward to at least one software requirement and one test case.</li>
+<li>Every ASIL D software requirement (SW-REQ-xxx) traces forward to at least one test case.</li>
+<li>Every safety requirement (SSR-xxx) traces forward to at least one test case.</li>
+<li>Every test case (UT/IT/QT) traces backward to at least one requirement.</li>
+<li>All identified gaps have documented remediation plans.</li>
+</ol>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="part-6-ftti.html">&larr; Part 6: FTTI</a><a href="part-9-asil-decomp.html">Part 9: ASIL Decomp &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

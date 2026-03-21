@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Guide — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" class="active">Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Documentation / Build Guide</div>
+<div class="content"><h1 id="foxbms-posix-vecu-build-setup-guide">foxBMS POSIX vECU — Build &amp; Setup Guide</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Ubuntu 24.04</li>
+<li>GCC 13+ (<code>sudo apt install gcc</code>)</li>
+<li>Python 3.12+ (<code>sudo apt install python3</code>)</li>
+<li>foxBMS 2 v1.10.0 cloned as submodule (<code>git submodule update --init foxbms-2</code>)</li>
+<li>HALCoGen headers copied from Windows build at <code>foxbms-2/build/app_host_unit_test/include/</code></li>
+<li>vcan1 interface (see below)</li>
+</ul>
+<h2 id="directory-structure">Directory Structure</h2>
+<pre><code>foxbms-posix/
++-- src/                            &lt;-- Our POSIX port
+|   +-- Makefile                    &lt;-- Build system
+|   +-- foxbms_posix_main.c         &lt;-- Entry point (replaces main.c)
+|   +-- hal_stubs_posix.c           &lt;-- 80+ HAL function stubs
+|   +-- posix_overrides.h           &lt;-- Force-included, overrides ARM asm/asserts
+|   +-- config_cpu_clock_hz.h       &lt;-- CPU clock for FreeRTOS config
+|   +-- plant_model.py              &lt;-- Python script sending fake battery data
++-- patches/                        &lt;-- Patch scripts for upstream foxBMS
+|   +-- patch_sbc.py                &lt;-- SBC_GetState -&gt; RUNNING
+|   +-- patch_sbc2.py               &lt;-- SBC_SetStateRequest -&gt; OK
+|   +-- patch_rtc.py                &lt;-- RTC_IsRtcModuleInitialized -&gt; true
+|   +-- patch_can_sensor.py         &lt;-- CAN_IsCurrentSensorPresent -&gt; true
+|   +-- patch_database.py           &lt;-- DATA_IterateOverDatabaseEntries -&gt; extern
+|   +-- patch_database2.py          &lt;-- Database iterate trace
+|   +-- patch_ftask.py              &lt;-- ftask_cfg.c trace prints
+|   +-- patch_sys2.py               &lt;-- sys.c state trace
+|   +-- patch_bms2.py               &lt;-- bms.c state trace
+|   +-- patch_all_regs.py           &lt;-- All register bases -&gt; RAM
+|   +-- patch_canreg.py             &lt;-- CAN register bases -&gt; RAM (subset of above)
+|   +-- patch_10ms2.py              &lt;-- 10ms task trace
+|   +-- patch_precharge.py          &lt;-- Precharge debug trace
++-- foxbms-2/                       &lt;-- Upstream foxBMS 2 v1.10.0 (submodule)
++-- STATUS.md                       &lt;-- Detailed implementation history
++-- PLAN.md                         &lt;-- Consolidated roadmap
++-- GAP-ANALYSIS-HANDOFF.md         &lt;-- Gap analysis for handoff
+</code></pre>
+<h2 id="source-file-patches">Source File Patches</h2>
+<p>Patches modify upstream foxBMS files in-place. They must be reapplied after any <code>git checkout</code> or <code>git clean</code> in <code>foxbms-2/</code>.</p>
+<h3 id="required-patches-apply-in-this-order">Required Patches (apply in this order)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Patch</th>
+<th>Target File</th>
+<th>What It Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>patch_all_regs.py</code></td>
+<td><code>HL_reg_*.h</code> headers</td>
+<td>Redirects all 60+ TMS570 register bases to RAM buffers</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>patch_sbc.py</code></td>
+<td><code>sbc.c</code></td>
+<td><code>SBC_GetState</code> returns RUNNING on POSIX</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>patch_sbc2.py</code></td>
+<td><code>sbc.c</code></td>
+<td><code>SBC_SetStateRequest</code> returns OK on POSIX</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>patch_rtc.py</code></td>
+<td><code>rtc.c</code></td>
+<td><code>RTC_IsRtcModuleInitialized</code> returns true on POSIX</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>patch_can_sensor.py</code></td>
+<td><code>can.c</code></td>
+<td><code>CAN_IsCurrentSensorPresent</code> returns true on POSIX</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>patch_database.py</code></td>
+<td><code>database.c</code></td>
+<td><code>DATA_IterateOverDatabaseEntries</code> made non-static on POSIX</td>
+</tr>
+</tbody>
+</table>
+<h3 id="optional-patches-debug-tracing">Optional Patches (debug tracing)</h3>
+<table>
+<thead>
+<tr>
+<th>Patch</th>
+<th>Target</th>
+<th>What It Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>patch_ftask.py</code></td>
+<td><code>ftask_cfg.c</code></td>
+<td>Debug trace prints in engine/precyclic init</td>
+</tr>
+<tr>
+<td><code>patch_sys2.py</code></td>
+<td><code>sys.c</code></td>
+<td>SYS_Trigger state trace (first 50 + every 500th call)</td>
+</tr>
+<tr>
+<td><code>patch_bms2.py</code></td>
+<td><code>bms.c</code></td>
+<td>BMS_Trigger state trace</td>
+</tr>
+<tr>
+<td><code>patch_database2.py</code></td>
+<td><code>database.c</code></td>
+<td>Database iterate trace</td>
+</tr>
+<tr>
+<td><code>patch_10ms2.py</code></td>
+<td>10ms task</td>
+<td>10ms task execution trace</td>
+</tr>
+<tr>
+<td><code>patch_precharge.py</code></td>
+<td>precharge</td>
+<td>Precharge state debug output</td>
+</tr>
+</tbody>
+</table>
+<h3 id="applying-patches">Applying Patches</h3>
+<pre><code class="language-bash">cd foxbms-posix/foxbms-2
+
+# Required patches
+python3 ../patches/patch_all_regs.py
+python3 ../patches/patch_sbc.py
+python3 ../patches/patch_sbc2.py
+python3 ../patches/patch_rtc.py
+python3 ../patches/patch_can_sensor.py
+python3 ../patches/patch_database.py
+
+# Optional: debug tracing
+python3 ../patches/patch_ftask.py
+python3 ../patches/patch_sys2.py
+python3 ../patches/patch_bms2.py
+</code></pre>
+<p>Note: <code>patch_all_regs.py</code> must run first — it patches the HALCoGen headers that all other source files include. Order of remaining patches does not matter.</p>
+<h2 id="source-files-excluded-from-build">Source Files Excluded from Build</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>main.c</code></td>
+<td>Replaced by <code>foxbms_posix_main.c</code></td>
+</tr>
+<tr>
+<td><code>fstartup.c</code></td>
+<td>TMS570 startup assembly</td>
+</tr>
+<tr>
+<td><code>io.c</code></td>
+<td>Direct GIO register dereference</td>
+</tr>
+<tr>
+<td><code>crc.c</code></td>
+<td>Hardware CRC peripheral (software CRC in stubs)</td>
+</tr>
+<tr>
+<td><code>spi.c</code>, <code>spi_cfg.c</code></td>
+<td>SPI register access</td>
+</tr>
+<tr>
+<td><code>dma.c</code></td>
+<td>DMA register access</td>
+</tr>
+<tr>
+<td><code>i2c.c</code></td>
+<td>I2C register access</td>
+</tr>
+<tr>
+<td><code>fram.c</code></td>
+<td>SPI FRAM (RAM stub in stubs)</td>
+</tr>
+<tr>
+<td><code>sps.c</code>, <code>sps_cfg.c</code></td>
+<td>Smart Power Switch (SPS stub in stubs)</td>
+</tr>
+<tr>
+<td><code>pex.c</code>, <code>pex_cfg.c</code></td>
+<td>Port Expander I2C (PEX stub in stubs)</td>
+</tr>
+<tr>
+<td><code>htsensor.c</code></td>
+<td>Humidity/Temp sensor I2C</td>
+</tr>
+<tr>
+<td><code>sbc/*</code></td>
+<td>NXP FS85xx Safety Basis Chip SPI</td>
+</tr>
+<tr>
+<td><code>diag.c</code></td>
+<td>Diagnostics (always-OK stub in stubs)</td>
+</tr>
+<tr>
+<td><code>os_freertos.c</code></td>
+<td>FreeRTOS OS wrapper (cooperative stubs)</td>
+</tr>
+<tr>
+<td><code>ftask_freertos.c</code></td>
+<td>FreeRTOS task/queue creation</td>
+</tr>
+<tr>
+<td>AFE variants</td>
+<td>adi, nxp, maxim, ltc, ti, debug/default (keep debug/can only)</td>
+</tr>
+<tr>
+<td>SOC/SOE/SOH variants</td>
+<td>debug, none (keep counting)</td>
+</tr>
+<tr>
+<td>TS variants</td>
+<td>All except epcos b57251v5103j060</td>
+</tr>
+<tr>
+<td>ethernet, bal variants</td>
+<td>Not needed</td>
+</tr>
+</tbody>
+</table>
+<h2 id="build-commands">Build Commands</h2>
+<pre><code class="language-bash">cd foxbms-posix/src
+make clean &amp;&amp; make -j4
+</code></pre>
+<p>Output: <code>foxbms-vecu</code> binary in <code>src/</code>.</p>
+<h2 id="run-commands">Run Commands</h2>
+<pre><code class="language-bash"># Create virtual CAN interface (requires root, once per boot)
+sudo ip link add vcan1 type vcan
+sudo ip link set vcan1 up
+
+# Terminal 1: Start plant model
+cd foxbms-posix/src
+python3 plant_model.py vcan1
+
+# Terminal 2: Start foxBMS vECU
+cd foxbms-posix/src
+FOXBMS_CAN_IF=vcan1 ./foxbms-vecu
+
+# Terminal 3: Monitor CAN output
+candump vcan1 -t z
+</code></pre>
+<p>To use real CAN hardware instead of virtual:</p>
+<pre><code class="language-bash">FOXBMS_CAN_IF=can0 ./foxbms-vecu
+</code></pre>
+<h2 id="smoke-test-checklist">Smoke Test Checklist</h2>
+<p>After starting both <code>plant_model.py</code> and <code>foxbms-vecu</code>:</p>
+<ul>
+<li>[ ] stderr shows <code>[init] HAL done</code></li>
+<li>[ ] stderr shows <code>[init] Engine done</code></li>
+<li>[ ] stderr shows <code>[init] PreCyclic done</code></li>
+<li>[ ] stderr shows <code>[run] Entering main loop</code></li>
+<li>[ ] stderr shows <code>[CAN-RX] Dequeued id=0x521</code> (IVT current received)</li>
+<li>[ ] stderr shows <code>[SPS] RequestContactor ch=X state=1</code> (precharge starting)</li>
+<li>[ ] candump shows CAN ID 0x220 (BMS State)</li>
+<li>[ ] candump shows CAN ID 0x235 (SOC — should show 50%)</li>
+<li>[ ] candump shows 15+ different CAN IDs within 10 seconds</li>
+</ul>
+<h2 id="key-design-decisions">Key Design Decisions</h2>
+<h3 id="no-freertos-scheduler">No FreeRTOS Scheduler</h3>
+<ul>
+<li>Cooperative mode: <code>while(1)</code> loop calls cyclic functions at 1ms/10ms/100ms</li>
+<li>FreeRTOS kernel compiled but scheduler never started</li>
+<li>Queue operations go through ring buffers in <code>hal_stubs_posix.c</code></li>
+<li><code>OS_DelayTaskUntil</code> -&gt; <code>usleep()</code></li>
+<li><code>OS_GetTickCount</code> -&gt; <code>clock_gettime(CLOCK_MONOTONIC)</code></li>
+</ul>
+<h3 id="fas_assert-no_operation">FAS_ASSERT = NO_OPERATION</h3>
+<ul>
+<li><code>posix_overrides.h</code> sets <code>FAS_ASSERT_LEVEL = 2</code> (no-op)</li>
+<li>Without this, ~100+ assertions halt the process on missing hardware</li>
+<li>foxBMS continues past all hardware checks</li>
+</ul>
+<h3 id="diag_handler-always-ok">DIAG_Handler = Always OK</h3>
+<ul>
+<li><code>diag.c</code> excluded, stub returns 0 (<code>DIAG_HANDLER_RETURN_OK</code>)</li>
+<li>Prevents ERROR state transitions from hardware-absent checks</li>
+<li>Future work: selective DIAG (suppress hardware errors, keep software checks)</li>
+</ul>
+<h3 id="can-via-socketcan">CAN via SocketCAN</h3>
+<ul>
+<li><code>canInit()</code> opens SocketCAN via <code>FOXBMS_CAN_IF</code> env var (default: <code>vcan1</code>)</li>
+<li><code>canTransmit()</code> routes to <code>posix_can_send()</code> via SocketCAN</li>
+<li>CAN RX: main loop reads SocketCAN non-blocking -&gt; ring buffer -&gt; <code>OS_ReceiveFromQueue</code></li>
+</ul>
+<h3 id="hardware-register-ram-buffers">Hardware Register RAM Buffers</h3>
+<ul>
+<li>All TMS570 register bases (0xFFF7...) redirected to 4KB RAM buffers</li>
+<li>foxBMS writes to RAM instead of hardware — harmless but functional</li>
+<li>~60 buffers defined in <code>hal_stubs_posix.c</code></li>
+</ul>
+<h2 id="debugging-tips">Debugging Tips</h2>
+<h3 id="reading-bms-state-from-can">Reading BMS State from CAN</h3>
+<p>CAN ID 0x220 byte[0] encodes BMS state:
+- <code>0x00</code> = UNINITIALIZED
+- <code>0x03</code> = IDLE
+- <code>0x06</code> = STANDBY
+- <code>0x08</code> = PRECHARGE
+- <code>0x0A</code> = NORMAL
+- <code>0x0C</code> = CHARGE
+- <code>0x0E</code> = ERROR</p>
+<p>Filter candump: <code>candump vcan1,220:7FF -t z</code></p>
+<h3 id="adding-trace-prints">Adding Trace Prints</h3>
+<p>foxBMS state machines are in:
+- <code>src/app/engine/sys/sys.c</code> — SYS_Trigger() (system state machine)
+- <code>src/app/application/bms/bms.c</code> — BMS_Trigger() (BMS state machine)</p>
+<p>Add <code>fprintf(stderr, ...)</code> inside the state switch cases. The <code>patch_sys2.py</code> and <code>patch_bms2.py</code> scripts show this pattern.</p>
+<h3 id="identifying-assertion-fires">Identifying Assertion Fires</h3>
+<p>With <code>FAS_ASSERT_LEVEL=2</code>, assertions don't halt but they still execute the macro body. Add a trace to <code>FAS_ASSERT</code> in <code>posix_overrides.h</code> to log which file/line fires:</p>
+<pre><code class="language-c">#define FAS_ASSERT(x) do { if (!(x)) fprintf(stderr, &quot;[ASSERT] %s:%d\n&quot;, __FILE__, __LINE__); } while(0)
+</code></pre>
+<h2 id="windows-unit-test-setup">Windows Unit Test Setup</h2>
+<p>For running foxBMS unit tests on Windows (separate from POSIX vECU):</p>
+<h3 id="tools">Tools</h3>
+<ul>
+<li>Ruby 3.4.4 + Ceedling 1.0.1</li>
+<li>GCC 15.2 (MSYS2 ucrt64)</li>
+<li>Python 3.12 + gcovr</li>
+</ul>
+<h3 id="gcc-15-compatibility-fixes-confunitapp_project_win32yml">GCC 15 Compatibility Fixes (conf/unit/app_project_win32.yml)</h3>
+<pre><code class="language-yaml">flags:
+  test:
+    compile:
+      '*':
+        - -Wno-enum-conversion
+        - -Wno-incompatible-pointer-types
+        - -Wno-attributes
+        - -Wno-unterminated-string-initialization
+        - -Wno-absolute-value
+        - -fcommon
+</code></pre>
+<h3 id="build-commands_1">Build Commands</h3>
+<pre><code class="language-bash">export PATH=&quot;/c/Users/$USER/AppData/Local/Programs/Python/Python312/Scripts:$PATH&quot;
+python fox.py waf configure
+python fox.py waf clean_app_host_unit_test
+python fox.py ceedling test:all
+</code></pre>
+<p><strong>Critical</strong>: Always <code>clean_app_host_unit_test</code> before a full test run. Stale Ceedling cache causes mock generation failures for files with hyphens in names.</p></div>
+<div class="nav-buttons"><a href="troubleshooting.html">&larr; Troubleshooting</a><a href="integration-notes.html">Integration Notes &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

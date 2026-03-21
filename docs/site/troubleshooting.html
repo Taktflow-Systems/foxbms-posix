@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Troubleshooting — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" class="active">Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Documentation / Troubleshooting</div>
+<div class="content"><h1 id="foxbms-posix-vecu-troubleshooting-guide">foxBMS POSIX vECU — Troubleshooting Guide</h1>
+<p><strong>Covers</strong>: foxBMS 2 v1.10.0 POSIX port (GA-30)
+<strong>Last updated</strong>: 2026-03-21</p>
+<hr />
+<h2 id="quick-reference-bms-state-values-can-0x220-byte0">Quick Reference: BMS State Values (CAN 0x220 byte[0])</h2>
+<table>
+<thead>
+<tr>
+<th>Hex</th>
+<th>Decimal</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x00</td>
+<td>0</td>
+<td>UNINITIALIZED</td>
+</tr>
+<tr>
+<td>0x10</td>
+<td>16</td>
+<td>INITIALIZATION (state 1)</td>
+</tr>
+<tr>
+<td>0x30</td>
+<td>48</td>
+<td>IDLE (state 3)</td>
+</tr>
+<tr>
+<td>0x50</td>
+<td>80</td>
+<td>STANDBY (state 5)</td>
+</tr>
+<tr>
+<td>0x60</td>
+<td>96</td>
+<td>PRECHARGE (state 6)</td>
+</tr>
+<tr>
+<td>0x71</td>
+<td>113</td>
+<td>NORMAL, 1 string connected (state 7)</td>
+</tr>
+<tr>
+<td>0x90</td>
+<td>144</td>
+<td>ERROR (state 9)</td>
+</tr>
+</tbody>
+</table>
+<p>Read live state:</p>
+<pre><code class="language-bash">candump vcan1,220:7FF -t z | head -20
+</code></pre>
+<hr />
+<h2 id="1-bms-stuck-in-idle">1. BMS Stuck in IDLE</h2>
+<p><strong>Symptom</strong>: <code>candump vcan1,220:7FF</code> shows byte[0] = <code>0x30</code> indefinitely. BMS does not transition to STANDBY.</p>
+<p><strong>Possible causes</strong>:</p>
+<h3 id="1a-state-request-0x210-not-arriving">1a. State request 0x210 not arriving</h3>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">candump vcan1,210:7FF -t z
+</code></pre>
+<p>If no <code>0x210</code> frames appear, the plant model is not running or is on the wrong interface.</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash"># Make sure plant model is running and on the correct interface
+cd foxbms-posix/src
+python3 plant_model.py vcan1 &amp;
+
+# Verify it sends 0x210
+candump vcan1,210:7FF -t z | head -5
+</code></pre>
+<h3 id="1b-state-request-encoding-wrong">1b. State request encoding wrong</h3>
+<p><strong>Diagnose</strong>: In <code>candump</code>, <code>0x210</code> appears but byte[0] is <code>0x00</code>. That encodes STANDBY. After ~3 seconds the plant model switches to NORMAL (<code>0x02</code>). Watch for the transition.</p>
+<p>Expected sequence:
+- First 3s: <code>210#0000000000000000</code> (STANDBY request)
+- After 3s: <code>210#0200000000000000</code> (NORMAL request)</p>
+<p>If stuck on <code>0x00</code> forever, <code>tick</code> counter is not advancing — plant model may have crashed.</p>
+<h3 id="1c-can-rx-not-routing-to-database">1c. CAN RX not routing to database</h3>
+<p><strong>Diagnose</strong>: Check stderr of foxbms-vecu for:</p>
+<pre><code>[CAN-RX] Dequeued id=0x210
+</code></pre>
+<p>If this line never appears, the ring buffer is not being dequeued or the callback is not firing.</p>
+<p><strong>Fix options</strong>:
+1. Verify <code>FOXBMS_CAN_IF</code> is set: <code>echo $FOXBMS_CAN_IF</code> — must match the interface the plant model is on.
+2. Verify vcan is up: <code>ip link show vcan1</code> — state must be <code>UNKNOWN</code> (vcan does not show UP).
+3. If no <code>[CAN-RX]</code> lines at all, the patches were not applied. Reapply:
+   <code>bash
+   cd foxbms-posix/foxbms-2
+   python3 ../patches/apply_all.sh   # or run each patch manually
+   cd ../src &amp;&amp; make clean &amp;&amp; make -j4</code></p>
+<h3 id="1d-plant-model-started-after-vecu">1d. Plant model started after vECU</h3>
+<p><strong>Diagnose</strong>: If foxbms-vecu was started first and the plant model started more than ~5s later, the BMS may have timed out waiting for current sensor presence.</p>
+<p><strong>Fix</strong>: Always start the plant model first, wait for <code>Plant model sending on vcan1</code>, then start foxbms-vecu. Or use <code>test_smoke.py</code> which handles the ordering automatically.</p>
+<hr />
+<h2 id="2-bms-stuck-in-standby">2. BMS Stuck in STANDBY</h2>
+<p><strong>Symptom</strong>: CAN 0x220 byte[0] = <code>0x50</code> (STANDBY). BMS received the state request but precharge will not start.</p>
+<p><strong>Possible causes</strong>:</p>
+<h3 id="2a-string-voltage-does-not-match-ivt-pack-voltage-precharge-voltage-check-fails">2a. String voltage does not match IVT pack voltage (precharge voltage check fails)</h3>
+<p>The precharge check requires: <code>|string_voltage - bus_voltage| &lt; threshold</code></p>
+<ul>
+<li><strong>String voltage</strong> = sum of all cell voltages from 0x270. With 18 cells × 3700mV = 66600mV.</li>
+<li><strong>Bus voltage</strong> = IVT Voltage 3 from 0x524 (<code>highVoltage_mV[s][2]</code>).</li>
+</ul>
+<p><strong>Diagnose</strong>: Run with precharge debug patch applied:</p>
+<pre><code class="language-bash">cd foxbms-posix/foxbms-2
+python3 ../patches/patch_precharge.py
+cd ../src &amp;&amp; make -j4
+FOXBMS_CAN_IF=vcan1 ./foxbms-vecu 2&gt;&amp;1 | grep -i precharge
+</code></pre>
+<p><strong>Fix</strong>: The plant model must send <code>0x524</code> with the same voltage as the total cell voltage sum.</p>
+<p>Key discovery: foxBMS redundancy module uses <code>highVoltage_mV[s][2]</code> (index 2), NOT <code>[s][0]</code>. This means <strong>IVT Voltage 3 (0x524) is required</strong> — sending only 0x522 and 0x523 is not enough.</p>
+<p>Verify the plant model sends all three:</p>
+<pre><code class="language-bash">candump vcan1,522:FFF -t z | head -10  # should show 0x522, 0x523, 0x524
+</code></pre>
+<h3 id="2b-decan_data_is_valid-misunderstood">2b. DECAN_DATA_IS_VALID misunderstood</h3>
+<p><strong>Common mistake</strong>: Setting the invalid flag to <code>0</code> thinking <code>0 = not invalid = valid</code>.</p>
+<p><strong>Reality</strong>: <code>DECAN_DATA_IS_VALID = 1</code>. The flag is inverted. Setting <code>invalid_flag = 0</code> marks the data as <strong>invalid</strong>, causing foxBMS to discard all cell voltages.</p>
+<p><strong>Diagnose</strong>: Check <code>plant_model.py</code> — the invalid flags in <code>encode_cell_voltage_msg</code> must be <code>1</code>:</p>
+<pre><code class="language-python">d = foxbms_encode_signal(d, 12, 1, 1)  # Invalid flag 0: 1=VALID
+d = foxbms_encode_signal(d, 13, 1, 1)  # Invalid flag 1: 1=VALID
+</code></pre>
+<p>If any of these are <code>0</code>, cell voltages are ignored and string voltage = 0, which will never match bus voltage.</p>
+<h3 id="2c-cell-voltage-mux-not-covering-all-18-cells">2c. Cell voltage mux not covering all 18 cells</h3>
+<p>foxBMS expects <code>BS_NR_OF_CELL_BLOCKS_PER_MODULE = 18</code>. Four cells per mux group → need 5 mux values (0–4) to cover 18 cells.</p>
+<p><strong>Diagnose</strong>: Check <code>plant_model.py</code> sends <code>mux in range(5)</code>:</p>
+<pre><code class="language-python">for mux in range(5):   # 5 × 4 = 20 slots (18 used, 2 unused)
+    can_send(0x270, encode_cell_voltage_msg(mux, [3700, 3700, 3700, 3700]))
+</code></pre>
+<p>If only <code>range(4)</code> or <code>range(3)</code>, some cells get 0mV, reducing string voltage and failing the precharge check.</p>
+<hr />
+<h2 id="3-bms-goes-to-error-after-precharge">3. BMS Goes to ERROR After PRECHARGE</h2>
+<p><strong>Symptom</strong>: CAN 0x220 shows state transitions STANDBY → PRECHARGE → ERROR (0x90) instead of PRECHARGE → NORMAL.</p>
+<p><strong>Possible causes</strong>:</p>
+<h3 id="3a-string-voltage-bus-voltage-mismatch">3a. String voltage / bus voltage mismatch</h3>
+<p>Same root cause as §2a but now foxBMS actually started precharge and then failed the final voltage check.</p>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">FOXBMS_CAN_IF=vcan1 ./foxbms-vecu 2&gt;&amp;1 | grep -i &quot;precharge\|voltage\|string&quot;
+</code></pre>
+<p>Apply <code>patch_precharge.py</code> for more verbose output.</p>
+<p><strong>Fix</strong>: Ensure <code>0x524</code> value = <code>18 × cell_voltage_mV</code>. Default: <code>66600</code>.</p>
+<h3 id="3b-contactor-feedback-not-matching-request">3b. Contactor feedback not matching request</h3>
+<p>foxBMS checks that contactors actually close when requested. If SPS simulation returns wrong state, a mismatch triggers ERROR.</p>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">FOXBMS_CAN_IF=vcan1 ./foxbms-vecu 2&gt;&amp;1 | grep &quot;\[SPS\]&quot;
+</code></pre>
+<p>Expected output during precharge:</p>
+<pre><code>[SPS] RequestContactor ch=0 state=1
+[SPS] RequestContactor ch=1 state=1
+[SPS] RequestContactor ch=2 state=1
+</code></pre>
+<p>If <code>[SPS]</code> lines are absent, the HAL stub for SPS is not routing correctly.</p>
+<h3 id="3c-precharge-timeout">3c. Precharge timeout</h3>
+<p>foxBMS has a maximum time allowed for precharge. If the BMS is running slowly (CPU overloaded, debugger attached, extremely long <code>usleep</code>), the precharge timeout fires before voltage equilibrates.</p>
+<p><strong>Fix</strong>: Make sure the cooperative loop delay is <code>usleep(500)</code> (500 microseconds), not <code>usleep(500000)</code>. The main loop must run at roughly 1ms.</p>
+<hr />
+<h2 id="4-no-can-output">4. No CAN Output</h2>
+<p><strong>Symptom</strong>: <code>candump vcan1</code> shows nothing, or only traffic from the plant model.</p>
+<h3 id="4a-socketcan-interface-not-created">4a. SocketCAN interface not created</h3>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">ip link show vcan1
+</code></pre>
+<p>If the command fails or shows <code>does not exist</code>, vcan was never created.</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash">sudo modprobe vcan
+sudo ip link add vcan1 type vcan
+sudo ip link set vcan1 up
+</code></pre>
+<p>This must be done once per boot. vcan is not persistent.</p>
+<h3 id="4b-wrong-foxbms_can_if">4b. Wrong FOXBMS_CAN_IF</h3>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">echo $FOXBMS_CAN_IF
+</code></pre>
+<p>If empty, foxbms-vecu defaults to <code>vcan1</code>. If you have both <code>vcan0</code> and <code>vcan1</code>, make sure both foxbms-vecu and <code>candump</code> are on the same interface.</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash">FOXBMS_CAN_IF=vcan1 ./foxbms-vecu
+# Monitor on the same interface
+candump vcan1
+</code></pre>
+<h3 id="4c-vcan-created-but-not-brought-up">4c. vcan created but not brought up</h3>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">ip link show vcan1
+# Look for: state UNKNOWN (correct) vs state DOWN (wrong)
+</code></pre>
+<p>A newly added vcan interface in DOWN state will not pass frames.</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash">sudo ip link set vcan1 up
+</code></pre>
+<h3 id="4d-cantransmit-never-called-bms-never-left-uninitialized">4d. canTransmit never called (BMS never left UNINITIALIZED)</h3>
+<p>If foxbms-vecu exits immediately or gets stuck before the main loop, <code>canTransmit</code> is never called.</p>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">FOXBMS_CAN_IF=vcan1 ./foxbms-vecu 2&gt;&amp;1 | head -20
+</code></pre>
+<p>Expect to see:</p>
+<pre><code>[init] HAL done
+[init] Engine done
+[init] PreCyclic done
+[run] Entering main loop
+</code></pre>
+<p>If output stops before <code>[run] Entering main loop</code>, a crash or assert fired during init.</p>
+<hr />
+<h2 id="5-segfault-on-startup">5. Segfault on Startup</h2>
+<p><strong>Symptom</strong>: foxbms-vecu prints nothing (or just <code>[init] HAL done</code>) then dies with <code>Segmentation fault</code>.</p>
+<h3 id="5a-register-buffer-patches-not-applied">5a. Register buffer patches not applied</h3>
+<p>foxBMS accesses TMS570 hardware registers at physical MMIO addresses (e.g., <code>0xFFF7xxxx</code>). On x86-64 Linux these are unmapped and cause an immediate segfault.</p>
+<p><strong>Fix</strong>: <code>patch_all_regs.py</code> must be applied before building:</p>
+<pre><code class="language-bash">cd foxbms-posix/foxbms-2
+python3 ../patches/patch_all_regs.py
+cd ../src &amp;&amp; make clean &amp;&amp; make -j4
+</code></pre>
+<p><strong>Verify the patch was applied</strong>:</p>
+<pre><code class="language-bash">grep -r &quot;FOXBMS_POSIX&quot; foxbms-posix/foxbms-2/src/os/freertos/portable/GCC/ARM_CR5F/portASM.h 2&gt;/dev/null | head -3
+</code></pre>
+<p>If nothing found, check <code>HL_reg_*.h</code> headers in the HALCoGen include path:</p>
+<pre><code class="language-bash">grep &quot;posix_reg_buf&quot; foxbms-posix/foxbms-2/build/app_host_unit_test/include/HL_reg_can.h 2&gt;/dev/null | head -3
+</code></pre>
+<h3 id="5b-patches-not-reapplied-after-git-checkout">5b. Patches not reapplied after git checkout</h3>
+<p>Patches modify upstream foxBMS files in-place. A <code>git checkout</code> or <code>git submodule update</code> in <code>foxbms-2/</code> resets them.</p>
+<p><strong>Fix</strong>: Reapply all required patches in order:</p>
+<pre><code class="language-bash">cd foxbms-posix/foxbms-2
+python3 ../patches/patch_all_regs.py   # MUST be first
+python3 ../patches/patch_sbc.py
+python3 ../patches/patch_sbc2.py
+python3 ../patches/patch_rtc.py
+python3 ../patches/patch_can_sensor.py
+python3 ../patches/patch_database.py
+cd ../src &amp;&amp; make clean &amp;&amp; make -j4
+</code></pre>
+<p>Or use the consolidated script:</p>
+<pre><code class="language-bash">cd foxbms-posix/foxbms-2
+bash ../patches/apply_all.sh
+</code></pre>
+<h3 id="5c-fassertc-conflict">5c. fassert.c conflict</h3>
+<p>If <code>fassert.c</code> was not excluded from the build and the linker picks up two definitions of <code>FAS_StoreAssertLocation</code>, the binary may crash on any assert.</p>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">nm foxbms-posix/src/foxbms-vecu | grep FAS_StoreAssertLocation
+</code></pre>
+<p>Should show exactly one definition. If two appear, check <code>Makefile</code> exclusions.</p>
+<hr />
+<h2 id="6-100-cpu-usage">6. 100% CPU Usage</h2>
+<p><strong>Symptom</strong>: <code>top</code> shows foxbms-vecu consuming 99–100% of a CPU core. The system feels sluggish.</p>
+<p><strong>This is expected behavior.</strong> The cooperative main loop runs as fast as possible with only a <code>usleep(500)</code> (500 microseconds) delay per iteration. This is intentional — foxBMS uses FreeRTOS with a 1ms tick, and the POSIX port approximates this.</p>
+<p><strong>Mitigation</strong>: Use <code>timeout</code> to bound execution time in scripts:</p>
+<pre><code class="language-bash">FOXBMS_CAN_IF=vcan1 timeout 30 ./foxbms-vecu
+</code></pre>
+<p>Or use <code>test_smoke.py</code> which starts foxbms-vecu as a subprocess and kills it after receiving NORMAL state or on timeout.</p>
+<p><strong>Do not</strong> increase <code>usleep()</code> significantly (e.g., to 10ms) — the 1ms/10ms/100ms cyclic tasks will not fire at the correct rate and the BMS may not transition states properly.</p>
+<hr />
+<h2 id="7-zombie-processes">7. Zombie Processes</h2>
+<p><strong>Symptom</strong>: After a test run, <code>pgrep foxbms-vecu</code> or <code>pgrep plant_model</code> still returns PIDs. A subsequent test run fails because a stale process is also sending/receiving on vcan1, causing duplicate CAN frames or unexpected state transitions.</p>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">pgrep -a foxbms-vecu
+pgrep -a plant_model.py
+</code></pre>
+<p><strong>Fix</strong> (manual cleanup):</p>
+<pre><code class="language-bash">pkill -f foxbms-vecu
+pkill -f plant_model.py
+</code></pre>
+<p><strong>Fix</strong> (automated — preferred): Use <code>test_smoke.py</code> for all automated test runs. It starts both processes, monitors for NORMAL state, then sends SIGINT to both and waits for clean exit. Leftover processes are killed if they do not exit within 5 seconds.</p>
+<pre><code class="language-bash">cd foxbms-posix/src
+python3 test_smoke.py vcan1
+echo &quot;Exit code: $?&quot;  # 0=PASS, 1=FAIL, 2=ERROR
+</code></pre>
+<p><strong>Before any new test</strong>, always verify no stale processes:</p>
+<pre><code class="language-bash">pgrep -a foxbms 2&gt;/dev/null; pgrep -a plant_model 2&gt;/dev/null
+</code></pre>
+<hr />
+<h2 id="8-build-fails-with-missing-headers">8. Build Fails with Missing Headers</h2>
+<p><strong>Symptom</strong>: <code>make</code> fails with errors like:</p>
+<pre><code>fatal error: HL_reg_can.h: No such file or directory
+fatal error: HL_sys_vim.h: No such file or directory
+</code></pre>
+<h3 id="8a-halcogen-headers-not-copied">8a. HALCoGen headers not copied</h3>
+<p>The foxBMS build system generates headers from TI HALCoGen. These are not in the foxBMS source tree — they must be generated by a Windows build first, then copied.</p>
+<p><strong>Fix</strong>: Copy the pre-generated headers from a Windows build:</p>
+<pre><code class="language-bash"># On Windows (Git Bash), from foxbms-2 root:
+python fox.py waf configure
+python fox.py waf clean_app_host_unit_test build_app_host_unit_test
+
+# Then copy to Linux:
+scp -r build/app_host_unit_test/include/ user@ubuntu:/path/to/foxbms-posix/foxbms-2/build/app_host_unit_test/include/
+</code></pre>
+<p>Expected location: <code>foxbms-posix/foxbms-2/build/app_host_unit_test/include/HL_reg_can.h</code></p>
+<h3 id="8b-foxbms-2-submodule-not-initialized">8b. foxbms-2 submodule not initialized</h3>
+<p><strong>Diagnose</strong>:</p>
+<pre><code class="language-bash">ls foxbms-posix/foxbms-2/src/
+</code></pre>
+<p>If the directory is empty or missing, the submodule was not initialized.</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash">cd foxbms-posix
+git submodule update --init foxbms-2
+</code></pre>
+<h3 id="8c-stale-ceedling-cache-unit-tests-only">8c. Stale Ceedling cache (unit tests only)</h3>
+<p>For the Windows unit test suite (<code>python fox.py ceedling test:all</code>), stale generated mocks cause header errors.</p>
+<p><strong>Fix</strong>:</p>
+<pre><code class="language-bash">python fox.py waf clean_app_host_unit_test
+python fox.py ceedling test:all
+</code></pre>
+<p>Always clean before a full unit test run.</p>
+<hr />
+<h2 id="9-diag-faults-flooding-stderr">9. DIAG Faults Flooding stderr</h2>
+<p><strong>Symptom</strong>: stderr is full of lines like:</p>
+<pre><code>[DIAG] fault id=42 event=EVENT_OK
+[DIAG] fault id=7 event=EVENT_OK
+</code></pre>
+<p><strong>This is expected behavior after GA-06 selective DIAG implementation.</strong></p>
+<p>The DIAG system distinguishes two categories:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Behavior</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hardware-absent faults (24 IDs)</td>
+<td>Suppressed — return OK silently</td>
+<td>SBC watchdog, SPI timeout, I2C not responding</td>
+</tr>
+<tr>
+<td>Software-checkable faults (61 IDs)</td>
+<td>Logged to stderr and return ERR_OCCURRED</td>
+<td>Overvoltage, overcurrent, overtemperature, plausibility checks</td>
+</tr>
+</tbody>
+</table>
+<p>Lines beginning with <code>[DIAG]</code> are software-layer safety checks that actually ran. They are informational during normal operation. If a fault reaches ERR_OCCURRED for a software-checkable fault, the BMS will eventually transition to ERROR state.</p>
+<p><strong>If you see unexpected fault floods</strong> during normal operation (e.g., every 10ms with <code>event=EVENT_OK</code>), that is a DIAG check firing and clearing rapidly — normal for periodic checks.</p>
+<p><strong>If the BMS enters ERROR</strong> and you see <code>[DIAG]</code> lines with event values other than <code>EVENT_OK</code>, those are the root-cause faults. Cross-reference the fault ID against:</p>
+<pre><code>foxbms-posix/foxbms-2/src/app/engine/diag/diag_cfg.h
+</code></pre>
+<hr />
+<h2 id="10-fas_assert-crash-on-startup">10. FAS_ASSERT Crash on Startup</h2>
+<p><strong>Symptom</strong>: foxbms-vecu starts, prints one or two <code>[init]</code> lines, then:</p>
+<pre><code>[FAS] ASSERT FAILED: src/app/application/bms/bms.c:247
+Aborted
+</code></pre>
+<p><strong>This is intentional behavior after GA-07 crash handler fix.</strong></p>
+<p>Before GA-07, <code>FAS_ASSERT_LEVEL = 2</code> silently ignored all assertion failures. After GA-07, <code>FAS_StoreAssertLocation()</code> is overridden to log the file and line to stderr, then call <code>exit(1)</code>. This catches real bugs instead of hiding them.</p>
+<p><strong>Diagnosis steps</strong>:</p>
+<ol>
+<li>Note the file and line from the message.</li>
+<li>Open that file in <code>foxbms-posix/foxbms-2/src/</code>.</li>
+<li>Find the assertion — typically <code>FAS_ASSERT(condition)</code>.</li>
+<li>Check what the condition is testing. Common assertions:</li>
+<li>Null pointer checks on queue handles</li>
+<li>Enum range checks</li>
+<li>Initialization order requirements</li>
+</ol>
+<p><strong>Common root cause</strong>: A queue handle that is <code>NULL</code> because the relevant FreeRTOS task was not created. In cooperative mode, some task creation is skipped. If a new foxBMS version adds a queue and the code assumes it was created:</p>
+<p><strong>Fix options</strong>:
+- Add a stub in <code>hal_stubs_posix.c</code> to create/return a valid fake handle for that queue.
+- If the assertion is in a path that should never be reached in POSIX mode, add the relevant guard to <code>posix_overrides.h</code>:
+  <code>c
+  // In posix_overrides.h, add to the FAS_ASSERT override:
+  #define FAS_ASSERT(x) do { \
+      if (!(x)) { \
+          fprintf(stderr, "[FAS] ASSERT FAILED: %s:%d\n", __FILE__, __LINE__); \
+          exit(1); \
+      } \
+  } while(0)</code>
+  This is already the GA-07 behavior. Do not revert to <code>NO_OPERATION</code> — real bugs will be hidden.</p>
+<hr />
+<h2 id="quick-diagnostic-checklist">Quick Diagnostic Checklist</h2>
+<p>Run this sequence when something is not working:</p>
+<pre><code class="language-bash"># 1. Is vcan up?
+ip link show vcan1
+
+# 2. Are both processes running?
+pgrep -a foxbms-vecu
+pgrep -a plant_model
+
+# 3. Is there any CAN traffic at all?
+timeout 5 candump vcan1 | wc -l
+
+# 4. What BMS state is being reported?
+timeout 10 candump vcan1,220:7FF -t z
+
+# 5. Is the plant model sending all required IDs?
+timeout 5 candump vcan1 | awk '{print $2}' | sort -u
+
+# Expected IDs from plant model: 210 270 280 521 522 523 524 527
+# Expected IDs from foxbms-vecu: 220 221 231 232 233 234 235 240 241 242 243 244 245 250 260 301
+
+# 6. Check foxbms-vecu stderr for init errors
+FOXBMS_CAN_IF=vcan1 timeout 10 ./foxbms-vecu 2&gt;&amp;1 | grep -E &quot;\[init\]|\[FAS\]|\[DIAG\]|ERROR|error&quot; | head -30
+</code></pre>
+<hr />
+<h2 id="reference-key-architecture-facts">Reference: Key Architecture Facts</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DECAN_DATA_IS_VALID</code></td>
+<td><code>1</code></td>
+<td>Invalid flag = 1 means VALID. Counterintuitive.</td>
+</tr>
+<tr>
+<td><code>SBC_STATEMACHINE_RUNNING</code></td>
+<td><code>2</code></td>
+<td>Not 3. Wrong value causes SYS timeout in INITIALIZATION.</td>
+</tr>
+<tr>
+<td>Cells per module</td>
+<td><code>18</code></td>
+<td><code>BS_NR_OF_CELL_BLOCKS_PER_MODULE = 18</code>. 5 mux groups needed.</td>
+</tr>
+<tr>
+<td>IVT Voltage for HV bus</td>
+<td><code>0x524</code></td>
+<td>Redundancy module reads <code>highVoltage_mV[s][2]</code> (index 2 = Voltage 3).</td>
+</tr>
+<tr>
+<td>CAN big-endian encoding</td>
+<td><code>CAN_BIG_ENDIAN_TABLE</code></td>
+<td>Lookup table maps DBC start bit to actual bit position.</td>
+</tr>
+<tr>
+<td>Loop rate</td>
+<td><code>usleep(500)</code></td>
+<td>500us = ~2 kHz loop. 1ms/10ms/100ms tasks fire on elapsed time.</td>
+</tr>
+<tr>
+<td><code>FAS_ASSERT_LEVEL</code></td>
+<td><code>2</code> override in GA-07</td>
+<td>Crashes on assert failure, logging file+line. This is correct.</td>
+</tr>
+<tr>
+<td>FOXBMS_CAN_IF</td>
+<td>env var</td>
+<td>Default: <code>vcan1</code>. Must match interface used by plant model and candump.</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="coverage-matrix.html">&larr; Coverage Matrix</a><a href="build-guide.html">Build Guide &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

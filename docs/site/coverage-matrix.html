@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>Coverage Matrix — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -108,7 +108,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="plan.html" >PLAN</a>
 <h3>Project Documentation</h3>
 <a href="gap-analysis.html" >Gap Analysis</a>
-<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="coverage-matrix.html" class="active">Coverage Matrix</a>
 <a href="troubleshooting.html" >Troubleshooting</a>
 <a href="build-guide.html" >Build Guide</a>
 <a href="integration-notes.html" >Integration Notes</a>
@@ -151,7 +151,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -173,130 +173,461 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Documentation / Coverage Matrix</div>
+<div class="content"><h1 id="foxbms-posix-vecu-feature-coverage-matrix">foxBMS POSIX vECU — Feature Coverage Matrix</h1>
+<p><strong>Date</strong>: 2026-03-21
+<strong>foxBMS version</strong>: v1.10.0
+<strong>Scope</strong>: Which foxBMS features work on the POSIX port vs production TMS570</p>
 <hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
-</code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
+<h2 id="state-machines">State Machines</h2>
 <table>
 <thead>
 <tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
+<th>Feature</th>
+<th>Production</th>
+<th>POSIX</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
+<td>SYS state machine</td>
+<td>Full</td>
+<td>RUNNING</td>
+<td>All substates pass</td>
 </tr>
 <tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
+<td>BMS state machine</td>
+<td>Full</td>
+<td>NORMAL</td>
+<td>Full transition: UNINIT→INIT→IDLE→STANDBY→PRECHARGE→NORMAL</td>
 </tr>
 <tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
+<td>CONT state machine</td>
+<td>Full</td>
+<td>Works</td>
+<td>Contactor open/close with simulated delay (GA-05)</td>
+</tr>
+<tr>
+<td>BAL state machine</td>
+<td>Full</td>
+<td>Runs</td>
+<td>Logic executes but no voltage delta to balance (GA-10)</td>
+</tr>
+<tr>
+<td>SOC estimation</td>
+<td>Full</td>
+<td>50% static</td>
+<td>Counting method runs but current=0A so no change (GA-09)</td>
+</tr>
+<tr>
+<td>SOE estimation</td>
+<td>Full</td>
+<td>Runs</td>
+<td>Algorithm100ms calls SOE but static values</td>
+</tr>
+<tr>
+<td>SOF estimation</td>
+<td>Full</td>
+<td>Runs</td>
+<td>Power limits calculated against ideal voltages</td>
+</tr>
+</tbody>
+</table>
+<h2 id="can-communication">CAN Communication</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Production</th>
+<th>POSIX</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CAN TX (15+ msg types)</td>
+<td>HW mailbox</td>
+<td>SocketCAN</td>
+<td>0x220-0x301 verified</td>
+</tr>
+<tr>
+<td>CAN RX processing</td>
+<td>HW ISR</td>
+<td>Ring buffer</td>
+<td>SocketCAN → posix_can_rx_inject() → callbacks</td>
 </tr>
 <tr>
 <td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
+<td>Big-endian</td>
+<td>Same</td>
+<td>foxBMS CAN_BIG_ENDIAN_TABLE verified with roundtrip</td>
 </tr>
 <tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
+<td>CAN TX arbitration</td>
+<td>HW</td>
+<td>None</td>
+<td>No bus arbitration (GA-11)</td>
 </tr>
 <tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
+<td>CAN bus-off handling</td>
+<td>HW</td>
+<td>None</td>
+<td>Errors silently ignored (GA-11)</td>
 </tr>
 <tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
+<td>CAN E2E protection</td>
+<td>AUTOSAR E2E</td>
+<td>Bypassed</td>
+<td>No integrity checksums (GA-27)</td>
 </tr>
 <tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
+<td>CAN TX period enforcement</td>
+<td>Timer ISR</td>
+<td>No enforcement</td>
+<td>Fires when loop reaches it (GA-26)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="diagnostics-ga-06-selective">Diagnostics (GA-06: Selective)</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Production</th>
+<th>POSIX</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overvoltage detection</td>
+<td>Full</td>
+<td><strong>Enabled</strong></td>
+<td>MSL/RSL/MOL all active</td>
 </tr>
 <tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
+<td>Undervoltage detection</td>
+<td>Full</td>
+<td><strong>Enabled</strong></td>
+<td>MSL/RSL/MOL all active</td>
 </tr>
 <tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
+<td>Overcurrent detection</td>
+<td>Full</td>
+<td><strong>Enabled</strong></td>
+<td>Cell/string/pack level</td>
 </tr>
 <tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
+<td>Overtemperature detection</td>
+<td>Full</td>
+<td><strong>Enabled</strong></td>
+<td>Charge/discharge MSL/RSL/MOL</td>
+</tr>
+<tr>
+<td>Undertemperature detection</td>
+<td>Full</td>
+<td><strong>Enabled</strong></td>
+<td>Charge/discharge MSL/RSL/MOL</td>
+</tr>
+<tr>
+<td>Plausibility checks</td>
+<td>Full</td>
+<td><strong>Enabled</strong></td>
+<td>Voltage/temp spread, pack voltage</td>
+</tr>
+<tr>
+<td>AFE SPI errors</td>
+<td>Full</td>
+<td>Suppressed</td>
+<td>No AFE hardware</td>
+</tr>
+<tr>
+<td>SBC errors</td>
+<td>Full</td>
+<td>Suppressed</td>
+<td>No SBC hardware</td>
+</tr>
+<tr>
+<td>I2C/RTC/FRAM errors</td>
+<td>Full</td>
+<td>Suppressed</td>
+<td>No I2C bus</td>
+</tr>
+<tr>
+<td>IMD insulation monitoring</td>
+<td>Full</td>
+<td>Suppressed</td>
+<td>No IMD hardware</td>
+</tr>
+<tr>
+<td>Interlock feedback</td>
+<td>Full</td>
+<td>Suppressed</td>
+<td>No interlock circuit</td>
+</tr>
+<tr>
+<td>Contactor feedback</td>
+<td>Full</td>
+<td>Suppressed</td>
+<td>No real feedback pins</td>
+</tr>
+</tbody>
+</table>
+<h2 id="hardware-abstraction">Hardware Abstraction</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Production</th>
+<th>POSIX</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPI (AFE, SBC, FRAM)</td>
+<td>TMS570 SPI</td>
+<td>Stubbed</td>
+<td>No-op</td>
+</tr>
+<tr>
+<td>I2C (PEX, RTC, temp)</td>
+<td>TMS570 I2C</td>
+<td>Stubbed</td>
+<td>No-op</td>
+</tr>
+<tr>
+<td>DMA</td>
+<td>TMS570 DMA</td>
+<td>Stubbed</td>
+<td>No-op</td>
+</tr>
+<tr>
+<td>GIO pins</td>
+<td>TMS570 GPIO</td>
+<td>Stubbed</td>
+<td>No-op</td>
+</tr>
+<tr>
+<td>ADC</td>
+<td>TMS570 ADC</td>
+<td>Stubbed</td>
+<td>No-op</td>
+</tr>
+<tr>
+<td>CRC</td>
+<td>TMS570 HW CRC</td>
+<td>Software CRC-64</td>
+<td>Functional but different algorithm</td>
+</tr>
+<tr>
+<td>SPS (contactors)</td>
+<td>TMS570 SPI</td>
+<td>Simulated</td>
+<td>Per-channel with delay (GA-05)</td>
+</tr>
+<tr>
+<td>Register access</td>
+<td>MMIO</td>
+<td>RAM buffers</td>
+<td>60+ register bases → 4KB RAM each</td>
+</tr>
+</tbody>
+</table>
+<h2 id="safety">Safety</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Production</th>
+<th>POSIX</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FAS_ASSERT</td>
+<td>Infinite loop / watchdog</td>
+<td>Log + exit(1)</td>
+<td>GA-07: crashes visibly</td>
+</tr>
+<tr>
+<td>DIAG_Handler</td>
+<td>Full evaluation</td>
+<td>Selective</td>
+<td>GA-06: 24 HW suppressed, 61 SW enabled</td>
+</tr>
+<tr>
+<td>Watchdog (SBC)</td>
+<td>HW watchdog</td>
+<td>None</td>
+<td>GA-24: no timeout → safe-state</td>
+</tr>
+<tr>
+<td>Interlock</td>
+<td>HW circuit</td>
+<td>Always closed</td>
+<td>GA-23</td>
+</tr>
+<tr>
+<td>Redundancy (IVT)</td>
+<td>Dual IVT</td>
+<td>Single</td>
+<td>GA-25</td>
+</tr>
+</tbody>
+</table>
+<h2 id="plant-model">Plant Model</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell voltages (18 cells)</td>
+<td>Static 3700mV</td>
+<td>GA-04: no noise, no SOC-OCV curve</td>
+</tr>
+<tr>
+<td>IVT current</td>
+<td>Static 0A</td>
+<td>GA-09: SOC never changes</td>
+</tr>
+<tr>
+<td>IVT voltage (3 channels)</td>
+<td>Static 66600mV</td>
+<td>Matches string voltage</td>
+</tr>
+<tr>
+<td>Cell temperatures</td>
+<td>Static 25°C</td>
+<td>GA-04: no thermal model</td>
+</tr>
+<tr>
+<td>BMS state requests</td>
+<td>STANDBY → NORMAL</td>
+<td>Timed sequence</td>
+</tr>
+<tr>
+<td>Contactor feedback</td>
+<td>Not read</td>
+<td>GA-53 (future): no closed-loop</td>
+</tr>
+</tbody>
+</table>
+<h2 id="test-infrastructure">Test Infrastructure</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Smoke test</td>
+<td><code>test_smoke.py</code></td>
+<td>GA-13: automated pass/fail</td>
+</tr>
+<tr>
+<td>Setup script</td>
+<td><code>setup.sh</code></td>
+<td>GA-19: single-command setup</td>
+</tr>
+<tr>
+<td>Patch management</td>
+<td><code>apply_all.sh</code></td>
+<td>GA-15: ordered with version check</td>
+</tr>
+<tr>
+<td>Troubleshooting</td>
+<td><code>TROUBLESHOOTING.md</code></td>
+<td>GA-30: 10 failure modes</td>
+</tr>
+<tr>
+<td>Timeout flag</td>
+<td><code>--timeout N</code></td>
+<td>GA-28: for CI automation</td>
+</tr>
+<tr>
+<td>Cycle timing</td>
+<td>Built-in</td>
+<td>GA-01: deadline violation warnings</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Total Features</th>
+<th>Working on POSIX</th>
+<th>Suppressed</th>
+<th>Not Implemented</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>State machines</td>
+<td>7</td>
+<td>7 (all run)</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>CAN communication</td>
+<td>7</td>
+<td>3</td>
+<td>0</td>
+<td>4 (arbitration, bus-off, E2E, period)</td>
+</tr>
+<tr>
+<td>Diagnostics</td>
+<td>12 categories</td>
+<td>6 enabled</td>
+<td>6 suppressed (HW)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Hardware abstraction</td>
+<td>8</td>
+<td>2 (CRC, SPS)</td>
+<td>6 (stubbed)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Safety</td>
+<td>5</td>
+<td>2 (assert, diag)</td>
+<td>0</td>
+<td>3 (watchdog, interlock, redundancy)</td>
+</tr>
+<tr>
+<td>Plant model</td>
+<td>6</td>
+<td>6 (all static)</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Test infrastructure</td>
+<td>6</td>
+<td>6</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Overall</strong>: 51 features tracked. 32 working, 12 suppressed (hardware-absent), 7 not implemented (architectural gaps).</p></div>
+<div class="nav-buttons"><a href="gap-analysis.html">&larr; Gap Analysis</a><a href="troubleshooting.html">Troubleshooting &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

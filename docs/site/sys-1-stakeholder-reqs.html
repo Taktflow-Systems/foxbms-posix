@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYS.1 Stakeholder Reqs — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" class="active">SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — System / SYS.1 Stakeholder Reqs</div>
+<div class="content"><h1 id="stakeholder-requirements-specification">Stakeholder Requirements Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.1-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document captures the stakeholder requirements for the foxBMS 2 POSIX vECU project in accordance with ASPICE SYS.1 (Stakeholder Requirements Analysis). It identifies the key stakeholders, elicits their needs, and formalizes them into traceable requirements that drive the system and software specifications.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>All stakeholder requirements for the POSIX SIL adaptation of foxBMS 2 v1.10.0, covering the vECU, plant model, test infrastructure, and documentation.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.2-001]</td>
+<td>System Requirements Specification</td>
+</tr>
+<tr>
+<td>[ASMT-SCOPE-001]</td>
+<td>ASPICE CL2 Assessment Scope</td>
+</tr>
+<tr>
+<td>[GAP-ANALYSIS]</td>
+<td>foxBMS POSIX vECU Gap Analysis</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-stakeholder-identification">4. Stakeholder Identification</h2>
+<h3 id="41-stakeholder-1-hil-test-engineer">4.1 Stakeholder 1: HIL Test Engineer</h3>
+<p><strong>Role</strong>: Primary end-user of the SIL system. Uses the vECU to pre-validate BMS test cases before executing them on the physical HIL bench.</p>
+<p><strong>Context</strong>: HIL bench time is expensive and limited. Test setup on real hardware requires physical battery simulators, power supplies, and contactor assemblies. Many BMS logic tests (state transitions, diagnostic thresholds, CAN message content) can be validated in software first.</p>
+<p><strong>Needs</strong>:
+- Run BMS logic on a standard Linux workstation without hardware dependencies
+- Execute the same diagnostic and state machine logic as the production ECU
+- Validate CAN message content and timing before HIL bench sessions
+- Automate regression testing in CI pipelines</p>
+<h3 id="42-stakeholder-2-functional-safety-engineer">4.2 Stakeholder 2: Functional Safety Engineer</h3>
+<p><strong>Role</strong>: Responsible for demonstrating that the BMS meets ASIL-D safety requirements per ISO 26262. Uses fault injection to validate that diagnostic paths correctly detect anomalies and transition the BMS to a safe state.</p>
+<p><strong>Context</strong>: Inducing real faults on hardware (overvoltage, overcurrent, sensor failure) is dangerous and destructive. A SIL environment enables exhaustive fault injection without risk to equipment or personnel.</p>
+<p><strong>Needs</strong>:
+- Inject faults into cell voltages, currents, and temperatures programmatically
+- Verify that DIAG_Handler correctly classifies and escalates each fault
+- Trace safety requirements through to test evidence
+- Validate FTTI (Fault Tolerant Time Interval) behavior in software</p>
+<h3 id="43-stakeholder-3-student-new-developer">4.3 Stakeholder 3: Student / New Developer</h3>
+<p><strong>Role</strong>: Newcomer to the foxBMS codebase who needs to understand, build, and experiment with the BMS without access to target hardware.</p>
+<p><strong>Context</strong>: The foxBMS project is complex (170+ source files, FreeRTOS, TMS570-specific HAL). A new developer cannot easily set up the full toolchain (Code Composer Studio, HALCoGen, TMS570 LaunchPad). The POSIX port provides an accessible entry point.</p>
+<p><strong>Needs</strong>:
+- Clone and build with a single command on standard Ubuntu
+- Observe BMS behavior through CAN messages and log output
+- Understand the architecture through clear documentation
+- Modify and experiment without risk of bricking hardware</p>
+<h2 id="5-stakeholder-requirements">5. Stakeholder Requirements</h2>
+<h3 id="51-build-and-setup">5.1 Build and Setup</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Stakeholder</th>
+<th>Priority</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STKH-REQ-001</td>
+<td>The system shall build from source on Ubuntu 24.04 LTS using only standard packages (GCC, Make, Python 3, SocketCAN).</td>
+<td>S3: Student</td>
+<td>MUST</td>
+<td>SYS-REQ-001</td>
+</tr>
+<tr>
+<td>STKH-REQ-002</td>
+<td>A single setup command shall clone the repository, apply all patches, build the vECU, configure the CAN interface, and run a smoke test.</td>
+<td>S3: Student</td>
+<td>MUST</td>
+<td>SYS-REQ-002</td>
+</tr>
+<tr>
+<td>STKH-REQ-003</td>
+<td>The build shall complete in under 60 seconds on a standard workstation.</td>
+<td>S1: HIL Eng</td>
+<td>SHOULD</td>
+<td>SYS-REQ-003</td>
+</tr>
+<tr>
+<td>STKH-REQ-004</td>
+<td>The system shall use foxBMS v1.10.0 as a pinned, version-checked dependency to ensure reproducible builds.</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-004</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-bms-functional-behavior">5.2 BMS Functional Behavior</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Stakeholder</th>
+<th>Priority</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STKH-REQ-005</td>
+<td>The vECU shall execute the same BMS state machine logic as the production foxBMS (SYS/BMS/CONT/BAL state machines).</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-010</td>
+</tr>
+<tr>
+<td>STKH-REQ-006</td>
+<td>The BMS shall reach the NORMAL operating state through the legitimate transition sequence (UNINIT, INIT, IDLE, STANDBY, PRECHARGE, NORMAL).</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-011</td>
+</tr>
+<tr>
+<td>STKH-REQ-007</td>
+<td>The vECU shall transmit at least 15 CAN message types on the virtual CAN bus, matching the foxBMS DBC message IDs.</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-020</td>
+</tr>
+<tr>
+<td>STKH-REQ-008</td>
+<td>The SOC algorithm shall reflect changes in battery state of charge when current flows (discharge or charge).</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-030</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-safety-and-diagnostics">5.3 Safety and Diagnostics</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Stakeholder</th>
+<th>Priority</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STKH-REQ-009</td>
+<td>The vECU shall execute the DIAG_Handler for all software-checkable diagnostic IDs (overvoltage, undervoltage, overcurrent, overtemperature, plausibility).</td>
+<td>S2: Safety Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-040</td>
+</tr>
+<tr>
+<td>STKH-REQ-010</td>
+<td>Hardware-absent diagnostic IDs (AFE SPI, SBC, I2C, IMD, interlock) shall be explicitly suppressed with documented rationale.</td>
+<td>S2: Safety Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-041</td>
+</tr>
+<tr>
+<td>STKH-REQ-011</td>
+<td>The system shall provide a fault injection interface that allows test scripts to override cell voltages, currents, and temperatures at runtime.</td>
+<td>S2: Safety Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-050</td>
+</tr>
+<tr>
+<td>STKH-REQ-012</td>
+<td>Injected faults shall trigger the same DIAG_Handler response as genuine sensor readings (same DIAG ID, same severity classification).</td>
+<td>S2: Safety Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-051</td>
+</tr>
+<tr>
+<td>STKH-REQ-013</td>
+<td>FAS_ASSERT violations shall terminate the vECU with a visible error message including file and line number.</td>
+<td>S2: Safety Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-042</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-test-automation">5.4 Test Automation</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Stakeholder</th>
+<th>Priority</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STKH-REQ-014</td>
+<td>An automated smoke test shall verify that the BMS reaches NORMAL state, contactors close, and SOC is non-zero.</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-060</td>
+</tr>
+<tr>
+<td>STKH-REQ-015</td>
+<td>The vECU shall support a timeout flag (--timeout N) for CI pipeline integration, exiting cleanly after N seconds.</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-061</td>
+</tr>
+<tr>
+<td>STKH-REQ-016</td>
+<td>Integration tests shall verify end-to-end CAN communication between plant model and vECU.</td>
+<td>S1: HIL Eng</td>
+<td>SHOULD</td>
+<td>SYS-REQ-062</td>
+</tr>
+<tr>
+<td>STKH-REQ-017</td>
+<td>ASIL-D fault injection tests shall cover all safety-relevant diagnostic paths with pass/fail verdict.</td>
+<td>S2: Safety Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-063</td>
+</tr>
+</tbody>
+</table>
+<h3 id="55-documentation-and-usability">5.5 Documentation and Usability</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Stakeholder</th>
+<th>Priority</th>
+<th>Traces To</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STKH-REQ-018</td>
+<td>The project shall include a troubleshooting guide covering common failure modes with diagnosis and resolution steps.</td>
+<td>S3: Student</td>
+<td>SHOULD</td>
+<td>SYS-REQ-070</td>
+</tr>
+<tr>
+<td>STKH-REQ-019</td>
+<td>The architecture shall be documented with block diagrams showing layer decomposition and data flow.</td>
+<td>S3: Student</td>
+<td>SHOULD</td>
+<td>SYS-REQ-071</td>
+</tr>
+<tr>
+<td>STKH-REQ-020</td>
+<td>A feature coverage matrix shall identify which foxBMS features work on POSIX, which are suppressed, and which are not implemented.</td>
+<td>S1: HIL Eng</td>
+<td>MUST</td>
+<td>SYS-REQ-072</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-requirements-analysis">6. Requirements Analysis</h2>
+<h3 id="61-prioritization">6.1 Prioritization</h3>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Count</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MUST</td>
+<td>15</td>
+<td>Essential for SIL validation purpose</td>
+</tr>
+<tr>
+<td>SHOULD</td>
+<td>5</td>
+<td>Important for usability and completeness</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-conflicts-and-trade-offs">6.2 Conflicts and Trade-offs</h3>
+<table>
+<thead>
+<tr>
+<th>Conflict</th>
+<th>Resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STKH-REQ-005 (same logic) vs. single-threaded execution</td>
+<td>ACCEPTED: cooperative loop preserves logic correctness; concurrency testing deferred to HIL (GA-02)</td>
+</tr>
+<tr>
+<td>STKH-REQ-010 (suppress HW diag) vs. STKH-REQ-009 (execute SW diag)</td>
+<td>Selective DIAG_Handler: 24 HW IDs suppressed, 61 SW IDs enabled</td>
+</tr>
+<tr>
+<td>STKH-REQ-003 (build speed) vs. STKH-REQ-004 (reproducibility)</td>
+<td>setup.sh caches submodule; incremental builds take &lt;10s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-traceability">6.3 Traceability</h3>
+<p>All STKH-REQ-xxx requirements trace forward to SYS-REQ-xxx in the System Requirements Specification (SYS.2-001). The bidirectional traceability matrix in ISO26262-part8-traceability.md provides the complete mapping chain from stakeholder requirements through system requirements, software requirements, detailed design, and test cases.</p>
+<h2 id="7-acceptance-criteria">7. Acceptance Criteria</h2>
+<p>Each stakeholder requirement is considered fulfilled when:</p>
+<ol>
+<li>The corresponding system requirement(s) are implemented</li>
+<li>Test evidence demonstrates the requirement is met (test_smoke.py, test_integration.py, or test_asil.py)</li>
+<li>The GAP-ANALYSIS.md entry (if any) is marked FIXED or ACCEPTED with documented rationale</li>
+</ol></div>
+<div class="nav-buttons"><a href="sup-10-change-request.html">&larr; SUP.10 Change Request</a><a href="sys-2-system-reqs.html">SYS.2 System Reqs &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

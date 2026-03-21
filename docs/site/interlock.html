@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>Interlock — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -151,7 +151,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -163,7 +163,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="balancing.html" >Balancing</a>
 <a href="sbc.html" >SBC</a>
 <a href="precharging.html" >Precharging</a>
-<a href="interlock.html" >Interlock</a>
+<a href="interlock.html" class="active">Interlock</a>
 <a href="dbc-signals.html" >DBC Signals</a>
 <h3>Business & Service</h3>
 <a href="reusable-pipeline.html" >Reusable Pipeline</a>
@@ -173,130 +173,28 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
+<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Interlock</div>
+<div class="content"><h1 id="interlock-module">Interlock Module</h1>
+<p><strong>Source</strong>: <a href="https://iisb-foxbms.iisb.fraunhofer.de/foxbms/docs/latest/software/modules/driver/interlock/interlock.html">docs.foxbms.org — Interlock</a>
+<strong>Files</strong>: <code>src/app/driver/interlock/interlock.c</code>, <code>interlock.h</code></p>
 <hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
-</code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
-<table>
-<thead>
-<tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
-</tr>
-<tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
-</tr>
-<tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
-</tr>
-<tr>
-<td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
-</tr>
-<tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
-</tr>
-<tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
-</tr>
-<tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
-</tr>
-<tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
-</tr>
-<tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
-</tr>
-<tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
-</tr>
-<tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<h2 id="how-it-works">How It Works</h2>
+<p>External safety circuit with monitor current:
+- BMS-Master supplies low-power current through interlock connector
+- External loop passes through emergency stop switches
+- Low-side current sense: 0-100mA → 0-4V (linear)
+- Threshold comparator: pin goes low when current &gt; 10mA</p>
+<h2 id="feedback-checking">Feedback Checking</h2>
+<ul>
+<li>Pin LOW = interlock <strong>closed</strong> (normal)</li>
+<li>Pin HIGH = interlock <strong>open</strong> (fault condition)</li>
+<li>State machine monitors feedback, reports to DIAG on unexpected open</li>
+</ul>
+<h2 id="configuration">Configuration</h2>
+<p><code>BS_IGNORE_INTERLOCK_FEEDBACK</code> — disables feedback checking (removes safety detection).</p>
+<h2 id="posix-port-status">POSIX Port Status</h2>
+<p>Interlock hardcoded always-closed (GA-23). Cannot simulate interlock-break → safe-state transition. Phase 3 work: add interlock override via SIL command (0x7E0).</p></div>
+<div class="nav-buttons"><a href="precharging.html">&larr; Precharging</a><a href="dbc-signals.html">DBC Signals &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

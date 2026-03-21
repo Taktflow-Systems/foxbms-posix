@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAN.3 Project Plan — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" class="active">MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Management / MAN.3 Project Plan</div>
+<div class="content"><h1 id="project-management-plan">Project Management Plan</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MAN.3-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document defines the project management plan for the foxBMS 2 POSIX vECU project in accordance with ASPICE MAN.3 (Project Management). It establishes project phases, milestones, resource allocation, risk management, and monitoring mechanisms.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>The plan covers the full lifecycle of the foxBMS POSIX SIL adaptation, from initial feasibility through integration with HIL test infrastructure. It encompasses all software engineering, system engineering, and supporting process activities required to achieve ASPICE CL2.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[ASMT-SCOPE-001]</td>
+<td>ASPICE CL2 Assessment Scope</td>
+</tr>
+<tr>
+<td>[GAP-ANALYSIS]</td>
+<td>foxBMS POSIX vECU Gap Analysis</td>
+</tr>
+<tr>
+<td>[COVERAGE]</td>
+<td>Feature Coverage Matrix</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-project-overview">4. Project Overview</h2>
+<h3 id="41-objective">4.1 Objective</h3>
+<p>Deliver a validated software-in-the-loop (SIL) representation of foxBMS 2 v1.10.0 that enables HIL test engineers to pre-validate BMS logic, diagnostic paths, and fault responses on a standard Linux workstation, with sufficient process maturity to satisfy ASPICE CL2.</p>
+<h3 id="42-organizational-context">4.2 Organizational Context</h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Person</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Project Lead / Developer</td>
+<td>An Dao</td>
+<td>Architecture, implementation, testing, documentation</td>
+</tr>
+<tr>
+<td>Organization</td>
+<td>Munich Electrification</td>
+<td>HIL test laboratory</td>
+</tr>
+<tr>
+<td>Role</td>
+<td>HIL Engineer</td>
+<td>Primary stakeholder and end-user</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-project-phases-and-milestones">5. Project Phases and Milestones</h2>
+<h3 id="phase-1-bms-normal-state-completed">Phase 1: BMS NORMAL State -- COMPLETED</h3>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Target Date</th>
+<th>Actual Date</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1.1 foxBMS compiles on x86-64</td>
+<td>2026-02-01</td>
+<td>2026-02-01</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M1.2 HAL stubs pass compilation</td>
+<td>2026-02-08</td>
+<td>2026-02-08</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M1.3 BMS reaches NORMAL state</td>
+<td>2026-02-15</td>
+<td>2026-02-15</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M1.4 CAN TX verified (15+ messages)</td>
+<td>2026-02-20</td>
+<td>2026-02-20</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M1.5 Smoke test automated</td>
+<td>2026-02-25</td>
+<td>2026-02-25</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M1.6 Gap analysis complete (33 gaps)</td>
+<td>2026-03-01</td>
+<td>2026-03-01</td>
+<td>DONE</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverables</strong>: foxbms-vecu binary, plant_model.py, test_smoke.py, GAP-ANALYSIS.md, COVERAGE.md, setup.sh</p>
+<h3 id="phase-2-realistic-simulation-completed">Phase 2: Realistic Simulation -- COMPLETED</h3>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Target Date</th>
+<th>Actual Date</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M2.1 Dynamic plant model (OCV curve, IR drop)</td>
+<td>2026-03-05</td>
+<td>2026-03-05</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M2.2 Closed-loop contactor feedback</td>
+<td>2026-03-07</td>
+<td>2026-03-07</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M2.3 SOC decreases under discharge</td>
+<td>2026-03-08</td>
+<td>2026-03-08</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M2.4 BMW i3 trip replay integrated</td>
+<td>2026-03-10</td>
+<td>2026-03-10</td>
+<td>DONE</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverables</strong>: Enhanced plant model, trip replay data, updated test_smoke.py</p>
+<h3 id="phase-25-sil-probes-completed">Phase 2.5: SIL Probes -- COMPLETED</h3>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Target Date</th>
+<th>Actual Date</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M2.5.1 SIL probe override system (CAN 0x7E0)</td>
+<td>2026-03-14</td>
+<td>2026-03-14</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M2.5.2 ASIL-D fault injection matrix (2,005 tests)</td>
+<td>2026-03-15</td>
+<td>2026-03-15</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M2.5.3 test_asil.py (50 criteria)</td>
+<td>2026-03-16</td>
+<td>2026-03-16</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M2.5.4 test_integration.py (21 criteria)</td>
+<td>2026-03-16</td>
+<td>2026-03-16</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M2.5.5 Software watchdog implementation</td>
+<td>2026-03-17</td>
+<td>2026-03-17</td>
+<td>DONE</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverables</strong>: SIL probe system, test_asil.py, test_integration.py, ASIL fault matrix</p>
+<h3 id="phase-3-fault-injection-in-progress">Phase 3: Fault Injection -- IN PROGRESS</h3>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Target Date</th>
+<th>Actual Date</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M3.1 ASPICE document package (18 documents)</td>
+<td>2026-03-21</td>
+<td>2026-03-21</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M3.2 ASPICE CL2 folder hierarchy</td>
+<td>2026-03-21</td>
+<td>2026-03-21</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>M3.3 CL2 gap assessment</td>
+<td>2026-03-21</td>
+<td>--</td>
+<td>IN PROGRESS</td>
+</tr>
+<tr>
+<td>M3.4 Formal review records</td>
+<td>2026-04-01</td>
+<td>--</td>
+<td>PLANNED</td>
+</tr>
+<tr>
+<td>M3.5 Measurement data collection</td>
+<td>2026-04-07</td>
+<td>--</td>
+<td>PLANNED</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverables</strong>: CL2 evidence package, gap assessment, review records</p>
+<h3 id="phase-4-hil-integration-planned">Phase 4: HIL Integration -- PLANNED</h3>
+<table>
+<thead>
+<tr>
+<th>Milestone</th>
+<th>Target Date</th>
+<th>Actual Date</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M4.1 Docker containerization</td>
+<td>2026-04-15</td>
+<td>--</td>
+<td>PLANNED</td>
+</tr>
+<tr>
+<td>M4.2 XCP/A2L integration</td>
+<td>2026-05-01</td>
+<td>--</td>
+<td>PLANNED</td>
+</tr>
+<tr>
+<td>M4.3 HIL-SIL bridge interface</td>
+<td>2026-05-15</td>
+<td>--</td>
+<td>PLANNED</td>
+</tr>
+<tr>
+<td>M4.4 Final CL2 evidence package</td>
+<td>2026-06-01</td>
+<td>--</td>
+<td>PLANNED</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-work-breakdown-structure">6. Work Breakdown Structure</h2>
+<h3 id="61-engineering-work-packages">6.1 Engineering Work Packages</h3>
+<table>
+<thead>
+<tr>
+<th>WP</th>
+<th>Description</th>
+<th>Phase</th>
+<th>Effort (days)</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WP-01</td>
+<td>POSIX HAL adaptation (stubs, register buffers)</td>
+<td>1</td>
+<td>5</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-02</td>
+<td>CAN TX/RX via SocketCAN</td>
+<td>1</td>
+<td>3</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-03</td>
+<td>State machine validation (SYS/BMS/CONT/BAL)</td>
+<td>1</td>
+<td>2</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-04</td>
+<td>Selective DIAG_Handler (24 HW suppressed, 61 SW enabled)</td>
+<td>1</td>
+<td>3</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-05</td>
+<td>Plant model (dynamic, OCV, IR drop, trip replay)</td>
+<td>2</td>
+<td>5</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-06</td>
+<td>SIL probe override system</td>
+<td>2.5</td>
+<td>4</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-07</td>
+<td>ASIL-D test matrix</td>
+<td>2.5</td>
+<td>3</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-08</td>
+<td>ASPICE documentation package</td>
+<td>3</td>
+<td>5</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-09</td>
+<td>CL2 process maturity evidence</td>
+<td>3</td>
+<td>3</td>
+<td>IN PROGRESS</td>
+</tr>
+<tr>
+<td>WP-10</td>
+<td>Docker and CI pipeline</td>
+<td>4</td>
+<td>5</td>
+<td>PLANNED</td>
+</tr>
+<tr>
+<td>WP-11</td>
+<td>HIL-SIL bridge</td>
+<td>4</td>
+<td>5</td>
+<td>PLANNED</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-test-work-packages">6.2 Test Work Packages</h3>
+<table>
+<thead>
+<tr>
+<th>WP</th>
+<th>Description</th>
+<th>Test Count</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WP-T01</td>
+<td>Unit tests (Ceedling)</td>
+<td>183+</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-T02</td>
+<td>Smoke test (test_smoke.py)</td>
+<td>76 criteria</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-T03</td>
+<td>Integration test (test_integration.py)</td>
+<td>21 criteria</td>
+<td>DONE</td>
+</tr>
+<tr>
+<td>WP-T04</td>
+<td>ASIL test (test_asil.py)</td>
+<td>50 criteria</td>
+<td>DONE</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total test criteria</strong>: 147 (across integration and ASIL suites) + 183 unit tests + 76 smoke criteria</p>
+<h2 id="7-resource-plan">7. Resource Plan</h2>
+<h3 id="71-personnel">7.1 Personnel</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Allocation</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>An Dao</td>
+<td>100%</td>
+<td>HIL engineer, developer, tester, process owner</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-infrastructure">7.2 Infrastructure</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Development machine</td>
+<td>Ubuntu 24.04, GCC 13, Python 3.12</td>
+</tr>
+<tr>
+<td>Build tools</td>
+<td>Make, Ceedling (unit tests)</td>
+</tr>
+<tr>
+<td>Version control</td>
+<td>Git with submodules</td>
+</tr>
+<tr>
+<td>CAN tools</td>
+<td>SocketCAN (vcan0), can-utils</td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td>Markdown (assessor-portable)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-tool-environment">7.3 Tool Environment</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GCC</td>
+<td>13</td>
+<td>C compilation with -Wall -Wextra</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.12</td>
+<td>Plant model, test scripts</td>
+</tr>
+<tr>
+<td>Ceedling</td>
+<td>Latest</td>
+<td>Unit test framework</td>
+</tr>
+<tr>
+<td>Git</td>
+<td>2.43+</td>
+<td>Configuration management</td>
+</tr>
+<tr>
+<td>SocketCAN</td>
+<td>Linux kernel</td>
+<td>Virtual CAN interface</td>
+</tr>
+<tr>
+<td>can-utils</td>
+<td>System</td>
+<td>CAN monitoring and injection</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-risk-management">8. Risk Management</h2>
+<h3 id="81-risk-register">8.1 Risk Register</h3>
+<table>
+<thead>
+<tr>
+<th>Risk ID</th>
+<th>Description</th>
+<th>Probability</th>
+<th>Impact</th>
+<th>Mitigation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R-01</td>
+<td>foxBMS upstream update breaks patches</td>
+<td>Medium</td>
+<td>High</td>
+<td>Pin to v1.10.0; version check in apply_all.sh</td>
+<td>ACTIVE</td>
+</tr>
+<tr>
+<td>R-02</td>
+<td>Single-threaded model misses concurrency bugs</td>
+<td>High</td>
+<td>Medium</td>
+<td>ACCEPTED: documented in GAP-ANALYSIS (GA-02). SIL validates logic, not threading.</td>
+<td>ACCEPTED</td>
+</tr>
+<tr>
+<td>R-03</td>
+<td>Insufficient evidence for CL2</td>
+<td>Medium</td>
+<td>High</td>
+<td>CL2 gap assessment identifies specific actions</td>
+<td>ACTIVE</td>
+</tr>
+<tr>
+<td>R-04</td>
+<td>Single resource (bus factor = 1)</td>
+<td>High</td>
+<td>High</td>
+<td>Comprehensive documentation; setup.sh enables onboarding</td>
+<td>ACTIVE</td>
+</tr>
+<tr>
+<td>R-05</td>
+<td>HALCoGen header licensing</td>
+<td>Low</td>
+<td>Medium</td>
+<td>BSD-licensed headers committed to repository</td>
+<td>CLOSED</td>
+</tr>
+<tr>
+<td>R-06</td>
+<td>SocketCAN timing fidelity</td>
+<td>Medium</td>
+<td>Low</td>
+<td>SIL tests logic correctness, not bus timing; timing is HIL concern</td>
+<td>ACCEPTED</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-risk-review-schedule">8.2 Risk Review Schedule</h3>
+<p>Risks are reviewed at each phase gate milestone. The GAP-ANALYSIS.md document serves as the living risk/issue register with severity classification and resolution tracking.</p>
+<h2 id="9-monitoring-and-control">9. Monitoring and Control</h2>
+<h3 id="91-progress-metrics">9.1 Progress Metrics</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Current Value</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ASPICE criteria met</td>
+<td>94 / 112 (84%)</td>
+<td>112 / 112 (100%)</td>
+</tr>
+<tr>
+<td>Open gaps (CRITICAL/HIGH)</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Test criteria passing</td>
+<td>147 / 147</td>
+<td>147 / 147</td>
+</tr>
+<tr>
+<td>Unit tests passing</td>
+<td>183+ / 183+</td>
+<td>183+ / 183+</td>
+</tr>
+<tr>
+<td>ASPICE documents produced</td>
+<td>18</td>
+<td>18</td>
+</tr>
+<tr>
+<td>Phase completion</td>
+<td>3 of 4 phases</td>
+<td>4 of 4 phases</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92-status-reporting">9.2 Status Reporting</h3>
+<ul>
+<li>GAP-ANALYSIS.md is updated upon each gap discovery or resolution</li>
+<li>COVERAGE.md tracks feature-level status across 7 categories</li>
+<li>Phase gate reviews are conducted at each milestone boundary</li>
+</ul>
+<h3 id="93-change-control">9.3 Change Control</h3>
+<p>Changes to scope, schedule, or resources are documented in the change request process (SUP.10). Patches to foxBMS source are managed through the patch workflow (apply_all.sh) with version verification.</p>
+<h2 id="10-quality-gates">10. Quality Gates</h2>
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Criteria</th>
+<th>Phase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>G1: Build</td>
+<td>setup.sh completes without error</td>
+<td>1</td>
+</tr>
+<tr>
+<td>G2: Smoke</td>
+<td>test_smoke.py PASS (BMS NORMAL, SOC &gt; 0%)</td>
+<td>1</td>
+</tr>
+<tr>
+<td>G3: Integration</td>
+<td>test_integration.py 21/21 criteria pass</td>
+<td>2.5</td>
+</tr>
+<tr>
+<td>G4: ASIL</td>
+<td>test_asil.py 50/50 criteria pass</td>
+<td>2.5</td>
+</tr>
+<tr>
+<td>G5: Documentation</td>
+<td>All 18 ASPICE documents reviewed</td>
+<td>3</td>
+</tr>
+<tr>
+<td>G6: CL2 Evidence</td>
+<td>CL2 gap assessment shows all actions complete</td>
+<td>3</td>
+</tr>
+<tr>
+<td>G7: Acceptance</td>
+<td>HIL engineer validates SIL-to-HIL workflow</td>
+<td>4</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="traceability-matrix.html">&larr; Traceability Matrix</a><a href="sup-1-qa-plan.html">SUP.1 QA Plan &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>Lessons Learned — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -115,7 +115,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="10-role-audit-v1.html" >10-Role Audit v1</a>
 <a href="10-role-audit-v2.html" >10-Role Audit v2</a>
 <a href="munich-electrification.html" >Munich Electrification</a>
-<a href="lessons-learned.html" >Lessons Learned</a>
+<a href="lessons-learned.html" class="active">Lessons Learned</a>
 <h3>ASPICE CL2 — Assessment</h3>
 <a href="assessment-scope.html" >Assessment Scope</a>
 <a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
@@ -151,7 +151,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -173,130 +173,55 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
-<hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
-</code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
-<table>
-<thead>
-<tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
-</tr>
-<tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
-</tr>
-<tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
-</tr>
-<tr>
-<td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
-</tr>
-<tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
-</tr>
-<tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
-</tr>
-<tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
-</tr>
-<tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
-</tr>
-<tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
-</tr>
-<tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
-</tr>
-<tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Documentation / Lessons Learned</div>
+<div class="content"><h1 id="foxbms-posix-vecu-lessons-learned">foxBMS POSIX vECU — Lessons Learned</h1>
+<h2 id="2026-03-21-phase-3-fault-injection">2026-03-21 — Phase 3 Fault Injection</h2>
+<h3 id="1-rslmol-test-values-must-be-tier-specific">1. RSL/MOL test values must be tier-specific</h3>
+<p><strong>Context</strong>: Generated 2,005 test cases via cross-product (signals × methods × tiers).
+<strong>Mistake</strong>: STUCK_AT_0 used value 0 for all tiers (MSL, RSL, MOL). 0mV is way below MSL (2500mV), so RSL/MOL tests triggered FATAL instead of WARNING.
+<strong>Fix</strong>: Each tier gets a value between its boundaries: OV_RSL=4210mV (between RSL 4200 and MSL 4250).
+<strong>Principle</strong>: Cross-product test generation must be followed by tier-aware value validation. Generic fault methods + severity tiers ≠ valid test cases without domain-specific value constraints.</p>
+<h3 id="2-subprocesspipe-blocks-vecu-when-buffer-fills">2. subprocess.PIPE blocks vECU when buffer fills</h3>
+<p><strong>Context</strong>: Test runner started foxbms-vecu with <code>stdout=subprocess.PIPE</code> to capture logs.
+<strong>Mistake</strong>: foxBMS generates heavy stderr trace output (~50KB/s). PIPE buffer is 64KB. Filled in ~4s → vECU blocked on write → BMS stuck in PRECHARGE forever.
+<strong>Fix</strong>: Use <code>subprocess.DEVNULL</code> instead. Logs go to /dev/null. If needed, redirect to file, never PIPE.
+<strong>Principle</strong>: Never use PIPE for long-running high-output processes unless actively reading the pipe.</p>
+<h3 id="3-foxbms-default-cell-config-is-not-nmc">3. foxBMS default cell config is NOT NMC</h3>
+<p><strong>Context</strong>: foxBMS ships with cell thresholds for a low-voltage chemistry (2500mV nominal, 1500-2800mV range).
+<strong>Mistake</strong>: Assumed foxBMS defaults match NMC. Plant model sent 3700mV → immediate overvoltage fault.
+<strong>Fix</strong>: Patch <code>battery_cell_cfg.h</code> for NMC (3700mV nominal, 2500-4250mV range).
+<strong>Principle</strong>: Always verify cell chemistry config matches the simulated battery. Read the actual #define values, don't assume.</p>
+<h3 id="4-ivt-current-sign-convention-is-configurable">4. IVT current sign convention is configurable</h3>
+<p><strong>Context</strong>: Plant model sent negative current for discharge (common IVT convention).
+<strong>Mistake</strong>: foxBMS has <code>BS_POSITIVE_DISCHARGE_CURRENT = true</code> — positive = discharge. Our negative current was interpreted as charge → overcurrent charge fault.
+<strong>Fix</strong>: Check <code>BS_POSITIVE_DISCHARGE_CURRENT</code> in battery_system_cfg.h and match plant model sign.
+<strong>Principle</strong>: Sign conventions are config-dependent. Read the config. Don't assume "negative = discharge" is universal.</p>
+<h3 id="5-diag-grace-period-must-be-time-based-not-call-based">5. DIAG grace period must be time-based, not call-based</h3>
+<p><strong>Context</strong>: Added startup grace period using a call counter (8000 calls ≈ 8s).
+<strong>Mistake</strong>: DIAG_Handler is called from 1ms + 10ms + 100ms tasks. 8000 calls ≈ 1.5s, not 8s.
+<strong>Fix</strong>: Use <code>OS_GetTickCount()</code> for real elapsed time.
+<strong>Principle</strong>: Call count ≠ wall time when function is called from multiple periodic tasks.</p>
+<h3 id="6-sil-override-command-format-has-active-byte">6. SIL override command format has active byte</h3>
+<p><strong>Context</strong>: Test runner packed override as <code>[cmd, idx, value_BE]</code>.
+<strong>Mistake</strong>: <code>sil_process_command</code> expects <code>[cmd, idx, active, value_LE]</code>. Missing active byte, wrong endianness.
+<strong>Fix</strong>: Pack as <code>struct.pack("&lt;BBBi", cmd, idx, 1, value)</code>.
+<strong>Principle</strong>: Always read the receiver code to verify the wire format. Don't guess.</p>
+<h3 id="7-contactor-feedback-should-not-echo-command">7. Contactor feedback should not echo command</h3>
+<p><strong>Context</strong>: SPS stub set <code>feedback = currentSet</code> (command echoed as feedback).
+<strong>Mistake</strong>: No independent feedback path → welding/stuck-open impossible to simulate.
+<strong>Fix</strong>: Contactor feedback reads from SIL override table first, then falls back to SPS simulation. Re-enabled DIAG IDs 51-53 for contactor feedback mismatch.
+<strong>Principle</strong>: Feedback must be independent of command. In SIL, use override table. In HIL, use real GPIO.</p>
+<h3 id="8-3d-arrays-in-foxbms-database-structs">8. 3D arrays in foxBMS database structs</h3>
+<p><strong>Context</strong>: Patch injected <code>pCV-&gt;cellVoltage_mV[s][c] = v;</code>
+<strong>Mistake</strong>: Array is 3D: <code>[BS_NR_OF_STRINGS][BS_NR_OF_MODULES_PER_STRING][BS_NR_OF_CELL_BLOCKS_PER_MODULE]</code>.
+<strong>Fix</strong>: Use <code>pCV-&gt;cellVoltage_mV[s][m][c]</code> with module loop.
+<strong>Principle</strong>: Always check struct definition before writing array access. foxBMS uses 3D arrays even with 1 module.</p>
+<h2 id="2026-03-21-test-execution-time">2026-03-21 — Test Execution Time</h2>
+<h3 id="9-vecu-restart-dominates-test-time">9. vECU restart dominates test time</h3>
+<p><strong>Context</strong>: Each FATAL fault test triggers ERROR → must restart vECU (~8s startup).
+<strong>Mistake</strong>: Ran all tests sequentially with restart between each. 200 tests × 8s = 27 min.
+<strong>Principle</strong>: Sort tests to minimize restarts. Run all WARNING tests first (no restart needed), then all FATAL tests batched together.</p></div>
+<div class="nav-buttons"><a href="munich-electrification.html">&larr; Munich Electrification</a><a href="assessment-scope.html">Assessment Scope &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assessment Scope — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" class="active">Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Assessment / Assessment Scope</div>
+<div class="content"><h1 id="aspice-cl2-assessment-scope">ASPICE CL2 Assessment Scope</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ASMT-SCOPE-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document defines the scope of the Automotive SPICE Capability Level 2 (CL2) assessment for the foxBMS 2 POSIX virtual ECU (vECU) project. It identifies all process areas under evaluation, delineates in-scope and out-of-scope items, and provides the project context necessary for assessors to understand the assessment boundary.</p>
+<h2 id="2-project-description">2. Project Description</h2>
+<h3 id="21-product-under-assessment">2.1 Product Under Assessment</h3>
+<p>The product is a software-in-the-loop (SIL) adaptation of the open-source foxBMS 2 battery management system (BMS), version 1.10.0, originally developed by Fraunhofer IISB for the TI TMS570 microcontroller. The POSIX port compiles the foxBMS application and engine layers for x86-64 Linux using GCC 13, replacing hardware-specific drivers with POSIX HAL stubs and SocketCAN interfaces.</p>
+<h3 id="22-key-technical-characteristics">2.2 Key Technical Characteristics</h3>
+<table>
+<thead>
+<tr>
+<th>Characteristic</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base software</td>
+<td>foxBMS 2 v1.10.0 (Fraunhofer IISB)</td>
+</tr>
+<tr>
+<td>Target platform</td>
+<td>x86-64 Linux (Ubuntu 24.04)</td>
+</tr>
+<tr>
+<td>Compiler</td>
+<td>GCC 13 with -Wall -Wextra</td>
+</tr>
+<tr>
+<td>Source files</td>
+<td>170+ C source files compiled</td>
+</tr>
+<tr>
+<td>Excluded source files</td>
+<td>18 (TMS570-specific: spi.c, i2c.c, dma.c, sbc/*, diag.c, fassert.c)</td>
+</tr>
+<tr>
+<td>Execution model</td>
+<td>Single-threaded cooperative loop (1ms tick)</td>
+</tr>
+<tr>
+<td>CAN interface</td>
+<td>SocketCAN (vcan0)</td>
+</tr>
+<tr>
+<td>Battery configuration</td>
+<td>18 series cells (18s1p), 3 contactors</td>
+</tr>
+<tr>
+<td>Plant model</td>
+<td>Python-based closed-loop with OCV(SOC) curve, IR drop, BMW i3 trip replay</td>
+</tr>
+<tr>
+<td>Test infrastructure</td>
+<td>test_smoke.py, test_integration.py (21 criteria), test_asil.py (50 criteria)</td>
+</tr>
+<tr>
+<td>Build system</td>
+<td>setup.sh (single-command), apply_all.sh (13 patches)</td>
+</tr>
+<tr>
+<td>Python version</td>
+<td>3.12</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-project-context">2.3 Project Context</h3>
+<p>This project serves as a Model-in-the-Loop / Software-in-the-Loop (MIL-SIL) pre-validation capability for HIL test engineers at Munich Electrification. The vECU enables early validation of BMS logic, diagnostic paths, and state machine behavior before physical bench testing, reducing HIL bench time and enabling fault injection scenarios that are difficult or dangerous to execute on real hardware.</p>
+<h2 id="3-assessment-target">3. Assessment Target</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Assessment model</td>
+<td>Automotive SPICE v3.1 (VDA)</td>
+</tr>
+<tr>
+<td>Target capability level</td>
+<td>Level 2 (Managed Process)</td>
+</tr>
+<tr>
+<td>Assessment method</td>
+<td>Self-assessment with evidence package</td>
+</tr>
+<tr>
+<td>Assessment date</td>
+<td>2026-03-21</td>
+</tr>
+<tr>
+<td>Lead assessor</td>
+<td>An Dao</td>
+</tr>
+</tbody>
+</table>
+<h3 id="31-capability-level-definitions">3.1 Capability Level Definitions</h3>
+<ul>
+<li><strong>CL1 (Performed Process)</strong>: The process achieves its purpose; base practices are implemented and work products are produced.</li>
+<li><strong>CL2 (Managed Process)</strong>: The performed process is now managed (planned, monitored, adjusted) and its work products are appropriately established, controlled, and maintained.</li>
+</ul>
+<h2 id="4-process-areas-in-scope">4. Process Areas In Scope</h2>
+<p>The following ASPICE process areas are assessed to CL2:</p>
+<h3 id="41-engineering-processes">4.1 Engineering Processes</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Process Area</th>
+<th>ID</th>
+<th>Scope Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>System Requirements Analysis</td>
+<td>SYS.2</td>
+<td>System-level requirements derived from stakeholder needs</td>
+</tr>
+<tr>
+<td>2</td>
+<td>System Architectural Design</td>
+<td>SYS.3</td>
+<td>System decomposition into software and plant model components</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Software Requirements Analysis</td>
+<td>SWE.1</td>
+<td>Software requirements with ASIL allocation and traceability</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Software Architectural Design</td>
+<td>SWE.2</td>
+<td>Layer architecture (application, engine, driver, HAL)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Software Detailed Design and Unit Construction</td>
+<td>SWE.3</td>
+<td>Module-level design and implementation</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Software Unit Verification</td>
+<td>SWE.4</td>
+<td>Unit test specification and execution (183+ Ceedling tests)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Software Integration and Integration Test</td>
+<td>SWE.5</td>
+<td>Integration test specification (test_integration.py, 21 criteria)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Software Qualification Test</td>
+<td>SWE.6</td>
+<td>End-to-end qualification (test_smoke.py, test_asil.py)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-supporting-processes">4.2 Supporting Processes</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Process Area</th>
+<th>ID</th>
+<th>Scope Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9</td>
+<td>Configuration Management</td>
+<td>SUP.8</td>
+<td>Git workflow, patch management, build reproducibility</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-management-processes">4.3 Management Processes</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Process Area</th>
+<th>ID</th>
+<th>Scope Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10</td>
+<td>Project Management</td>
+<td>MAN.3</td>
+<td>Project planning, tracking, risk management</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-process-areas-assessed-but-not-primary-target">5. Process Areas Assessed but Not Primary Target</h2>
+<p>The following process areas have documentation produced but are not the primary focus of the CL2 assessment:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Process Area</th>
+<th>ID</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Stakeholder Requirements Analysis</td>
+<td>SYS.1</td>
+<td>Stakeholder requirements documented but derived informally</td>
+</tr>
+<tr>
+<td>2</td>
+<td>System Integration Test</td>
+<td>SYS.4</td>
+<td>Covered via test_integration.py but no formal SYS.4 test plan</td>
+</tr>
+<tr>
+<td>3</td>
+<td>System Qualification Test</td>
+<td>SYS.5</td>
+<td>Covered via test_smoke.py but no formal SYS.5 acceptance plan</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Quality Assurance</td>
+<td>SUP.1</td>
+<td>QA practices exist but not yet formalized into a managed process</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Problem Resolution Management</td>
+<td>SUP.9</td>
+<td>GAP-ANALYSIS.md serves as problem register</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Change Request Management</td>
+<td>SUP.10</td>
+<td>Patch workflow exists but no formal CR process</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-process-areas-out-of-scope">6. Process Areas Out of Scope</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Process Area</th>
+<th>ID</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Supplier Monitoring</td>
+<td>ACQ.4</td>
+<td>foxBMS is open-source; no supplier contract exists</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Hardware Engineering</td>
+<td>HWE.*</td>
+<td>No hardware development; POSIX port is software-only</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Reuse Management</td>
+<td>REU.2</td>
+<td>Not applicable to this project scope</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Process Improvement</td>
+<td>PIM.3</td>
+<td>Not targeted for this assessment cycle</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-iso-26262-scope">7. ISO 26262 Scope</h2>
+<p>Safety work products are produced in parallel to support ASIL-D classification of the BMS function. The following ISO 26262 parts have dedicated work products:</p>
+<table>
+<thead>
+<tr>
+<th>ISO 26262 Part</th>
+<th>Title</th>
+<th>Work Products</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Part 3</td>
+<td>Concept Phase</td>
+<td>HARA (Hazard Analysis and Risk Assessment)</td>
+</tr>
+<tr>
+<td>Part 4</td>
+<td>Product Development: System Level</td>
+<td>FSC (Functional Safety Concept), TSC (Technical Safety Concept)</td>
+</tr>
+<tr>
+<td>Part 5</td>
+<td>Product Development: Hardware Level</td>
+<td>HSI (Hardware-Software Interface), FMEA</td>
+</tr>
+<tr>
+<td>Part 6</td>
+<td>Product Development: Software Level</td>
+<td>Safety Requirements, FTTI Calculations</td>
+</tr>
+<tr>
+<td>Part 8</td>
+<td>Supporting Processes</td>
+<td>Bidirectional Traceability Matrix</td>
+</tr>
+<tr>
+<td>Part 9</td>
+<td>ASIL-Oriented Analysis</td>
+<td>ASIL Decomposition</td>
+</tr>
+</tbody>
+</table>
+<p>These safety artifacts are assessed for completeness and traceability but are not rated against ASPICE capability levels.</p>
+<h2 id="8-evidence-base">8. Evidence Base</h2>
+<p>The assessment draws upon the following evidence:</p>
+<table>
+<thead>
+<tr>
+<th>Evidence Type</th>
+<th>Artifact</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gap analysis</td>
+<td>GAP-ANALYSIS.md</td>
+<td>Repository root</td>
+</tr>
+<tr>
+<td>Feature coverage</td>
+<td>COVERAGE.md</td>
+<td>Repository root</td>
+</tr>
+<tr>
+<td>ASPICE work products</td>
+<td>18 documents</td>
+<td>docs/aspice/</td>
+</tr>
+<tr>
+<td>Test results</td>
+<td>test_smoke.py, test_integration.py, test_asil.py</td>
+<td>tests/</td>
+</tr>
+<tr>
+<td>Build automation</td>
+<td>setup.sh, apply_all.sh</td>
+<td>Repository root</td>
+</tr>
+<tr>
+<td>Source code</td>
+<td>170+ C files, HAL stubs, plant model</td>
+<td>src/, patches/</td>
+</tr>
+<tr>
+<td>Test criteria</td>
+<td>147 total (76 smoke + 21 integration + 50 ASIL)</td>
+<td>tests/</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-assessment-criteria">9. Assessment Criteria</h2>
+<p>For CL2 achievement, each in-scope process area must demonstrate:</p>
+<ol>
+<li><strong>CL1 base practices</strong>: All base practices (BP.1 through BP.n) are largely or fully achieved</li>
+<li><strong>GP 2.1 Performance Management</strong>: The process is planned, monitored, and adjusted; responsibilities are defined; resources are adequate</li>
+<li><strong>GP 2.2 Work Product Management</strong>: Work products have defined requirements, are reviewed, and are controlled under configuration management</li>
+</ol>
+<h2 id="10-current-status">10. Current Status</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total ASPICE criteria tracked</td>
+<td>112</td>
+</tr>
+<tr>
+<td>Criteria met</td>
+<td>94</td>
+</tr>
+<tr>
+<td>Percentage</td>
+<td>84%</td>
+</tr>
+<tr>
+<td>Open gaps (CRITICAL/HIGH)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Open gaps (MEDIUM/LOW)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Accepted gaps (architectural)</td>
+<td>10</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="lessons-learned.html">&larr; Lessons Learned</a><a href="cl2-gap-assessment.html">CL2 Gap Assessment &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

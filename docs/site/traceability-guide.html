@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traceability Guide — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" class="active">Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Assessment / Traceability Guide</div>
+<div class="content"><h1 id="traceability-guide">Traceability Guide</h1>
+<p>How to use <code>scripts/trace-gen.py</code> to generate and maintain the full V-model traceability matrix for the foxBMS POSIX vECU project.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Document ID</td>
+<td>TRACE-GUIDE-001</td>
+</tr>
+<tr>
+<td>Applicable Standards</td>
+<td>ASPICE SWE.1-6, ISO 26262 Part 8 Clause 9</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-03-21</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Released</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-what-it-does">1. What It Does</h2>
+<p><code>trace-gen.py</code> scans all requirement documents, source code, and test files to build a complete bidirectional traceability graph from stakeholder requirements down to test evidence. It:</p>
+<ol>
+<li><strong>Parses 12 levels of requirement IDs</strong> from markdown docs in <code>docs/aspice-cl2/</code></li>
+<li><strong>Scans source code</strong> in <code>src/</code> for <code>@safety_req</code> and <code>@verifies</code> tags</li>
+<li><strong>Builds a bidirectional graph</strong> resolving all parent/child links</li>
+<li><strong>Validates links</strong> detecting broken references, orphans, untested leaf requirements, and asymmetric links</li>
+<li><strong>Generates</strong> <code>docs/aspice-cl2/00-assessment/traceability-matrix-generated.md</code></li>
+</ol>
+<p>No pip dependencies -- pure Python 3 stdlib.</p>
+<h2 id="2-how-to-run">2. How to Run</h2>
+<pre><code class="language-bash"># Generate the traceability matrix (overwrites the existing file)
+python scripts/trace-gen.py
+
+# CI mode -- exit 1 if broken links or untested leaf requirements exist
+python scripts/trace-gen.py --check
+
+# Print summary statistics only (no file output)
+python scripts/trace-gen.py --stats
+
+# Output as machine-readable JSON
+python scripts/trace-gen.py --json
+
+# Custom output path
+python scripts/trace-gen.py --output path/to/output.md
+python scripts/trace-gen.py --json --output path/to/output.json
+</code></pre>
+<h2 id="3-requirement-id-scheme">3. Requirement ID Scheme</h2>
+<p>The project uses the following requirement ID prefixes, organized in a V-model hierarchy:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>ID Pattern</th>
+<th>Example</th>
+<th>Document Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STKH-REQ</td>
+<td><code>STKH-REQ-NNN</code></td>
+<td>STKH-REQ-001</td>
+<td><code>03-SYS.1-stakeholder-requirements/</code></td>
+</tr>
+<tr>
+<td>SYS-REQ</td>
+<td><code>SYS-REQ-NNN</code></td>
+<td>SYS-REQ-020</td>
+<td><code>04-SYS.2-system-requirements/</code></td>
+</tr>
+<tr>
+<td>SG</td>
+<td><code>SG-NNN</code></td>
+<td>SG-001</td>
+<td><code>18-safety/part3-concept/</code></td>
+</tr>
+<tr>
+<td>HZ</td>
+<td><code>HZ-NNN</code></td>
+<td>HZ-001</td>
+<td><code>18-safety/part3-concept/</code></td>
+</tr>
+<tr>
+<td>FSR</td>
+<td><code>FSR-NNN</code></td>
+<td>FSR-01</td>
+<td><code>18-safety/part4-system/</code> (FSC)</td>
+</tr>
+<tr>
+<td>TSR</td>
+<td><code>TSR-NNN</code></td>
+<td>TSR-01</td>
+<td><code>18-safety/part4-system/</code> (TSC)</td>
+</tr>
+<tr>
+<td>SW-REQ</td>
+<td><code>SW-REQ-NNN</code></td>
+<td>SW-REQ-001</td>
+<td><code>08-SWE.1-software-requirements/</code></td>
+</tr>
+<tr>
+<td>SSR</td>
+<td><code>SSR-NNN</code></td>
+<td>SSR-001</td>
+<td><code>18-safety/part6-software/</code></td>
+</tr>
+<tr>
+<td>FM</td>
+<td><code>FM-NNN</code></td>
+<td>FM-01</td>
+<td><code>18-safety/part5-hardware/</code></td>
+</tr>
+<tr>
+<td>UT</td>
+<td><code>UT-NNN</code></td>
+<td>UT-001</td>
+<td><code>11-SWE.4-software-unit-verification/</code></td>
+</tr>
+<tr>
+<td>IT</td>
+<td><code>IT-NNN</code></td>
+<td>IT-001</td>
+<td><code>12-SWE.5-software-integration-test/</code></td>
+</tr>
+<tr>
+<td>QT</td>
+<td><code>QT-NNN</code></td>
+<td>QT-001</td>
+<td><code>13-SWE.6-software-qualification-test/</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="31-id-normalization">3.1 ID Normalization</h3>
+<p>The script normalizes all IDs to three-digit zero-padded format. These all refer to the same requirement:</p>
+<ul>
+<li><code>SG-01</code> -&gt; <code>SG-001</code></li>
+<li><code>SG-1</code> -&gt; <code>SG-001</code></li>
+<li><code>SG-001</code> -&gt; <code>SG-001</code></li>
+</ul>
+<h3 id="32-hierarchy">3.2 Hierarchy</h3>
+<p>The requirement hierarchy follows the V-model with two parallel chains:</p>
+<pre><code>Functional chain:
+  STKH-REQ --&gt; SYS-REQ --&gt; SW-REQ --&gt; Code --&gt; Tests (UT/IT/QT)
+
+Safety chain:
+  HZ --&gt; SG --&gt; FSR --&gt; TSR --&gt; SSR --&gt; Code --&gt; Tests (UT/IT/QT)
+</code></pre>
+<p>Both chains converge at the code and test levels. Every SW-REQ and SSR (leaf requirements) must have at least one test (UT, IT, or QT) verifying it.</p>
+<h2 id="4-how-to-add-trace-tags">4. How to Add Trace Tags</h2>
+<h3 id="41-in-requirement-documents-markdown-tables">4.1 In Requirement Documents (Markdown Tables)</h3>
+<p>Most requirements are defined in markdown tables. The script parses these automatically.</p>
+<p><strong>Table with "Derives From" column:</strong></p>
+<pre><code class="language-markdown">| ID | Requirement | Derives From | ASIL |
+|---|---|---|---|
+| SW-REQ-001 | The SOA module shall compare each cell voltage... | SYS-REQ-020 | D |
+</code></pre>
+<p><strong>Table with "Traces To" column:</strong></p>
+<pre><code class="language-markdown">| ID | Requirement | Stakeholder | Priority | Traces To |
+|---|---|---|---|---|
+| STKH-REQ-001 | The system shall build from source... | S3 | MUST | SYS-REQ-001 |
+</code></pre>
+<p><strong>Test table with requirement references:</strong></p>
+<pre><code class="language-markdown">| ID | Test Case | Module | Expected Result | Traces To |
+|---|---|---|---|---|
+| UT-001 | DIAG_Handler increments counter | diag.c | Counter increases | SW-REQ-031 |
+</code></pre>
+<h3 id="42-in-requirement-documents-inline-tags">4.2 In Requirement Documents (Inline Tags)</h3>
+<p>For documents using heading-based requirements (safety docs), add trace tags as bold fields:</p>
+<pre><code class="language-markdown">### TSR-01: Cell Overvoltage Detection and Reaction (FSR-01, ASIL D)
+
+**Traces up**: FSR-01, SG-001
+**Traces down**: SSR-001, SSR-020
+</code></pre>
+<p>The parenthetical reference in headings <code>(FSR-01, ASIL D)</code> is also parsed automatically.</p>
+<h3 id="43-in-source-code">4.3 In Source Code</h3>
+<p>Use comment tags to link code to requirements:</p>
+<p><strong><code>@safety_req</code> -- marks code that implements a safety requirement:</strong></p>
+<pre><code class="language-c">/**
+ * @safety_req SSR-001
+ * @safety_req SW-REQ-001
+ * Checks cell voltage against overvoltage MSL threshold.
+ */
+void SOA_CheckVoltage(void) {
+    // ...
+}
+</code></pre>
+<p><strong><code>@verifies</code> -- marks test code that verifies a requirement:</strong></p>
+<pre><code class="language-python">def test_overvoltage_msl():
+    &quot;&quot;&quot;
+    @verifies SW-REQ-001
+    @verifies SSR-001
+    Inject cell voltage above 2800 mV and verify ERROR state.
+    &quot;&quot;&quot;
+    # ...
+</code></pre>
+<h3 id="44-supported-tag-formats">4.4 Supported Tag Formats</h3>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Where</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@safety_req SSR-NNN</code></td>
+<td>C/Python source</td>
+<td>Links code to a safety requirement</td>
+</tr>
+<tr>
+<td><code>@safety_req SW-REQ-NNN</code></td>
+<td>C/Python source</td>
+<td>Links code to a software requirement</td>
+</tr>
+<tr>
+<td><code>@verifies SW-REQ-NNN</code></td>
+<td>Test files</td>
+<td>Links test to a software requirement</td>
+</tr>
+<tr>
+<td><code>@verifies SYS-REQ-NNN</code></td>
+<td>Test files</td>
+<td>Links test to a system requirement</td>
+</tr>
+<tr>
+<td><code>@verifies SSR-NNN</code></td>
+<td>Test files</td>
+<td>Links test to a safety requirement</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-how-ci-validates-traceability">5. How CI Validates Traceability</h2>
+<p>The GitHub Actions workflow (<code>.github/workflows/ci.yml</code>) runs the traceability check on every push and PR:</p>
+<h3 id="51-traceability-job">5.1 Traceability Job</h3>
+<pre><code class="language-yaml">traceability:
+  name: Traceability Check
+  steps:
+    - run: python scripts/trace-gen.py --check
+</code></pre>
+<p>The <code>--check</code> flag causes <code>trace-gen.py</code> to exit with code 1 if:</p>
+<ol>
+<li><strong>Broken links exist</strong> -- a requirement references an ID that is not defined in any document</li>
+<li><strong>Untested leaf requirements exist</strong> -- a SW-REQ or SSR has no UT, IT, or QT verifying it</li>
+</ol>
+<p>The traceability job runs with <code>continue-on-error: true</code> so it reports status without blocking the build. The generated matrix is uploaded as a CI artifact for review.</p>
+<h3 id="52-pr-summary">5.2 PR Summary</h3>
+<p>The workflow posts a summary to the GitHub Actions step summary, showing:
+- The level-by-level statistics table
+- Counts of broken links and untested requirements
+- A warning banner if issues are found</p>
+<h3 id="53-when-the-check-fails">5.3 When the Check Fails</h3>
+<p>If <code>trace-gen.py --check</code> exits with code 1, review the generated <code>traceability-matrix-generated.md</code> artifact. It contains:</p>
+<ul>
+<li><strong>Broken Links</strong> table: shows which document references a non-existent ID</li>
+<li><strong>Untested Requirements</strong> table: shows which leaf requirements lack test coverage</li>
+<li><strong>Orphan Requirements</strong> table: shows requirements with no parent and no child</li>
+<li><strong>Asymmetric Links</strong> table: shows one-directional traces that should be bidirectional</li>
+</ul>
+<h2 id="6-how-to-fix-issues">6. How to Fix Issues</h2>
+<h3 id="61-broken-link">6.1 Broken Link</h3>
+<p><strong>Symptom</strong>: <code>trace-gen.py</code> reports <code>SW-REQ-999</code> referenced in <code>SWE.4-unit-test-spec.md</code> but not defined.</p>
+<p><strong>Fix</strong>: Either:
+- Add the missing requirement to the appropriate document
+- Correct the typo in the reference (e.g., <code>SW-REQ-099</code> instead of <code>SW-REQ-999</code>)</p>
+<h3 id="62-untested-leaf-requirement">6.2 Untested Leaf Requirement</h3>
+<p><strong>Symptom</strong>: <code>SW-REQ-080</code> has no test verifying it.</p>
+<p><strong>Fix</strong>: Either:
+- Add a test case to the appropriate test spec document (UT/IT/QT table)
+- Add <code>@verifies SW-REQ-080</code> to an existing test in <code>src/</code>
+- If the requirement is intentionally not tested in SIL (e.g., hardware-only), document the rationale</p>
+<h3 id="63-orphan-requirement">6.3 Orphan Requirement</h3>
+<p><strong>Symptom</strong>: <code>SYS-REQ-050</code> has no parent stakeholder requirement and no child software requirement.</p>
+<p><strong>Fix</strong>: Either:
+- Add a "Derives From" link in the system requirements document
+- Add a "Traces To" link in the stakeholder requirements document
+- If this is a derived requirement with no stakeholder origin, document that in the requirement itself</p>
+<h3 id="64-asymmetric-link">6.4 Asymmetric Link</h3>
+<p><strong>Symptom</strong>: <code>SW-REQ-001</code> traces up to <code>SYS-REQ-020</code>, but <code>SYS-REQ-020</code> does not list <code>SW-REQ-001</code> as tracing down.</p>
+<p><strong>Fix</strong>: Add the reverse reference. In the system requirements document, ensure <code>SYS-REQ-020</code> has <code>SW-REQ-001</code> in its "Traces To" or downstream references. Alternatively, this is often acceptable because the script builds bidirectional links automatically from table columns -- asymmetric warnings usually indicate documents that use different linking conventions.</p>
+<h2 id="7-output-format">7. Output Format</h2>
+<p>The generated <code>traceability-matrix-generated.md</code> contains:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Summary</td>
+<td>Per-level statistics: defined, traced up, traced down, tested, coverage %</td>
+</tr>
+<tr>
+<td>Forward Trace</td>
+<td>STKH-REQ -&gt; SYS-REQ -&gt; SW-REQ -&gt; SSR -&gt; Code -&gt; Test mapping</td>
+</tr>
+<tr>
+<td>Safety Trace</td>
+<td>HZ -&gt; SG -&gt; FSR -&gt; TSR -&gt; SSR -&gt; Test mapping</td>
+</tr>
+<tr>
+<td>Broken Links</td>
+<td>References to undefined requirement IDs</td>
+</tr>
+<tr>
+<td>Untested Requirements</td>
+<td>Leaf requirements with no test coverage</td>
+</tr>
+<tr>
+<td>Orphan Requirements</td>
+<td>Requirements with no parent and no child</td>
+</tr>
+<tr>
+<td>Asymmetric Links</td>
+<td>One-directional traces</td>
+</tr>
+<tr>
+<td>Source Code Tags</td>
+<td><code>@safety_req</code> and <code>@verifies</code> tags found in <code>src/</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-relationship-to-iso-26262-and-aspice">8. Relationship to ISO 26262 and ASPICE</h2>
+<table>
+<thead>
+<tr>
+<th>Standard</th>
+<th>Clause</th>
+<th>How trace-gen.py Satisfies It</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ISO 26262-8 Clause 9</td>
+<td>Bidirectional traceability</td>
+<td>Forward and backward trace tables</td>
+</tr>
+<tr>
+<td>ASPICE SYS.2 BP5</td>
+<td>Bidirectional traceability</td>
+<td>STKH-REQ &lt;-&gt; SYS-REQ links</td>
+</tr>
+<tr>
+<td>ASPICE SWE.1 BP6</td>
+<td>Bidirectional traceability</td>
+<td>SYS-REQ &lt;-&gt; SW-REQ links</td>
+</tr>
+<tr>
+<td>ASPICE SWE.4 BP4</td>
+<td>Test to requirement traceability</td>
+<td>UT -&gt; SW-REQ links</td>
+</tr>
+<tr>
+<td>ASPICE SWE.5 BP4</td>
+<td>Integration test traceability</td>
+<td>IT -&gt; SW-REQ links</td>
+</tr>
+<tr>
+<td>ASPICE SWE.6 BP4</td>
+<td>Qualification test traceability</td>
+<td>QT -&gt; SYS-REQ links</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="cl2-gap-assessment.html">&larr; CL2 Gap Assessment</a><a href="traceability-matrix.html">Traceability Matrix &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reusable Pipeline — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" class="active">Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Business & Service / Reusable Pipeline</div>
+<div class="content"><h1 id="reusable-bms-ml-sil-hil-pipeline">Reusable BMS ML-SIL-HIL Pipeline</h1>
+<p><strong>What this is</strong>: The complete pipeline that works across any BMS customer. Only the DBC file changes.</p>
+<hr />
+<h2 id="pipeline-overview">Pipeline Overview</h2>
+<pre><code>INPUT (per customer)              PIPELINE (reusable)                OUTPUT (deliverables)
+──────────────────                ───────────────────                ─────────────────────
+
+CAN logs (.blf/.asc)  ──→  1. DECODE  ──→  2. ANALYZE  ──→  3. REPORT
+DBC file                       cantools       5 ONNX models       PDF / dashboard
+Pack specs                     → CSV/numpy    → predictions        findings + numbers
+                                                   │
+                                                   v
+                                        4. DEPLOY (optional)
+                                           ML sidecar on CAN
+                                           SIL plant model
+                                           fault injection
+</code></pre>
+<hr />
+<h2 id="stage-1-decode-reusable-1-hour-per-log">Stage 1: Decode (reusable, 1 hour per log)</h2>
+<p><strong>Input</strong>: Customer CAN log + their DBC file
+<strong>Output</strong>: Time-aligned CSV with all BMS signals</p>
+<pre><code class="language-python"># decode_customer_can.py — works with ANY BMS
+
+import cantools
+import can
+
+def decode_log(dbc_path, log_path, output_csv):
+    db = cantools.database.load_file(dbc_path)
+    log = can.BLFReader(log_path)  # or ASCReader, CSVReader
+
+    signals = {}
+    for msg in log:
+        try:
+            decoded = db.decode_message(msg.arbitration_id, msg.data)
+            for name, value in decoded.items():
+                signals.setdefault(name, []).append((msg.timestamp, value))
+        except:
+            pass
+
+    # Align to common timebase, write CSV
+    write_aligned_csv(signals, output_csv)
+</code></pre>
+<p><strong>What changes per customer</strong>: Only <code>dbc_path</code>. The decode logic is universal.</p>
+<p><strong>Dependencies</strong>: <code>pip install cantools python-can</code></p>
+<hr />
+<h2 id="stage-2-extract-features-reusable-config-driven">Stage 2: Extract Features (reusable, config-driven)</h2>
+<p><strong>Input</strong>: Decoded CSV
+<strong>Output</strong>: Numpy arrays ready for ML inference</p>
+<pre><code class="language-python"># extract_features.py — parameterized by pack_config.json
+
+import json
+import numpy as np
+
+def extract(csv_path, config_path):
+    config = json.load(open(config_path))
+
+    # Config maps customer signal names to model inputs
+    # {
+    #   &quot;pack_voltage&quot;: &quot;BMS_PackVoltage&quot;,     ← changes per customer
+    #   &quot;pack_current&quot;: &quot;BMS_PackCurrent&quot;,     ← changes per customer
+    #   &quot;cell_temp_signals&quot;: [&quot;CellT_01&quot;, &quot;CellT_02&quot;, ...],
+    #   &quot;cell_voltage_signals&quot;: [&quot;CellV_01&quot;, &quot;CellV_02&quot;, ...],
+    #   &quot;soc_signal&quot;: &quot;BMS_SOC&quot;,
+    #   &quot;cells_in_series&quot;: 96,
+    #   &quot;nominal_cell_voltage&quot;: 3.7
+    # }
+
+    data = load_csv(csv_path)
+
+    # Normalize pack voltage to per-cell (makes models topology-independent)
+    pack_v = data[config[&quot;pack_voltage&quot;]]
+    cell_v = pack_v / config[&quot;cells_in_series&quot;]
+
+    pack_i = data[config[&quot;pack_current&quot;]]
+    temp_avg = np.mean([data[s] for s in config[&quot;cell_temp_signals&quot;]], axis=0)
+    temp_max = np.max([data[s] for s in config[&quot;cell_temp_signals&quot;]], axis=0)
+
+    # Build feature matrix: [V_cell, I, T_avg, T_max, 0]
+    # velocity=0 for bench data (model trained with this feature, set to 0)
+    features = np.column_stack([cell_v, pack_i, temp_avg, temp_max,
+                                np.zeros(len(cell_v))])
+
+    return features, data.get(config.get(&quot;soc_signal&quot;), None)
+</code></pre>
+<p><strong>What changes per customer</strong>: <code>pack_config.json</code> — signal name mapping + cell count. ~15 minutes to create from their DBC.</p>
+<hr />
+<h2 id="stage-3-ml-inference-fully-reusable-zero-changes">Stage 3: ML Inference (fully reusable, zero changes)</h2>
+<p><strong>Input</strong>: Feature numpy arrays
+<strong>Output</strong>: Predictions for all 5 models</p>
+<pre><code class="language-python"># ml_inference.py — same code for every customer
+
+import onnxruntime as ort
+import numpy as np
+from pathlib import Path
+
+MODEL_DIR = Path(__file__).parent.parent / &quot;taktflow-bms-ml&quot; / &quot;models&quot; / &quot;bms&quot;
+NORM_DIR = Path(__file__).parent.parent / &quot;taktflow-bms-ml&quot; / &quot;data&quot; / &quot;bms-processed&quot;
+
+class BMSInference:
+    def __init__(self):
+        self.soc = ort.InferenceSession(str(MODEL_DIR / &quot;soc_lstm.onnx&quot;))
+        self.soh = ort.InferenceSession(str(MODEL_DIR / &quot;soh_lstm.onnx&quot;))
+        self.thermal = ort.InferenceSession(str(MODEL_DIR / &quot;thermal_cnn.onnx&quot;))
+        self.imbalance = ort.InferenceSession(str(MODEL_DIR / &quot;imbalance_cnn.onnx&quot;))
+        self.rul = ort.InferenceSession(str(MODEL_DIR / &quot;rul_transformer.onnx&quot;))
+
+        # Normalization stats from training
+        self.soc_mean = np.load(NORM_DIR / &quot;soc_norm_mean.npy&quot;)
+        self.soc_std = np.load(NORM_DIR / &quot;soc_norm_std.npy&quot;)
+
+    def predict_soc(self, features, window=200):
+        &quot;&quot;&quot;Sliding window SOC prediction.
+        features: (N, 5) array [V_cell, I, T_avg, T_max, velocity]
+        Returns: (M,) SOC predictions, one per window
+        &quot;&quot;&quot;
+        predictions = []
+        for i in range(window, len(features)):
+            window_data = features[i-window:i]
+            x = (window_data - self.soc_mean) / self.soc_std
+            x = x.astype(np.float32).reshape(1, window, 5)
+            soc = self.soc.run(None, {&quot;bms_window&quot;: x})[0][0]
+            predictions.append(soc)
+        return np.array(predictions)
+
+    def predict_thermal_risk(self, features, window=30):
+        &quot;&quot;&quot;Sliding window thermal anomaly scoring.
+        features: (N, 4) array [V, I, T, dT/dt]
+        Returns: (M,) risk scores 0-1
+        &quot;&quot;&quot;
+        risks = []
+        for i in range(window, len(features)):
+            x = features[i-window:i].astype(np.float32).reshape(1, window, 4)
+            risk = self.thermal.run(None, {&quot;bms_window&quot;: x})[0][0]
+            risks.append(risk)
+        return np.array(risks)
+
+    def predict_imbalance(self, cell_voltages, window=20):
+        &quot;&quot;&quot;Cell imbalance detection.
+        cell_voltages: (N, num_cells) array
+        Returns: per-window binary (0=healthy, 1=imbalanced)
+        &quot;&quot;&quot;
+        predictions = []
+        for i in range(window, len(cell_voltages)):
+            x = cell_voltages[i-window:i].astype(np.float32)
+            x = x.reshape(1, window, -1)
+            pred = self.imbalance.run(None, {&quot;bms_window&quot;: x})[0][0]
+            predictions.append(pred)
+        return np.array(predictions)
+
+    def predict_soh(self, cycle_features, window=30):
+        &quot;&quot;&quot;SOH from cycle-level features.
+        cycle_features: (N_cycles, 6) [V, I, T, capacity, resistance, cycle]
+        Returns: SOH %
+        &quot;&quot;&quot;
+        if len(cycle_features) &lt; window:
+            return None  # need cycling history
+        x = cycle_features[-window:].astype(np.float32).reshape(1, window, -1)
+        return self.soh.run(None, {&quot;bms_window&quot;: x})[0][0]
+</code></pre>
+<p><strong>What changes per customer</strong>: Nothing. Models are trained on per-cell-normalized data. Any BMS, any topology.</p>
+<hr />
+<h2 id="stage-4-report-generation-reusable-template">Stage 4: Report Generation (reusable template)</h2>
+<pre><code class="language-python"># generate_report.py — parameterized by customer name + results
+
+def generate_soc_report(customer, test_name, ml_soc, bms_soc, timestamps):
+    rmse = np.sqrt(np.mean((ml_soc - bms_soc)**2))
+    max_drift = np.max(np.abs(ml_soc - bms_soc))
+    drift_at_end = ml_soc[-1] - bms_soc[-1]
+
+    report = f&quot;&quot;&quot;
+    # SOC Audit Report — {customer}
+    ## Test: {test_name}
+
+    | Metric | Value |
+    |--------|-------|
+    | ML SOC RMSE vs BMS | {rmse:.2f}% |
+    | Max instantaneous difference | {max_drift:.2f}% |
+    | End-of-test drift | {drift_at_end:+.2f}% |
+    | ML model | SOC LSTM (BiLSTM 128→64, trained BMW i3 + NASA) |
+    | Confidence | Based on {len(ml_soc)} prediction windows |
+
+    ## Interpretation
+    {&quot;BMS SOC tracking is within industry standard (&lt;2%).&quot; if rmse &lt; 2
+     else f&quot;BMS SOC shows {rmse:.1f}% RMSE — investigate coulomb counting drift.&quot;}
+
+    [SOC comparison plot attached]
+    &quot;&quot;&quot;
+    return report
+
+def generate_thermal_report(customer, test_name, risk_scores, temps, timestamps):
+    peak_risk = np.max(risk_scores)
+    high_risk_periods = np.sum(risk_scores &gt; 0.5)
+
+    report = f&quot;&quot;&quot;
+    # Thermal Risk Report — {customer}
+    ## Test: {test_name}
+
+    | Metric | Value |
+    |--------|-------|
+    | Peak thermal risk score | {peak_risk:.3f} |
+    | Periods with risk &gt; 0.5 | {high_risk_periods} ({high_risk_periods*100/len(risk_scores):.1f}%) |
+    | Max cell temperature | {np.max(temps):.1f}°C |
+    | ML model | Thermal CNN (trained NREL 364 abuse tests) |
+
+    ## Findings
+    {&quot;No thermal anomalies detected.&quot; if peak_risk &lt; 0.3
+     else f&quot;Elevated thermal risk detected. {high_risk_periods} windows scored above 0.5.&quot;}
+
+    [Thermal risk overlay plot attached]
+    &quot;&quot;&quot;
+    return report
+
+def generate_cell_health_report(customer, cell_voltages_at_rest):
+    n_cells = cell_voltages_at_rest.shape[1]
+    mean_v = np.mean(cell_voltages_at_rest, axis=0)
+    spread = np.max(mean_v) - np.min(mean_v)
+    weakest = np.argmin(mean_v)
+    deviation = mean_v[weakest] - np.mean(mean_v)
+
+    report = f&quot;&quot;&quot;
+    # Cell Health Report — {customer}
+
+    | Metric | Value |
+    |--------|-------|
+    | Cells monitored | {n_cells} |
+    | Voltage spread at rest | {spread*1000:.1f} mV |
+    | Weakest cell | Cell {weakest+1} ({deviation*1000:+.1f} mV from mean) |
+    | Imbalance threshold | &gt;30mV = investigate |
+
+    ## Cell Voltage Bar Chart
+    [attached]
+
+    ## Recommendation
+    {&quot;Cell voltages are well balanced.&quot; if spread &lt; 0.020
+     else f&quot;Cell {weakest+1} shows {abs(deviation)*1000:.0f}mV deviation — monitor for further degradation.&quot;}
+    &quot;&quot;&quot;
+    return report
+</code></pre>
+<p><strong>What changes per customer</strong>: Customer name string. Everything else is data-driven.</p>
+<hr />
+<h2 id="stage-5-live-can-sidecar-reusable-config-driven">Stage 5: Live CAN Sidecar (reusable, config-driven)</h2>
+<p>For bench deployment — reads CAN in real-time, publishes ML predictions.</p>
+<pre><code class="language-python"># ml_sidecar.py — runs on bench laptop, reads CAN, publishes ML predictions
+
+import can
+import cantools
+import json
+import collections
+import numpy as np
+import onnxruntime as ort
+import time
+
+class MLSidecar:
+    def __init__(self, dbc_path, config_path, can_interface=&quot;can0&quot;):
+        self.db = cantools.database.load_file(dbc_path)
+        self.config = json.load(open(config_path))
+        self.bus = can.interface.Bus(can_interface, bustype=&quot;socketcan&quot;)
+        self.inference = BMSInference()  # from Stage 3
+
+        # Sliding window buffers
+        self.soc_window = collections.deque(maxlen=200)
+        self.thermal_window = collections.deque(maxlen=30)
+
+        # Latest decoded values
+        self.pack_v = 0.0
+        self.pack_i = 0.0
+        self.temp_avg = 25.0
+        self.temp_max = 25.0
+        self.last_inference = 0
+
+    def run(self):
+        &quot;&quot;&quot;Main loop: read CAN → decode → infer → publish.&quot;&quot;&quot;
+        while True:
+            msg = self.bus.recv(timeout=0.1)
+            if msg is None:
+                continue
+
+            # Decode
+            try:
+                decoded = self.db.decode_message(msg.arbitration_id, msg.data)
+                self.update_state(decoded)
+            except:
+                continue
+
+            # Infer at 1Hz (not per frame)
+            now = time.monotonic()
+            if now - self.last_inference &gt;= 1.0:
+                self.last_inference = now
+                self.do_inference()
+
+    def update_state(self, decoded):
+        &quot;&quot;&quot;Update internal state from decoded CAN signals.&quot;&quot;&quot;
+        cfg = self.config
+        if cfg[&quot;pack_voltage&quot;] in decoded:
+            self.pack_v = decoded[cfg[&quot;pack_voltage&quot;]]
+        if cfg[&quot;pack_current&quot;] in decoded:
+            self.pack_i = decoded[cfg[&quot;pack_current&quot;]]
+        # ... temperature signals similarly
+
+        cell_v = self.pack_v / self.config[&quot;cells_in_series&quot;]
+        self.soc_window.append([cell_v, self.pack_i, self.temp_avg,
+                                self.temp_max, 0.0])
+
+    def do_inference(self):
+        &quot;&quot;&quot;Run all models, publish results on CAN.&quot;&quot;&quot;
+        if len(self.soc_window) &gt;= 200:
+            features = np.array(self.soc_window, dtype=np.float32)
+            x = (features - self.inference.soc_mean) / self.inference.soc_std
+            x = x.reshape(1, 200, 5)
+            soc = self.inference.soc.run(None, {&quot;bms_window&quot;: x})[0][0]
+
+            # Publish ML SOC on CAN ID 0x700
+            soc_bytes = int(soc * 100).to_bytes(2, &quot;big&quot;)
+            self.bus.send(can.Message(arbitration_id=0x700,
+                                     data=soc_bytes + bytes(6)))
+
+    def publish(self, can_id, data):
+        self.bus.send(can.Message(arbitration_id=can_id, data=data))
+</code></pre>
+<p><strong>What changes per customer</strong>: <code>dbc_path</code> and <code>config_path</code> (signal name mapping). Same sidecar binary.</p>
+<hr />
+<h2 id="stage-6-sil-plant-model-reusable-parameter-driven">Stage 6: SIL Plant Model (reusable, parameter-driven)</h2>
+<p>For customers who want simulation without the bench.</p>
+<pre><code class="language-python"># plant_model_calibrated.py — parameterized from real bench data
+
+import json
+import numpy as np
+
+class CalibratedPlantModel:
+    def __init__(self, config_path):
+        cfg = json.load(open(config_path))
+        self.n_cells = cfg[&quot;cells_in_series&quot;]
+        self.n_parallel = cfg[&quot;cells_in_parallel&quot;]
+        self.capacity_ah = cfg[&quot;nominal_capacity_ah&quot;]
+        self.r_internal = cfg[&quot;r_internal_ohm&quot;]       # from bench data
+        self.ocv_soc_table = np.array(cfg[&quot;ocv_curve&quot;])  # from bench rest periods
+        self.thermal_mass = cfg[&quot;thermal_mass_j_per_k&quot;]
+        self.cell_spread_mv = cfg[&quot;cell_spread_mv&quot;]   # from bench OCV measurement
+        self.soc = cfg.get(&quot;initial_soc&quot;, 0.5)
+        self.temp = cfg.get(&quot;initial_temp_c&quot;, 25.0)
+
+    def step(self, dt, current_a):
+        &quot;&quot;&quot;Advance one timestep. Returns cell voltages, pack voltage, temperature.&quot;&quot;&quot;
+        # SOC update (coulomb counting)
+        self.soc -= (current_a * dt) / (self.capacity_ah * 3600)
+        self.soc = np.clip(self.soc, 0, 1)
+
+        # OCV from SOC (interpolate table from bench data)
+        ocv = np.interp(self.soc, self.ocv_soc_table[:, 0], self.ocv_soc_table[:, 1])
+
+        # Per-cell voltage with IR drop + cell-to-cell spread
+        cell_v_base = ocv - current_a * self.r_internal / self.n_parallel
+        cell_voltages = cell_v_base + np.random.normal(0, self.cell_spread_mv/1000,
+                                                        self.n_cells)
+
+        # Temperature (simple thermal model)
+        power_dissipated = current_a**2 * self.r_internal
+        self.temp += (power_dissipated * dt) / self.thermal_mass
+        self.temp -= 0.1 * (self.temp - 25.0) * dt  # ambient cooling
+
+        pack_v = np.sum(cell_voltages)
+        return cell_voltages, pack_v, current_a, self.temp, self.soc
+</code></pre>
+<p><strong>What changes per customer</strong>: <code>plant_config.json</code> — extracted from their bench data. The plant model code is identical.</p>
+<p><strong>Config extraction script</strong> (run once on their CAN logs):</p>
+<pre><code class="language-python"># calibrate_plant.py — extract plant parameters from customer CAN logs
+
+def calibrate(decoded_csv, config):
+    data = load_csv(decoded_csv)
+
+    params = {}
+    params[&quot;cells_in_series&quot;] = config[&quot;cells_in_series&quot;]
+    params[&quot;cells_in_parallel&quot;] = config[&quot;cells_in_parallel&quot;]
+
+    # OCV curve: voltage at rest periods (|current| &lt; 0.5A for &gt;60s)
+    rest_mask = find_rest_periods(data[config[&quot;pack_current&quot;]],
+                                  threshold=0.5, min_duration=60)
+    params[&quot;ocv_curve&quot;] = extract_ocv_soc(
+        data[config[&quot;pack_voltage&quot;]][rest_mask] / config[&quot;cells_in_series&quot;],
+        data[config[&quot;soc_signal&quot;]][rest_mask]
+    )
+
+    # Internal resistance: dV/dI at load steps
+    params[&quot;r_internal_ohm&quot;] = estimate_resistance(
+        data[config[&quot;pack_voltage&quot;]],
+        data[config[&quot;pack_current&quot;]],
+        config[&quot;cells_in_series&quot;]
+    )
+
+    # Cell spread: std of cell voltages at rest
+    cell_vs = [data[s] for s in config[&quot;cell_voltage_signals&quot;]]
+    params[&quot;cell_spread_mv&quot;] = float(np.std(np.array(cell_vs), axis=0).mean() * 1000)
+
+    # Thermal mass: from temperature rise during known power
+    params[&quot;thermal_mass_j_per_k&quot;] = estimate_thermal_mass(
+        data[config[&quot;cell_temp_signals&quot;][0]],
+        data[config[&quot;pack_current&quot;]],
+        params[&quot;r_internal_ohm&quot;]
+    )
+
+    params[&quot;nominal_capacity_ah&quot;] = config[&quot;nominal_capacity_ah&quot;]
+
+    return params
+</code></pre>
+<hr />
+<h2 id="per-customer-config-file-the-only-thing-that-changes">Per-Customer Config File (the only thing that changes)</h2>
+<pre><code class="language-json">{
+    &quot;customer&quot;: &quot;Example BMS GmbH&quot;,
+    &quot;pack_voltage&quot;: &quot;BMS_HV_Voltage&quot;,
+    &quot;pack_current&quot;: &quot;BMS_HV_Current&quot;,
+    &quot;soc_signal&quot;: &quot;BMS_SOC_Display&quot;,
+    &quot;soh_signal&quot;: &quot;BMS_SOH&quot;,
+    &quot;cell_voltage_signals&quot;: [
+        &quot;CMB_CellV_01&quot;, &quot;CMB_CellV_02&quot;, &quot;CMB_CellV_03&quot;,
+        &quot;CMB_CellV_04&quot;, &quot;CMB_CellV_05&quot;, &quot;CMB_CellV_06&quot;
+    ],
+    &quot;cell_temp_signals&quot;: [
+        &quot;CMB_CellT_01&quot;, &quot;CMB_CellT_02&quot;, &quot;CMB_CellT_03&quot;
+    ],
+    &quot;cells_in_series&quot;: 96,
+    &quot;cells_in_parallel&quot;: 3,
+    &quot;nominal_capacity_ah&quot;: 60,
+    &quot;nominal_cell_voltage&quot;: 3.7,
+    &quot;chemistry&quot;: &quot;NMC&quot;
+}
+</code></pre>
+<p><strong>Time to create</strong>: 15 minutes with their DBC file open. Map signal names, fill in pack specs.</p>
+<hr />
+<h2 id="what-gets-reused-vs-whats-per-customer">What Gets Reused vs What's Per-Customer</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Lines of Code</th>
+<th>Reused?</th>
+<th>Per-Customer Work</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>decode_customer_can.py</code></td>
+<td>~50</td>
+<td>100% reused</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>extract_features.py</code></td>
+<td>~80</td>
+<td>100% reused</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>ml_inference.py</code></td>
+<td>~120</td>
+<td>100% reused</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>generate_report.py</code></td>
+<td>~150</td>
+<td>100% reused</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>ml_sidecar.py</code></td>
+<td>~100</td>
+<td>100% reused</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>plant_model_calibrated.py</code></td>
+<td>~80</td>
+<td>100% reused</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>calibrate_plant.py</code></td>
+<td>~100</td>
+<td>100% reused</td>
+<td>0</td>
+</tr>
+<tr>
+<td>5 ONNX models</td>
+<td>—</td>
+<td>100% reused (fine-tune if chemistry differs)</td>
+<td>0 or 1 day</td>
+</tr>
+<tr>
+<td><code>pack_config.json</code></td>
+<td>~25</td>
+<td><strong>PER CUSTOMER</strong></td>
+<td>15 minutes</td>
+</tr>
+<tr>
+<td>Normalization stats (.npy)</td>
+<td>—</td>
+<td>Reused (retrain if fine-tuning)</td>
+<td>0 or included in fine-tune</td>
+</tr>
+<tr>
+<td><strong>Total pipeline code</strong></td>
+<td><strong>~680 lines</strong></td>
+<td><strong>100% reusable</strong></td>
+<td><strong>15 min config + optional 1 day fine-tune</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="delivery-timeline-by-customer-number">Delivery Timeline by Customer Number</h2>
+<table>
+<thead>
+<tr>
+<th>Customer</th>
+<th>Calendar Time</th>
+<th>What Happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>#0 (foxBMS demo)</strong></td>
+<td>Now → 4-6 weeks</td>
+<td>Build everything. foxBMS SIL + fault injection + ML sidecar.</td>
+</tr>
+<tr>
+<td><strong>#1 (Munich Electrification)</strong></td>
+<td>+2 weeks</td>
+<td>Internal pilot. Real Bologna bench data. Validate + fine-tune.</td>
+</tr>
+<tr>
+<td><strong>#2</strong></td>
+<td>+1-2 weeks</td>
+<td>Swap config. Run pipeline. Generate reports.</td>
+</tr>
+<tr>
+<td><strong>#3</strong></td>
+<td>+1 week</td>
+<td>Routine. Config + run + deliver.</td>
+</tr>
+<tr>
+<td><strong>#10</strong></td>
+<td>+2-3 days</td>
+<td>Streamlined. Mostly automated.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="file-structure-final-pipeline">File Structure (Final Pipeline)</h2>
+<pre><code>taktflow-bms-ml/
+├── models/bms/                    5 ONNX models (reusable)
+├── data/bms-processed/            Normalization stats (reusable)
+├── scripts/bms/                   Training scripts (if fine-tuning needed)
+│
+├── pipeline/                      ← THE REUSABLE PIPELINE
+│   ├── decode_customer_can.py     Decode any CAN log with any DBC
+│   ├── extract_features.py        Config-driven feature extraction
+│   ├── ml_inference.py            All 5 ONNX models, sliding window
+│   ├── generate_report.py         SOC audit, thermal, cell health reports
+│   ├── ml_sidecar.py              Live CAN inference (bench deployment)
+│   ├── plant_model_calibrated.py  Parameter-driven plant model
+│   ├── calibrate_plant.py         Extract params from bench CAN logs
+│   ├── run_audit.py               One-command: decode → infer → report
+│   └── requirements.txt           cantools, python-can, onnxruntime, numpy
+│
+├── customers/                     ← PER-CUSTOMER CONFIG (15 min each)
+│   ├── foxbms-demo/
+│   │   └── pack_config.json
+│   ├── munich-electrification/
+│   │   └── pack_config.json
+│   └── customer-template/
+│       └── pack_config.json       Template with comments
+│
+└── reports/                       Generated output
+    ├── foxbms-demo/
+    ├── munich-electrification/
+    └── ...
+</code></pre>
+<hr />
+<h2 id="one-command-audit">One-Command Audit</h2>
+<pre><code class="language-bash"># For any customer, any CAN log:
+python pipeline/run_audit.py \
+    --dbc customers/munich-electrification/bologna.dbc \
+    --config customers/munich-electrification/pack_config.json \
+    --log /path/to/their/test_run.blf \
+    --output reports/munich-electrification/
+
+# Output:
+#   reports/munich-electrification/soc_audit.pdf
+#   reports/munich-electrification/thermal_risk.pdf
+#   reports/munich-electrification/cell_health.pdf
+#   reports/munich-electrification/raw_predictions.csv
+</code></pre>
+<p>15 minutes to create the config. 1 command to run. 3 reports out.</p></div>
+<div class="nav-buttons"><a href="dbc-signals.html">&larr; DBC Signals</a><a href="ml-integration.html">ML Integration &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

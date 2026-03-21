@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HIL Data Plan — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" class="active">HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Business & Service / HIL Data Plan</div>
+<div class="content"><h1 id="service-bms-ml-sil-hil-integration">Service: BMS ML-SIL-HIL Integration</h1>
+<p><strong>Pitch</strong>: Your ML team has models in notebooks. Your firmware team has CAN on the bench. We connect them.</p>
+<hr />
+<h2 id="the-gap-every-bms-company-has">The Gap Every BMS Company Has</h2>
+<pre><code>Their ML Team                    Their Firmware Team              Their HIL Team
+─────────────                    ───────────────────              ──────────────
+Python, PyTorch, Jupyter         C, AUTOSAR, RTOS                dSPACE, Vector, bench
+trains SOC/SOH models            writes BMS firmware              runs test sequences
+evaluates on test splits         tests on hardware                logs CAN data
+
+     outputs: .pt / .onnx            outputs: .elf / .hex            outputs: .blf / .asc
+
+           ╲                              │                              ╱
+            ╲                             │                             ╱
+             ╲                            │                            ╱
+              ╲                           │                           ╱
+               ╲                          │                          ╱
+                ╲                         │                         ╱
+                 ╲                        │                        ╱
+                           NOBODY CONNECTS THESE
+
+     ML models sit in a repo. BMS firmware runs on metal.
+     CAN logs sit on a NAS. No pipeline runs them together.
+</code></pre>
+<p><strong>Their ML engineer</strong> can train a SOC LSTM with 1.5% RMSE on a Kaggle dataset. But they can't:
+- Deploy it on a CAN bus next to real firmware
+- Feed it real BMS signals in real-time
+- Compare ML output vs firmware output on the same data
+- Inject ML-driven fault scenarios into a HIL bench
+- Build a SIL environment where firmware + ML run together without hardware</p>
+<p><strong>Their firmware engineer</strong> can write a BMS state machine. But they can't:
+- Validate their SOC algorithm against ML baselines
+- Run their firmware on Linux for automated CI testing
+- Create realistic plant models from ML training data
+- Add predictive diagnostics without modifying the firmware</p>
+<p><strong>Their HIL engineer</strong> can run test sequences and log CAN data. But they can't:
+- Run ML inference live on the bench CAN bus
+- Generate test scenarios from ML anomaly patterns
+- Build a SIL replica of the bench for pre-validation
+- Extract plant model parameters from bench data automatically</p>
+<p><strong>We do all three.</strong></p>
+<hr />
+<h2 id="what-we-deliver">What We Deliver</h2>
+<h3 id="tier-1-ml-on-can-sidecar-1-2-weeks">Tier 1: ML-on-CAN Sidecar (1-2 weeks)</h3>
+<p>Take their existing ML models (or ours) and deploy them as a CAN sidecar that runs alongside their BMS on the bench.</p>
+<pre><code>Their BMS ECU ──→ CAN bus ──→ ML Sidecar (our delivery)
+                     │              reads BMS CAN output
+                     │              runs ONNX inference
+                     │              publishes ML predictions
+                     │              on new CAN IDs
+                     │
+                     └──→ CANape / their tooling
+                          sees both BMS + ML signals
+</code></pre>
+<p><strong>What they get</strong>:
+- Python sidecar process that reads their DBC, decodes signals, runs inference
+- ML predictions on CAN (visible in their existing tooling)
+- Side-by-side comparison: their SOC vs ML SOC, their threshold vs ML risk score
+- Works on their bench today, no firmware changes</p>
+<p><strong>What we need from them</strong>: DBC file + 1 day of bench access to validate signal mapping.</p>
+<p><strong>Why they can't do this themselves</strong>: Their ML team doesn't know CAN. Their HIL team doesn't know ONNX. The sidecar sits in the gap.</p>
+<hr />
+<h3 id="tier-2-sil-environment-2-4-weeks">Tier 2: SIL Environment (2-4 weeks)</h3>
+<p>Build a software-in-the-loop replica of their BMS bench that runs on Linux without hardware.</p>
+<pre><code>Plant Model (calibrated from their bench data)
+     │
+     ├──→ Their BMS firmware (compiled for x86, or our foxBMS demo)
+     │         runs on Linux, SocketCAN
+     │
+     ├──→ ML Sidecar (same as Tier 1)
+     │         runs inference on virtual CAN
+     │
+     └──→ Automated test runner
+              pytest, CI/CD, regression
+</code></pre>
+<p><strong>What they get</strong>:
+- Plant model calibrated from their real bench CAN logs (OCV curve, R_internal, thermal constants, cell spread)
+- Their firmware running on Linux (if possible) or foxBMS as functional stand-in
+- Same ML sidecar from Tier 1, running on virtual CAN
+- Automated smoke test: start → reach NORMAL → run profile → check SOC/thermal/imbalance → pass/fail
+- Docker compose for one-command startup</p>
+<p><strong>What we need from them</strong>: 3-5 CAN logs (charge, discharge, dynamic) + DBC + pack specs.</p>
+<p><strong>Why they can't do this themselves</strong>: Building a POSIX port of a BMS requires understanding FreeRTOS→cooperative loop, hardware register stubbing, CAN queue routing, HAL replacement. We already solved this for foxBMS (14 fixes, 170+ source files compiled on x86). We know the pattern.</p>
+<hr />
+<h3 id="tier-3-ml-driven-test-generation-4-8-weeks">Tier 3: ML-Driven Test Generation (4-8 weeks)</h3>
+<p>Use ML models + their historical bench data to automatically generate test scenarios that find bugs their manual test plan misses.</p>
+<pre><code>Their CAN log archive ──→ Anomaly detection
+                               │
+                          &quot;These 3 patterns are unusual&quot;
+                               │
+                          Generate test scenarios
+                               │
+                     ┌─────────┼─────────┐
+                     │         │         │
+                SIL plant   SIL plant   SIL plant
+                scenario 1  scenario 2  scenario 3
+                     │         │         │
+                  foxBMS     foxBMS     foxBMS
+                     │         │         │
+                  pass?      FAIL       pass?
+                               │
+                          &quot;Scenario 2: cell 7 temp ramp
+                           at 1.2C/min during fast charge
+                           → BMS didn't open contactors
+                           until 82C (expected: 60C warning)&quot;
+</code></pre>
+<p><strong>What they get</strong>:
+- Automated scenario extraction from historical CAN logs
+- ML-ranked test priorities (which patterns are most likely to trigger faults)
+- SIL execution of generated scenarios (no bench time needed)
+- Report: "We found 3 scenarios where your BMS response was slower than expected"</p>
+<p><strong>Why they can't do this themselves</strong>: This requires all three disciplines — ML for anomaly detection, firmware for SIL execution, HIL for bench correlation. That intersection is us.</p>
+<hr />
+<h2 id="our-proof-of-competence-the-foxbms-demo">Our Proof of Competence (The foxBMS Demo)</h2>
+<p>foxBMS POSIX is not the product. It's the proof we can do this.</p>
+<table>
+<thead>
+<tr>
+<th>What foxBMS Demo Shows</th>
+<th>What It Proves for Their Project</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>170+ BMS source files compiled for x86</td>
+<td>We can port their firmware to SIL</td>
+</tr>
+<tr>
+<td>14 hardware stubs (SBC, RTC, SPI, I2C, CAN, DMA...)</td>
+<td>We know how to replace MCAL/HAL</td>
+</tr>
+<tr>
+<td>Cooperative loop replacing FreeRTOS</td>
+<td>We understand RTOS→POSIX translation</td>
+</tr>
+<tr>
+<td>SocketCAN TX/RX with DBC encoding</td>
+<td>We know automotive CAN protocols</td>
+</tr>
+<tr>
+<td>Plant model with real BMW i3 driving data</td>
+<td>We can calibrate from real bench data</td>
+</tr>
+<tr>
+<td>5 ML models (SOC, SOH, Thermal, RUL, Imbalance)</td>
+<td>We have the ML pipeline ready</td>
+</tr>
+<tr>
+<td>ML sidecar on CAN bus (architecture)</td>
+<td>We've designed the integration pattern</td>
+</tr>
+<tr>
+<td>BMS reaches NORMAL through real data flow</td>
+<td>End-to-end, not a toy demo</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="competitive-positioning">Competitive Positioning</h2>
+<table>
+<thead>
+<tr>
+<th>Competitor</th>
+<th>What They Sell</th>
+<th>Their Gap</th>
+<th>Our Edge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>dSPACE</strong></td>
+<td>HIL hardware + VEOS SIL</td>
+<td>$150k+ licensing. No ML integration. Customer must build their own models.</td>
+<td>We integrate ML into their existing bench for 1/10 the cost</td>
+</tr>
+<tr>
+<td><strong>Vector</strong></td>
+<td>CANape + CANoe + vTESTstudio</td>
+<td>Excellent tooling, but no ML inference on CAN. Their CAPL scripting can't run ONNX.</td>
+<td>ML sidecar plugs into their Vector toolchain</td>
+</tr>
+<tr>
+<td><strong>ETAS</strong></td>
+<td>ISOLAR-EVE + INCA</td>
+<td>AUTOSAR-focused SIL. Doesn't handle ML or non-AUTOSAR BMS.</td>
+<td>We work with any BMS firmware, not just AUTOSAR</td>
+</tr>
+<tr>
+<td><strong>MathWorks</strong></td>
+<td>Simulink + BMS Toolbox</td>
+<td>Model-based, not data-driven. Their SOC is EKF, not LSTM. Requires Simulink license ($10k+).</td>
+<td>Data-driven ML, open-source, runs on a laptop</td>
+</tr>
+<tr>
+<td><strong>In-house ML team</strong></td>
+<td>Custom models trained on internal data</td>
+<td>Models stay in Jupyter. No CAN deployment. No SIL pipeline. No firmware integration.</td>
+<td>We ARE the integration layer they're missing</td>
+</tr>
+<tr>
+<td><strong>Consulting firms</strong> (AVL, Ricardo, FEV)</td>
+<td>Full-service engineering</td>
+<td>$200+/hr, months-long engagements. Overkill for "connect ML to CAN".</td>
+<td>We deliver Tier 1 in 1-2 weeks, not months</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Our positioning</strong>: We're not competing with dSPACE on hardware or with their ML team on models. We're the <strong>integration glue</strong> between ML, firmware, and HIL. Nobody else does this specific thing.</p>
+<hr />
+<h2 id="what-we-need-to-walk-in-with">What We Need to Walk In With</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>foxBMS POSIX demo running</td>
+<td>DONE</td>
+<td>BMS in NORMAL, 15+ CAN messages, plant model</td>
+</tr>
+<tr>
+<td>ML sidecar architecture</td>
+<td>DESIGNED</td>
+<td>proposal-ml-integration.md in archive, ready to implement</td>
+</tr>
+<tr>
+<td>5 ONNX models trained</td>
+<td>DONE</td>
+<td>SOC 1.83%, SOH 0.85%, Thermal F1=1.0, RUL 16%, Imbalance</td>
+</tr>
+<tr>
+<td>cantools + python-can workflow</td>
+<td>DONE</td>
+<td>Decode any DBC + CAN log</td>
+</tr>
+<tr>
+<td>Plant model calibration script</td>
+<td>TODO</td>
+<td>Extract OCV, R_internal, thermal from CAN logs</td>
+</tr>
+<tr>
+<td>Customer-facing report template</td>
+<td>TODO</td>
+<td>SOC audit, thermal report, cell health card</td>
+</tr>
+<tr>
+<td>Docker one-command SIL</td>
+<td>TODO</td>
+<td>docker-compose for demo</td>
+</tr>
+<tr>
+<td>10-minute live demo script</td>
+<td>TODO</td>
+<td>Terminal recording or rehearsed sequence</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="engagement-flow">Engagement Flow</h2>
+<pre><code>Week 0:  Demo foxBMS + ML sidecar on our laptop (10 min)
+         &quot;This is foxBMS with our ML running alongside on CAN.
+          Give us your DBC and one CAN log, we'll show you
+          the same on your data within 48 hours.&quot;
+
+Week 1:  They give us DBC + CAN log
+         We decode, run ML, generate SOC audit + thermal report
+         &quot;Here's what we found. Your SOC drifts X%. Cell 23 is Y% weak.&quot;
+
+Week 2:  If interested → Tier 1 engagement
+         Deploy ML sidecar on their bench
+         Live ML predictions on their CAN bus in CANape
+
+Month 2: Tier 2 engagement
+         Build SIL from their bench data
+         Automated regression tests
+
+Month 3+: Tier 3 engagement
+          ML-driven test generation from their historical logs
+</code></pre>
+<hr />
+<h2 id="what-most-bms-companies-actually-struggle-with">What Most BMS Companies Actually Struggle With</h2>
+<p>From talking to HIL engineers and attending bench sessions:</p>
+<table>
+<thead>
+<tr>
+<th>Their Pain</th>
+<th>How We Help</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"We have 2TB of CAN logs on a NAS and nobody analyzes them"</td>
+<td>We run ML on their logs, extract patterns, generate reports</td>
+</tr>
+<tr>
+<td>"Our ML team trained a model 6 months ago and it's still in a notebook"</td>
+<td>We deploy it on their CAN bus in 1 week</td>
+</tr>
+<tr>
+<td>"We can't test SOC drift without running the bench for 8 hours"</td>
+<td>SIL with calibrated plant model, runs in 5 minutes</td>
+</tr>
+<tr>
+<td>"Our test plan is manual, we always miss edge cases"</td>
+<td>ML-driven test generation from historical anomalies</td>
+</tr>
+<tr>
+<td>"We need an independent SOC validation for certification"</td>
+<td>Our LSTM is the independent estimate</td>
+</tr>
+<tr>
+<td>"dSPACE quoted us $200k and 6 months"</td>
+<td>We deliver Tier 1 in 2 weeks for a fraction</td>
+</tr>
+<tr>
+<td>"Our firmware can only run on the target hardware"</td>
+<td>We port it to POSIX (foxBMS is the proof)</td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="ml-feasibility.html">&larr; ML Feasibility</a><span></span></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

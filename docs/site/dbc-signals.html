@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>DBC Signals — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -151,7 +151,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -164,7 +164,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="sbc.html" >SBC</a>
 <a href="precharging.html" >Precharging</a>
 <a href="interlock.html" >Interlock</a>
-<a href="dbc-signals.html" >DBC Signals</a>
+<a href="dbc-signals.html" class="active">DBC Signals</a>
 <h3>Business & Service</h3>
 <a href="reusable-pipeline.html" >Reusable Pipeline</a>
 <a href="ml-integration.html" >ML Integration</a>
@@ -173,130 +173,237 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
+<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / DBC Signals</div>
+<div class="content"><h1 id="foxbms-can-signal-summary">foxBMS CAN Signal Summary</h1>
+<p><strong>Source</strong>: <code>foxbms-2/tools/dbc/foxbms.dbc</code> (fetched from GitHub)
+<strong>Tool</strong>: PCAN Symbol Editor v6.5.2</p>
 <hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
-</code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
+<h2 id="key-tx-messages-foxbms-can-bus">Key TX Messages (foxBMS → CAN bus)</h2>
 <table>
 <thead>
 <tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
+<th>CAN ID</th>
+<th>Hex</th>
+<th>Name</th>
+<th>Period</th>
+<th>Key Signals</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
+<td>544</td>
+<td>0x220</td>
+<td><code>f_BmsState</code></td>
+<td>100ms</td>
+<td>BmsState (4-bit), InsulationResistance, error/warning flags (30+ signals)</td>
 </tr>
 <tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
+<td>545</td>
+<td>0x221</td>
+<td><code>f_BmsStateDetails</code></td>
+<td>100ms</td>
+<td>Substates, connected strings</td>
 </tr>
 <tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
+<td>561</td>
+<td>0x231</td>
+<td><code>f_CellVoltages</code></td>
+<td>100ms</td>
+<td>Min/max/avg cell voltage, string voltage</td>
 </tr>
 <tr>
-<td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
+<td>562</td>
+<td>0x232</td>
+<td><code>f_CellTemperatures</code></td>
+<td>100ms</td>
+<td>Min/max/avg cell temperature</td>
 </tr>
 <tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
+<td>563</td>
+<td>0x233</td>
+<td><code>f_PackValues_P0</code></td>
+<td>100ms</td>
+<td>Pack voltage, pack current</td>
 </tr>
 <tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
+<td>564</td>
+<td>0x234</td>
+<td><code>f_PackValues_P1</code></td>
+<td>100ms</td>
+<td>Pack power</td>
 </tr>
 <tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
+<td>565</td>
+<td>0x235</td>
+<td><code>f_SOC</code></td>
+<td>100ms</td>
+<td>SOC (min, max, avg)</td>
 </tr>
 <tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
+<td>566</td>
+<td>0x236</td>
+<td><code>f_SOE</code></td>
+<td>100ms</td>
+<td>State of energy</td>
 </tr>
 <tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
+<td>576</td>
+<td>0x240-0x245</td>
+<td><code>f_CellVoltage_*</code></td>
+<td>100ms</td>
+<td>Individual cell voltages (multiplexed)</td>
 </tr>
 <tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
+<td>592</td>
+<td>0x250</td>
+<td><code>f_CellVoltages_Mux</code></td>
+<td>100ms</td>
+<td>Cell voltages with mux (50 groups × 4 voltages)</td>
 </tr>
 <tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
+<td>608</td>
+<td>0x260</td>
+<td><code>f_CellTemperatures_Mux</code></td>
+<td>100ms</td>
+<td>Cell temps with mux (30 groups × 6 temps)</td>
+</tr>
+<tr>
+<td>769</td>
+<td>0x301</td>
+<td><code>f_SlaveInfo</code></td>
+<td>1000ms</td>
+<td>Slave status</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<h2 id="key-rx-messages-can-bus-foxbms">Key RX Messages (CAN bus → foxBMS)</h2>
+<table>
+<thead>
+<tr>
+<th>CAN ID</th>
+<th>Hex</th>
+<th>Name</th>
+<th>Key Signals</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>528</td>
+<td>0x210</td>
+<td><code>f_BmsStateRequest</code></td>
+<td>Mode request (STANDBY/NORMAL), balancing control</td>
+</tr>
+<tr>
+<td>624</td>
+<td>0x270</td>
+<td><code>AFE_CellVoltages</code></td>
+<td>50 mux groups × 4 voltages (13-bit, 0-8191mV) + 4 invalid flags</td>
+</tr>
+<tr>
+<td>640</td>
+<td>0x280</td>
+<td><code>AFE_CellTemperatures</code></td>
+<td>30 mux groups × 6 temps (8-bit signed, -128 to 127°C) + 6 invalid flags</td>
+</tr>
+<tr>
+<td>1313</td>
+<td>0x521</td>
+<td>IVT Current</td>
+<td>Current measurement (via Isabellenhuette IVT)</td>
+</tr>
+<tr>
+<td>1314</td>
+<td>0x522</td>
+<td>IVT Voltage 1</td>
+<td>Pack voltage measurement</td>
+</tr>
+<tr>
+<td>1315</td>
+<td>0x523</td>
+<td>IVT Voltage 2</td>
+<td>Pack voltage redundant</td>
+</tr>
+<tr>
+<td>1316</td>
+<td>0x524</td>
+<td>IVT Voltage 3</td>
+<td><strong>HV bus voltage</strong> (used by redundancy module, index [s][2])</td>
+</tr>
+<tr>
+<td>1319</td>
+<td>0x527</td>
+<td>IVT Temperature</td>
+<td>Pack temperature</td>
+</tr>
+</tbody>
+</table>
+<h2 id="signal-encoding">Signal Encoding</h2>
+<ul>
+<li><strong>Byte order</strong>: Big-endian (Motorola) for all foxBMS messages</li>
+<li><strong>Encoding</strong>: Uses <code>CAN_BIG_ENDIAN_TABLE</code> lookup for DBC start bit → actual bit position</li>
+<li><strong>Cell voltages</strong>: 13-bit unsigned, 0-8191 mV, factor=1, offset=0</li>
+<li><strong>Invalid flags</strong>: 1-bit, <code>DECAN_DATA_IS_VALID = 1</code> (1 = valid, counterintuitive)</li>
+<li><strong>Temperatures</strong>: 8-bit signed, -128 to 127°C, factor=1, offset=0</li>
+</ul>
+<h2 id="f_bmsstate-0x220-signal-detail">f_BmsState (0x220) Signal Detail</h2>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Bit</th>
+<th>Size</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BmsState</td>
+<td>3</td>
+<td>4 bits</td>
+<td>0=UNINIT, 3=IDLE, 5=STANDBY, 6=PRECHARGE, 7=NORMAL, 9=ERROR</td>
+</tr>
+<tr>
+<td>ConnectedStrings</td>
+<td>7</td>
+<td>4 bits</td>
+<td>Number of connected strings (upper nibble of byte 0)</td>
+</tr>
+<tr>
+<td>InsulationResistance</td>
+<td>63</td>
+<td>8 bits</td>
+<td>Factor=200, range 0-51000 kOhm</td>
+</tr>
+<tr>
+<td>ErrorFlags</td>
+<td>various</td>
+<td>1 bit each</td>
+<td>Overcurrent, overvoltage, overtemp, precharge fail, etc.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="aerosol-sensor-0x3c4">Aerosol Sensor (0x3C4)</h2>
+<table>
+<thead>
+<tr>
+<th>CAN ID</th>
+<th>Hex</th>
+<th>Name</th>
+<th>Signals</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>964</td>
+<td>0x3C4</td>
+<td><code>BAS_AerosolSensor</code></td>
+<td>PM concentration, threshold, status, faults, counter, CRC</td>
+</tr>
+</tbody>
+</table>
+<h2 id="posix-port-usage">POSIX Port Usage</h2>
+<p>Plant model encodes RX messages (0x210, 0x270, 0x280, 0x521-0x527) using these exact signal definitions. The <code>foxbms_signals.dbc</code> in <code>src/</code> should match these definitions. SIL probe messages (0x7E0-0x7FF) are NOT in the upstream DBC — they need a separate DBC file (audit finding A2-03).</p></div>
+<div class="nav-buttons"><a href="interlock.html">&larr; Interlock</a><a href="reusable-pipeline.html">Reusable Pipeline &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

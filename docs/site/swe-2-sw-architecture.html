@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWE.2 SW Architecture — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" class="active">SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Software / SWE.2 SW Architecture</div>
+<div class="content"><h1 id="software-architecture-description">Software Architecture Description</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.2-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document describes the software architecture of the foxBMS 2 POSIX port,
+satisfying ASPICE SWE.2 base practices. It defines the static structure (modules and
+their dependencies), the dynamic behavior (task scheduling and data flow), and the
+interfaces between software components.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>The architecture encompasses 170+ source files organized into four layers, compiled
+for x86-64 with GCC 13.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.3-001]</td>
+<td>System Architecture Description</td>
+</tr>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.3-001]</td>
+<td>Software Detailed Design</td>
+</tr>
+<tr>
+<td>[ISO-HSI-001]</td>
+<td>Hardware-Software Interface Specification</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-static-architecture">4. Static Architecture</h2>
+<h3 id="41-module-dependency-diagram">4.1 Module Dependency Diagram</h3>
+<pre><code>                        +-------------------+
+                        |    main.c         |
+                        | (POSIX entry)     |
+                        +--------+----------+
+                                 |
+                        +--------v----------+
+                        |    sys.c          |
+                        | SYS State Machine |
+                        +--------+----------+
+                                 |
+              +------------------+------------------+
+              |                  |                  |
+     +--------v------+  +-------v-------+  +-------v--------+
+     |   bms.c       |  |  database.c   |  |   diag.c       |
+     | BMS State     |  | Data Store    |  | Diagnostic     |
+     | Machine       |  |               |  | Handler        |
+     +-------+-------+  +-------+-------+  +-------+--------+
+             |                  ^                  ^
+             |                  |                  |
+     +-------v-------+         |                  |
+     | contactor.c   |  +------+-------+   +------+-------+
+     | Contactor     |  |   soa.c      |   | plausibility |
+     | Driver        |  | Safe Op Area |   |    .c        |
+     +-------+-------+  +------+-------+   +--------------+
+             |                  |
+     +-------v-------+  +------v-------+
+     |   sps.c       |  | algorithm.c  |
+     | Smart Power   |  | SOC/SOE/SOH  |
+     | Switch        |  +--------------+
+     +-------+-------+
+             |                  +---------------+
+     +-------v-------+         |  balancing.c  |
+     |   HAL / POSIX |         |               |
+     |   stubs       |         +---------------+
+     +---------------+
+
+     +---------------+  +---------------+  +---------------+
+     |   can.c       |  |   spi.c       |  |   i2c.c       |
+     | CAN Driver    |  | SPI Driver    |  | I2C Driver    |
+     +-------+-------+  +-------+-------+  +-------+-------+
+             |                  |                  |
+     +-------v-------+  +------v--------+  +------v--------+
+     | SocketCAN     |  | POSIX SPI     |  | POSIX I2C     |
+     | (Linux)       |  | stub          |  | stub          |
+     +---------------+  +---------------+  +---------------+
+</code></pre>
+<h3 id="42-module-catalog">4.2 Module Catalog</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Layer</th>
+<th>Source Files</th>
+<th>Responsibility</th>
+<th>Key Dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sys</td>
+<td>Engine</td>
+<td>sys.c, sys.h</td>
+<td>System state machine</td>
+<td>database, diag</td>
+</tr>
+<tr>
+<td>bms</td>
+<td>Application</td>
+<td>bms.c, bms.h</td>
+<td>BMS state machine</td>
+<td>database, diag, contactor, soa</td>
+</tr>
+<tr>
+<td>database</td>
+<td>Engine</td>
+<td>database.c, database.h</td>
+<td>Central data store</td>
+<td>None (leaf module)</td>
+</tr>
+<tr>
+<td>diag</td>
+<td>Engine</td>
+<td>diag.c, diag.h, diag_cfg.c</td>
+<td>Diagnostic handler</td>
+<td>database</td>
+</tr>
+<tr>
+<td>soa</td>
+<td>Application</td>
+<td>soa.c, soa.h, soa_cfg.c</td>
+<td>Safe operating area checks</td>
+<td>database, diag</td>
+</tr>
+<tr>
+<td>algorithm</td>
+<td>Application</td>
+<td>algorithm.c, algorithm.h</td>
+<td>SOC/SOE estimation</td>
+<td>database</td>
+</tr>
+<tr>
+<td>balancing</td>
+<td>Application</td>
+<td>balancing.c, balancing.h</td>
+<td>Cell balancing logic</td>
+<td>database, sps</td>
+</tr>
+<tr>
+<td>plausibility</td>
+<td>Application</td>
+<td>plausibility.c</td>
+<td>Measurement cross-checks</td>
+<td>database, diag</td>
+</tr>
+<tr>
+<td>redundancy</td>
+<td>Application</td>
+<td>redundancy.c</td>
+<td>Redundant measurement mgmt</td>
+<td>database</td>
+</tr>
+<tr>
+<td>contactor</td>
+<td>Driver</td>
+<td>contactor.c, contactor.h</td>
+<td>Contactor actuation/feedback</td>
+<td>sps, database, diag</td>
+</tr>
+<tr>
+<td>can</td>
+<td>Driver</td>
+<td>can.c, can.h, can_cfg.c</td>
+<td>CAN communication</td>
+<td>database (SocketCAN on POSIX)</td>
+</tr>
+<tr>
+<td>spi</td>
+<td>Driver</td>
+<td>spi.c, spi.h</td>
+<td>SPI communication</td>
+<td>HAL (stub on POSIX)</td>
+</tr>
+<tr>
+<td>i2c</td>
+<td>Driver</td>
+<td>i2c.c, i2c.h</td>
+<td>I2C communication</td>
+<td>HAL (stub on POSIX)</td>
+</tr>
+<tr>
+<td>sbc</td>
+<td>Driver</td>
+<td>sbc.c, sbc.h</td>
+<td>System Basis Chip</td>
+<td>HAL (stub on POSIX)</td>
+</tr>
+<tr>
+<td>sps</td>
+<td>Driver</td>
+<td>sps.c, sps.h</td>
+<td>Smart Power Switch</td>
+<td>HAL (stub on POSIX)</td>
+</tr>
+<tr>
+<td>imd</td>
+<td>Driver</td>
+<td>imd.c, imd.h</td>
+<td>Insulation monitoring</td>
+<td>HAL (stub on POSIX)</td>
+</tr>
+<tr>
+<td>interlock</td>
+<td>Driver</td>
+<td>interlock.c, interlock.h</td>
+<td>Interlock circuit</td>
+<td>HAL (stub on POSIX)</td>
+</tr>
+<tr>
+<td>HAL stubs</td>
+<td>HAL</td>
+<td>80+ files</td>
+<td>TMS570 register emulation</td>
+<td>RAM buffers</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-design-rules">4.3 Design Rules</h3>
+<ol>
+<li><strong>No upward dependencies</strong>: Lower layers shall not depend on upper layers.</li>
+<li><strong>Single writer</strong>: Each database entry has exactly one writing module.</li>
+<li><strong>No direct hardware access</strong>: Application and Engine layers access hardware only through the Driver layer.</li>
+<li><strong>Uniform diagnostic reporting</strong>: All modules report faults through <code>DIAG_Handler()</code>, never through direct state manipulation.</li>
+</ol>
+<h2 id="5-dynamic-architecture">5. Dynamic Architecture</h2>
+<h3 id="51-task-execution-sequence-posix">5.1 Task Execution Sequence (POSIX)</h3>
+<pre><code>Time --&gt;
+
+|-- 1ms tick --|-- 1ms tick --|-- 1ms tick --|-- ...
+
+ ENGINE  1ms  AFE  10ms  100ms  I2C  ALGO
+   |      |    |    |      |     |    |
+   v      v    v    v      v     v    v
+  [E1]  [T1] [A1]  .      .     .    .      &lt;-- tick 0
+  [E2]  [T2] [A2]  .      .     .    .      &lt;-- tick 1
+  ...   ...  ...   ...    ...   ...  ...
+  [E10] [T10][A10][T10m]  .     .    .      &lt;-- tick 9 (10ms fires)
+  ...   ...  ...   ...    ...   ...  ...
+  [E100][T100][A100][T10m][T100m][I1][AL1]  &lt;-- tick 99 (100ms fires)
+</code></pre>
+<h3 id="52-interrupt-free-model">5.2 Interrupt-Free Model</h3>
+<p>The POSIX port has no hardware interrupts. All processing is synchronous within the
+cooperative loop. This simplifies concurrency analysis: there are no race conditions
+or priority inversions to consider.</p>
+<h3 id="53-data-flow-measurement-to-safety-action">5.3 Data Flow: Measurement to Safety Action</h3>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Module</th>
+<th>Action</th>
+<th>Timing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>AFE Task</td>
+<td>Read cell voltages and temperatures via SPI (stub returns configured values)</td>
+<td>Async</td>
+</tr>
+<tr>
+<td>2</td>
+<td>AFE Driver</td>
+<td>Write measurements to Database[CELL_VOLTAGE], Database[CELL_TEMPERATURE]</td>
+<td>Async</td>
+</tr>
+<tr>
+<td>3</td>
+<td>CAN Driver</td>
+<td>Receive IVT current frames from SocketCAN, write to Database[CURRENT]</td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td>4</td>
+<td>SOA</td>
+<td>Read database entries, compare against MOL/RSL/MSL thresholds</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SOA</td>
+<td>On violation: call DIAG_Handler(event_id)</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>6</td>
+<td>DIAG</td>
+<td>Increment threshold counter; if &gt;= threshold, set FATAL flag</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>7</td>
+<td>BMS</td>
+<td>Read DIAG flags; on FATAL, transition to ERROR</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Contactor</td>
+<td>In ERROR state, open string+, string-, precharge contactors</td>
+<td>100 ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-data-flow-state-request-to-contactor-actuation">5.4 Data Flow: State Request to Contactor Actuation</h3>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Module</th>
+<th>Action</th>
+<th>Timing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>CAN Driver</td>
+<td>Receive state request from CAN ID 0x210</td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td>2</td>
+<td>CAN Driver</td>
+<td>Write requested state to Database[STATE_REQUEST]</td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td>3</td>
+<td>BMS</td>
+<td>Read Database[STATE_REQUEST], validate transition</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>4</td>
+<td>BMS</td>
+<td>If valid: update BMS state, command contactor sequence</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Contactor</td>
+<td>Actuate contactors in sequence (precharge, string-, string+)</td>
+<td>1 ms ticks</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-interface-definitions">6. Interface Definitions</h2>
+<h3 id="61-database-api">6.1 Database API</h3>
+<pre><code class="language-c">/* Write a database entry (single-writer only) */
+STD_RETURN_TYPE_e DATA_Write_1_DataBlock(DATA_BLOCK_HEADER_s *pDataBlockHeader);
+
+/* Read a database entry (any module may read) */
+STD_RETURN_TYPE_e DATA_Read_1_DataBlock(DATA_BLOCK_HEADER_s *pDataBlockHeader);
+</code></pre>
+<h3 id="62-diag-api">6.2 DIAG API</h3>
+<pre><code class="language-c">/* Report a diagnostic event */
+STD_RETURN_TYPE_e DIAG_Handler(
+    DIAG_ID_e       diagId,
+    DIAG_EVENT_e    event,       /* DIAG_EVENT_OK or DIAG_EVENT_NOT_OK */
+    DIAG_IMPACT_e   impact,
+    uint32_t        data
+);
+
+/* Check if any FATAL flag is set */
+bool DIAG_IsAnyFatalErrorSet(void);
+</code></pre>
+<h3 id="63-bms-api">6.3 BMS API</h3>
+<pre><code class="language-c">/* Get current BMS state */
+BMS_STATE_e BMS_GetState(void);
+
+/* BMS state machine trigger (called from 100ms task) */
+void BMS_Trigger(void);
+</code></pre>
+<h3 id="64-contactor-api">6.4 Contactor API</h3>
+<pre><code class="language-c">/* Request contactor state */
+STD_RETURN_TYPE_e CONT_SetContactorState(
+    CONT_NAMES_e    contactor,
+    CONT_STATE_e    requestedState
+);
+
+/* Get contactor feedback */
+CONT_STATE_e CONT_GetContactorFeedback(CONT_NAMES_e contactor);
+</code></pre>
+<h3 id="65-can-api-posix-socketcan">6.5 CAN API (POSIX SocketCAN)</h3>
+<pre><code class="language-c">/* Initialize SocketCAN interface */
+STD_RETURN_TYPE_e CAN_Initialize(const char *interface);  /* e.g., &quot;vcan0&quot; */
+
+/* Transmit a CAN frame */
+STD_RETURN_TYPE_e CAN_Send(uint32_t id, const uint8_t *data, uint8_t dlc);
+
+/* Receive a CAN frame (non-blocking) */
+STD_RETURN_TYPE_e CAN_Receive(uint32_t *id, uint8_t *data, uint8_t *dlc);
+</code></pre>
+<h2 id="7-resource-budgets-posix-target">7. Resource Budgets (POSIX Target)</h2>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Budget</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RAM (heap)</td>
+<td>&lt; 50 MB</td>
+<td>RAM-mapped registers + database + stack</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>Single core</td>
+<td>Cooperative loop, no parallelism</td>
+</tr>
+<tr>
+<td>SocketCAN bandwidth</td>
+<td>&lt; 1 Mbit/s</td>
+<td>Virtual CAN, no physical bus load</td>
+</tr>
+<tr>
+<td>Startup time</td>
+<td>&lt; 2 s</td>
+<td>From main() to SYS RUNNING</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-design-decisions">8. Design Decisions</h2>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Rationale</th>
+<th>Alternatives Considered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cooperative loop instead of pthreads</td>
+<td>Preserves single-threaded execution semantics of FreeRTOS task model; eliminates concurrency bugs</td>
+<td>pthreads with mutexes (rejected: adds complexity, changes timing model)</td>
+</tr>
+<tr>
+<td>SocketCAN for CAN</td>
+<td>Linux-native, well-tested, supports virtual CAN for testing</td>
+<td>TCP sockets (rejected: non-standard framing), shared memory (rejected: no standard tooling)</td>
+</tr>
+<tr>
+<td>RAM-mapped registers</td>
+<td>Minimal code changes to driver layer; register read/write code executes normally</td>
+<td>Conditional compilation (rejected: excessive #ifdefs), mock objects (rejected: requires refactoring)</td>
+</tr>
+<tr>
+<td>24 DIAG IDs suppressed</td>
+<td>Hardware-dependent diagnostics cannot trigger meaningfully without physical hardware</td>
+<td>Emulate hardware faults (deferred to Phase 3)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="swe-1-software-reqs.html">&larr; SWE.1 Software Reqs</a><a href="swe-3-detailed-design.html">SWE.3 Detailed Design &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

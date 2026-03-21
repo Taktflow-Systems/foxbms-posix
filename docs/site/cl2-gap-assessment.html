@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CL2 Gap Assessment — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" class="active">CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Assessment / CL2 Gap Assessment</div>
+<div class="content"><h1 id="aspice-capability-level-2-gap-assessment">ASPICE Capability Level 2 Gap Assessment</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ASMT-CL2-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document provides a detailed gap assessment of the foxBMS 2 POSIX vECU project against Automotive SPICE v3.1 Capability Level 2 (CL2). For each process area in scope, it evaluates:</p>
+<ol>
+<li><strong>CL1 base practice fulfillment</strong> -- whether each base practice is Fully (F), Largely (L), Partially (P), or Not (N) achieved</li>
+<li><strong>CL2 generic practice fulfillment</strong> -- whether GP 2.1 (Performance Management) and GP 2.2 (Work Product Management) are achieved</li>
+<li><strong>Specific actions needed</strong> to close gaps and achieve CL2</li>
+<li><strong>Estimated effort</strong> for each action</li>
+</ol>
+<h2 id="2-assessment-methodology">2. Assessment Methodology</h2>
+<ul>
+<li>Assessment model: Automotive SPICE v3.1 (VDA)</li>
+<li>Rating scale: F (Fully, &gt;85%), L (Largely, 50-85%), P (Partially, 15-50%), N (Not, &lt;15%)</li>
+<li>CL1 achieved when all base practices are rated F or L (with overall process purpose achieved)</li>
+<li>CL2 achieved when CL1 is achieved AND GP 2.1 and GP 2.2 are both rated F or L</li>
+</ul>
+<h2 id="3-summary-of-current-evidence">3. Summary of Current Evidence</h2>
+<table>
+<thead>
+<tr>
+<th>Evidence</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ASPICE work products</td>
+<td>18 documents (SYS.2-3, SWE.1-6, ISO 26262 parts 3-9)</td>
+</tr>
+<tr>
+<td>Test suites</td>
+<td>test_smoke.py (76 criteria), test_integration.py (21), test_asil.py (50)</td>
+</tr>
+<tr>
+<td>Unit tests</td>
+<td>183+ Ceedling tests</td>
+</tr>
+<tr>
+<td>Gap analysis</td>
+<td>GAP-ANALYSIS.md: 33 gaps, 23 FIXED, 10 ACCEPTED, 0 open</td>
+</tr>
+<tr>
+<td>Coverage matrix</td>
+<td>COVERAGE.md: 51 features tracked</td>
+</tr>
+<tr>
+<td>Source code</td>
+<td>170+ C files, 13 patches, HAL stubs, plant model</td>
+</tr>
+<tr>
+<td>Build automation</td>
+<td>setup.sh, apply_all.sh, Makefile</td>
+</tr>
+<tr>
+<td>CL2 folder hierarchy</td>
+<td>24 folders with assessor-facing structure</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-process-area-assessments">4. Process Area Assessments</h2>
+<hr />
+<h3 id="41-man3-project-management">4.1 MAN.3 -- Project Management</h3>
+<h4 id="cl1-base-practices">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Define the scope of work</td>
+<td><strong>F</strong></td>
+<td>Assessment scope document (ASMT-SCOPE-001); WBS in project plan</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Define project life cycle</td>
+<td><strong>F</strong></td>
+<td>Four phases defined with milestones and deliverables</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Evaluate feasibility of the project</td>
+<td><strong>L</strong></td>
+<td>Feasibility demonstrated by working Phase 1-2.5 deliverables; no formal feasibility study document</td>
+<td>No formal feasibility report</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Define and maintain project plan</td>
+<td><strong>L</strong></td>
+<td>Project plan (MAN.3-001) with phases, milestones, WBS, resources</td>
+<td>Plan created late in project; not maintained iteratively from start</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Define, monitor and adjust project activities</td>
+<td><strong>L</strong></td>
+<td>GAP-ANALYSIS.md tracks issues; milestones tracked in plan</td>
+<td>No formal activity tracking tool (e.g., Gantt chart, burn-down)</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Define, monitor and adjust project estimates</td>
+<td><strong>P</strong></td>
+<td>Effort estimates in WBS; no re-estimation records</td>
+<td>No estimation method documented; no re-estimation history</td>
+</tr>
+<tr>
+<td>BP.7</td>
+<td>Ensure required skills, knowledge and experience</td>
+<td><strong>L</strong></td>
+<td>Single engineer with HIL domain expertise</td>
+<td>No skills matrix or training records</td>
+</tr>
+<tr>
+<td>BP.8</td>
+<td>Identify, monitor and adjust project interfaces</td>
+<td><strong>L</strong></td>
+<td>Submodule interface (foxBMS), SocketCAN interface documented</td>
+<td>No formal interface agreement document</td>
+</tr>
+<tr>
+<td>BP.9</td>
+<td>Allocate responsibilities</td>
+<td><strong>F</strong></td>
+<td>Single resource with clear responsibility for all work packages</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.10</td>
+<td>Define, monitor and adjust project schedule</td>
+<td><strong>L</strong></td>
+<td>Milestone dates defined in project plan</td>
+<td>No schedule variance tracking</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong> -- All base practices have evidence, but several lack formal documentation rigor.</p>
+<h4 id="cl2-generic-practices">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1.1</td>
+<td>Identify the objectives for the performance of the process</td>
+<td><strong>L</strong></td>
+<td>Project objectives defined in project plan</td>
+<td>Not stated as measurable objectives with acceptance criteria</td>
+</tr>
+<tr>
+<td>GP 2.1.2</td>
+<td>Plan the performance of the process</td>
+<td><strong>L</strong></td>
+<td>Project plan exists with phases and milestones</td>
+<td>Plan created retroactively; no evidence of ongoing planning</td>
+</tr>
+<tr>
+<td>GP 2.1.3</td>
+<td>Monitor the performance of the process</td>
+<td><strong>P</strong></td>
+<td>GAP-ANALYSIS.md and ASPICE criteria count (94/112)</td>
+<td>No regular status reports; no trend data</td>
+</tr>
+<tr>
+<td>GP 2.1.4</td>
+<td>Adjust the performance of the process</td>
+<td><strong>P</strong></td>
+<td>Phase adjustments evident (Phase 2.5 added)</td>
+<td>No documented adjustment decisions or rationale</td>
+</tr>
+<tr>
+<td>GP 2.1.5</td>
+<td>Define responsibilities and authorities</td>
+<td><strong>F</strong></td>
+<td>Single resource; all responsibilities clearly assigned</td>
+<td>--</td>
+</tr>
+<tr>
+<td>GP 2.1.6</td>
+<td>Identify and make available resources</td>
+<td><strong>L</strong></td>
+<td>Tool environment documented</td>
+<td>No resource utilization tracking</td>
+</tr>
+<tr>
+<td>GP 2.2.1</td>
+<td>Define the requirements for the work products</td>
+<td><strong>L</strong></td>
+<td>Document templates with standard fields</td>
+<td>No explicit WP requirements document</td>
+</tr>
+<tr>
+<td>GP 2.2.2</td>
+<td>Define the requirements for documentation and control</td>
+<td><strong>P</strong></td>
+<td>Git-based versioning; no formal document control procedure</td>
+<td>No document control procedure</td>
+</tr>
+<tr>
+<td>GP 2.2.3</td>
+<td>Identify, document and control the work products</td>
+<td><strong>L</strong></td>
+<td>18 ASPICE documents under Git; INDEX.md provides mapping</td>
+<td>No formal configuration item list with states</td>
+</tr>
+<tr>
+<td>GP 2.2.4</td>
+<td>Review and adjust work products</td>
+<td><strong>P</strong></td>
+<td>Self-review performed; no review records</td>
+<td>No review meeting minutes or sign-off records</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong> -- Performance management lacks monitoring data and adjustment records. Work product management lacks formal review records.</p>
+<h4 id="actions-for-cl2">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MAN.3-A1</td>
+<td>Create measurable project objectives with acceptance criteria</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>MAN.3-A2</td>
+<td>Generate project status reports (at least 3 retrospective reports for Phases 1, 2, 2.5)</td>
+<td>4h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>MAN.3-A3</td>
+<td>Document Phase 2.5 addition as a formal schedule adjustment with rationale</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>MAN.3-A4</td>
+<td>Create estimation method description (analogy-based, per-WP)</td>
+<td>2h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>MAN.3-A5</td>
+<td>Create review records for project plan review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 10h</strong></p>
+<hr />
+<h3 id="42-sys1-stakeholder-requirements-analysis">4.2 SYS.1 -- Stakeholder Requirements Analysis</h3>
+<h4 id="cl1-base-practices_1">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Identify stakeholders</td>
+<td><strong>F</strong></td>
+<td>Three stakeholders identified (HIL engineer, safety engineer, student)</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Gather stakeholder requirements</td>
+<td><strong>F</strong></td>
+<td>20 requirements with STKH-REQ-xxx IDs</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Analyze stakeholder requirements</td>
+<td><strong>L</strong></td>
+<td>Prioritization (MUST/SHOULD), conflict analysis</td>
+<td>No formal analysis criteria or acceptance criteria per requirement</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Establish stakeholder requirements baseline</td>
+<td><strong>P</strong></td>
+<td>Document exists under Git; no formal baseline record</td>
+<td>No baseline tag or approval record</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Communicate agreed stakeholder requirements</td>
+<td><strong>L</strong></td>
+<td>Document available in repository</td>
+<td>No distribution record or stakeholder acknowledgment</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_1">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>Process executed but not planned or monitored</td>
+<td>No plan for requirements elicitation; no review schedule</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>P</strong></td>
+<td>Document under Git control</td>
+<td>No review record; no formal baseline; no change history tracking</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_1">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.1-A1</td>
+<td>Add acceptance criteria to each STKH-REQ</td>
+<td>2h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>SYS.1-A2</td>
+<td>Create baseline record (date, version, approval)</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.1-A3</td>
+<td>Create review record for stakeholder requirements review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.1-A4</td>
+<td>Document requirements elicitation method</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 5h</strong></p>
+<hr />
+<h3 id="43-sys2-system-requirements-analysis">4.3 SYS.2 -- System Requirements Analysis</h3>
+<h4 id="cl1-base-practices_2">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Specify system requirements</td>
+<td><strong>F</strong></td>
+<td>SYS.2-001 with SYS-REQ-xxx IDs, ASIL allocation</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Analyze system requirements</td>
+<td><strong>F</strong></td>
+<td>Requirements categorized by function (voltage, current, temp, state)</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Verify system requirements</td>
+<td><strong>L</strong></td>
+<td>Traceability to stakeholder requirements</td>
+<td>No formal verification review record</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>F</strong></td>
+<td>ISO26262-part8-traceability.md provides full chain</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Communicate agreed system requirements</td>
+<td><strong>L</strong></td>
+<td>Document in repository</td>
+<td>No formal communication/distribution record</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Ensure consistency</td>
+<td><strong>L</strong></td>
+<td>Cross-references between SYS.2 and SYS.3, SWE.1</td>
+<td>No consistency check record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_2">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>L</strong></td>
+<td>Process produced comprehensive requirements; traceability maintained</td>
+<td>No explicit plan for requirements analysis activities</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Document under Git; revision history present</td>
+<td>No formal review record; no baseline approval</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: L (Largely achieved)</strong> -- Close to CL2; needs review records and baseline.</p>
+<h4 id="actions-for-cl2_2">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.2-A1</td>
+<td>Create review record for SYS.2 document review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.2-A2</td>
+<td>Create baseline record with approval</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.2-A3</td>
+<td>Document consistency check between SYS.2 and SWE.1</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 3h</strong></p>
+<hr />
+<h3 id="44-sys3-system-architectural-design">4.4 SYS.3 -- System Architectural Design</h3>
+<h4 id="cl1-base-practices_3">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop system architectural design</td>
+<td><strong>F</strong></td>
+<td>SYS.3-001 with layer decomposition, block diagrams</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Allocate system requirements to elements</td>
+<td><strong>F</strong></td>
+<td>Requirements allocated to application, engine, driver layers</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Define interfaces of system elements</td>
+<td><strong>F</strong></td>
+<td>CAN interface, database interface, HAL interface documented</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Describe dynamic behavior</td>
+<td><strong>L</strong></td>
+<td>State machine descriptions present</td>
+<td>No sequence diagrams or timing diagrams</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Evaluate alternative architectures</td>
+<td><strong>P</strong></td>
+<td>Cooperative vs. FreeRTOS decision documented in GA-02</td>
+<td>No formal architecture evaluation record</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>F</strong></td>
+<td>Traceability to SYS.2 requirements and SWE.2</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.7</td>
+<td>Ensure consistency</td>
+<td><strong>L</strong></td>
+<td>Cross-references to SWE.2, HSI</td>
+<td>No formal consistency review</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_3">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>L</strong></td>
+<td>Architecture produced and maintained</td>
+<td>No architecture review plan</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Under Git; revision history present</td>
+<td>No formal review record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: L (Largely achieved)</strong></p>
+<h4 id="actions-for-cl2_3">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.3-A1</td>
+<td>Create review record for architecture review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.3-A2</td>
+<td>Document architecture evaluation (cooperative vs. FreeRTOS) as formal decision record</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>SYS.3-A3</td>
+<td>Add sequence diagram for BMS state transition flow</td>
+<td>2h</td>
+<td>LOW</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 4h</strong></p>
+<hr />
+<h3 id="45-sys4-system-integration-test">4.5 SYS.4 -- System Integration Test</h3>
+<h4 id="cl1-base-practices_4">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop system integration test strategy</td>
+<td><strong>L</strong></td>
+<td>test_integration.py + test_asil.py cover integration</td>
+<td>Strategy documented in SYS.4-001 (this assessment cycle)</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Develop system integration test specification</td>
+<td><strong>L</strong></td>
+<td>21 integration + 50 ASIL criteria specified</td>
+<td>Test spec formalized during this assessment</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Select test cases</td>
+<td><strong>F</strong></td>
+<td>Test cases derived from system requirements and architecture</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Test integrated system elements</td>
+<td><strong>F</strong></td>
+<td>All 71 criteria pass</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>L</strong></td>
+<td>SIT-xxx traces to SYS-REQ-xxx</td>
+<td>Traceability added during this assessment</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Summarize and communicate results</td>
+<td><strong>L</strong></td>
+<td>Test output captured; pass/fail verdicts</td>
+<td>No formal test report document</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_4">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>Tests executed but no test plan with schedule</td>
+<td>No test planning document</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Test scripts under Git; test spec document created</td>
+<td>No formal test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_4">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.4-A1</td>
+<td>Create formal system integration test report with results and verdict</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.4-A2</td>
+<td>Create test plan with schedule and entry/exit criteria</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.4-A3</td>
+<td>Create review record for test specification review</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 4h</strong></p>
+<hr />
+<h3 id="46-sys5-system-qualification-test">4.6 SYS.5 -- System Qualification Test</h3>
+<h4 id="cl1-base-practices_5">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop system qualification test strategy</td>
+<td><strong>L</strong></td>
+<td>test_smoke.py serves as acceptance test</td>
+<td>Strategy formalized in SYS.5-001 during this assessment</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Develop system qualification test specification</td>
+<td><strong>L</strong></td>
+<td>23 SQT-xxx test cases specified</td>
+<td>Formalized during this assessment</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Select test cases</td>
+<td><strong>F</strong></td>
+<td>Cases trace to stakeholder requirements</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Test the integrated system</td>
+<td><strong>F</strong></td>
+<td>Smoke test passes; setup.sh succeeds on fresh clone</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>L</strong></td>
+<td>SQT-xxx traces to STKH-REQ-xxx</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Summarize and communicate results</td>
+<td><strong>L</strong></td>
+<td>Smoke test output; PASS verdict</td>
+<td>No formal qualification test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_5">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>Tests executed ad-hoc, not on planned schedule</td>
+<td>No test plan</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Test script under Git; spec document created</td>
+<td>No formal test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_5">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.5-A1</td>
+<td>Create formal system qualification test report</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.5-A2</td>
+<td>Create test plan with entry/exit criteria and schedule</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SYS.5-A3</td>
+<td>Create review record for test specification</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 4h</strong></p>
+<hr />
+<h3 id="47-swe1-software-requirements-analysis">4.7 SWE.1 -- Software Requirements Analysis</h3>
+<h4 id="cl1-base-practices_6">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Specify software requirements</td>
+<td><strong>F</strong></td>
+<td>SWE.1-001 with SW-REQ-xxx IDs, ASIL allocation</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Structure software requirements</td>
+<td><strong>F</strong></td>
+<td>Categorized by safety, functional, interface, performance</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Analyze software requirements</td>
+<td><strong>F</strong></td>
+<td>Impact on DIAG IDs, traceability to system requirements</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Analyze the impact on the operating environment</td>
+<td><strong>F</strong></td>
+<td>POSIX-specific adaptations documented (HAL stubs, cooperative loop)</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>F</strong></td>
+<td>SW-REQ -&gt; SYS-REQ -&gt; STKH-REQ; SW-REQ -&gt; SWE.3 -&gt; SWE.4</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Ensure consistency</td>
+<td><strong>L</strong></td>
+<td>Cross-references consistent</td>
+<td>No formal consistency check record</td>
+</tr>
+<tr>
+<td>BP.7</td>
+<td>Communicate agreed software requirements</td>
+<td><strong>L</strong></td>
+<td>Document in repository</td>
+<td>No distribution record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: F (Fully achieved)</strong></p>
+<h4 id="cl2-generic-practices_6">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>L</strong></td>
+<td>Process well-executed; requirements comprehensive</td>
+<td>No explicit plan for SW requirements process</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Under Git; revision history; cross-referenced</td>
+<td>No formal review record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: L (Largely achieved)</strong></p>
+<h4 id="actions-for-cl2_6">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.1-A1</td>
+<td>Create review record for SWE.1 document review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SWE.1-A2</td>
+<td>Create baseline record</td>
+<td>0.5h</td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 1.5h</strong></p>
+<hr />
+<h3 id="48-swe2-software-architectural-design">4.8 SWE.2 -- Software Architectural Design</h3>
+<h4 id="cl1-base-practices_7">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop software architectural design</td>
+<td><strong>F</strong></td>
+<td>SWE.2-001 with layer decomposition, component diagrams</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Allocate software requirements to components</td>
+<td><strong>F</strong></td>
+<td>Requirements allocated to application, engine, driver, HAL</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Define interfaces of software components</td>
+<td><strong>F</strong></td>
+<td>Database API, CAN API, HAL API documented</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Describe dynamic behavior</td>
+<td><strong>L</strong></td>
+<td>Task scheduling (cooperative loop), state machine flow</td>
+<td>No formal timing/sequence diagrams</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Evaluate resource consumption objectives</td>
+<td><strong>L</strong></td>
+<td>Memory footprint noted; cooperative loop CPU usage managed (usleep)</td>
+<td>No formal resource budget</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>F</strong></td>
+<td>SW-REQ -&gt; SWE.2 -&gt; SWE.3</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.7</td>
+<td>Ensure consistency</td>
+<td><strong>L</strong></td>
+<td>Consistent with SYS.3 and SWE.1</td>
+<td>No consistency check record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: F (Fully achieved)</strong></p>
+<h4 id="cl2-generic-practices_7">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>L</strong></td>
+<td>Architecture well-documented and maintained</td>
+<td>No architecture review plan</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Under Git; referenced by other documents</td>
+<td>No formal review record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: L (Largely achieved)</strong></p>
+<h4 id="actions-for-cl2_7">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.2-A1</td>
+<td>Create review record for architecture review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SWE.2-A2</td>
+<td>Document resource consumption analysis (memory, CPU)</td>
+<td>1h</td>
+<td>LOW</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 2h</strong></p>
+<hr />
+<h3 id="49-swe3-software-detailed-design-and-unit-construction">4.9 SWE.3 -- Software Detailed Design and Unit Construction</h3>
+<h4 id="cl1-base-practices_8">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop detailed design</td>
+<td><strong>F</strong></td>
+<td>SWE.3-001 with module descriptions, data structures, algorithms</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Define interfaces of software units</td>
+<td><strong>F</strong></td>
+<td>Function signatures, data types documented</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Describe dynamic behavior of software units</td>
+<td><strong>L</strong></td>
+<td>Algorithm descriptions present</td>
+<td>No formal state charts for individual modules</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Evaluate the software detailed design</td>
+<td><strong>L</strong></td>
+<td>Design follows foxBMS patterns</td>
+<td>No formal design review record</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>F</strong></td>
+<td>SW-REQ -&gt; SWE.3 modules -&gt; SWE.4 test cases</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Ensure consistency</td>
+<td><strong>L</strong></td>
+<td>Consistent with SWE.2</td>
+<td>No consistency check record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: F (Fully achieved)</strong></p>
+<h4 id="cl2-generic-practices_8">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>L</strong></td>
+<td>Design produced systematically</td>
+<td>No design review plan</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Under Git control</td>
+<td>No review record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: L (Largely achieved)</strong></p>
+<h4 id="actions-for-cl2_8">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.3-A1</td>
+<td>Create review record for detailed design review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 1h</strong></p>
+<hr />
+<h3 id="410-swe4-software-unit-verification">4.10 SWE.4 -- Software Unit Verification</h3>
+<h4 id="cl1-base-practices_9">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop unit verification strategy</td>
+<td><strong>L</strong></td>
+<td>Ceedling-based unit testing; 183+ tests</td>
+<td>Strategy described in SWE.4-001</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Develop test specification for units</td>
+<td><strong>F</strong></td>
+<td>SWE.4-001 with test case specifications</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Select test cases</td>
+<td><strong>F</strong></td>
+<td>Derived from SW requirements and detailed design</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Test software units</td>
+<td><strong>F</strong></td>
+<td>183+ tests passing</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>L</strong></td>
+<td>Test cases reference SW-REQ-xxx</td>
+<td>Some tests lack explicit requirement references</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Summarize and communicate results</td>
+<td><strong>L</strong></td>
+<td>Ceedling output captured</td>
+<td>No formal unit test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_9">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>Tests executed but no test plan with coverage targets</td>
+<td>No coverage target; no test execution plan</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Tests under Git; spec document exists</td>
+<td>No formal test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_9">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.4-A1</td>
+<td>Create unit test report with pass/fail summary</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SWE.4-A2</td>
+<td>Define code coverage target and measure with gcov/lcov</td>
+<td>4h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>SWE.4-A3</td>
+<td>Add explicit requirement traceability to all unit tests</td>
+<td>3h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>SWE.4-A4</td>
+<td>Create review record for test specification</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 10h</strong></p>
+<hr />
+<h3 id="411-swe5-software-integration-and-integration-test">4.11 SWE.5 -- Software Integration and Integration Test</h3>
+<h4 id="cl1-base-practices_10">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop integration strategy</td>
+<td><strong>L</strong></td>
+<td>Bottom-up integration (HAL -&gt; driver -&gt; engine -&gt; app)</td>
+<td>Strategy described in SWE.5-001</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Develop integration test specification</td>
+<td><strong>F</strong></td>
+<td>SWE.5-001 with 21 criteria</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Select test cases</td>
+<td><strong>F</strong></td>
+<td>Derived from architecture and integration points</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Integrate and test software modules</td>
+<td><strong>F</strong></td>
+<td>test_integration.py 21/21 pass</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>L</strong></td>
+<td>Test cases reference SWE.2 components</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Summarize and communicate results</td>
+<td><strong>L</strong></td>
+<td>Test output captured</td>
+<td>No formal integration test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_10">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>Tests executed but no integration test plan with schedule</td>
+<td>No test plan</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Scripts and spec under Git</td>
+<td>No formal test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_10">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.5-A1</td>
+<td>Create integration test report with results</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SWE.5-A2</td>
+<td>Create integration test plan with schedule</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SWE.5-A3</td>
+<td>Create review record for integration test spec</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 4h</strong></p>
+<hr />
+<h3 id="412-swe6-software-qualification-test">4.12 SWE.6 -- Software Qualification Test</h3>
+<h4 id="cl1-base-practices_11">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop qualification test strategy</td>
+<td><strong>L</strong></td>
+<td>test_smoke.py + test_asil.py serve as qualification</td>
+<td>Strategy described in SWE.6-001</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Develop qualification test specification</td>
+<td><strong>F</strong></td>
+<td>SWE.6-001 with test cases</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Select test cases</td>
+<td><strong>F</strong></td>
+<td>Derived from SW requirements</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Test the integrated software</td>
+<td><strong>F</strong></td>
+<td>All tests passing</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Establish bidirectional traceability</td>
+<td><strong>L</strong></td>
+<td>Test cases reference SW-REQ-xxx</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Summarize and communicate results</td>
+<td><strong>L</strong></td>
+<td>Test output captured</td>
+<td>No formal qualification test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_11">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>Tests executed but no qualification plan</td>
+<td>No test plan</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>Scripts and spec under Git</td>
+<td>No formal test report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_11">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SWE.6-A1</td>
+<td>Create qualification test report with results and final verdict</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SWE.6-A2</td>
+<td>Create qualification test plan with entry/exit criteria</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SWE.6-A3</td>
+<td>Create review record</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 4h</strong></p>
+<hr />
+<h3 id="413-sup1-quality-assurance">4.13 SUP.1 -- Quality Assurance</h3>
+<h4 id="cl1-base-practices_12">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop quality assurance strategy</td>
+<td><strong>L</strong></td>
+<td>QA plan (SUP.1-001) with review checklists and verification activities</td>
+<td>Plan created during this assessment</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Assure quality of project work products</td>
+<td><strong>L</strong></td>
+<td>Code review checklists, test suites, GAP-ANALYSIS reviews</td>
+<td>No formal QA audit records</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Assure quality of project processes</td>
+<td><strong>P</strong></td>
+<td>ASPICE criteria tracking (94/112)</td>
+<td>No process audit records</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Assure quality of project activities</td>
+<td><strong>P</strong></td>
+<td>Activities produce tested deliverables</td>
+<td>No activity review records</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Summarize and communicate QA findings</td>
+<td><strong>L</strong></td>
+<td>GAP-ANALYSIS.md and COVERAGE.md</td>
+<td>No QA status reports</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Ensure resolution of non-conformances</td>
+<td><strong>F</strong></td>
+<td>33 gaps resolved (23 FIXED, 10 ACCEPTED, 0 open)</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.7</td>
+<td>Implement process improvement activities</td>
+<td><strong>P</strong></td>
+<td>Phase 2.5 was a process improvement (SIL probes)</td>
+<td>No formal improvement register</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_12">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>QA activities performed but not systematically planned</td>
+<td>No QA audit schedule</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>P</strong></td>
+<td>QA plan under Git; no QA records</td>
+<td>No audit records, no review records</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_12">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.1-A1</td>
+<td>Conduct and record QA audit of each process area</td>
+<td>4h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SUP.1-A2</td>
+<td>Create QA status report summarizing findings</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SUP.1-A3</td>
+<td>Create process improvement register</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>SUP.1-A4</td>
+<td>Define QA audit schedule</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 8h</strong></p>
+<hr />
+<h3 id="414-sup8-configuration-management">4.14 SUP.8 -- Configuration Management</h3>
+<h4 id="cl1-base-practices_13">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop a configuration management strategy</td>
+<td><strong>L</strong></td>
+<td>CM plan (SUP.8-001) with Git workflow, patch management</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Identify configuration items</td>
+<td><strong>F</strong></td>
+<td>CI table in CM plan; all items tracked in Git</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Establish a configuration management system</td>
+<td><strong>F</strong></td>
+<td>Git repository with submodules, patch files, documentation</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Manage the storage and handling of configuration items</td>
+<td><strong>F</strong></td>
+<td>Git provides versioning, history, branching</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Control changes to configuration items</td>
+<td><strong>L</strong></td>
+<td>Changes via Git commits; apply_all.sh verifies patch integrity</td>
+<td>No formal change approval records</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Establish and report the configuration management status</td>
+<td><strong>P</strong></td>
+<td>Git log provides history</td>
+<td>No CM status report</td>
+</tr>
+<tr>
+<td>BP.7</td>
+<td>Verify and ensure the completeness and consistency of CIs</td>
+<td><strong>L</strong></td>
+<td>setup.sh verifies build from clean state</td>
+<td>No formal configuration audit</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_13">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>L</strong></td>
+<td>CM process well-established via Git</td>
+<td>No CM plan review or monitoring</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>CM plan documented; items identified</td>
+<td>No formal baseline records; no configuration audit report</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: L (Largely achieved)</strong></p>
+<h4 id="actions-for-cl2_13">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.8-A1</td>
+<td>Create formal baseline records for Phase 1, 2, 2.5, 3</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SUP.8-A2</td>
+<td>Perform and document configuration audit</td>
+<td>2h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SUP.8-A3</td>
+<td>Create CM status report</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 5h</strong></p>
+<hr />
+<h3 id="415-sup9-problem-resolution-management">4.15 SUP.9 -- Problem Resolution Management</h3>
+<h4 id="cl1-base-practices_14">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop a problem resolution management strategy</td>
+<td><strong>L</strong></td>
+<td>Process documented in SUP.9-001; severity classification defined</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Identify and record problems</td>
+<td><strong>F</strong></td>
+<td>33 problems recorded in GAP-ANALYSIS.md with GA-xx IDs</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Analyze and assess problems</td>
+<td><strong>F</strong></td>
+<td>Root cause analysis; severity; "what we claim vs. what's true"</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Develop corrective actions</td>
+<td><strong>F</strong></td>
+<td>Fix or accept decisions for all 33 gaps</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Resolve problems</td>
+<td><strong>F</strong></td>
+<td>23 FIXED, 10 ACCEPTED, 0 open</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Track problems to closure</td>
+<td><strong>F</strong></td>
+<td>GAP-ANALYSIS.md tracks through FIXED/ACCEPTED/CLOSED</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.7</td>
+<td>Analyze problem trends</td>
+<td><strong>P</strong></td>
+<td>Summary table with severity counts</td>
+<td>No trend analysis over time</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: F (Fully achieved)</strong> -- All 33 problems tracked to closure with evidence.</p>
+<h4 id="cl2-generic-practices_14">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>L</strong></td>
+<td>Process effectively executed; all problems resolved</td>
+<td>No formal plan for problem resolution activities</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>L</strong></td>
+<td>GAP-ANALYSIS.md under Git; comprehensive</td>
+<td>No trend analysis; no review record</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: L (Largely achieved)</strong></p>
+<h4 id="actions-for-cl2_14">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.9-A1</td>
+<td>Create problem trend analysis (discovery rate per phase)</td>
+<td>1h</td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>SUP.9-A2</td>
+<td>Create review record for GAP-ANALYSIS.md review</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 2h</strong></p>
+<hr />
+<h3 id="416-sup10-change-request-management">4.16 SUP.10 -- Change Request Management</h3>
+<h4 id="cl1-base-practices_15">CL1 Base Practices</h4>
+<table>
+<thead>
+<tr>
+<th>BP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BP.1</td>
+<td>Develop a change request management strategy</td>
+<td><strong>L</strong></td>
+<td>Process documented in SUP.10-001</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.2</td>
+<td>Identify and record change requests</td>
+<td><strong>L</strong></td>
+<td>Changes tracked via Git commits and patch register</td>
+<td>No formal CR IDs</td>
+</tr>
+<tr>
+<td>BP.3</td>
+<td>Analyze and assess change requests</td>
+<td><strong>L</strong></td>
+<td>Impact analysis performed (patches, DIAG IDs, tests)</td>
+<td>Analysis not formally recorded per CR</td>
+</tr>
+<tr>
+<td>BP.4</td>
+<td>Approve change requests</td>
+<td><strong>P</strong></td>
+<td>Approval implicit (code review + test pass)</td>
+<td>No formal approval records</td>
+</tr>
+<tr>
+<td>BP.5</td>
+<td>Implement change requests</td>
+<td><strong>F</strong></td>
+<td>Changes implemented and tested</td>
+<td>--</td>
+</tr>
+<tr>
+<td>BP.6</td>
+<td>Track change requests to closure</td>
+<td><strong>L</strong></td>
+<td>Git history; GAP-ANALYSIS updates</td>
+<td>No formal CR status tracking</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL1 Rating: L (Largely achieved)</strong></p>
+<h4 id="cl2-generic-practices_15">CL2 Generic Practices</h4>
+<table>
+<thead>
+<tr>
+<th>GP</th>
+<th>Practice</th>
+<th>Rating</th>
+<th>Evidence</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GP 2.1</td>
+<td>Performance Management</td>
+<td><strong>P</strong></td>
+<td>Process exists but not formally planned or monitored</td>
+<td>No CR metrics</td>
+</tr>
+<tr>
+<td>GP 2.2</td>
+<td>Work Product Management</td>
+<td><strong>P</strong></td>
+<td>Git commits serve as records</td>
+<td>No formal CR forms or register</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CL2 Rating: P (Partially achieved)</strong></p>
+<h4 id="actions-for-cl2_15">Actions for CL2</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Action</th>
+<th>Effort</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SUP.10-A1</td>
+<td>Create CR register with formal CR-xxx IDs for the 13 major patch changes</td>
+<td>3h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SUP.10-A2</td>
+<td>Create CR template (ID, description, impact, approval, status)</td>
+<td>1h</td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>SUP.10-A3</td>
+<td>Record approval decisions for existing changes retroactively</td>
+<td>2h</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated effort: 6h</strong></p>
+<hr />
+<h2 id="5-cross-cutting-cl2-gaps">5. Cross-Cutting CL2 Gaps</h2>
+<p>The following gaps are systemic across multiple process areas:</p>
+<h3 id="51-review-records-affects-all-process-areas">5.1 Review Records (affects all process areas)</h3>
+<p><strong>Current state</strong>: All work products are self-reviewed but no formal review records exist (no reviewer name, date, findings, disposition).</p>
+<p><strong>Action</strong>: Create a review record template and generate review records for all 18 ASPICE documents and key work products.</p>
+<table>
+<thead>
+<tr>
+<th>Effort</th>
+<th>8h (30 min per document/artifact)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Priority</td>
+<td>HIGH (blocks CL2 for GP 2.2 across all areas)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-baseline-records-affects-sys1-5-swe1-6-sup8">5.2 Baseline Records (affects SYS.1-5, SWE.1-6, SUP.8)</h3>
+<p><strong>Current state</strong>: Git tags exist for phases but no formal baseline record documents (list of CIs, versions, approval).</p>
+<p><strong>Action</strong>: Create baseline record template and document baselines for Phase 1, 2, 2.5, 3.</p>
+<table>
+<thead>
+<tr>
+<th>Effort</th>
+<th>3h</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Priority</td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-measurement-data-affects-man3-sup1">5.3 Measurement Data (affects MAN.3, SUP.1)</h3>
+<p><strong>Current state</strong>: ASPICE criteria count (94/112) is tracked but no regular measurement data collection (schedule variance, defect density, test coverage percentage).</p>
+<p><strong>Action</strong>: Collect and document measurement data retrospectively for each phase.</p>
+<table>
+<thead>
+<tr>
+<th>Effort</th>
+<th>4h</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Priority</td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-test-reports-affects-sys4-5-swe4-6">5.4 Test Reports (affects SYS.4-5, SWE.4-6)</h3>
+<p><strong>Current state</strong>: Test scripts produce pass/fail output but no formal test report documents exist.</p>
+<p><strong>Action</strong>: Create test report template and generate reports for unit, integration, ASIL, smoke, and qualification tests.</p>
+<table>
+<thead>
+<tr>
+<th>Effort</th>
+<th>6h</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Priority</td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-overall-cl2-readiness-summary">6. Overall CL2 Readiness Summary</h2>
+<h3 id="61-process-area-ratings">6.1 Process Area Ratings</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Process Area</th>
+<th>CL1 Rating</th>
+<th>CL2 GP 2.1</th>
+<th>CL2 GP 2.2</th>
+<th>CL2 Ready</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>MAN.3</td>
+<td>L</td>
+<td>P</td>
+<td>P</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>2</td>
+<td>SYS.1</td>
+<td>L</td>
+<td>P</td>
+<td>P</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SYS.2</td>
+<td>L</td>
+<td>L</td>
+<td>L</td>
+<td>CLOSE</td>
+</tr>
+<tr>
+<td>4</td>
+<td>SYS.3</td>
+<td>L</td>
+<td>L</td>
+<td>L</td>
+<td>CLOSE</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SYS.4</td>
+<td>L</td>
+<td>P</td>
+<td>L</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>6</td>
+<td>SYS.5</td>
+<td>L</td>
+<td>P</td>
+<td>L</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>7</td>
+<td>SWE.1</td>
+<td>F</td>
+<td>L</td>
+<td>L</td>
+<td>CLOSE</td>
+</tr>
+<tr>
+<td>8</td>
+<td>SWE.2</td>
+<td>F</td>
+<td>L</td>
+<td>L</td>
+<td>CLOSE</td>
+</tr>
+<tr>
+<td>9</td>
+<td>SWE.3</td>
+<td>F</td>
+<td>L</td>
+<td>L</td>
+<td>CLOSE</td>
+</tr>
+<tr>
+<td>10</td>
+<td>SWE.4</td>
+<td>L</td>
+<td>P</td>
+<td>L</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>11</td>
+<td>SWE.5</td>
+<td>L</td>
+<td>P</td>
+<td>L</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>12</td>
+<td>SWE.6</td>
+<td>L</td>
+<td>P</td>
+<td>L</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>13</td>
+<td>SUP.1</td>
+<td>L</td>
+<td>P</td>
+<td>P</td>
+<td>NO</td>
+</tr>
+<tr>
+<td>14</td>
+<td>SUP.8</td>
+<td>L</td>
+<td>L</td>
+<td>L</td>
+<td>CLOSE</td>
+</tr>
+<tr>
+<td>15</td>
+<td>SUP.9</td>
+<td>F</td>
+<td>L</td>
+<td>L</td>
+<td>CLOSE</td>
+</tr>
+<tr>
+<td>16</td>
+<td>SUP.10</td>
+<td>L</td>
+<td>P</td>
+<td>P</td>
+<td>NO</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-summary">6.2 Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Count</th>
+<th>Process Areas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CL2 CLOSE (needs review records only)</td>
+<td>6</td>
+<td>SYS.2, SYS.3, SWE.1, SWE.2, SWE.3, SUP.9</td>
+</tr>
+<tr>
+<td>CL2 NOT YET (needs test reports + review records)</td>
+<td>4</td>
+<td>SYS.4, SYS.5, SWE.5, SWE.6</td>
+</tr>
+<tr>
+<td>CL2 NOT YET (needs test reports + coverage data)</td>
+<td>1</td>
+<td>SWE.4</td>
+</tr>
+<tr>
+<td>CL2 NOT YET (needs monitoring data + review records)</td>
+<td>3</td>
+<td>MAN.3, SYS.1, SUP.1</td>
+</tr>
+<tr>
+<td>CL2 NOT YET (needs formal CR register)</td>
+<td>1</td>
+<td>SUP.10</td>
+</tr>
+<tr>
+<td>CL2 CLOSE (needs baseline records + audit)</td>
+<td>1</td>
+<td>SUP.8</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63-total-effort-to-cl2">6.3 Total Effort to CL2</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Effort</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Review records (cross-cutting)</td>
+<td>8h</td>
+</tr>
+<tr>
+<td>Test reports (cross-cutting)</td>
+<td>6h</td>
+</tr>
+<tr>
+<td>Baseline records (cross-cutting)</td>
+<td>3h</td>
+</tr>
+<tr>
+<td>Measurement data (cross-cutting)</td>
+<td>4h</td>
+</tr>
+<tr>
+<td>Process-specific actions</td>
+<td>42h</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>63h</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="64-priority-roadmap">6.4 Priority Roadmap</h3>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Actions</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase A (Week 1)</strong>: Review records</td>
+<td>Create review record template; generate records for all 18 ASPICE docs</td>
+<td>10h</td>
+<td>Unblocks GP 2.2 for 6 "CLOSE" areas -&gt; CL2</td>
+</tr>
+<tr>
+<td><strong>Phase B (Week 2)</strong>: Test reports</td>
+<td>Create test report template; generate 5 test reports (unit, smoke, integration, ASIL, qualification)</td>
+<td>8h</td>
+<td>Unblocks SYS.4-5, SWE.4-6</td>
+</tr>
+<tr>
+<td><strong>Phase C (Week 3)</strong>: Management evidence</td>
+<td>Status reports, baseline records, CR register, measurement data</td>
+<td>15h</td>
+<td>Unblocks MAN.3, SUP.1, SUP.8, SUP.10</td>
+</tr>
+<tr>
+<td><strong>Phase D (Week 4)</strong>: Remaining items</td>
+<td>QA audit, trend analysis, coverage measurement, remaining process-specific actions</td>
+<td>12h</td>
+<td>Completes all areas</td>
+</tr>
+</tbody>
+</table>
+<p><strong>With 63 hours of focused effort (approximately 2 weeks full-time), the project can achieve CL2 across all 16 in-scope process areas.</strong></p>
+<hr />
+<h2 id="7-strengths">7. Strengths</h2>
+<p>The following project strengths are noted for the assessment record:</p>
+<ol>
+<li><strong>Comprehensive gap analysis</strong>: 33 problems identified through 10-role audit, all tracked to closure</li>
+<li><strong>Strong test infrastructure</strong>: 147 integration/ASIL criteria + 183 unit tests + 76 smoke criteria, all passing</li>
+<li><strong>Complete traceability chain</strong>: STKH-REQ -&gt; SYS-REQ -&gt; SW-REQ -&gt; Design -&gt; Code -&gt; Unit Test -&gt; Integration Test -&gt; Qualification Test</li>
+<li><strong>Full ASPICE document set</strong>: All 18 work products produced with consistent format, IDs, and cross-references</li>
+<li><strong>Robust configuration management</strong>: Git with submodules, pinned dependency, version-checked patches, single-command build</li>
+<li><strong>Effective problem resolution</strong>: 33/33 gaps resolved (0 open), with clear fix/accept rationale</li>
+<li><strong>Safety integration</strong>: ASIL-D fault injection with 2,005-test matrix, selective DIAG_Handler (24/61 split)</li>
+</ol>
+<h2 id="8-weaknesses">8. Weaknesses</h2>
+<p>The following weaknesses require attention for CL2:</p>
+<ol>
+<li><strong>No formal review records</strong>: The single-engineer team has reviewed all work products but produced no review evidence</li>
+<li><strong>No test reports</strong>: Test scripts produce console output but no formal test report documents</li>
+<li><strong>No baseline records</strong>: Git tags exist but no baseline report documents</li>
+<li><strong>No measurement data</strong>: Process performance is not quantified beyond gap counts</li>
+<li><strong>Retroactive documentation</strong>: Many process documents were created during the assessment, not maintained from project start</li>
+<li><strong>Single resource</strong>: Bus factor of 1; no independent reviews possible without external reviewer</li>
+</ol></div>
+<div class="nav-buttons"><a href="assessment-scope.html">&larr; Assessment Scope</a><a href="traceability-guide.html">Traceability Guide &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

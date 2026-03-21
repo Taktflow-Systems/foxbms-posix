@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10-Role Audit v1 — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" class="active">10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Documentation / 10-Role Audit v1</div>
+<div class="content"><h1 id="foxbms-posix-vecu-10-role-audit-report">foxBMS POSIX vECU — 10-Role Audit Report</h1>
+<p><strong>Date</strong>: 2026-03-21
+<strong>Scope</strong>: Full project audit after Phase 1 COMPLETE, Phase 2 COMPLETE, Phase 2.5 (SIL Probes) COMPLETE. Phase 3 NOT STARTED.
+<strong>Artifacts reviewed</strong>: STATUS.md, PLAN.md, GAP-ANALYSIS.md, COVERAGE.md, TROUBLESHOOTING.md, foxbms_posix_main.c, hal_stubs_posix.c, posix_overrides.h, sil_layer.h/c, plant_model.py, test_smoke.py, test_integration.py, test_asil.py, test_sil_probes.py, Makefile, patches/</p>
+<hr />
+<h2 id="auditor-1-sil-system-architect">Auditor 1: SIL System Architect</h2>
+<p><strong>Focus</strong>: Does this SIL faithfully represent the production system? Can decisions made on SIL results be trusted?</p>
+<h3 id="strengths">Strengths</h3>
+<ul>
+<li>Cooperative loop timing is instrumented (GA-01). Max execution times and deadline violations are tracked and reported.</li>
+<li>170+ production source files compiled — this is real foxBMS code, not a behavioral mock.</li>
+<li>State machine transitions verified end-to-end through legitimate CAN data flow.</li>
+<li>SIL probe layer (Phase 2.5) provides observability into internal state without modifying foxBMS logic.</li>
+<li>SIL override mechanism (0x7E0 CAN commands) enables fault injection without source changes.</li>
+</ul>
+<h3 id="findings">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1-01</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No fidelity characterization document.</strong> The SIL exists but there's no document stating "these results transfer to production, these don't." A customer or auditor needs a clear fidelity boundary. Example: "CAN message content is faithful. CAN timing is not. State machine logic is identical. Task scheduling is fundamentally different." Without this, results can be misinterpreted.</td>
+</tr>
+<tr>
+<td>A1-02</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>Cooperative loop masks concurrency bugs.</strong> GA-02 is accepted, but the implication isn't documented: any bug that depends on task preemption, priority inversion, or queue ordering will never be found in SIL. This should be stated as a known-not-detectable class.</td>
+</tr>
+<tr>
+<td>A1-03</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No back-to-back comparison with production.</strong> There is no test where the same input is fed to both SIL and a real TMS570 foxBMS, and the CAN output is compared frame-by-frame. Without this, fidelity is claimed but not measured.</td>
+</tr>
+<tr>
+<td>A1-04</td>
+<td><strong>LOW</strong></td>
+<td><strong>SIL probes add code that doesn't exist in production.</strong> <code>#ifdef FOXBMS_SIL_PROBES</code> sections in foxbms_posix_main.c are significant (100+ lines). While guarded by ifdef, a misplaced ifdef could change behavior. Consider moving all probe logic to sil_layer.c.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict">Verdict</h3>
+<p><strong>PASS with conditions.</strong> The SIL is technically sound. Missing: fidelity boundary document (A1-01). This is the #1 deliverable before showing results to any external party.</p>
+<hr />
+<h2 id="auditor-2-hil-test-engineer">Auditor 2: HIL Test Engineer</h2>
+<p><strong>Focus</strong>: Can I use this for pre-validation before bench time? Does it save me bench hours?</p>
+<h3 id="strengths_1">Strengths</h3>
+<ul>
+<li><code>test_smoke.py</code> gives automated pass/fail — can run in CI before booking bench time.</li>
+<li>Plant model has closed-loop contactor feedback — discharge only starts when BMS is NORMAL.</li>
+<li>Dynamic SOC with OCV curve and IR drop — realistic enough for state machine testing.</li>
+<li>SIL overrides via CAN (0x7E0) — same interface I'd use on a real bench with CANoe.</li>
+<li>TROUBLESHOOTING.md covers the exact failure modes I'd hit when first running this.</li>
+</ul>
+<h3 id="findings_1">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A2-01</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No test matrix linking SIL tests to bench tests.</strong> I need a document: "SIL test X replaces bench test Y" or "SIL test X pre-validates bench test Y (must still run on bench)." Without this, I can't justify reducing bench time to my test manager.</td>
+</tr>
+<tr>
+<td>A2-02</td>
+<td><strong>HIGH</strong></td>
+<td><strong>Phase 3 (fault injection) is 0/11.</strong> This is where the real bench-hour savings are. State machine reaching NORMAL is necessary but not sufficient — I need to test fault responses. Until Phase 3 works, this only saves me startup/smoke-test bench time (~30 minutes), not the days spent on fault testing.</td>
+</tr>
+<tr>
+<td>A2-03</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No DBC file for SIL-specific messages.</strong> The SIL probes use CAN IDs 0x7E0-0x7FF. These need a DBC file so I can decode them in CANape/Vector tools. Currently only documented in sil_layer.h.</td>
+</tr>
+<tr>
+<td>A2-04</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No pass/fail criteria linked to bench acceptance.</strong> Test scripts check "BMS reaches NORMAL" and "SOC &gt; 0". A bench acceptance test checks "SOC accuracy &lt; 2% over WLTP cycle" or "contactor close time &lt; 50ms." The SIL tests don't map to these.</td>
+</tr>
+<tr>
+<td>A2-05</td>
+<td><strong>LOW</strong></td>
+<td><strong>No signal logging to standard formats.</strong> Results are in pytest stdout and stderr. Bench engineers expect .blf, .asc, or .csv files that can be opened in CANape or DIAdem.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_1">Verdict</h3>
+<p><strong>CONDITIONAL PASS.</strong> Useful for smoke testing and development. Not yet useful for replacing bench test cases. Needs: fault injection (Phase 3), DBC for SIL signals, test-to-bench traceability.</p>
+<hr />
+<h2 id="auditor-3-functional-safety-engineer-iso-26262">Auditor 3: Functional Safety Engineer (ISO 26262)</h2>
+<p><strong>Focus</strong>: Does this SIL respect the safety concept? Can safety requirements be validated here?</p>
+<h3 id="strengths_2">Strengths</h3>
+<ul>
+<li>Selective DIAG_Handler (GA-06) — 61 software-checkable faults are enabled. This is the right approach.</li>
+<li>FAS_ASSERT crashes visibly (GA-07) — assertions are not silently swallowed.</li>
+<li>COVERAGE.md explicitly lists what's suppressed and why.</li>
+<li>ASIL test suite (test_asil.py) — 50 criteria, 9 categories, all passing.</li>
+<li>SIL overrides can simulate sensor values — enables requirements-based safety testing.</li>
+</ul>
+<h3 id="findings_2">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A3-01</td>
+<td><strong>CRITICAL</strong></td>
+<td><strong>DIAG_Handler logs faults but doesn't propagate them to BMS state machine.</strong> PLAN.md Phase 3 blockers state: "DIAG_Handler must implement per-ID threshold counters (not just log + return OK)." This means the entire diagnostic → safe-state path is <strong>non-functional</strong>. Overvoltage is detected and logged, but the BMS never enters ERROR. This is the single most important safety path and it's broken.</td>
+</tr>
+<tr>
+<td>A3-02</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No safe-state verification.</strong> Even if DIAG propagation is fixed, there's no test that verifies: fault detected → DIAG escalation → BMS ERROR → contactors open → system de-energized. This is the ASIL-D first safety goal.</td>
+</tr>
+<tr>
+<td>A3-03</td>
+<td><strong>HIGH</strong></td>
+<td><strong>Interlock chain hardcoded (GA-23).</strong> Interlock break is the primary protection against high-voltage exposure. Cannot test interlock-to-safe-state path.</td>
+</tr>
+<tr>
+<td>A3-04</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No watchdog equivalent (GA-24).</strong> Real foxBMS uses SBC hardware watchdog. If the cooperative loop hangs (infinite loop in application code), there's no timeout → safe-state transition. A software watchdog timer would be trivial to add.</td>
+</tr>
+<tr>
+<td>A3-05</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No FMEA/FMEDA traceability.</strong> Safety engineers need to trace: "failure mode X → detection mechanism Y → safe state Z" for each ASIL-rated function. COVERAGE.md lists features but doesn't map to failure modes.</td>
+</tr>
+<tr>
+<td>A3-06</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>IVT redundancy path untested (GA-25).</strong> foxBMS cross-checks primary and secondary current measurements. Only primary is simulated. A current sensor failure mode (ASIL-D relevant) cannot be tested.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_2">Verdict</h3>
+<p><strong>FAIL for safety validation.</strong> The diagnostic-to-safe-state path (A3-01) is non-functional. Until DIAG threshold counters propagate real faults to the BMS state machine, no safety requirement can be validated on this SIL. This is correctly identified as a Phase 3 blocker but must be the #1 priority.</p>
+<hr />
+<h2 id="auditor-4-bms-algorithm-developer">Auditor 4: BMS Algorithm Developer</h2>
+<p><strong>Focus</strong>: Can I develop and validate BMS algorithms (SOC, SOE, SOF, balancing) on this platform?</p>
+<h3 id="strengths_3">Strengths</h3>
+<ul>
+<li>SOC coulomb counting works dynamically — 50% → 48.6% in 15s verified.</li>
+<li>OCV(SOC) curve in plant model — voltage responds to SOC changes realistically.</li>
+<li>IR drop model (50mΩ/cell) — pack voltage under load is correct.</li>
+<li>SIL probe exposes SOC value on CAN (0x7F3) — can monitor without modifying foxBMS.</li>
+</ul>
+<h3 id="findings_3">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A4-01</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No reference SOC for accuracy measurement.</strong> Plant model knows the "true" SOC but doesn't publish it on CAN. Cannot measure coulomb counting drift vs ground truth. Add a plant-model CAN message with true SOC.</td>
+</tr>
+<tr>
+<td>A4-02</td>
+<td><strong>HIGH</strong></td>
+<td><strong>Balancing never exercises (GA-10).</strong> Per-cell noise is "NOT DONE" (PLAN.md 2.5). Until cells have different voltages, the balancing algorithm runs but never makes a decision. This is Phase 2 remaining work.</td>
+</tr>
+<tr>
+<td>A4-03</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No charge scenario.</strong> PLAN.md 2.7 "charge current path" is NOT DONE. SOC only decreases. Cannot validate charge-side algorithm behavior (CC-CV transition, charge acceptance).</td>
+</tr>
+<tr>
+<td>A4-04</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>SOE/SOF run on static values.</strong> Power and energy limits are calculated but against ideal conditions. Without temperature variation and SOC-dependent resistance, SOE/SOF outputs are meaningless.</td>
+</tr>
+<tr>
+<td>A4-05</td>
+<td><strong>LOW</strong></td>
+<td><strong>No algorithm comparison framework.</strong> If I want to swap foxBMS's coulomb counting with an EKF or LSTM, there's no A/B test infrastructure to compare both on the same data.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_3">Verdict</h3>
+<p><strong>PARTIAL PASS.</strong> SOC development is feasible. Balancing and charge-side validation are blocked. Add plant model ground-truth publishing (A4-01) — this is a 10-line change with high value.</p>
+<hr />
+<h2 id="auditor-5-can-protocol-engineer">Auditor 5: CAN Protocol Engineer</h2>
+<p><strong>Focus</strong>: Is the CAN communication faithful to production? Can CAN-related bugs be found?</p>
+<h3 id="strengths_4">Strengths</h3>
+<ul>
+<li>foxBMS big-endian encoding verified with roundtrip test.</li>
+<li>CAN RX filtering added (extended/error/RTR frames rejected).</li>
+<li>Ring buffer overflow counter for RX overruns.</li>
+<li>SIL layer uses standard CAN IDs (0x7E0-0x7FF) — doesn't collide with foxBMS IDs.</li>
+</ul>
+<h3 id="findings_4">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A5-01</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No CAN TX period validation (GA-26).</strong> A "100ms" message might fire at 5ms or 500ms. In production, wrong period = failed AUTOSAR timing requirement. In SIL, this is invisible. At minimum, log actual TX periods per message ID and compare against DBC specification.</td>
+</tr>
+<tr>
+<td>A5-02</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No E2E protection (GA-27).</strong> Every CAN message in production has an AUTOSAR E2E counter + CRC. SIL messages have neither. If a receiver checks E2E (which foxBMS does for some RX messages), those checks silently fail or are bypassed.</td>
+</tr>
+<tr>
+<td>A5-03</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No DBC file for foxBMS TX messages.</strong> <code>foxbms_signals.dbc</code> exists but I haven't verified it matches the actual encoding. A cantools decode of a candump session against the DBC would verify this — no evidence this test has been run.</td>
+</tr>
+<tr>
+<td>A5-04</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>canTransmit doesn't simulate TX failure.</strong> Real CAN can fail (bus-off, mailbox full). <code>posix_can_send()</code> always succeeds on SocketCAN. foxBMS error handling for TX failure is never exercised.</td>
+</tr>
+<tr>
+<td>A5-05</td>
+<td><strong>LOW</strong></td>
+<td><strong>CAN FD not supported.</strong> foxBMS v1.10.0 uses classic CAN. If the customer uses CAN FD, the SocketCAN implementation would need CANFD_BRS support. Not a gap today but note for future.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_4">Verdict</h3>
+<p><strong>CONDITIONAL PASS.</strong> CAN content is correct. CAN timing and protocol-level behavior (E2E, TX failure, period) are not simulated. Acceptable for functional testing, not for protocol conformance testing.</p>
+<hr />
+<h2 id="auditor-6-test-automation-engineer">Auditor 6: Test Automation Engineer</h2>
+<p><strong>Focus</strong>: Is the test infrastructure maintainable, reliable, and CI-ready?</p>
+<h3 id="strengths_5">Strengths</h3>
+<ul>
+<li>4 test suites: smoke (basic), integration (21 criteria), ASIL (50), SIL probes (76). Total 147+ test criteria.</li>
+<li><code>setup.sh</code> for single-command bootstrap.</li>
+<li><code>--timeout N</code> for bounded execution in CI.</li>
+<li>Exit codes: 0=PASS, 1=FAIL, 2=ERROR.</li>
+<li>Graceful shutdown with contactor-open on SIGINT.</li>
+</ul>
+<h3 id="findings_5">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A6-01</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No CI pipeline exists.</strong> PLAN.md 4.5 "CI pipeline green" is NOT DONE. Tests exist but don't run automatically on push/PR. A GitHub Actions workflow would take 1 hour to write and immediately prevents regressions.</td>
+</tr>
+<tr>
+<td>A6-02</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>Test independence not verified.</strong> Do the 4 test suites start fresh processes each time? Or does a failure in test_integration.py leave zombie processes that corrupt test_asil.py? Need a cleanup step between suites.</td>
+</tr>
+<tr>
+<td>A6-03</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No test coverage measurement.</strong> 147 criteria sounds good but — what percentage of foxBMS code paths are actually exercised? <code>gcov</code> or <code>lcov</code> on the compiled binary would answer this. The Makefile already supports GCC.</td>
+</tr>
+<tr>
+<td>A6-04</td>
+<td><strong>LOW</strong></td>
+<td><strong>No test result history.</strong> Results exist in stdout but aren't persisted. A JUnit XML output from pytest would integrate with any CI dashboard and show trends over time.</td>
+</tr>
+<tr>
+<td>A6-05</td>
+<td><strong>LOW</strong></td>
+<td><strong>Flaky test risk from timing.</strong> Tests depend on CAN messages arriving within timeouts. On a loaded CI machine, <code>usleep(500)</code> may not be accurate. Need to verify tests pass on slow hardware.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_5">Verdict</h3>
+<p><strong>PASS for local development. NOT READY for CI.</strong> Tests are well-structured. Missing: GitHub Actions workflow (A6-01), gcov coverage (A6-03), JUnit output (A6-04).</p>
+<hr />
+<h2 id="auditor-7-devops-build-engineer">Auditor 7: DevOps / Build Engineer</h2>
+<p><strong>Focus</strong>: Is the build reproducible? Can a new developer clone and build?</p>
+<h3 id="strengths_6">Strengths</h3>
+<ul>
+<li><code>setup.sh</code> handles everything: submodule init, patches, build, vcan, smoke test.</li>
+<li><code>apply_all.sh</code> with version check and idempotency guard.</li>
+<li>Makefile auto-discovers 170+ source files.</li>
+<li><code>.gitignore</code> present.</li>
+<li>HALCoGen headers included (no Windows dependency for building).</li>
+</ul>
+<h3 id="findings_6">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A7-01</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No Docker build.</strong> PLAN.md 4.1 is NOT DONE. Docker would eliminate "works on my machine" and enable CI on any runner. Also critical for the customer SIL delivery use case.</td>
+</tr>
+<tr>
+<td>A7-02</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>Patch fragility.</strong> 13 patches modify upstream foxBMS in-place. If foxBMS releases v1.11.0, all patches may break. No automated test that patches apply cleanly. <code>apply_all.sh</code> has a version check but it's string-based, not functional.</td>
+</tr>
+<tr>
+<td>A7-03</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No pinned compiler version.</strong> Makefile uses <code>gcc</code> but doesn't check version. GCC 13 is tested; GCC 14 or 15 may introduce warnings-as-errors or behavior changes. Docker (A7-01) would pin this.</td>
+</tr>
+<tr>
+<td>A7-04</td>
+<td><strong>LOW</strong></td>
+<td><strong>HALCoGen headers are a binary blob.</strong> They're checked into the repo (good for reproducibility) but there's no way to regenerate them without Windows + HALCoGen. If foxBMS changes the HALCoGen configuration, headers must be manually updated.</td>
+</tr>
+<tr>
+<td>A7-05</td>
+<td><strong>LOW</strong></td>
+<td><strong>No Makefile <code>install</code> target.</strong> Minor, but for packaging/Docker, a <code>make install DESTDIR=/usr/local</code> would help.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_6">Verdict</h3>
+<p><strong>PASS for single-developer workflow. Needs Docker for team/CI use.</strong> The build works but depends on the right Ubuntu version and GCC version being available. Docker solves this.</p>
+<hr />
+<h2 id="auditor-8-data-observability-engineer">Auditor 8: Data / Observability Engineer</h2>
+<p><strong>Focus</strong>: Can I monitor, log, and analyze what the BMS is doing?</p>
+<h3 id="strengths_7">Strengths</h3>
+<ul>
+<li>SIL probe layer publishes 10 probe types on CAN (0x7F0-0x7FF). Heartbeat, timing, state machine, SOC, cell voltages, temperatures, current, DB counters, SOC integrator, contactor state.</li>
+<li>Timing probe shows max execution times for all 3 cyclic tasks.</li>
+<li>Deadline violations counted and logged.</li>
+<li>All probes use standard CAN frames — decodable with cantools.</li>
+</ul>
+<h3 id="findings_7">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A8-01</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No time-series logging to file.</strong> All observability is CAN-based (requires candump running simultaneously). For post-mortem analysis, a built-in CSV/binary logger that timestamps every probe would be valuable.</td>
+</tr>
+<tr>
+<td>A8-02</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No DBC file for probe messages.</strong> Same as A2-03. The probe CAN IDs (0x7F0-0x7FF) are documented in sil_layer.h but not in a machine-readable DBC. Any analysis tool needs manual configuration.</td>
+</tr>
+<tr>
+<td>A8-03</td>
+<td><strong>LOW</strong></td>
+<td><strong>Probe rate fixed at 100ms.</strong> Some signals (cell voltages during fault injection) may need higher resolution. Configurable probe rate would help.</td>
+</tr>
+<tr>
+<td>A8-04</td>
+<td><strong>LOW</strong></td>
+<td><strong>No Grafana/InfluxDB integration.</strong> For live dashboards during long runs, a bridge from CAN probes to a time-series database would be useful. Not a gap for the current project but relevant for customer demos.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_7">Verdict</h3>
+<p><strong>GOOD for development. Needs DBC + file logging for professional use.</strong> The probe architecture is well-designed. Export it properly and it's customer-ready.</p>
+<hr />
+<h2 id="auditor-9-new-team-member-student-onboarding">Auditor 9: New Team Member / Student (Onboarding)</h2>
+<p><strong>Focus</strong>: Can I pick this up and start contributing? How steep is the learning curve?</p>
+<h3 id="strengths_8">Strengths</h3>
+<ul>
+<li>README.md has Quick Start that actually works (clone, setup.sh, see CAN output).</li>
+<li>TROUBLESHOOTING.md covers every failure mode I'd hit — this is rare and very valuable.</li>
+<li>PLAN.md has clear exit criteria with pass/fail for each phase.</li>
+<li>GAP-ANALYSIS.md is honest about what's broken and why.</li>
+<li>Code has comments explaining non-obvious decisions (DECAN_DATA_IS_VALID, SBC enum value).</li>
+<li>STATUS.md "Key Discoveries" section captures tribal knowledge.</li>
+</ul>
+<h3 id="findings_8">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A9-01</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No architecture diagram.</strong> STATUS.md has ASCII art but no visual diagram showing: foxBMS modules → stubs → SocketCAN → plant model. A diagram would help a student understand the system in 5 minutes instead of 30.</td>
+</tr>
+<tr>
+<td>A9-02</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No "how to add a new stub" guide.</strong> If a student needs to stub a new HAL function (e.g., for foxBMS v1.11.0), there's no step-by-step guide. The pattern is in hal_stubs_posix.c but not documented as a procedure.</td>
+</tr>
+<tr>
+<td>A9-03</td>
+<td><strong>LOW</strong></td>
+<td><strong>No glossary of foxBMS-specific terms.</strong> DECAN, SPS, AFE, CMB, IVT, SOA — a student new to BMS would need to look these up. A short glossary (10 terms) saves time.</td>
+</tr>
+<tr>
+<td>A9-04</td>
+<td><strong>LOW</strong></td>
+<td><strong>Phase 3 blockers not explained for a student.</strong> PLAN.md says "DIAG_Handler must implement per-ID threshold counters" but doesn't explain what that means or where to start. A student would need guidance on which files to read first.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_8">Verdict</h3>
+<p><strong>GOOD for an experienced embedded developer. CHALLENGING for a student without BMS background.</strong> The documentation is above average for an open-source project. A 1-page onboarding guide and glossary would make it student-ready.</p>
+<hr />
+<h2 id="auditor-10-product-owner-customer-facing">Auditor 10: Product Owner / Customer-Facing</h2>
+<p><strong>Focus</strong>: Can I show this to a customer or use it in a sales conversation? What's the demo story?</p>
+<h3 id="strengths_9">Strengths</h3>
+<ul>
+<li>BMS reaches NORMAL in 6.3 seconds — fast, visual, impressive.</li>
+<li>candump shows real CAN traffic with real foxBMS message IDs.</li>
+<li>SOC changes dynamically — not a static "hello world."</li>
+<li>94/112 criteria passing (84%) — quantifiable progress.</li>
+<li>4 test suites all green — demonstrates engineering rigor.</li>
+</ul>
+<h3 id="findings_9">Findings</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Severity</th>
+<th>Finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A10-01</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No demo script.</strong> There's no rehearsed 5-minute demo sequence. "Open terminal, run setup.sh, wait, run candump, explain what you see" — this should be scripted with talking points and expected output.</td>
+</tr>
+<tr>
+<td>A10-02</td>
+<td><strong>HIGH</strong></td>
+<td><strong>No visual output.</strong> Everything is terminal text and hex CAN frames. A customer sees <code>220#17000000...</code> and understands nothing. A simple dashboard (even ncurses or a Python plot) showing "BMS State: NORMAL, SOC: 48.2%, Cells: 3780mV, Contactors: CLOSED" would transform the demo.</td>
+</tr>
+<tr>
+<td>A10-03</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>Phase 3 is the customer's question.</strong> After the demo, the first question is always: "What happens when something goes wrong?" Today the answer is "that's next." Phase 3 is the sell.</td>
+</tr>
+<tr>
+<td>A10-04</td>
+<td><strong>MEDIUM</strong></td>
+<td><strong>No comparison slide.</strong> "This does what dSPACE VEOS does for $0" — that's the headline but there's no side-by-side comparison document. Cost, features, limitations, honestly compared.</td>
+</tr>
+<tr>
+<td>A10-05</td>
+<td><strong>LOW</strong></td>
+<td><strong>License clarity.</strong> README says "POSIX port files: Taktflow Systems 2026" but doesn't specify which license. foxBMS is BSD-3. If a customer asks "can we use this internally?" the answer should be clear.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="verdict_9">Verdict</h3>
+<p><strong>NOT READY for customer demo.</strong> The technology works. The presentation doesn't exist. Needs: demo script (A10-01), visual dashboard (A10-02), comparison document (A10-04).</p>
+<hr />
+<h2 id="cross-auditor-summary">Cross-Auditor Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Finding</th>
+<th>Auditor</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CRITICAL</strong></td>
+<td>DIAG → safe-state path non-functional</td>
+<td>Safety (A3-01)</td>
+<td>Cannot validate any safety requirement</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>No CI pipeline</td>
+<td>Test Automation (A6-01)</td>
+<td>Regressions will slip in</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>No Docker build</td>
+<td>DevOps (A7-01)</td>
+<td>"Works on my machine" risk</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>No fidelity boundary document</td>
+<td>System Architect (A1-01)</td>
+<td>Results can be misinterpreted</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>No demo script or visual output</td>
+<td>Product Owner (A10-01, A10-02)</td>
+<td>Cannot present to customers</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>No test-to-bench traceability</td>
+<td>HIL Test (A2-01)</td>
+<td>Cannot justify bench-hour reduction</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>No plant model ground-truth SOC</td>
+<td>Algorithm (A4-01)</td>
+<td>Cannot measure SOC accuracy</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>Phase 3 fault injection 0/11</td>
+<td>Safety (A3-02), HIL (A2-02)</td>
+<td>Core value proposition undelivered</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td>No CAN TX period validation</td>
+<td>CAN Protocol (A5-01)</td>
+<td>Timing bugs invisible</td>
+</tr>
+<tr>
+<td><strong>MEDIUM</strong></td>
+<td>No DBC for SIL probe messages</td>
+<td>HIL (A2-03), Data (A8-02)</td>
+<td>Cannot use standard CAN tools</td>
+</tr>
+<tr>
+<td><strong>MEDIUM</strong></td>
+<td>No architecture diagram</td>
+<td>Student (A9-01)</td>
+<td>Onboarding slower than necessary</td>
+</tr>
+<tr>
+<td><strong>MEDIUM</strong></td>
+<td>No file-based logging</td>
+<td>Data (A8-01)</td>
+<td>No post-mortem analysis</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommended-priority-order">Recommended Priority Order</h2>
+<ol>
+<li><strong>Fix DIAG → safe-state propagation</strong> (A3-01) — Phase 3 blocker, safety-critical, highest value</li>
+<li><strong>Write SIL fidelity boundary document</strong> (A1-01) — 2 hours of writing, prevents misuse of results</li>
+<li><strong>Create DBC for SIL probes</strong> (A2-03/A8-02) — 1 hour, enables standard tooling</li>
+<li><strong>Add plant model ground-truth SOC on CAN</strong> (A4-01) — 10 lines, enables algorithm validation</li>
+<li><strong>GitHub Actions CI</strong> (A6-01) — 1 hour, prevents regressions</li>
+<li><strong>Dockerfile</strong> (A7-01) — half day, enables reproducible builds</li>
+<li><strong>Demo script + simple dashboard</strong> (A10-01/A10-02) — 1 day, enables customer conversations</li>
+<li><strong>Phase 3 fault injection</strong> (A3-02/A2-02) — 2-3 weeks, the core value proposition</li>
+</ol>
+<p>Items 1-6 are each less than a day of work. Item 7 is a day. Item 8 is the main project work (Phase 3). Doing 1-7 first means Phase 3 starts with proper infrastructure.</p></div>
+<div class="nav-buttons"><a href="integration-notes.html">&larr; Integration Notes</a><a href="10-role-audit-v2.html">10-Role Audit v2 &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

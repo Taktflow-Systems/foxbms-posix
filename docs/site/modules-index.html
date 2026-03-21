@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Index — foxBMS POSIX vECU</title>
+<title>Modules Index — foxBMS POSIX vECU</title>
 <style>
 :root {
     --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
@@ -151,9 +151,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" class="active">Index</a>
+<a href="index.html" >Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
-<a href="modules-index.html" >Modules Index</a>
+<a href="modules-index.html" class="active">Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
 <a href="diag-handler.html" >DIAG Handler</a>
 <a href="database.html" >Database</a>
@@ -173,130 +173,323 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="stats">59 documents</div>
 </nav>
 <main>
-<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Index</div>
-<div class="content"><h1 id="foxbms-2-v1100-upstream-documentation-reference">foxBMS 2 v1.10.0 — Upstream Documentation Reference</h1>
-<p><strong>Source</strong>: <a href="https://docs.foxbms.org/">docs.foxbms.org</a> (Fraunhofer IISB)
-<strong>Fetched</strong>: 2026-03-21
-<strong>Purpose</strong>: Local reference for foxBMS POSIX port development. Not a replacement for upstream docs.</p>
+<div class="breadcrumb"><a href="index.html">Home</a> / foxBMS Reference / Modules Index</div>
+<div class="content"><h1 id="foxbms-2-software-modules-v1100">foxBMS 2 Software Modules (v1.10.0)</h1>
+<p><strong>Source</strong>: <a href="https://docs.foxbms.org/software/modules/modules.html">docs.foxbms.org/software/modules</a></p>
 <hr />
-<h2 id="documentation-map">Documentation Map</h2>
-<pre><code>docs/foxbms-upstream/
-├── INDEX.md                          ← This file
-├── general/
-│   └── safety.md                     Safety warnings, standards, user responsibility
-├── getting-started/
-│   └── getting-started.md            Prerequisites, setup, build, first run
-├── software/
-│   ├── modules-index.md              Complete list of 41 software modules
-│   ├── application/
-│   │   ├── bms.md                    BMS state machine (STANDBY→NORMAL→ERROR)
-│   │   ├── algorithm.md              SOC/SOE/SOF estimation framework
-│   │   ├── balancing.md              Voltage-based + history-based balancing
-│   │   ├── plausibility.md           Sensor data validation (incomplete upstream)
-│   │   ├── redundancy.md             IVT cross-checking (incomplete upstream)
-│   │   └── soa.md                    Safe Operating Area (MOL/RSL/MSL thresholds)
-│   ├── engine/
-│   │   ├── database.md               Producer/consumer data exchange module
-│   │   ├── diag.md                   DIAG handler, threshold counters, callbacks
-│   │   ├── sys.md                    SYS state machine (init → RUNNING)
-│   │   └── sys-mon.md               System monitoring (task timing compliance)
-│   ├── driver/
-│   │   ├── can.md                    CAN TX/RX, callbacks, mailbox config, E2E
-│   │   ├── sbc.md                    System Basis Chip (NXP FS8x), watchdog
-│   │   ├── sps.md                    Smart Power Switch (contactor control)
-│   │   ├── contactor.md              Contactor driver (incomplete upstream)
-│   │   ├── interlock.md              Interlock circuit, feedback, safe state
-│   │   └── imd.md                    Insulation Monitoring Device (Bender)
-│   ├── task/
-│   │   └── ftask.md                  7 FreeRTOS tasks, priorities, cyclic periods
-│   └── main/
-│       └── fassert.md                FAS_ASSERT levels (incomplete upstream)
-├── system/
-│   └── precharging.md                Precharge sequence, RC timing, failure detection
-├── tools/
-│   └── dbc.md                        DBC file location and tool info
-└── dbc/
-    └── foxbms-signals-summary.md     CAN message/signal summary from foxbms.dbc
-</code></pre>
-<hr />
-<h2 id="quick-reference-whats-where">Quick Reference: What's Where</h2>
+<h2 id="application-modules">Application Modules</h2>
 <table>
 <thead>
 <tr>
-<th>I need to understand...</th>
-<th>Read this</th>
-<th>Relevance to POSIX port</th>
+<th>#</th>
+<th>Module</th>
+<th>Source</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>BMS state transitions</td>
-<td><a href="software/application/bms.md">bms.md</a></td>
-<td>Why states change, how ERROR works</td>
+<td>4.1</td>
+<td><strong>Algorithm</strong></td>
+<td><code>src/app/application/algorithm/</code></td>
+<td>SOC/SOE/SOF state estimation framework</td>
 </tr>
 <tr>
-<td>How DIAG triggers ERROR</td>
-<td><a href="software/engine/diag.md">diag.md</a></td>
-<td><strong>Phase 3 critical</strong> — threshold counters</td>
+<td>4.2</td>
+<td><strong>Balancing</strong></td>
+<td><code>src/app/application/bal/</code></td>
+<td>Voltage-based + history-based cell balancing</td>
 </tr>
 <tr>
-<td>What SOA checks do</td>
-<td><a href="software/application/soa.md">soa.md</a></td>
-<td>MOL/RSL/MSL thresholds we must not bypass</td>
+<td>4.3</td>
+<td><strong>BMS</strong></td>
+<td><code>src/app/application/bms/</code></td>
+<td>BMS state machine (STANDBY→NORMAL→ERROR)</td>
 </tr>
 <tr>
-<td>CAN message encoding</td>
-<td><a href="software/driver/can.md">can.md</a></td>
-<td>TX callback structure, period config</td>
+<td>4.4</td>
+<td><strong>Plausibility</strong></td>
+<td><code>src/app/application/plausibility/</code></td>
+<td>Sensor data consistency validation</td>
 </tr>
 <tr>
-<td>Task structure</td>
-<td><a href="software/task/ftask.md">ftask.md</a></td>
-<td>What runs in each cyclic task</td>
+<td>4.5</td>
+<td><strong>Redundancy</strong></td>
+<td><code>src/app/application/redundancy/</code></td>
+<td>IVT cross-checking, AFE validation</td>
 </tr>
 <tr>
-<td>Precharge logic</td>
-<td><a href="system/precharging.md">precharging.md</a></td>
-<td>Why voltage must match</td>
-</tr>
-<tr>
-<td>Interlock behavior</td>
-<td><a href="software/driver/interlock.md">interlock.md</a></td>
-<td>What we hardcoded to always-closed</td>
-</tr>
-<tr>
-<td>SBC/watchdog</td>
-<td><a href="software/driver/sbc.md">sbc.md</a></td>
-<td>Why we stub to RUNNING (value 2)</td>
-</tr>
-<tr>
-<td>Balancing strategy</td>
-<td><a href="software/application/balancing.md">balancing.md</a></td>
-<td>Threshold + hysteresis logic</td>
-</tr>
-<tr>
-<td>Database architecture</td>
-<td><a href="software/engine/database.md">database.md</a></td>
-<td>Why single-producer matters</td>
-</tr>
-<tr>
-<td>DBC signal definitions</td>
-<td><a href="dbc/foxbms-signals-summary.md">foxbms-signals-summary.md</a></td>
-<td>CAN IDs, signals, encoding</td>
+<td>4.6</td>
+<td><strong>SOA</strong></td>
+<td><code>src/app/application/soa/</code></td>
+<td>Safe Operating Area checks (MOL/RSL/MSL)</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="upstream-documentation-gaps">Upstream Documentation Gaps</h2>
-<p>These modules have <strong>incomplete documentation</strong> on docs.foxbms.org (marked "not yet complete"):
-- SPS (contactor control details)
-- Contactor (state machine, feedback)
-- Plausibility (what checks run)
-- Redundancy (cross-checking logic)
-- fassert (assert level definitions)
-- Algorithm/State Estimation (SOC/SOE/SOF methods)</p>
-<p>For these, <strong>read the source code</strong> in <code>foxbms-2/src/app/</code> directly.</p></div>
-<div class="nav-buttons"><a href="part-9-asil-decomp.html">&larr; Part 9: ASIL Decomp</a><a href="aspice-extraction.html">ASPICE Extraction &rarr;</a></div>
+<h2 id="engine-modules">Engine Modules</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Module</th>
+<th>Source</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.7</td>
+<td><strong>Database</strong></td>
+<td><code>src/app/engine/database/</code></td>
+<td>Producer/consumer data exchange</td>
+</tr>
+<tr>
+<td>4.8</td>
+<td><strong>Diagnosis</strong></td>
+<td><code>src/app/engine/diag/</code></td>
+<td>Fault detection, threshold counters, callbacks</td>
+</tr>
+<tr>
+<td>4.9</td>
+<td><strong>HW Info</strong></td>
+<td><code>src/app/engine/hw_info/</code></td>
+<td>Hardware configuration info</td>
+</tr>
+<tr>
+<td>4.10</td>
+<td><strong>SYS</strong></td>
+<td><code>src/app/engine/sys/</code></td>
+<td>System state machine (init → RUNNING)</td>
+</tr>
+<tr>
+<td>4.11</td>
+<td><strong>SYS_MON</strong></td>
+<td><code>src/app/engine/sys_mon/</code></td>
+<td>Task timing compliance monitoring</td>
+</tr>
+</tbody>
+</table>
+<h2 id="task-modules">Task Modules</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Module</th>
+<th>Source</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.12</td>
+<td><strong>FTASK</strong></td>
+<td><code>src/app/task/ftask/</code></td>
+<td>7 FreeRTOS tasks, creation, scheduling</td>
+</tr>
+<tr>
+<td>4.13</td>
+<td><strong>OS</strong></td>
+<td><code>src/app/task/os/</code></td>
+<td>OS abstraction layer</td>
+</tr>
+</tbody>
+</table>
+<h2 id="driver-modules">Driver Modules</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Module</th>
+<th>Source</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.14</td>
+<td>ADC</td>
+<td><code>src/app/driver/adc/</code></td>
+<td>Analog-to-digital conversion</td>
+</tr>
+<tr>
+<td>4.15</td>
+<td><strong>CAN</strong></td>
+<td><code>src/app/driver/can/</code></td>
+<td>CAN bus TX/RX, callbacks, mailbox config</td>
+</tr>
+<tr>
+<td>4.16</td>
+<td>CRC</td>
+<td><code>src/app/driver/crc/</code></td>
+<td>CRC calculations</td>
+</tr>
+<tr>
+<td>4.17</td>
+<td><strong>Contactor</strong></td>
+<td><code>src/app/driver/contactor/</code></td>
+<td>Contactor open/close, feedback</td>
+</tr>
+<tr>
+<td>4.18</td>
+<td>DMA</td>
+<td><code>src/app/driver/dma/</code></td>
+<td>Direct memory access</td>
+</tr>
+<tr>
+<td>4.19</td>
+<td>foxmath</td>
+<td><code>src/app/driver/foxmath/</code></td>
+<td>Math utilities</td>
+</tr>
+<tr>
+<td>4.20</td>
+<td>utils</td>
+<td><code>src/app/driver/foxmath/</code></td>
+<td>General utilities</td>
+</tr>
+<tr>
+<td>4.21</td>
+<td>FRAM</td>
+<td><code>src/app/driver/fram/</code></td>
+<td>Ferroelectric RAM</td>
+</tr>
+<tr>
+<td>4.22</td>
+<td>HTSEN</td>
+<td><code>src/app/driver/htsen/</code></td>
+<td>Humidity/temperature sensor</td>
+</tr>
+<tr>
+<td>4.23</td>
+<td>I2C</td>
+<td><code>src/app/driver/i2c/</code></td>
+<td>I2C communication</td>
+</tr>
+<tr>
+<td>4.24</td>
+<td><strong>IMD</strong></td>
+<td><code>src/app/driver/imd/</code></td>
+<td>Insulation monitoring (Bender IR155/iso165c)</td>
+</tr>
+<tr>
+<td>4.25</td>
+<td><strong>Interlock</strong></td>
+<td><code>src/app/driver/interlock/</code></td>
+<td>Safety interlock circuit</td>
+</tr>
+<tr>
+<td>4.26</td>
+<td>IO</td>
+<td><code>src/app/driver/io/</code></td>
+<td>GPIO pin management</td>
+</tr>
+<tr>
+<td>4.27</td>
+<td>MEAS</td>
+<td><code>src/app/driver/meas/</code></td>
+<td>Measurement acquisition</td>
+</tr>
+<tr>
+<td>4.28</td>
+<td>MCU</td>
+<td><code>src/app/driver/mcu/</code></td>
+<td>MCU interface</td>
+</tr>
+<tr>
+<td>4.29</td>
+<td><strong>AFE API</strong></td>
+<td><code>src/app/driver/afe/</code></td>
+<td>Analog Front-End interface</td>
+</tr>
+<tr>
+<td>4.30</td>
+<td>AFE Impls</td>
+<td><code>src/app/driver/afe/</code></td>
+<td>ADI ADES1830, LTC, Maxim, NXP MC33775A, Debug</td>
+</tr>
+<tr>
+<td>4.31</td>
+<td>PEX</td>
+<td><code>src/app/driver/pex/</code></td>
+<td>Port expander</td>
+</tr>
+<tr>
+<td>4.32</td>
+<td>PWM</td>
+<td><code>src/app/driver/pwm/</code></td>
+<td>Pulse-width modulation</td>
+</tr>
+<tr>
+<td>4.33</td>
+<td>RTC</td>
+<td><code>src/app/driver/rtc/</code></td>
+<td>Real-time clock</td>
+</tr>
+<tr>
+<td>4.34</td>
+<td><strong>SBC</strong></td>
+<td><code>src/app/driver/sbc/</code></td>
+<td>System Basis Chip (NXP FS8x)</td>
+</tr>
+<tr>
+<td>4.35</td>
+<td>SPI</td>
+<td><code>src/app/driver/spi/</code></td>
+<td>SPI communication</td>
+</tr>
+<tr>
+<td>4.36</td>
+<td><strong>SPS</strong></td>
+<td><code>src/app/driver/sps/</code></td>
+<td>Smart Power Switch (contactors)</td>
+</tr>
+<tr>
+<td>4.37</td>
+<td>TS API</td>
+<td><code>src/app/driver/ts/</code></td>
+<td>Temperature sensor interface</td>
+</tr>
+<tr>
+<td>4.38</td>
+<td>TS Impls</td>
+<td><code>src/app/driver/ts/</code></td>
+<td>Thermistor implementations</td>
+</tr>
+</tbody>
+</table>
+<h2 id="startup-misc">Startup / Misc</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Module</th>
+<th>Source</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.39</td>
+<td>Startup</td>
+<td><code>src/app/main/</code></td>
+<td>System initialization sequence</td>
+</tr>
+<tr>
+<td>4.40</td>
+<td>Version</td>
+<td><code>src/app/main/</code></td>
+<td>Version information</td>
+</tr>
+<tr>
+<td>4.41</td>
+<td><strong>fassert</strong></td>
+<td><code>src/app/main/include/fassert.h</code></td>
+<td>Runtime assertions</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bold</strong> = modules critical to the POSIX port.</p></div>
+<div class="nav-buttons"><a href="aspice-extraction.html">&larr; ASPICE Extraction</a><a href="bms-state-machine.html">BMS State Machine &rarr;</a></div>
 </main>
 <script>
 document.getElementById('search')?.addEventListener('input', function(e) {

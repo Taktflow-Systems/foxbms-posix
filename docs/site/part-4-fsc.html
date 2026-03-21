@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 4: FSC — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" class="active">Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 4: FSC</div>
+<div class="content"><h1 id="iso-26262-4-functional-safety-concept-fsc">ISO 26262-4: Functional Safety Concept (FSC)</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Document ID</td>
+<td>FOX-SAF-FSC-001</td>
+</tr>
+<tr>
+<td>Applicable Standard</td>
+<td>ISO 26262:2018 Part 4 — Product Development: System Level</td>
+</tr>
+<tr>
+<td>System</td>
+<td>foxBMS 2 Battery Management System v1.10.0</td>
+</tr>
+<tr>
+<td>Item Definition</td>
+<td>Li-ion BMS: 1 string, 1 module, 18s1p, NMC cells 3500 mAh</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>2026-03-21</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Released for Review</td>
+</tr>
+<tr>
+<td>Related Documents</td>
+<td>FOX-SAF-HARA-001, FOX-SAF-TSC-001, FOX-SAF-FMEA-001</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-scope-and-purpose">1  Scope and Purpose</h2>
+<p>This Functional Safety Concept (FSC) derives functional safety requirements from the safety goals defined in the HARA (FOX-SAF-HARA-001). For each safety goal, this document specifies:</p>
+<ul>
+<li>Functional safety requirements allocated to the BMS</li>
+<li>Safe state definition</li>
+<li>Warning and degradation concept</li>
+<li>Fault Tolerant Time Interval (FTTI) derived from the diagnostic configuration</li>
+</ul>
+<p>The FSC serves as the bridge between the concept-level safety goals and the Technical Safety Concept (FOX-SAF-TSC-001) which maps these requirements to specific hardware and software elements.</p>
+<hr />
+<h2 id="2-safe-state-definition">2  Safe State Definition</h2>
+<h3 id="21-primary-safe-state-contactors-open-error-state">2.1  Primary Safe State: Contactors Open (ERROR State)</h3>
+<p>The primary safe state for the foxBMS 2 BMS is the <strong>ERROR state</strong> in which all three contactors (string-plus, string-minus, precharge) are commanded open via the Smart Power Switch (SPS) driver. This state:</p>
+<ul>
+<li>Galvanically isolates the battery cells from the external load/charger</li>
+<li>Removes the current path, eliminating overcurrent and its thermal effects</li>
+<li>Prevents further charge (eliminating overvoltage and lithium plating risks)</li>
+<li>Prevents further discharge (eliminating undervoltage and deep discharge risks)</li>
+<li>Is passively stable (contactors are normally open; loss of control power opens them)</li>
+</ul>
+<h3 id="22-secondary-safe-state-current-limitation">2.2  Secondary Safe State: Current Limitation</h3>
+<p>For hazards where immediate contactor opening could itself cause a hazard (e.g., loss of power steering/braking assist during highway driving), the BMS supports a degraded mode through the RSL (Recommended Safety Limit) tier:</p>
+<ul>
+<li>Current limits are communicated to the vehicle controller via CAN</li>
+<li>The vehicle controller implements torque reduction / limp-home mode</li>
+<li>The BMS monitors whether the vehicle controller respects the limits</li>
+<li>If limits are violated, the BMS escalates to the primary safe state (contactor open)</li>
+</ul>
+<h3 id="23-tertiary-warning-early-notification">2.3  Tertiary Warning: Early Notification</h3>
+<p>The MOL (Maximum Operating Limit) tier provides early warning before safety limits are reached:</p>
+<ul>
+<li>Warning messages transmitted via CAN to the vehicle HMI</li>
+<li>No autonomous BMS action (current limiting or contactor opening)</li>
+<li>Enables the driver to modify behavior (reduce speed, seek charging station, pull over)</li>
+</ul>
+<hr />
+<h2 id="3-ftti-derivation-method">3  FTTI Derivation Method</h2>
+<p>The Fault Tolerant Time Interval is the maximum time between the occurrence of a fault and the achievement of the safe state. For the foxBMS 2 diagnostic architecture, FTTI is composed of:</p>
+<pre><code>FTTI = T_detection + T_reaction + T_actuator
+</code></pre>
+<p>Where:
+- <strong>T_detection</strong> = threshold_count × task_period (time to accumulate enough diagnostic events to trigger FATAL)
+- <strong>T_reaction</strong> = delay_ms (additional debounce time configured in diag_cfg.c after threshold is reached)
+- <strong>T_actuator</strong> = contactor opening time (mechanical response, typically 20–50 ms for automotive contactors)</p>
+<p>The task period depends on the diagnostic category:
+- SOA voltage/temperature/current checks: 10 ms (executed in BMS_Trigger from 10 ms task)
+- CAN timing checks: 10 ms (CAN periodic processing in 10 ms task)
+- Current sensor timeout: 10 ms (sensor communication check in 10 ms task)
+- System monitoring / flash checksum: 1 ms (system-level checks)</p>
+<hr />
+<h2 id="4-functional-safety-requirements">4  Functional Safety Requirements</h2>
+<h3 id="41-fsr-01-cell-overvoltage-protection-sg-01-asil-d">4.1  FSR-01: Cell Overvoltage Protection (SG-01, ASIL D)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-01: Prevent cell voltage exceeding 2800 mV</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL D</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall continuously monitor each of the 18 cell voltages. If any cell voltage exceeds 2800 mV, the BMS shall interrupt the charge current path by opening all contactors.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Per-cell voltage measurement via AFE at each measurement cycle. SOA check compares measured voltage against MSL threshold (2800 mV).</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>MOL threshold (lower than 2800 mV) triggers CAN warning message. RSL threshold triggers current limit reduction command via CAN. MSL threshold triggers contactor opening.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>RSL: Reduce maximum charge current to zero (charge inhibit). Vehicle controller shall terminate charging session.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 50 events × 10 ms = 500 ms. T_reaction = 200 ms (delay_ms). T_actuator = 50 ms. <strong>FTTI = 750 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Overvoltage at 2800 mV: Time to lithium plating onset depends on charge rate and temperature. At 1C charge rate, onset is ~10–30 minutes. At extreme overcharge (&gt;4.5 V for NMC), onset is ~30 seconds. FTTI of 750 ms is well within the physical process time.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (750 ms) &lt;&lt; physical process time (~30 s worst case)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-fsr-02-cell-undervoltage-protection-sg-02-asil-c">4.2  FSR-02: Cell Undervoltage Protection (SG-02, ASIL C)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-02: Prevent cell voltage below 1500 mV</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL C</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall continuously monitor each of the 18 cell voltages. If any cell voltage drops below 1500 mV, the BMS shall interrupt the discharge current path by opening all contactors.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Per-cell voltage measurement via AFE. SOA check against MSL threshold (1500 mV).</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>MOL threshold triggers low-voltage warning via CAN. RSL threshold triggers discharge current limit reduction. MSL threshold triggers contactor opening.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>RSL: Reduce maximum discharge current progressively. Vehicle controller implements torque reduction.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 50 × 10 ms = 500 ms. T_reaction = 200 ms. T_actuator = 50 ms. <strong>FTTI = 750 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Copper dissolution at 1500 mV is a slow electrochemical process. Significant copper dissolution requires sustained undervoltage for minutes to hours. FTTI is orders of magnitude shorter.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (750 ms) &lt;&lt; physical process time (~minutes)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-fsr-03-deep-discharge-protection-sg-03-qm">4.3  FSR-03: Deep Discharge Protection (SG-03, QM)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-03: Detect deep discharge and open contactors immediately</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>QM (treated as FATAL for defense-in-depth)</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall detect deep discharge conditions (cell voltage significantly below undervoltage cutoff or deep discharge flag from cell monitoring) and immediately open all contactors.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>DIAG_ID_DEEP_DISCHARGE_DETECTED: threshold=1, single event triggers FATAL</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open. Additionally, the BMS shall not permit re-closure of contactors until the deep discharge condition is manually cleared by a service technician.</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>Immediate FATAL response (no MOL/RSL progression for deep discharge). DTC stored in non-volatile memory.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>None — immediate safe state transition</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 1 × 10 ms = 10 ms. T_reaction = 100 ms. T_actuator = 50 ms. <strong>FTTI = 160 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Gas generation from deep discharge occurs over minutes to hours.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (160 ms) &lt;&lt; physical process time</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-fsr-04-overcurrent-discharge-protection-sg-04-asil-b">4.4  FSR-04: Overcurrent Discharge Protection (SG-04, ASIL B)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-04: Limit discharge current and open contactors on persistent overcurrent</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL B</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall monitor discharge current at both cell level (180000 mA limit) and string level (2400 mA limit). If current exceeds the MSL limit, the BMS shall open all contactors. The BMS shall communicate maximum allowable discharge current to the vehicle controller via CAN.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>String-level: IVT current sensor measurement, SOA check in 10 ms task. Cell-level: calculated from string current / parallel cell count.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>MOL: High-current warning via CAN. RSL: Discharge current limit reduction via CAN. MSL: Contactor opening.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>RSL: Progressive current derating communicated to vehicle controller. Vehicle implements torque reduction and speed limiting.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 10 × 10 ms = 100 ms. T_reaction = 100 ms. T_actuator = 50 ms. <strong>FTTI = 250 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>I²R heating at overcurrent: cell temperature rise rate depends on current magnitude. At 2× rated current, internal temperature rises at approximately 0.5 °C/s. Time to reach thermal runaway onset (~130 °C from 25 °C ambient) is ~210 s. For extreme short-circuit currents (&gt;10× rated), heating rate is much faster (~5 s to critical temperature).</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (250 ms) &lt;&lt; physical process time (~5 s worst case)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="45-fsr-05-overcurrent-charge-protection-sg-05-asil-c">4.5  FSR-05: Overcurrent Charge Protection (SG-05, ASIL C)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-05: Limit charge current and open contactors on persistent overcurrent</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL C</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall monitor charge current at both cell level (180000 mA limit) and string level (2400 mA limit). If current exceeds the MSL limit during charging, the BMS shall open all contactors. The BMS shall communicate maximum allowable charge current to the charger/vehicle controller via CAN.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Same as FSR-04 but for charge direction (sign convention)</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>MOL: High charge current warning. RSL: Charge current limit reduction. MSL: Contactor opening.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>RSL: Reduce charge current limit communicated to charger. Charger shall reduce charging power.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 10 × 10 ms = 100 ms. T_reaction = 100 ms. T_actuator = 50 ms. <strong>FTTI = 250 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Lithium plating from overcurrent: onset depends on C-rate and temperature. At room temperature, plating onset at &gt;3C requires sustained overcurrent for ~60 s. At high C-rates (&gt;10C), onset time reduces to ~10 s.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (250 ms) &lt;&lt; physical process time (~10 s worst case)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="46-fsr-06-overtemperature-protection-sg-06-asil-c">4.6  FSR-06: Overtemperature Protection (SG-06, ASIL C)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-06: Monitor cell temperatures and open contactors on overtemperature</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL C</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall monitor all 8 temperature sensors. If any sensor reading exceeds 45 °C (charge mode) or 55 °C (discharge mode), the BMS shall open all contactors to remove the current-induced heat source.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Temperature measurement via AFE multiplexed NTC inputs. SOA temperature check in 10 ms task.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>MOL: Temperature warning via CAN (e.g., at 40 °C charge / 50 °C discharge). RSL: Current derating based on temperature (reduce current to reduce I²R heating). MSL: Contactor opening at 45 °C / 55 °C.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>RSL: Temperature-dependent current derating curve. As temperature approaches MSL threshold, maximum current is progressively reduced. This allows continued operation at reduced power.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 500 × 10 ms = 5000 ms. T_reaction = 1000 ms. T_actuator = 50 ms. <strong>FTTI = 6050 ms (6.05 s).</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Thermal runaway onset from external heating: from 55 °C to thermal runaway onset (~130 °C), temperature rise rate depends on current and cooling. Adiabatic self-heating at &gt;130 °C is self-sustaining. Time from 55 °C to 130 °C with continued current: ~30–300 s depending on current magnitude and cooling effectiveness.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (6.05 s) &lt;&lt; physical process time (~30 s worst case)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="47-fsr-07-undertemperature-charge-protection-sg-07-asil-b">4.7  FSR-07: Undertemperature Charge Protection (SG-07, ASIL B)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-07: Prevent charging below -20 °C</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL B</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall monitor all 8 temperature sensors. If any sensor reading is below -20 °C and the system is in charge mode, the BMS shall open all contactors to prevent cold-temperature lithium plating.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Temperature measurement via AFE. SOA undertemperature check in 10 ms task.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>MOL: Low temperature warning via CAN. RSL: Charge current limit set to zero (charge inhibit) at temperatures below the RSL threshold. MSL: Contactor opening at -20 °C.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>RSL: Complete charge inhibit. No current derating — charging is fully prohibited below the RSL temperature threshold. Discharge may remain permitted with reduced current limits.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 500 × 10 ms = 5000 ms. T_reaction = 1000 ms. T_actuator = 50 ms. <strong>FTTI = 6050 ms (6.05 s).</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Lithium plating at -20 °C: plating onset during 0.5C charge at -20 °C occurs within ~60–120 s. At lower C-rates, onset time extends proportionally.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (6.05 s) &lt;&lt; physical process time (~60 s worst case)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="48-fsr-08-contactor-welding-detection-sg-08-asil-b">4.8  FSR-08: Contactor Welding Detection (SG-08, ASIL B)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-08: Detect contactor welding and prevent further operation</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL B</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall read the feedback signal from each contactor (string+, string-, precharge) and compare it against the commanded state. If the feedback indicates the contactor is closed when the BMS has commanded it open, or vice versa, the BMS shall declare a contactor feedback fault.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Contactor feedback GPIO reading compared against SPS command state. Checked in 10 ms BMS_Trigger context.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state. If the welded contactor is detected during opening: the BMS shall open the remaining non-welded contactors and signal a permanent fault. The string shall not be re-energized until the welded contactor is physically replaced.</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>No MOL/RSL progression — contactor welding is a hardware failure requiring immediate response. Immediate FATAL flag.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>In multi-string configurations, the affected string is permanently isolated. The vehicle may continue operation on remaining strings with reduced power. In this single-string configuration, the vehicle is immobilized.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 20 × 10 ms = 200 ms. T_reaction = 100 ms. T_actuator = 50 ms (for non-welded contactors). <strong>FTTI = 350 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>If a contactor welds during a fault-current event, the fault current continues to flow. The time to reach a dangerous condition depends on the fault type. Worst case: short-circuit current through a welded contactor — time to thermal damage is ~1–5 s.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (350 ms) &lt;&lt; physical process time (~1 s worst case)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="49-fsr-09-current-sensor-failure-detection-sg-09-asil-b">4.9  FSR-09: Current Sensor Failure Detection (SG-09, ASIL B)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-09: Detect current sensor failure and open contactors</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL B</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall monitor the communication link to the IVT current sensor. If the sensor stops responding (no valid CAN messages received within the timeout period), the BMS shall open all contactors. Additionally, the BMS shall monitor the coulomb counting (CC) and energy counting (EC) channels and the three voltage measurement channels (V1, V2, V3) of the IVT.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>CAN message timeout monitoring. Each IVT channel has a dedicated DIAG ID.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>Current sensor communication loss is treated as FATAL. No MOL/RSL progression because loss of current measurement capability is a complete loss of a safety-critical sensing path.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>None — immediate safe state. The BMS cannot safely operate without current measurement.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>Primary (CURRENT_SENSOR_RESPONDING): T_detection = 100 × 10 ms = 1000 ms. T_reaction = 200 ms. T_actuator = 50 ms. <strong>FTTI = 1250 ms.</strong> CC/EC channels: T_detection = 100 × 10 ms = 1000 ms. T_reaction = 2000 ms. T_actuator = 50 ms. <strong>FTTI = 3050 ms.</strong> V1/V2/V3: T_detection = 1 × 10 ms = 10 ms. T_reaction = 100 ms. T_actuator = 50 ms. <strong>FTTI = 160 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Loss of current sensing does not directly cause a hazard. The hazard arises only if a secondary fault (overcurrent) occurs simultaneously. Probability of coincidence within FTTI is very low.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI covers the sensor loss; overcurrent protection is lost but probabilistic analysis shows acceptable residual risk.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="410-fsr-10-interlock-monitoring-sg-10-qm">4.10  FSR-10: Interlock Monitoring (SG-10, QM)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-10: Detect interlock break and de-energize HV path</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>QM (treated as FATAL defense-in-depth)</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall continuously monitor the interlock loop circuit. If the interlock loop is open (indicating HV connector disconnection or service cover removal), the BMS shall open all contactors within 200 ms.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Interlock feedback GPIO signal monitoring. Checked in 10 ms task.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>Immediate FATAL response. No warning progression.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>None — immediate safe state</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 10 × 10 ms = 100 ms. T_reaction = 100 ms. T_actuator = 50 ms. <strong>FTTI = 250 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Interlock break implies physical access to HV components. Time from connector removal to skin contact: ~0.5–2 s (manual dexterity).</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (250 ms) &lt; physical process time (~0.5 s)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="411-fsr-11-insulation-fault-detection-sg-11-asil-a">4.11  FSR-11: Insulation Fault Detection (SG-11, ASIL A)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-11: Detect insulation faults and transition to safe state</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL A</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall monitor pack voltage plausibility by comparing the sum of individual cell voltages (from AFE) against the pack voltage measurement (from IVT V1/V2/V3). A significant discrepancy indicates a potential insulation fault or measurement error. The BMS shall open all contactors if the plausibility check fails persistently.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE: comparison of AFE cell sum vs. IVT pack voltage.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>FATAL on persistent plausibility failure.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>None — immediate safe state</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>T_detection = 10 × 10 ms = 100 ms. T_reaction = 100 ms. T_actuator = 50 ms. <strong>FTTI = 250 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Physical Process Time</strong></td>
+<td>Insulation degradation is a slow process (hours to years). Once a fault path exists, time to dangerous contact depends on human interaction.</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — FTTI (250 ms) &lt;&lt; physical process time</td>
+</tr>
+</tbody>
+</table>
+<h3 id="412-fsr-12-cell-imbalance-protection-sg-12-asil-c">4.12  FSR-12: Cell Imbalance Protection (SG-12, ASIL C)</h3>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Safety Goal</strong></td>
+<td>SG-12: Enforce per-cell voltage limits regardless of string-level measurements</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>ASIL C</td>
+</tr>
+<tr>
+<td><strong>Functional Requirement</strong></td>
+<td>The BMS shall monitor each of the 18 cell voltages individually and apply overvoltage (2800 mV) and undervoltage (1500 mV) limits on a per-cell basis. The safety mechanism shall not rely on pack-level or string-level voltage averaging. Each individual cell exceeding its limit shall independently trigger the safety reaction.</td>
+</tr>
+<tr>
+<td><strong>Detection</strong></td>
+<td>Per-cell AFE measurement. Same DIAG IDs as FSR-01 and FSR-02 (CELL_VOLTAGE_OVERVOLTAGE_MSL, CELL_VOLTAGE_UNDERVOLTAGE_MSL). Detection inherently operates per-cell because the SOA check iterates over all cells.</td>
+</tr>
+<tr>
+<td><strong>Safe State</strong></td>
+<td>ERROR state — all contactors open</td>
+</tr>
+<tr>
+<td><strong>Warning Concept</strong></td>
+<td>Same three-tier MOL/RSL/MSL as FSR-01 and FSR-02.</td>
+</tr>
+<tr>
+<td><strong>Degradation</strong></td>
+<td>RSL: Current limiting based on the weakest cell.</td>
+</tr>
+<tr>
+<td><strong>FTTI Calculation</strong></td>
+<td>Same as FSR-01/FSR-02: <strong>FTTI = 750 ms.</strong></td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td><strong>ADEQUATE</strong> — Same analysis as FSR-01/FSR-02 applies</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-ftti-summary-table">5  FTTI Summary Table</h2>
+<table>
+<thead>
+<tr>
+<th>FSR</th>
+<th>Safety Goal</th>
+<th>ASIL</th>
+<th>T_detect (ms)</th>
+<th>T_react (ms)</th>
+<th>T_actuator (ms)</th>
+<th>FTTI (ms)</th>
+<th>Process Time</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FSR-01</td>
+<td>SG-01</td>
+<td>ASIL D</td>
+<td>500</td>
+<td>200</td>
+<td>50</td>
+<td>750</td>
+<td>~30 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-02</td>
+<td>SG-02</td>
+<td>ASIL C</td>
+<td>500</td>
+<td>200</td>
+<td>50</td>
+<td>750</td>
+<td>~minutes</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-03</td>
+<td>SG-03</td>
+<td>QM</td>
+<td>10</td>
+<td>100</td>
+<td>50</td>
+<td>160</td>
+<td>~minutes</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-04</td>
+<td>SG-04</td>
+<td>ASIL B</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~5 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-05</td>
+<td>SG-05</td>
+<td>ASIL C</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~10 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-06</td>
+<td>SG-06</td>
+<td>ASIL C</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+<td>~30 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-07</td>
+<td>SG-07</td>
+<td>ASIL B</td>
+<td>5000</td>
+<td>1000</td>
+<td>50</td>
+<td>6050</td>
+<td>~60 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-08</td>
+<td>SG-08</td>
+<td>ASIL B</td>
+<td>200</td>
+<td>100</td>
+<td>50</td>
+<td>350</td>
+<td>~1 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-09</td>
+<td>SG-09</td>
+<td>ASIL B</td>
+<td>1000</td>
+<td>200</td>
+<td>50</td>
+<td>1250</td>
+<td>probabilistic</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-10</td>
+<td>SG-10</td>
+<td>QM</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~0.5 s</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-11</td>
+<td>SG-11</td>
+<td>ASIL A</td>
+<td>100</td>
+<td>100</td>
+<td>50</td>
+<td>250</td>
+<td>~hours</td>
+<td>ADEQUATE</td>
+</tr>
+<tr>
+<td>FSR-12</td>
+<td>SG-12</td>
+<td>ASIL C</td>
+<td>500</td>
+<td>200</td>
+<td>50</td>
+<td>750</td>
+<td>~30 s</td>
+<td>ADEQUATE</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-safety-mechanism-architecture">6  Safety Mechanism Architecture</h2>
+<h3 id="61-three-tier-diagnostic-response">6.1  Three-Tier Diagnostic Response</h3>
+<p>The foxBMS 2 diagnostic system implements a three-tier response architecture that maps to the ISO 26262 warning and degradation concept:</p>
+<pre><code>               ┌─────────────────────────────────────────────┐
+               │           Physical Measurement               │
+               │  (Cell Voltage, Temperature, Current)         │
+               └──────────────┬──────────────────────────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │   SOA_Check*()      │
+                    │   (10 ms cycle)     │
+                    └──┬──────┬──────┬───┘
+                       │      │      │
+                 ┌─────▼┐  ┌─▼────┐ ┌▼─────┐
+                 │ MOL   │  │ RSL  │ │ MSL  │
+                 │ INFO  │  │ WARN │ │FATAL │
+                 └───┬───┘  └──┬───┘ └──┬───┘
+                     │         │        │
+              ┌──────▼───┐ ┌───▼────┐ ┌─▼──────────┐
+              │ CAN Msg   │ │ CAN +  │ │ DIAG_Handler│
+              │ Warning   │ │ Current│ │ threshold   │
+              │ to HMI    │ │ Limit  │ │ counter     │
+              └──────────┘ │ via CAN│ └──────┬──────┘
+                           └────────┘        │
+                                      ┌──────▼──────┐
+                                      │ FATAL flag   │
+                                      │ set          │
+                                      └──────┬──────┘
+                                             │
+                                      ┌──────▼──────┐
+                                      │ BMS checks   │
+                                      │ IsAnyFatal   │
+                                      │ ErrorSet()   │
+                                      └──────┬──────┘
+                                             │
+                                      ┌──────▼──────┐
+                                      │ BMS →        │
+                                      │ ERROR state  │
+                                      └──────┬──────┘
+                                             │
+                                      ┌──────▼──────┐
+                                      │ Contactors   │
+                                      │ OPEN via SPS │
+                                      └─────────────┘
+</code></pre>
+<h3 id="62-independence-of-safety-mechanisms">6.2  Independence of Safety Mechanisms</h3>
+<p>For ASIL D safety goals (SG-01), the diagnostic configuration provides independence through:</p>
+<ol>
+<li><strong>Primary path:</strong> AFE cell voltage measurement → SOA_CheckCellVoltage() → DIAG_ID_CELL_VOLTAGE_OVERVOLTAGE_MSL → ERROR → contactor open</li>
+<li><strong>Secondary path:</strong> IVT pack voltage measurement → plausibility check against AFE sum → DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE → ERROR → contactor open</li>
+<li><strong>Hardware watchdog:</strong> SBC (System Basis Chip) monitors BMS software execution. If the BMS software hangs, the SBC resets the microcontroller, causing contactors to open (fail-safe default).</li>
+</ol>
+<hr />
+<h2 id="7-allocation-to-system-elements">7  Allocation to System Elements</h2>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Safety Function</th>
+<th>ASIL Allocation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AFE (LTC6813 or equiv.)</td>
+<td>Cell voltage and temperature measurement</td>
+<td>ASIL D(D)</td>
+</tr>
+<tr>
+<td>IVT Current Sensor</td>
+<td>String current and pack voltage measurement</td>
+<td>ASIL B(D)</td>
+</tr>
+<tr>
+<td>Microcontroller</td>
+<td>SOA checking, DIAG handling, BMS state machine</td>
+<td>ASIL D</td>
+</tr>
+<tr>
+<td>SPS Driver</td>
+<td>Contactor control (actuation of safe state)</td>
+<td>ASIL D</td>
+</tr>
+<tr>
+<td>SBC</td>
+<td>Watchdog, power supply supervision, reset control</td>
+<td>ASIL D</td>
+</tr>
+<tr>
+<td>Interlock Circuit</td>
+<td>HV connector integrity monitoring</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>CAN Interface</td>
+<td>Communication of warnings, current limits, fault status</td>
+<td>ASIL B</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-references">8  References</h2>
+<table>
+<thead>
+<tr>
+<th>Ref</th>
+<th>Document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[1]</td>
+<td>ISO 26262:2018 Part 4 — Product Development: System Level</td>
+</tr>
+<tr>
+<td>[2]</td>
+<td>FOX-SAF-HARA-001 — Hazard Analysis and Risk Assessment</td>
+</tr>
+<tr>
+<td>[3]</td>
+<td>FOX-SAF-TSC-001 — Technical Safety Concept</td>
+</tr>
+<tr>
+<td>[4]</td>
+<td>FOX-SAF-FMEA-001 — Software FMEA</td>
+</tr>
+<tr>
+<td>[5]</td>
+<td>FOX-SAF-FTTI-001 — FTTI Calculation Report</td>
+</tr>
+<tr>
+<td>[6]</td>
+<td>foxBMS v1.10.0 <code>src/app/engine/diag/diag_cfg.c</code></td>
+</tr>
+<tr>
+<td>[7]</td>
+<td>foxBMS v1.10.0 <code>src/app/application/config/soa_cfg.c</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>End of Document FOX-SAF-FSC-001</em></p></div>
+<div class="nav-buttons"><a href="part-3-hara.html">&larr; Part 3: HARA</a><a href="part-4-tsc.html">Part 4: TSC &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

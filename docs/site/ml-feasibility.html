@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Feasibility — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" class="active">ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Business & Service / ML Feasibility</div>
+<div class="content"><h1 id="feasibility-analysis-ml-integration-with-foxbms-posix-vecu">Feasibility Analysis: ML Integration with foxBMS POSIX vECU</h1>
+<p><strong>Date</strong>: 2026-03-21
+<strong>Role</strong>: System Architect — SIL/HIL Test Platform
+<strong>Scope</strong>: Should we invest in connecting taktflow-bms-ml to foxbms-posix?</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p><strong>Verdict: Feasible with constraints. Layer 1 is high-value/low-risk. Layer 2 is the differentiator but has validation gaps. Layer 3 is aspirational — defer.</strong></p>
+<p>The integration is technically straightforward (same CAN bus, Python on both sides, ONNX models ready). The training data covers <strong>two complementary levels</strong> — BMS pack-level (BMW i3 driving) and battery cell-level (NASA, MIT, NREL, LiionPro) — both of which map to foxBMS subsystems. The domain gap at pack level (96S vs 18S) is real but mitigable; the cell-level data has <strong>no topology gap</strong> because cell physics are pack-independent. Additionally, the <strong>FOBSS dataset is native foxBMS data</strong> from KIT Radar (44-cell modular pack), offering a near-zero-gap validation path.</p>
+<hr />
+<h2 id="1-technical-feasibility-assessment">1. Technical Feasibility Assessment</h2>
+<h3 id="layer-1-trip-replay-plant-model">Layer 1: Trip Replay Plant Model</h3>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Assessment</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Can we do it?</strong></td>
+<td>Yes — CSV replay into existing plant_model.py CAN encoding</td>
+<td>9/10</td>
+</tr>
+<tr>
+<td><strong>Data available?</strong></td>
+<td>72 BMW i3 trips in <code>taktflow-bms-ml/data/bms-raw/bmw-i3-driving/</code></td>
+<td>9/10</td>
+</tr>
+<tr>
+<td><strong>Interface compatible?</strong></td>
+<td>BMW i3 gives pack V/I/T/SOC at 1Hz (pack level). NASA gives per-cell V/I/T across full charge/discharge (cell level). Combined: derive 18 cell voltages from pack_V + add per-cell variation from NASA cell curves.</td>
+<td>8/10</td>
+</tr>
+<tr>
+<td><strong>Effort estimate accurate?</strong></td>
+<td>2 days for pack-level replay. +1 day to add NASA-derived per-cell variation. Edge cases (foxBMS plausibility) may add 1 more day.</td>
+<td>7/10</td>
+</tr>
+<tr>
+<td><strong>Can it break foxBMS?</strong></td>
+<td>Yes — real driving data has transients that may trigger SOA violations. But cell-level data lets us derive realistic per-cell spread (not naive pack_V/18).</td>
+<td>7/10</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Feasibility: HIGH</strong>
+<strong>Blocker: None</strong>
+<strong>Key risk</strong>: foxBMS plausibility checks on cell voltage spread. Mitigated by using NASA cell data to generate realistic per-cell variation (±10-30mV based on real cell-to-cell spread in cycling data).</p>
+<hr />
+<h3 id="layer-2-ml-sidecar-onnx-inference">Layer 2: ML Sidecar (ONNX Inference)</h3>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Assessment</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Can we do it?</strong></td>
+<td>Yes — ONNX Runtime + python-can + SocketCAN. Standard stack.</td>
+<td>9/10</td>
+</tr>
+<tr>
+<td><strong>Models ready?</strong></td>
+<td>5 ONNX models exported, tested offline. SOC LSTM verified with roundtrip.</td>
+<td>8/10</td>
+</tr>
+<tr>
+<td><strong>Interface compatible?</strong></td>
+<td>Better than initially assessed — cell-level models (Thermal, Imbalance, SOH) have no topology gap. SOC LSTM needs per-cell normalization. FOBSS provides foxBMS-native validation data.</td>
+<td>7/10</td>
+</tr>
+<tr>
+<td><strong>Latency acceptable?</strong></td>
+<td>ONNX inference ~5-15ms on CPU for LSTM. 1Hz inference rate vs 100Hz CAN = fine.</td>
+<td>9/10</td>
+</tr>
+<tr>
+<td><strong>Normalization data available?</strong></td>
+<td><code>soc_norm_mean.npy</code> and <code>soc_norm_std.npy</code> exist in data/bms-processed/</td>
+<td>8/10</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Feasibility: MEDIUM-HIGH</strong>
+<strong>Blocker: None (domain gap is mitigable — see Section 2)</strong>
+<strong>Key risk</strong>: SOC LSTM accuracy on foxBMS pack data is unvalidated. Cell-level models (Thermal, Imbalance) expected to transfer well. Validate all on FOBSS dataset.</p>
+<hr />
+<h3 id="layer-3-ml-enhanced-fault-injection">Layer 3: ML-Enhanced Fault Injection</h3>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Assessment</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Can we do it?</strong></td>
+<td>Yes — NREL thermal profiles map directly to foxBMS 0x280 cell temps (cell-level, no topology gap). MIT degradation data maps to 0x270 cell voltage fade. Scenario design is data-driven, not manual.</td>
+<td>7/10</td>
+</tr>
+<tr>
+<td><strong>DIAG_Handler ready?</strong></td>
+<td>No — still fully suppressed. Fault detection paths are dead. Must implement selective DIAG first.</td>
+<td>3/10</td>
+</tr>
+<tr>
+<td><strong>Validation possible?</strong></td>
+<td>No ground truth — we can't verify if foxBMS <em>should</em> have opened contactors at a given point without a physics model to say "this is actually dangerous".</td>
+<td>3/10</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Feasibility: LOW (today). MEDIUM after selective DIAG is implemented.</strong>
+<strong>Blocker: DIAG_Handler suppression, no physics validation model</strong>
+<strong>Recommendation: Defer to Phase 3 of PLAN.md. Don't attempt before Layer 1+2 are validated.</strong></p>
+<hr />
+<h2 id="2-training-data-two-levels-both-useful">2. Training Data: Two Levels, Both Useful</h2>
+<p>The taktflow-bms-ml repo contains data at two distinct levels. foxBMS operates at both levels, so both feed directly into the integration.</p>
+<h3 id="foxbms-operates-at-two-levels">foxBMS Operates at Two Levels</h3>
+<pre><code>foxBMS CAN Output
+|
++-- PACK LEVEL (what the BMS sees as a whole)
+|   0x233  Pack voltage, pack current
+|   0x235  SOC (coulomb counting)
+|   0x232  Current/voltage limits (SOF)
+|   0x240  Contactor state
+|
++-- CELL LEVEL (what the BMS sees per cell)
+    0x270  18x individual cell voltages (muxed)
+    0x280  Cell temperatures (muxed)
+    0x250  Cell voltage broadcast
+    0x260  Cell temperature broadcast
+</code></pre>
+<h3 id="data-to-foxbms-mapping">Data-to-foxBMS Mapping</h3>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>Level</th>
+<th>Size</th>
+<th>foxBMS CAN Target</th>
+<th>ML Model</th>
+<th>Domain Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BMW i3 driving</strong> (72 trips)</td>
+<td>Pack</td>
+<td>37MB</td>
+<td>0x233 pack V/I, 0x235 SOC</td>
+<td>SOC LSTM</td>
+<td>HIGH (96S vs 18S) — but normalizable to per-cell</td>
+</tr>
+<tr>
+<td><strong>FOBSS foxBMS monitoring</strong> (KIT)</td>
+<td>Pack + Cell</td>
+<td>128MB</td>
+<td>0x270 cell V, 0x280 cell T, pack V/I</td>
+<td>All models</td>
+<td><strong>NEAR ZERO</strong> — actual foxBMS hardware data</td>
+</tr>
+<tr>
+<td><strong>NASA PCoE</strong> (7565 cycles)</td>
+<td>Cell</td>
+<td>~200MB</td>
+<td>0x270 cell voltages (derive per-cell V-SOC curves)</td>
+<td>SOC LSTM (augments BMW i3)</td>
+<td><strong>NONE</strong> — cell physics are pack-independent</td>
+</tr>
+<tr>
+<td><strong>LiionPro-DT</strong> (5yr, 2M rows)</td>
+<td>Cell lifecycle</td>
+<td>1.1GB</td>
+<td>0x270 cell V over time, capacity fade</td>
+<td>SOH LSTM</td>
+<td><strong>NONE</strong> — cell-level degradation</td>
+</tr>
+<tr>
+<td><strong>MIT degradation</strong> (138 cells)</td>
+<td>Cell lifecycle</td>
+<td>~500MB</td>
+<td>Long-term cell V/capacity trends</td>
+<td>RUL Transformer</td>
+<td><strong>NONE</strong> — cell-level end-of-life</td>
+</tr>
+<tr>
+<td><strong>NREL thermal failure</strong> (364 tests)</td>
+<td>Cell</td>
+<td>~100MB</td>
+<td>0x280 cell temp ramp scenarios</td>
+<td>Thermal CNN</td>
+<td><strong>NONE</strong> — thermal physics are cell-level</td>
+</tr>
+<tr>
+<td><strong>EV pack multi-chem</strong></td>
+<td>Cell groups</td>
+<td>~200MB</td>
+<td>0x270 cell voltage spread across 18 cells</td>
+<td>Imbalance CNN</td>
+<td><strong>LOW</strong> — cell spread is topology-independent</td>
+</tr>
+<tr>
+<td><strong>BMS fault diagnosis</strong> (Mendeley)</td>
+<td>BMS</td>
+<td>~50MB</td>
+<td>Fault injection scenarios for 0x270/0x280</td>
+<td>Fault classification</td>
+<td>LOW</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-insight-cell-level-data-has-no-domain-gap">Key Insight: Cell-Level Data Has No Domain Gap</h3>
+<p>The domain gap concern from the original analysis was about pack-level signals (360V BMW i3 vs 76V foxBMS). But <strong>5 of 7 datasets operate at cell level</strong>, where:
+- A 3.7V NMC cell is a 3.7V NMC cell regardless of whether it's in a 96S or 18S pack
+- Temperature physics (dT/dt, thermal runaway onset at ~130C) are cell-level
+- Capacity degradation is per-cell
+- Voltage spread / imbalance is relative (max-min), not absolute</p>
+<p>Only the SOC LSTM has a real domain gap because it was trained on pack-level signals. Even that is mitigable: <strong>normalize to per-cell voltage</strong> (pack_V / N_cells) and the signal dynamics become topology-independent.</p>
+<h3 id="fobss-the-zero-gap-dataset">FOBSS: The Zero-Gap Dataset</h3>
+<p>The FOBSS dataset from KIT Radar deserves special attention:
+- <strong>Source</strong>: Actual foxBMS 2 hardware monitoring a 44-cell modular pack
+- <strong>Signals</strong>: Cell-level voltages, temperatures, pack current — exactly what foxBMS CAN outputs
+- <strong>Format</strong>: Archived at KIT Radar (128MB TAR), CC-BY license
+- <strong>Gap to foxBMS vECU</strong>: Effectively zero — same firmware, same CAN protocol, different cell count (44 vs 18)</p>
+<p>This is the <strong>validation dataset</strong>. Train on BMW i3 + NASA + NREL, <strong>validate on FOBSS</strong>. If models perform well on FOBSS foxBMS data, they will perform well on the foxBMS vECU.</p>
+<h3 id="revised-domain-gap-assessment">Revised Domain Gap Assessment</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Pack-Level Gap</th>
+<th>Cell-Level Gap</th>
+<th>Overall</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SOC LSTM</strong></td>
+<td>HIGH (96S vs 18S)</td>
+<td>LOW (if retrained on per-cell V)</td>
+<td><strong>MEDIUM</strong></td>
+<td>Normalize to per-cell voltage; validate on FOBSS</td>
+</tr>
+<tr>
+<td><strong>SOH LSTM</strong></td>
+<td>N/A (cell-level model)</td>
+<td><strong>NONE</strong> — trained on LiionPro cell data</td>
+<td><strong>LOW</strong></td>
+<td>Needs cycling history; replay synthetic cycles through plant model</td>
+</tr>
+<tr>
+<td><strong>Thermal CNN</strong></td>
+<td>N/A (cell-level model)</td>
+<td><strong>NONE</strong> — trained on cell dT/dt</td>
+<td><strong>LOW</strong></td>
+<td>Directly applicable to foxBMS 0x280 cell temps</td>
+</tr>
+<tr>
+<td><strong>RUL Transformer</strong></td>
+<td>N/A (cell-level model)</td>
+<td><strong>NONE</strong> — trained on MIT cell cycles</td>
+<td><strong>LOW</strong></td>
+<td>Needs cycle history; replay through plant model</td>
+</tr>
+<tr>
+<td><strong>Imbalance CNN</strong></td>
+<td>N/A (cell-level model)</td>
+<td><strong>NONE</strong> — trained on cell voltage spread</td>
+<td><strong>LOW</strong></td>
+<td>Directly applicable to foxBMS 0x270 cell voltages</td>
+</tr>
+</tbody>
+</table>
+<h3 id="revised-honest-assessment">Revised Honest Assessment</h3>
+<p>The original analysis overstated the domain gap by focusing only on BMW i3 pack-level data. With the full dataset inventory:</p>
+<ul>
+<li><strong>3 models (Thermal CNN, Imbalance CNN, SOH LSTM)</strong>: Cell-level training data, no topology dependency. Expected to transfer directly. Validate on FOBSS.</li>
+<li><strong>1 model (RUL Transformer)</strong>: Cell-level but needs cycling history. Can demo with synthetic cycle replay. Not useful for single-run SIL.</li>
+<li><strong>1 model (SOC LSTM)</strong>: Real domain gap at pack level. Three options:</li>
+<li><strong>Normalize to per-cell V</strong> (pack_V/96 → pack_V/18 both give ~3.7V). Quick fix, may work.</li>
+<li><strong>Retrain on FOBSS data</strong> (actual foxBMS signals). Best accuracy, 3-5 day effort.</li>
+<li><strong>Use NASA cell data directly</strong> (already in combined training set). No pack topology in the data.</li>
+</ul>
+<p><strong>The 1.83% RMSE should still not be claimed for foxBMS without validation, but the expected degradation is less severe than originally assessed.</strong> Cell-level models are likely to transfer with &lt;2x accuracy loss. Validate on FOBSS before making any claims.</p>
+<hr />
+<h2 id="3-expected-value-analysis">3. Expected Value Analysis</h2>
+<h3 id="layer-1-trip-replay">Layer 1: Trip Replay</h3>
+<table>
+<thead>
+<tr>
+<th>Value Dimension</th>
+<th>Without ML Integration</th>
+<th>With Trip Replay</th>
+<th>Delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Test realism</td>
+<td>Static 0A/3700mV/25C</td>
+<td>Real driving profiles with transients</td>
+<td><strong>Transformative</strong></td>
+</tr>
+<tr>
+<td>SOC validation</td>
+<td>SOC=50% forever</td>
+<td>SOC varies 20-100% over trip</td>
+<td><strong>Enables algorithm testing</strong></td>
+</tr>
+<tr>
+<td>Fault discovery</td>
+<td>None (all values in range)</td>
+<td>Real data may trigger edge cases</td>
+<td><strong>Medium</strong></td>
+</tr>
+<tr>
+<td>Demo quality</td>
+<td>"BMS reaches NORMAL" (boring)</td>
+<td>"BMS processes real BMW i3 trip" (compelling)</td>
+<td><strong>High</strong></td>
+</tr>
+<tr>
+<td>Code changes</td>
+<td>None</td>
+<td>~80 lines Python, no C changes</td>
+<td><strong>Minimal investment</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected value: HIGH. Best effort-to-value ratio of all three layers.</strong></p>
+<h3 id="layer-2-ml-sidecar">Layer 2: ML Sidecar</h3>
+<table>
+<thead>
+<tr>
+<th>Value Dimension</th>
+<th>Without ML Sidecar</th>
+<th>With ML Sidecar</th>
+<th>Delta</th>
+<th>Confidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SOC accuracy comparison</td>
+<td>No comparison possible</td>
+<td>foxBMS coulomb vs ML LSTM side-by-side</td>
+<td><strong>High if accurate</strong></td>
+<td>MEDIUM — per-cell normalization + FOBSS validation path</td>
+</tr>
+<tr>
+<td>Thermal monitoring</td>
+<td>foxBMS: threshold at 80C</td>
+<td>ML: risk score 0-1, early warning</td>
+<td><strong>High</strong></td>
+<td>HIGH — cell-level model, no topology gap, NREL-trained</td>
+</tr>
+<tr>
+<td>Degradation tracking</td>
+<td>Nothing</td>
+<td>SOH trend over synthetic cycles</td>
+<td><strong>Medium</strong></td>
+<td>MEDIUM — cell-level LiionPro data, replay via plant model</td>
+</tr>
+<tr>
+<td>Portfolio / thesis value</td>
+<td>"I ported foxBMS"</td>
+<td>"I built ML-augmented BMS"</td>
+<td><strong>High</strong></td>
+<td>HIGH</td>
+</tr>
+<tr>
+<td>Architectural pattern</td>
+<td>None</td>
+<td>Sidecar + CAN + ONNX = reusable</td>
+<td><strong>High</strong></td>
+<td>HIGH</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected value: MEDIUM-HIGH. SOC LSTM needs validation, but Thermal CNN and Imbalance CNN are expected to transfer directly (cell-level data, no topology gap).</strong></p>
+<p>Honest decomposition of the "ML-augmented BMS" claim:</p>
+<table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Supportable?</th>
+<th>Evidence Needed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"ML SOC outperforms coulomb counting"</td>
+<td>LIKELY — normalize to per-cell V, validate on FOBSS foxBMS data</td>
+<td>Run both on same trip, compare against ground truth SOC from CSV. FOBSS is the validation set.</td>
+</tr>
+<tr>
+<td>"Thermal anomaly detected 20s early"</td>
+<td>LIKELY — Thermal CNN trained on cell-level dT/dt (NREL), no topology gap</td>
+<td>Implement NREL scenario on foxBMS 0x280, measure detection time vs threshold</td>
+</tr>
+<tr>
+<td>"Cell imbalance detected before threshold"</td>
+<td>LIKELY — Imbalance CNN trained on multi-chem cell spread, directly maps to foxBMS 0x270</td>
+<td>Inject voltage spread across 18 cells, verify CNN detects before foxBMS balancing threshold</td>
+</tr>
+<tr>
+<td>"SOH tracking enables predictive maintenance"</td>
+<td>POSSIBLE — LiionPro cell-level data is real, but needs cycling history replay</td>
+<td>Replay 500-cycle synthetic degradation through plant model, validate SOH trend</td>
+</tr>
+<tr>
+<td>"RUL predicted with 16% MAPE"</td>
+<td>NO — that number is from MIT dataset, not foxBMS runtime</td>
+<td>Can only demonstrate with synthetic cycle replay. Cite MIT number for model, measure separately for foxBMS</td>
+</tr>
+<tr>
+<td>"5 ML models deployed on CAN bus"</td>
+<td>YES — architecturally true, all ONNX models load</td>
+<td>Demonstrable regardless of accuracy</td>
+</tr>
+</tbody>
+</table>
+<h3 id="layer-3-fault-injection">Layer 3: Fault Injection</h3>
+<table>
+<thead>
+<tr>
+<th>Value Dimension</th>
+<th>Without ML Faults</th>
+<th>With ML Faults</th>
+<th>Delta</th>
+<th>Confidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fault realism</td>
+<td>Step function (0→4.5V instantly)</td>
+<td>Gradual ramp following NREL profiles</td>
+<td><strong>High</strong></td>
+<td>MEDIUM</td>
+</tr>
+<tr>
+<td>Detection comparison</td>
+<td>foxBMS threshold only</td>
+<td>foxBMS threshold vs ML prediction time</td>
+<td><strong>High if DIAG works</strong></td>
+<td>LOW — DIAG suppressed</td>
+</tr>
+<tr>
+<td>Test coverage</td>
+<td>6 manual scenarios</td>
+<td>Data-driven scenario generation</td>
+<td><strong>Medium</strong></td>
+<td>MEDIUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Expected value: MEDIUM, but BLOCKED by DIAG_Handler suppression.</strong></p>
+<hr />
+<h2 id="4-cost-benefit-summary">4. Cost-Benefit Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Effort</th>
+<th>Value</th>
+<th>Risk</th>
+<th>ROI</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>L1: Trip Replay</strong></td>
+<td>2-3 days</td>
+<td>HIGH</td>
+<td>LOW</td>
+<td><strong>BEST</strong></td>
+<td>DO FIRST — BMW i3 pack + NASA cell data for per-cell variation</td>
+</tr>
+<tr>
+<td><strong>L2: ML Sidecar</strong></td>
+<td>5-7 days</td>
+<td>HIGH</td>
+<td>LOW-MEDIUM</td>
+<td><strong>HIGH</strong></td>
+<td>DO SECOND — Thermal CNN + Imbalance CNN transfer directly (cell-level). SOC LSTM needs per-cell normalization + FOBSS validation</td>
+</tr>
+<tr>
+<td><strong>L3: Fault Injection</strong></td>
+<td>1-2 weeks</td>
+<td>HIGH</td>
+<td>MEDIUM</td>
+<td><strong>GOOD</strong></td>
+<td>DO THIRD — NREL thermal + MIT degradation are cell-level, map directly to 0x270/0x280. Still blocked by DIAG suppression for foxBMS-side detection.</td>
+</tr>
+<tr>
+<td><strong>FOBSS validation</strong></td>
+<td>2-3 days</td>
+<td>HIGH (de-risks everything)</td>
+<td>LOW</td>
+<td><strong>BEST</strong></td>
+<td>DO EARLY — download FOBSS from KIT Radar, validate all models on real foxBMS data</td>
+</tr>
+<tr>
+<td><strong>Retrain SOC on per-cell V</strong></td>
+<td>3-5 days</td>
+<td>HIGH (fixes pack-level gap)</td>
+<td>LOW</td>
+<td>HIGH</td>
+<td>DO if SOC RMSE &gt; 5% on FOBSS</td>
+</tr>
+<tr>
+<td><strong>Docker compose</strong></td>
+<td>1 day</td>
+<td>MEDIUM</td>
+<td>LOW</td>
+<td>GOOD</td>
+<td>DO after L2 works</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-what-a-system-architect-actually-wants">5. What a System Architect Actually Wants</h2>
+<p>As a system architect evaluating this for a SIL test platform, I care about:</p>
+<h3 id="must-have-blocks-adoption">Must-have (blocks adoption)</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Status</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reproducible build + run</td>
+<td>PARTIAL — <code>setup.sh</code> missing, manual patch steps</td>
+<td>Create automation script</td>
+</tr>
+<tr>
+<td>Deterministic test results</td>
+<td>NO — wall-clock timing, race between plant and vECU</td>
+<td>Need <code>--sim-time</code> mode or startup barrier</td>
+</tr>
+<tr>
+<td>Automated pass/fail</td>
+<td>NO — manual candump visual inspection</td>
+<td>Need <code>test_smoke.py</code> with assertions</td>
+</tr>
+<tr>
+<td>Known accuracy bounds</td>
+<td>NO — ML accuracy on foxBMS data is unmeasured</td>
+<td>Must validate before any claim</td>
+</tr>
+</tbody>
+</table>
+<h3 id="should-have-enables-serious-use">Should-have (enables serious use)</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Status</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker compose for multi-ECU SIL</td>
+<td>Missing</td>
+<td>1 day effort after L2 works</td>
+</tr>
+<tr>
+<td>CAN message period validation</td>
+<td>Missing</td>
+<td>foxBMS sends asynchronously, no DBC period enforcement</td>
+</tr>
+<tr>
+<td>Graceful degradation if ML sidecar crashes</td>
+<td>Not designed</td>
+<td>foxBMS should run fine without sidecar (it does today)</td>
+</tr>
+<tr>
+<td>Logging / recording for offline analysis</td>
+<td>Missing</td>
+<td>Need CSV or BLF logger</td>
+</tr>
+</tbody>
+</table>
+<h3 id="nice-to-have-differentiators">Nice-to-have (differentiators)</h3>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Status</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XCP for real-time variable observation</td>
+<td>Not started</td>
+<td>Major effort</td>
+</tr>
+<tr>
+<td>Grafana dashboard for ML vs foxBMS SOC</td>
+<td>Not started</td>
+<td>2-3 days after L2</td>
+</tr>
+<tr>
+<td>CI/CD pipeline with regression tests</td>
+<td>Not started</td>
+<td>Needs <code>test_smoke.py</code> first</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-recommended-path-forward">6. Recommended Path Forward</h2>
+<pre><code>Week 1:  Download FOBSS dataset from KIT Radar (foxBMS-native data)
+         L1.1 Trip replay plant model (BMW i3 pack + NASA cell variation)
+         setup.sh + test_smoke.py (automation)
+
+Week 2:  Validate ALL 5 models on FOBSS data (the zero-gap dataset)
+         Measure: SOC RMSE, Thermal F1, Imbalance accuracy on real foxBMS signals
+         Decision gate (see below)
+
+Week 3:  L2.1 ML sidecar skeleton (CAN read + ONNX load)
+         L2.2 Deploy validated models: Thermal CNN + Imbalance CNN first (lowest risk)
+         L2.2b SOC LSTM (with per-cell normalization if needed)
+
+Week 4:  L2.3 SOC comparison dashboard (foxBMS vs ML vs ground truth)
+         L2.4 SOH LSTM with synthetic cycle replay through plant model
+         Docker compose
+
+Week 5:  L3.1 Thermal fault injection (NREL profiles → foxBMS 0x280)
+         L3.2 Cell imbalance injection (EV pack data → foxBMS 0x270)
+         Document measured accuracy on FOBSS + foxBMS SIL
+</code></pre>
+<h3 id="key-decision-gate-end-of-week-2-fobss-validation">Key decision gate: End of Week 2 (FOBSS validation)</h3>
+<p>After validating all models on FOBSS foxBMS data:</p>
+<p><strong>SOC LSTM on FOBSS:</strong>
+- <strong>If &lt; 3% RMSE</strong>: Proceed as planned. Strong thesis claim. Per-cell normalization works.
+- <strong>If 3-5% RMSE</strong>: Still useful. "ML provides independent SOC estimate, X% RMSE on foxBMS monitoring data."
+- <strong>If &gt; 5% RMSE</strong>: Retrain on per-cell voltage (NASA + FOBSS combined). 3-5 day detour.
+- <strong>If &gt; 10% RMSE</strong>: Pack-level SOC model doesn't transfer. Not a blocker — proceed with cell-level models.</p>
+<p><strong>Cell-level models on FOBSS (Thermal, Imbalance):</strong>
+- <strong>Expected outcome</strong>: Near-training accuracy (cell physics are pack-independent)
+- <strong>If accuracy degrades significantly</strong>: Indicates data format mismatch, not domain gap. Debug normalization/encoding.</p>
+<p><strong>Key insight</strong>: Even if SOC LSTM fails to transfer, <strong>3 out of 5 models operate at cell level and are expected to work</strong>. The integration is not a single-model bet.</p>
+<hr />
+<h2 id="7-what-not-to-claim">7. What NOT to Claim</h2>
+<table>
+<thead>
+<tr>
+<th>Tempting Claim</th>
+<th>Why It's Wrong</th>
+<th>What to Say Instead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"1.83% SOC accuracy on our BMS"</td>
+<td>Measured on BMW i3 test split, not foxBMS</td>
+<td>"1.83% on BMW i3; X% measured on FOBSS foxBMS data; Y% on foxBMS SIL" — cite all three</td>
+</tr>
+<tr>
+<td>"ML detects faults 20s before foxBMS"</td>
+<td>DIAG is suppressed, foxBMS can't detect faults at all right now</td>
+<td>"ML thermal score rises while foxBMS threshold has not yet tripped" — accurate framing</td>
+</tr>
+<tr>
+<td>"Cell-level models transfer directly"</td>
+<td>Likely true but unvalidated</td>
+<td>Validate on FOBSS first, then claim. "Validated on foxBMS monitoring data from KIT Radar"</td>
+</tr>
+<tr>
+<td>"5 production ML models deployed"</td>
+<td>SOH and RUL need cycling history</td>
+<td>"SOC, Thermal, and Imbalance models deployed on live CAN; SOH and RUL demonstrated with synthetic cycle replay"</td>
+</tr>
+<tr>
+<td>"Replaces dSPACE ($150k)"</td>
+<td>Not real-time, not deterministic, not validated</td>
+<td>"Open-source SIL alternative for early-stage BMS algorithm development and ML co-simulation"</td>
+</tr>
+<tr>
+<td>"ASIL-D ML safety monitoring"</td>
+<td>No FMEA, no safety case, no redundancy</td>
+<td>"Demonstration of ML anomaly detection alongside certified BMS firmware — not safety-qualified"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-bottom-line">8. Bottom Line</h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Is it technically feasible?</td>
+<td><strong>Yes</strong> — all interfaces exist, no architectural blockers</td>
+</tr>
+<tr>
+<td>Is it worth doing?</td>
+<td><strong>All three layers: Yes.</strong> Cell-level data eliminates most domain gap concerns. Layer 3 still needs selective DIAG.</td>
+</tr>
+<tr>
+<td>What's the expected accuracy?</td>
+<td><strong>Cell-level models (Thermal, Imbalance): likely transfer directly.</strong> SOC LSTM: validate on FOBSS before claiming. SOH/RUL: need cycle replay.</td>
+</tr>
+<tr>
+<td>What's the real differentiator?</td>
+<td><strong>Two things</strong>: (1) the architecture (firmware + ML + CAN + ONNX for $0), and (2) the dual-level data strategy (pack driving profiles + cell electrochemistry) feeding both foxBMS subsystems</td>
+</tr>
+<tr>
+<td>Biggest risk?</td>
+<td><strong>Overclaiming SOC accuracy</strong> without FOBSS validation. Cell-level models are lower risk.</td>
+</tr>
+<tr>
+<td>What data to prioritize?</td>
+<td><strong>FOBSS first</strong> (foxBMS-native, zero gap). Then NREL thermal (cell-level, immediate fault injection value). BMW i3 for pack-level replay.</td>
+</tr>
+<tr>
+<td>What should a student focus on?</td>
+<td><strong>Week 1: Download FOBSS + trip replay. Week 2: Validate models on FOBSS. Week 3: ML sidecar with validated models. Week 4+: Fault injection with NREL/MIT cell data.</strong></td>
+</tr>
+</tbody>
+</table></div>
+<div class="nav-buttons"><a href="ml-integration.html">&larr; ML Integration</a><a href="hil-data-plan.html">HIL Data Plan &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

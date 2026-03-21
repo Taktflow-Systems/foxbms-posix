@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Part 6: Safety Reqs — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" class="active">Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 6: Safety Reqs</div>
+<div class="content"><h1 id="software-safety-requirements-specification">Software Safety Requirements Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ISO-SSR-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies the software safety requirements for the foxBMS 2 POSIX port
+per ISO 26262 Part 6 Clause 6. It defines the safety goals, derives Fault Tolerant
+Time Intervals (FTTI) from the DIAG configuration, and documents the diagnostic
+coverage provided by the threshold counter mechanism.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>Safety requirements for all ASIL D software functions in the BMS, including voltage,
+current, and temperature monitoring, contactor control, and fault management.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.2-001]</td>
+<td>System Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>[SWE.3-001]</td>
+<td>Software Detailed Design</td>
+</tr>
+<tr>
+<td>ISO 26262:2018</td>
+<td>Part 6, Clauses 6-10</td>
+</tr>
+<tr>
+<td>ISO 26262:2018</td>
+<td>Part 5, Clause 7 (HSI)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-definitions">4. Definitions</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FTTI</td>
+<td>Fault Tolerant Time Interval -- maximum time from fault occurrence to reaching a safe state</td>
+</tr>
+<tr>
+<td>Safe state</td>
+<td>Contactors open, battery disconnected from load</td>
+</tr>
+<tr>
+<td>Diagnostic coverage</td>
+<td>Percentage of faults detectable by the diagnostic mechanism</td>
+</tr>
+<tr>
+<td>Single-point fault</td>
+<td>A fault that directly leads to a safety goal violation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-safety-goals">5. Safety Goals</h2>
+<p>The following safety goals are derived from the hazard and risk analysis for a battery
+management system. Each is classified ASIL D.</p>
+<div class="hitl-lock">🔒 HITL-LOCK: SAFETY-GOALS </div>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Safety Goal</th>
+<th>ASIL</th>
+<th>Safe State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SG-001</td>
+<td>Prevent battery cell overvoltage leading to thermal runaway</td>
+<td>D</td>
+<td>Open all contactors</td>
+</tr>
+<tr>
+<td>SG-002</td>
+<td>Prevent battery cell undervoltage leading to cell damage or reversal</td>
+<td>D</td>
+<td>Open all contactors</td>
+</tr>
+<tr>
+<td>SG-003</td>
+<td>Prevent battery overcurrent leading to thermal damage</td>
+<td>D</td>
+<td>Open all contactors</td>
+</tr>
+<tr>
+<td>SG-004</td>
+<td>Prevent operation outside safe temperature range</td>
+<td>D</td>
+<td>Open all contactors</td>
+</tr>
+<tr>
+<td>SG-005</td>
+<td>Prevent unintended battery re-energization after fault</td>
+<td>D</td>
+<td>Maintain contactors open; require dual-condition exit</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-fault-tolerant-time-interval-ftti-analysis">6. Fault Tolerant Time Interval (FTTI) Analysis</h2>
+<p>The FTTI for each safety-relevant fault is derived from the DIAG configuration:
+threshold count, evaluation delay, and the 100 ms BMS task cycle.</p>
+<pre><code>FTTI = (threshold x delay) + BMS_task_cycle + contactor_open_time
+</code></pre>
+<p>Where:
+- <code>threshold</code> is the DIAG counter limit
+- <code>delay</code> is the minimum re-evaluation interval
+- <code>BMS_task_cycle</code> = 100 ms (worst case for BMS to read FATAL flag)
+- <code>contactor_open_time</code> = 10 ms (contactor driver response)</p>
+<h3 id="61-ftti-calculation-table">6.1 FTTI Calculation Table</h3>
+<table>
+<thead>
+<tr>
+<th>Safety Goal</th>
+<th>DIAG ID</th>
+<th>Threshold</th>
+<th>Delay (ms)</th>
+<th>Max Detection Time (ms)</th>
+<th>BMS Cycle (ms)</th>
+<th>Contactor (ms)</th>
+<th>FTTI (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SG-001 (OV)</td>
+<td>CELL_VOLTAGE_OVERVOLTAGE_MSL</td>
+<td>50</td>
+<td>200</td>
+<td>10000</td>
+<td>100</td>
+<td>10</td>
+<td>10110</td>
+</tr>
+<tr>
+<td>SG-002 (UV)</td>
+<td>CELL_VOLTAGE_UNDERVOLTAGE_MSL</td>
+<td>50</td>
+<td>200</td>
+<td>10000</td>
+<td>100</td>
+<td>10</td>
+<td>10110</td>
+</tr>
+<tr>
+<td>SG-003 (OC discharge)</td>
+<td>OVERCURRENT_DISCHARGE_CELL_MSL</td>
+<td>10</td>
+<td>100</td>
+<td>1000</td>
+<td>100</td>
+<td>10</td>
+<td>1110</td>
+</tr>
+<tr>
+<td>SG-003 (OC charge)</td>
+<td>OVERCURRENT_CHARGE_CELL_MSL</td>
+<td>10</td>
+<td>100</td>
+<td>1000</td>
+<td>100</td>
+<td>10</td>
+<td>1110</td>
+</tr>
+<tr>
+<td>SG-003 (String OC)</td>
+<td>STRING_OVERCURRENT_DISCHARGE_MSL</td>
+<td>10</td>
+<td>100</td>
+<td>1000</td>
+<td>100</td>
+<td>10</td>
+<td>1110</td>
+</tr>
+<tr>
+<td>SG-003 (Pack OC)</td>
+<td>PACK_OVERCURRENT_DISCHARGE_MSL</td>
+<td>10</td>
+<td>100</td>
+<td>1000</td>
+<td>100</td>
+<td>10</td>
+<td>1110</td>
+</tr>
+<tr>
+<td>SG-004 (OT disch)</td>
+<td>TEMP_OVERTEMPERATURE_DISCHARGE_MSL</td>
+<td>500</td>
+<td>1000</td>
+<td>500000</td>
+<td>100</td>
+<td>10</td>
+<td>500110</td>
+</tr>
+<tr>
+<td>SG-004 (UT disch)</td>
+<td>TEMP_UNDERTEMPERATURE_DISCHARGE_MSL</td>
+<td>500</td>
+<td>1000</td>
+<td>500000</td>
+<td>100</td>
+<td>10</td>
+<td>500110</td>
+</tr>
+<tr>
+<td>SG-004 (OT charge)</td>
+<td>TEMP_OVERTEMPERATURE_CHARGE_MSL</td>
+<td>500</td>
+<td>1000</td>
+<td>500000</td>
+<td>100</td>
+<td>10</td>
+<td>500110</td>
+</tr>
+<tr>
+<td>SG-004 (UT charge)</td>
+<td>TEMP_UNDERTEMPERATURE_CHARGE_MSL</td>
+<td>500</td>
+<td>1000</td>
+<td>500000</td>
+<td>100</td>
+<td>10</td>
+<td>500110</td>
+</tr>
+<tr>
+<td>SG-005 (deep disch)</td>
+<td>DEEP_DISCHARGE_DETECTED</td>
+<td>1</td>
+<td>100</td>
+<td>100</td>
+<td>100</td>
+<td>10</td>
+<td>210</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62-ftti-justification">6.2 FTTI Justification</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>FTTI</th>
+<th>Justification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overcurrent</td>
+<td>~1.1 s</td>
+<td>Current faults progress rapidly; low threshold (10) ensures fast detection</td>
+</tr>
+<tr>
+<td>Overvoltage / Undervoltage</td>
+<td>~10.1 s</td>
+<td>Voltage changes are bounded by charge/discharge rate; moderate threshold (50) balances noise rejection and response time</td>
+</tr>
+<tr>
+<td>Temperature</td>
+<td>~500 s (~8.3 min)</td>
+<td>Thermal events have large time constants (minutes to hours); high threshold (500) with 1 s delay appropriate for physical dynamics</td>
+</tr>
+<tr>
+<td>Deep discharge</td>
+<td>~0.21 s</td>
+<td>Single-event detection; immediate risk of cell reversal at very low voltage</td>
+</tr>
+<tr>
+<td>System critical</td>
+<td>0.11 s</td>
+<td>SYSTEM_MONITORING, FLASHCHECKSUM, ALERT_MODE have threshold=1 and delay=0; immediate detection</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-software-safety-requirements">7. Software Safety Requirements</h2>
+<h3 id="71-fault-detection-requirements">7.1 Fault Detection Requirements</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: SSR-FAULT-DETECT </div>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Safety Goal</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSR-001</td>
+<td>The software shall detect cell overvoltage above 2800 mV within the FTTI of 10.1 seconds.</td>
+<td>SG-001</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-002</td>
+<td>The software shall detect cell undervoltage below 1500 mV within the FTTI of 10.1 seconds.</td>
+<td>SG-002</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-003</td>
+<td>The software shall detect cell discharge overcurrent above 180000 mA within the FTTI of 1.1 seconds.</td>
+<td>SG-003</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-004</td>
+<td>The software shall detect cell charge overcurrent above 180000 mA within the FTTI of 1.1 seconds.</td>
+<td>SG-003</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-005</td>
+<td>The software shall detect overtemperature discharge above 55 deg C within the FTTI of 500.1 seconds.</td>
+<td>SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-006</td>
+<td>The software shall detect undertemperature discharge below -20 deg C within the FTTI of 500.1 seconds.</td>
+<td>SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-007</td>
+<td>The software shall detect overtemperature charge above 45 deg C within the FTTI of 500.1 seconds.</td>
+<td>SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-008</td>
+<td>The software shall detect undertemperature charge below -20 deg C within the FTTI of 500.1 seconds.</td>
+<td>SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-009</td>
+<td>The software shall detect deep discharge (cell voltage &lt;= 1500 mV) within 0.21 seconds and latch the fault.</td>
+<td>SG-002, SG-005</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-010</td>
+<td>The software shall detect current on an open string within 1.1 seconds.</td>
+<td>SG-003</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-fault-reaction-requirements">7.2 Fault Reaction Requirements</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: SSR-FAULT-REACT </div>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Safety Goal</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSR-020</td>
+<td>Upon detection of any MSL violation (FATAL), the software shall transition the BMS to ERROR state.</td>
+<td>SG-001 to SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-021</td>
+<td>In ERROR state, the software shall command all three contactors (string+, string-, precharge) to open within one BMS task cycle (100 ms).</td>
+<td>SG-001 to SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-022</td>
+<td>The software shall not permit the BMS to exit ERROR state unless the originating fault condition has cleared.</td>
+<td>SG-005</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-023</td>
+<td>The software shall not permit the BMS to exit ERROR state unless an explicit STANDBY request has been received via CAN.</td>
+<td>SG-005</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-024</td>
+<td>SSR-022 and SSR-023 must both be satisfied simultaneously for ERROR exit (AND condition).</td>
+<td>SG-005</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-diagnostic-coverage-requirements">7.3 Diagnostic Coverage Requirements</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: SSR-DIAG-COV </div>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Safety Goal</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSR-030</td>
+<td>The DIAG module shall provide debounced fault detection with configurable threshold counters per diagnostic ID.</td>
+<td>SG-001 to SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-031</td>
+<td>The DIAG module shall prevent false FATAL triggers from transient measurement noise through threshold counting.</td>
+<td>SG-001 to SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-032</td>
+<td>The DIAG module shall detect persistent faults by incrementing the counter on each evaluation cycle until the threshold is reached.</td>
+<td>SG-001 to SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-033</td>
+<td>The DIAG module shall allow fault recovery by decrementing the counter when the fault condition clears.</td>
+<td>SG-005</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="74-communication-safety-requirements">7.4 Communication Safety Requirements</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: SSR-COMM-SAFETY </div>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Safety Goal</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSR-040</td>
+<td>The software shall detect loss of CAN communication within the configured FTTI (100 events x 200 ms = 20 seconds).</td>
+<td>SG-001 to SG-004</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-041</td>
+<td>The software shall detect loss of current sensor communication within the configured FTTI (100 events x 200 ms = 20 seconds).</td>
+<td>SG-003</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-042</td>
+<td>The software shall detect AFE communication failure within the configured FTTI (5 events x 100 ms = 0.5 seconds).</td>
+<td>SG-001, SG-002, SG-004</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="75-contactor-safety-requirements">7.5 Contactor Safety Requirements</h3>
+<div class="hitl-lock">🔒 HITL-LOCK: SSR-CONTACTOR </div>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Safety Goal</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSR-050</td>
+<td>The software shall monitor contactor feedback and detect mismatches within the configured FTTI (20 events x 100 ms = 2 seconds).</td>
+<td>SG-001 to SG-005</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-051</td>
+<td>The software shall not close contactors unless the BMS is in a state that permits contactor closure (PRECHARGE or NORMAL).</td>
+<td>SG-005</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SSR-052</td>
+<td>The software shall respect the contactor maximum break current limit of 3500 mA during normal disconnect sequences.</td>
+<td>SG-003</td>
+<td>C</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-diagnostic-coverage-summary">8. Diagnostic Coverage Summary</h2>
+<h3 id="81-coverage-by-fault-category">8.1 Coverage by Fault Category</h3>
+<table>
+<thead>
+<tr>
+<th>Fault Category</th>
+<th>Detection Mechanism</th>
+<th>Diagnostic Coverage</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell overvoltage</td>
+<td>SOA voltage check + DIAG counter</td>
+<td>High (99%) -- periodic comparison every 100 ms</td>
+<td>D</td>
+</tr>
+<tr>
+<td>Cell undervoltage</td>
+<td>SOA voltage check + DIAG counter</td>
+<td>High (99%) -- periodic comparison every 100 ms</td>
+<td>D</td>
+</tr>
+<tr>
+<td>Overcurrent</td>
+<td>SOA current check + DIAG counter</td>
+<td>High (99%) -- periodic comparison every 100 ms</td>
+<td>D</td>
+</tr>
+<tr>
+<td>Overtemperature</td>
+<td>SOA temperature check + DIAG counter</td>
+<td>High (99%) -- periodic comparison every 100 ms</td>
+<td>D</td>
+</tr>
+<tr>
+<td>Contactor failure</td>
+<td>Feedback pin monitoring + DIAG counter</td>
+<td>Medium (90%) -- electromechanical failure modes</td>
+<td>D</td>
+</tr>
+<tr>
+<td>CAN communication</td>
+<td>Timing supervision + DIAG counter</td>
+<td>Medium (90%) -- bus-level faults detectable</td>
+<td>D</td>
+</tr>
+<tr>
+<td>AFE communication</td>
+<td>SPI integrity check + DIAG counter</td>
+<td>Medium (90%) -- protocol-level faults</td>
+<td>D</td>
+</tr>
+<tr>
+<td>Deep discharge</td>
+<td>Voltage comparison, single-event trigger</td>
+<td>High (99%) -- threshold = 1</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-posix-port-diagnostic-coverage">8.2 POSIX Port Diagnostic Coverage</h3>
+<p>In the POSIX SIL environment, 61 of 85 DIAG IDs (72%) are retained and exercisable.
+The 24 suppressed IDs cover hardware-specific faults that cannot be meaningfully
+triggered without physical hardware. This represents 100% coverage of all
+software-checkable safety paths.</p>
+<h2 id="9-freedom-from-interference">9. Freedom from Interference</h2>
+<h3 id="91-data-independence">9.1 Data Independence</h3>
+<p>The database module enforces single-writer-per-entry discipline, preventing data
+corruption between modules of different ASIL levels.</p>
+<h3 id="92-execution-independence">9.2 Execution Independence</h3>
+<p>The cooperative main loop executes tasks sequentially. There is no preemption, so
+there are no race conditions or priority inversions. Each task runs to completion
+before the next begins.</p>
+<h3 id="93-temporal-independence">9.3 Temporal Independence</h3>
+<p>Each DIAG entry has an independent evaluation delay and threshold counter. A fault in
+one measurement category does not affect the detection timing of another category.</p>
+<h2 id="10-acceptance-criteria">10. Acceptance Criteria</h2>
+<p>This document is accepted when:</p>
+<ol>
+<li>All FTTI values are verified through integration testing (SWE.5-001).</li>
+<li>All safety requirements (SSR-xxx) are traced to test cases.</li>
+<li>Diagnostic coverage claims are supported by test evidence.</li>
+<li>The safety path (SOA -&gt; DIAG -&gt; BMS -&gt; Contactor) is demonstrated end-to-end.</li>
+</ol>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="part-5-fmea.html">&larr; Part 5: FMEA</a><a href="part-6-ftti.html">Part 6: FTTI &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

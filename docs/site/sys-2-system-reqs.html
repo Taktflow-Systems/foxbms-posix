@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYS.2 System Reqs — foxBMS POSIX vECU</title>
+<style>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="munich-electrification.html" >Munich Electrification</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" class="active">SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — System / SYS.2 System Reqs</div>
+<div class="content"><h1 id="system-requirements-specification">System Requirements Specification</h1>
+<table>
+<thead>
+<tr>
+<th>Document ID</th>
+<th>Rev</th>
+<th>Date</th>
+<th>Classification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS.2-001</td>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>Confidential</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revision-history">Revision History</h2>
+<table>
+<thead>
+<tr>
+<th>Rev</th>
+<th>Date</th>
+<th>Author</th>
+<th>Reviewer</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-03-21</td>
+<td>An Dao</td>
+<td>--</td>
+<td>Initial release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-purpose">1. Purpose</h2>
+<p>This document specifies the system-level requirements for the foxBMS 2 POSIX port
+battery management system. It serves as the primary input to the system architecture
+(SYS.3-001) and is the root of the bidirectional traceability chain mandated by
+ASPICE SYS.2 and ISO 26262 Part 3.</p>
+<h2 id="2-scope">2. Scope</h2>
+<p>The requirements herein cover the BMS functionality as configured for one battery
+string with the cell chemistry and safety parameters defined below. The POSIX port
+preserves all software-checkable safety logic while replacing hardware-dependent
+interfaces with validated stubs.</p>
+<h2 id="3-references">3. References</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[SYS.3-001]</td>
+<td>System Architecture Description</td>
+</tr>
+<tr>
+<td>[SWE.1-001]</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>[ISO-SSR-001]</td>
+<td>Software Safety Requirements</td>
+</tr>
+<tr>
+<td>foxBMS-DS</td>
+<td>foxBMS 2 v1.10.0 Data Sheet</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-definitions">4. Definitions</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MOL</td>
+<td>Maximum Operating Limit -- first warning threshold</td>
+</tr>
+<tr>
+<td>RSL</td>
+<td>Recommended Safety Limit -- elevated warning threshold</td>
+</tr>
+<tr>
+<td>MSL</td>
+<td>Maximum Safety Limit -- violation triggers FATAL diagnostic</td>
+</tr>
+<tr>
+<td>FTTI</td>
+<td>Fault Tolerant Time Interval</td>
+</tr>
+<tr>
+<td>SOA</td>
+<td>Safe Operating Area</td>
+</tr>
+<tr>
+<td>DIAG</td>
+<td>Diagnostic module</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-system-requirements">5. System Requirements</h2>
+<h3 id="51-battery-pack-configuration">5.1 Battery Pack Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Value</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-001</td>
+<td>The BMS shall support the configured number of battery strings.</td>
+<td>1</td>
+<td>Single-string topology for SIL validation</td>
+</tr>
+<tr>
+<td>SYS-REQ-002</td>
+<td>Each string shall contain the configured number of modules.</td>
+<td>1</td>
+<td>Minimum viable pack structure</td>
+</tr>
+<tr>
+<td>SYS-REQ-003</td>
+<td>Each module shall contain the configured number of cells in series.</td>
+<td>18</td>
+<td>Matches reference cell chemistry voltage range</td>
+</tr>
+<tr>
+<td>SYS-REQ-004</td>
+<td>Each cell block shall contain the configured number of parallel cells.</td>
+<td>1</td>
+<td>Single parallel cell per block</td>
+</tr>
+<tr>
+<td>SYS-REQ-005</td>
+<td>Each module shall support the configured number of temperature sensors.</td>
+<td>8</td>
+<td>Sufficient thermal coverage per module</td>
+</tr>
+<tr>
+<td>SYS-REQ-006</td>
+<td>The system shall manage the configured number of contactors.</td>
+<td>3 (string+, string-, precharge)</td>
+<td>Minimum contactor set for safe operation</td>
+</tr>
+<tr>
+<td>SYS-REQ-007</td>
+<td>The system shall accept HV voltage inputs from current sensor.</td>
+<td>3 inputs</td>
+<td>Pack voltage, string voltage, and reference</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52-cell-electrical-parameters">5.2 Cell Electrical Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Value</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-010</td>
+<td>The BMS shall record cell nominal capacity.</td>
+<td>3500 mAh</td>
+<td>Cell data sheet parameter</td>
+</tr>
+<tr>
+<td>SYS-REQ-011</td>
+<td>The BMS shall record cell energy rating.</td>
+<td>10.0 Wh</td>
+<td>Cell data sheet parameter</td>
+</tr>
+<tr>
+<td>SYS-REQ-012</td>
+<td>The BMS shall record cell nominal voltage.</td>
+<td>2500 mV</td>
+<td>Cell data sheet parameter</td>
+</tr>
+<tr>
+<td>SYS-REQ-013</td>
+<td>The BMS shall enforce maximum string current limit.</td>
+<td>2400 mA</td>
+<td>Derived from cell current rating and parallel count</td>
+</tr>
+<tr>
+<td>SYS-REQ-014</td>
+<td>The BMS shall enforce maximum pack current limit.</td>
+<td>2400 mA</td>
+<td>Single-string configuration; equals string limit</td>
+</tr>
+<tr>
+<td>SYS-REQ-015</td>
+<td>Contactor maximum break current shall not be exceeded.</td>
+<td>3500 mA</td>
+<td>Contactor derating specification</td>
+</tr>
+<tr>
+<td>SYS-REQ-016</td>
+<td>The BMS shall detect rest current condition.</td>
+<td>200 mA</td>
+<td>Threshold below which pack is considered at rest</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53-voltage-safety-thresholds">5.3 Voltage Safety Thresholds</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>MOL (mV)</th>
+<th>RSL (mV)</th>
+<th>MSL (mV)</th>
+<th>Action at MSL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-020</td>
+<td>Cell overvoltage detection</td>
+<td>2720</td>
+<td>2750</td>
+<td>2800</td>
+<td>FATAL: open contactors</td>
+</tr>
+<tr>
+<td>SYS-REQ-021</td>
+<td>Cell undervoltage detection</td>
+<td>1580</td>
+<td>1550</td>
+<td>1500</td>
+<td>FATAL: open contactors</td>
+</tr>
+<tr>
+<td>SYS-REQ-022</td>
+<td>Deep discharge detection</td>
+<td>--</td>
+<td>--</td>
+<td>1500</td>
+<td>FATAL: open contactors, latch</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54-current-safety-thresholds">5.4 Current Safety Thresholds</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>MOL (mA)</th>
+<th>RSL (mA)</th>
+<th>MSL (mA)</th>
+<th>Action at MSL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-030</td>
+<td>Cell discharge overcurrent</td>
+<td>170000</td>
+<td>175000</td>
+<td>180000</td>
+<td>FATAL: open contactors</td>
+</tr>
+<tr>
+<td>SYS-REQ-031</td>
+<td>Cell charge overcurrent</td>
+<td>170000</td>
+<td>175000</td>
+<td>180000</td>
+<td>FATAL: open contactors</td>
+</tr>
+</tbody>
+</table>
+<h3 id="55-temperature-safety-thresholds">5.5 Temperature Safety Thresholds</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>MOL</th>
+<th>RSL</th>
+<th>MSL</th>
+<th>Action at MSL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-040</td>
+<td>Overtemperature during discharge</td>
+<td>45 deg C</td>
+<td>50 deg C</td>
+<td>55 deg C</td>
+<td>FATAL: open contactors</td>
+</tr>
+<tr>
+<td>SYS-REQ-041</td>
+<td>Undertemperature during discharge</td>
+<td>-10 deg C</td>
+<td>-15 deg C</td>
+<td>-20 deg C</td>
+<td>FATAL: open contactors</td>
+</tr>
+<tr>
+<td>SYS-REQ-042</td>
+<td>Overtemperature during charge</td>
+<td>35 deg C</td>
+<td>40 deg C</td>
+<td>45 deg C</td>
+<td>FATAL: open contactors</td>
+</tr>
+<tr>
+<td>SYS-REQ-043</td>
+<td>Undertemperature during charge</td>
+<td>-10 deg C</td>
+<td>-15 deg C</td>
+<td>-20 deg C</td>
+<td>FATAL: open contactors</td>
+</tr>
+</tbody>
+</table>
+<h3 id="56-diagnostic-system-requirements">5.6 Diagnostic System Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-050</td>
+<td>The BMS shall maintain a diagnostic module with at least 85 diagnostic identifiers.</td>
+<td>Coverage of all monitored parameters</td>
+</tr>
+<tr>
+<td>SYS-REQ-051</td>
+<td>Each diagnostic identifier shall have a configurable threshold counter before triggering.</td>
+<td>Debounce transient faults</td>
+</tr>
+<tr>
+<td>SYS-REQ-052</td>
+<td>Each diagnostic identifier shall have a configurable evaluation delay.</td>
+<td>Allow periodic re-evaluation</td>
+</tr>
+<tr>
+<td>SYS-REQ-053</td>
+<td>A diagnostic reaching FATAL severity shall cause the BMS to enter ERROR state.</td>
+<td>Primary safety mechanism</td>
+</tr>
+<tr>
+<td>SYS-REQ-054</td>
+<td>In ERROR state the BMS shall open all contactors.</td>
+<td>Disconnect battery from load</td>
+</tr>
+<tr>
+<td>SYS-REQ-055</td>
+<td>The BMS shall not exit ERROR state until the fault is cleared AND an explicit STANDBY request is received.</td>
+<td>Prevent unintended re-energization</td>
+</tr>
+</tbody>
+</table>
+<h3 id="57-communication-requirements">5.7 Communication Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-060</td>
+<td>The BMS shall transmit state and measurement data on CAN bus.</td>
+<td>Vehicle integration</td>
+</tr>
+<tr>
+<td>SYS-REQ-061</td>
+<td>The BMS shall receive state requests on CAN bus at ID 0x210.</td>
+<td>External control interface</td>
+</tr>
+<tr>
+<td>SYS-REQ-062</td>
+<td>The BMS shall receive current sensor data on CAN IDs 0x521-0x527.</td>
+<td>Isabellenhuette IVT protocol</td>
+</tr>
+<tr>
+<td>SYS-REQ-063</td>
+<td>The BMS shall detect CAN timing failures within the configured threshold.</td>
+<td>Communication integrity</td>
+</tr>
+</tbody>
+</table>
+<h3 id="58-state-machine-requirements">5.8 State Machine Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-070</td>
+<td>The system state machine shall progress through UNINITIALIZED, INITIALIZATION, INITIALIZED, IDLE, RUNNING.</td>
+<td>Orderly system startup</td>
+</tr>
+<tr>
+<td>SYS-REQ-071</td>
+<td>The BMS state machine shall support states STANDBY, PRECHARGE, NORMAL, ERROR.</td>
+<td>Operational mode management</td>
+</tr>
+<tr>
+<td>SYS-REQ-072</td>
+<td>Transition from STANDBY to PRECHARGE shall require an explicit CAN state request.</td>
+<td>Prevent unintended energization</td>
+</tr>
+<tr>
+<td>SYS-REQ-073</td>
+<td>Transition from any state to ERROR shall occur on any FATAL diagnostic event.</td>
+<td>Safety requirement</td>
+</tr>
+</tbody>
+</table>
+<h3 id="59-posix-port-requirements">5.9 POSIX Port Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-080</td>
+<td>The POSIX port shall compile foxBMS 2 v1.10.0 for x86-64 using GCC 13.</td>
+<td>SIL execution target</td>
+</tr>
+<tr>
+<td>SYS-REQ-081</td>
+<td>The POSIX port shall replace FreeRTOS with a cooperative main loop.</td>
+<td>No RTOS on POSIX host</td>
+</tr>
+<tr>
+<td>SYS-REQ-082</td>
+<td>The POSIX port shall replace hardware CAN with SocketCAN.</td>
+<td>Linux-native CAN interface</td>
+</tr>
+<tr>
+<td>SYS-REQ-083</td>
+<td>The POSIX port shall suppress 24 hardware-absent diagnostic IDs.</td>
+<td>Avoid false FATAL on missing hardware</td>
+</tr>
+<tr>
+<td>SYS-REQ-084</td>
+<td>The POSIX port shall retain 61 software-checkable diagnostic IDs.</td>
+<td>Preserve safety logic validation</td>
+</tr>
+<tr>
+<td>SYS-REQ-085</td>
+<td>The POSIX port shall provide at least 80 HAL stub modules.</td>
+<td>Cover all hardware abstraction points</td>
+</tr>
+<tr>
+<td>SYS-REQ-086</td>
+<td>The POSIX port shall map 60+ TMS570 register bases to RAM buffers.</td>
+<td>Enable register-level code to execute without hardware</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-acceptance-criteria">6. Acceptance Criteria</h2>
+<p>Each requirement in Section 5 is accepted when:</p>
+<ol>
+<li>It is traced forward to at least one software requirement in SWE.1-001.</li>
+<li>It is traced forward to at least one test case in SWE.5-001 or SWE.6-001.</li>
+<li>The corresponding test case passes in the POSIX SIL environment.</li>
+</ol>
+<h2 id="7-open-issues">7. Open Issues</h2>
+<p>None at initial release.</p>
+<hr />
+<p><em>End of Document</em></p></div>
+<div class="nav-buttons"><a href="sys-1-stakeholder-reqs.html">&larr; SYS.1 Stakeholder Reqs</a><a href="sys-3-system-architecture.html">SYS.3 System Architecture &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>
