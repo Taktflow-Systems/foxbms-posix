@@ -121,7 +121,7 @@ def can_send(can_id, data):
 soc_pct = 50.0              # Initial SOC (%)
 current_ma = 0              # Current flowing (mA, positive = discharge)
 bms_state_normal = False     # True when foxBMS reports NORMAL
-per_cell_offset = [random.gauss(0, 5) for _ in range(N_CELLS)]  # Fixed per-cell variation
+per_cell_offset = [0.0 for _ in range(N_CELLS)]  # No per-cell offset (Phase 2: add ±5mV Gaussian)
 
 tick = 0
 try:
@@ -172,7 +172,7 @@ try:
         # Per-cell voltages with fixed offset + random noise
         cell_voltages = []
         for i in range(N_CELLS):
-            v = v_ocv + per_cell_offset[i] + random.gauss(0, 5)  # ±5 mV noise per tick
+            v = v_ocv + per_cell_offset[i]  # No per-tick noise (Phase 2: add random.gauss(0, 5))
             cell_voltages.append(max(2500, min(4500, int(v))))
 
         # Pack voltage with IR drop: V_pack = N × V_OCV − I × R_total
