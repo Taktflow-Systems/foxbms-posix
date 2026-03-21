@@ -52,17 +52,23 @@ SIL_DIAG_CLEAR = 0x09
 SIL_CLEAR_ALL = 0xFF
 
 # BMS states (from foxBMS state machine)
-BMS_IDLE = 0
-BMS_STANDBY = 3
-BMS_PRECHARGE = 5
+BMS_UNINITIALIZED = 0
+BMS_INITIALIZATION = 1
+BMS_INITIALIZED = 2
+BMS_IDLE = 3
+BMS_OPEN_CONTACTORS = 4
+BMS_STANDBY = 5
+BMS_PRECHARGE = 6
 BMS_NORMAL = 7
+BMS_DISCHARGE = 8
+BMS_CHARGE = 9
 BMS_ERROR = 10
 
 BMS_STATE_NAMES = {
-    0: "IDLE", 1: "UNINITIALIZED", 2: "INITIALIZED",
-    3: "STANDBY", 4: "SYS_CHECK", 5: "PRECHARGE",
-    6: "CHARGE", 7: "NORMAL", 8: "DISCHARGE",
-    9: "OPEN_CONTACTORS", 10: "ERROR",
+    0: "UNINITIALIZED", 1: "INITIALIZATION", 2: "INITIALIZED",
+    3: "IDLE", 4: "OPEN_CONTACTORS", 5: "STANDBY",
+    6: "PRECHARGE", 7: "NORMAL", 8: "DISCHARGE",
+    9: "CHARGE", 10: "ERROR",
 }
 
 # Default timeouts
@@ -240,6 +246,10 @@ class ProbeMonitor:
         elif can_id == CAN_PROBE_SPS and len(data) >= 4:
             self.sps_requested = struct.unpack_from("<H", data, 0)[0]
             self.sps_actual = struct.unpack_from("<H", data, 2)[0]
+
+        elif can_id == CAN_BMS_STATE_MSG and len(data) >= 1:
+            # Direct 0x220 monitoring as fallback for BMS state
+            self.bms_state = data[0] & 0x0F
 
     def diag_bit_set(self, bit_index: int) -> bool:
         """Check if a specific DIAG ID bit is set in the bitmap."""
