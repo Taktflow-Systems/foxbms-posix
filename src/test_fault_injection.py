@@ -653,6 +653,25 @@ class TestExecutor:
                 return True
         return False
 
+    def wait_for_current_flowing(self, timeout_s: float = 5.0) -> bool:
+        """Wait for plant discharge current to reach foxBMS database.
+
+        SOA_CheckTemperatures gates on current direction. Discharge-direction
+        tests need BMS_DISCHARGING (current > 200mA REST threshold).
+        Plant starts discharging after detecting NORMAL via CAN feedback.
+        """
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            self.injector.monitor_and_update(self.monitor, 0.05)
+            # Check current probe (0x7FA) or just wait for BMS to have been
+            # in NORMAL for long enough that plant is definitely discharging
+            if self.monitor.bms_in_normal():
+                # BMS still normal after delay = plant is running + discharging
+                elapsed = time.monotonic() - (deadline - timeout_s)
+                if elapsed > 2.0:  # 2s in NORMAL = plant definitely discharging
+                    return True
+        return False
+
     def wait_for_recovery(self, timeout_s: float = RECOVERY_TIMEOUT_S) -> bool:
         """Wait for BMS to return to NORMAL after clearing a fault."""
         self.injector.clear()
@@ -1103,7 +1122,13 @@ class TestExecutor:
             #   else (rest/charge) → checks OT_CHG/UT_CHG thresholds
             # Plant starts discharge after detecting NORMAL via CAN feedback (~100ms).
             if tc.category == "TEMP" and ("DIS" in tc.signal):
-                time.sleep(2.0)  # Wait for plant to detect NORMAL + start discharging
+                if not self.wait_for_current_flowing(5.0):
+                    return TestOutcome(
+                        test_id=tc.test_id, result=TestResult.SKIP,
+                        elapsed_ms=0,
+                        detail="plant not discharging — current not flowing after 5s",
+                        category=tc.category, priority=tc.priority,
+                    )
 
             # Standard injection dispatch by expected reaction
             if tc.expected_reaction == "CONTACTOR_OPEN":
