@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>foxBMS 2 — Battery Management System SIL Demo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0F0F1A;--panel:#1A1A2E;--border:#2A2A4A;--text:#E0E0F0;--dim:#8888AA;
+--accent:#8B5CF6;--accent2:#A78BFA;--ok:#22C55E;--warn:#EAB308;--err:#EF4444;--cold:#3B82F6;--font:'Segoe UI',system-ui,sans-serif}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px}
+.root{display:grid;grid-template-rows:auto 1fr auto;height:100vh;gap:1px}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--border)}
+header h1{font-size:18px;font-weight:600;letter-spacing:.5px}
+header h1 span{color:var(--accent2);font-weight:400}
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;transition:background .3s}
+.status-dot.ok{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.status-dot.err{background:var(--err);box-shadow:0 0 6px var(--err)}
+.status-dot.warn{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+#connLabel{font-size:12px;color:var(--dim)}
+.main{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;min-height:0}
+.panel{background:var(--panel);border:1px solid var(--border);padding:14px;overflow:hidden;display:flex;flex-direction:column}
+.panel-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent2);margin-bottom:10px}
+/* Battery grid */
+.cell-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
+.cell{background:#12122A;border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;position:relative;transition:border-color .3s,box-shadow .3s}
+.cell.ok{border-color:#1a4a2a}
+.cell.warn{border-color:#4a3a0a;box-shadow:inset 0 0 8px rgba(234,179,8,.15)}
+.cell.fault{border-color:var(--err);box-shadow:0 0 10px rgba(239,68,68,.4);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 6px rgba(239,68,68,.3)}50%{box-shadow:0 0 14px rgba(239,68,68,.7)}}
+.cell-id{font-size:10px;color:var(--dim);font-weight:600}
+.cell-v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.cell-v.ok{color:var(--ok)}.cell-v.warn{color:var(--warn)}.cell-v.fault{color:var(--err)}
+.temp-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;transition:background .5s}
+/* State machine */
+.state-list{list-style:none;flex:1;display:flex;flex-direction:column;gap:4px}
+.state-item{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-size:13px;font-weight:500;transition:all .4s;letter-spacing:.3px}
+.state-item .dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);transition:all .4s;flex-shrink:0}
+.state-item.active{background:rgba(139,92,246,.12)}.state-item.active .dot{border-color:var(--accent);background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.state-item.active.error-state{background:rgba(239,68,68,.12)}.state-item.active.error-state .dot{border-color:var(--err);background:var(--err);box-shadow:0 0 8px var(--err)}
+.state-item.active.normal-state{background:rgba(34,197,94,.1)}.state-item.active.normal-state .dot{border-color:var(--ok);background:var(--ok);box-shadow:0 0 8px var(--ok)}
+/* Contactors */
+.contactors-row{display:flex;gap:16px;justify-content:center;margin:8px 0}
+.contactor{text-align:center}
+.contactor-sym{width:52px;height:52px;border-radius:8px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:4px;font-size:20px;font-weight:700;transition:all .3s}
+.contactor-sym.open{color:var(--err);border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.06)}
+.contactor-sym.closed{color:var(--ok);border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08);box-shadow:0 0 8px rgba(34,197,94,.15)}
+.contactor-label{font-size:10px;color:var(--dim)}
+.contactor-state{font-size:11px;font-weight:600}
+/* Fault injection */
+.inject-group{margin-bottom:8px}
+.inject-group label{font-size:11px;color:var(--dim);display:block;margin-bottom:3px}
+.inject-row{display:flex;gap:4px;align-items:center}
+.inject-row select,.inject-row input{background:#12122A;border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:4px;font-size:12px;width:60px}
+.inject-row select{width:auto;flex:1}
+.btn{padding:5px 10px;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px}
+.btn-inject{background:rgba(139,92,246,.2);color:var(--accent2);border:1px solid rgba(139,92,246,.3)}
+.btn-inject:hover{background:rgba(139,92,246,.35)}
+.btn-inject.active{background:rgba(239,68,68,.25);color:var(--err);border-color:rgba(239,68,68,.4)}
+.btn-clear{background:rgba(239,68,68,.15);color:var(--err);border:1px solid rgba(239,68,68,.3);width:100%;margin-top:8px;padding:7px}
+.btn-clear:hover{background:rgba(239,68,68,.3)}
+/* Diagnostics */
+.diag{margin-top:auto;padding-top:8px;border-top:1px solid var(--border)}
+.diag-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+.diag-row .val{font-variant-numeric:tabular-nums;color:var(--accent2)}
+/* Footer */
+footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:24px;font-size:13px;flex-wrap:wrap}
+.soc-bar{display:flex;align-items:center;gap:8px;flex:1;max-width:320px}
+.soc-track{flex:1;height:14px;background:#12122A;border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+.soc-fill{height:100%;border-radius:6px;transition:width .3s,background .3s;background:linear-gradient(90deg,var(--accent),var(--ok))}
+.soc-pct{font-weight:700;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+.stat{display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.stat .label{color:var(--dim);font-size:11px}
+.stat .val{font-weight:600}
+.sub{font-size:10px;color:var(--dim);margin-left:auto}
+</style>
+</head>
+<body>
+<div class="root">
+<header>
+  <h1>foxBMS 2 <span>— Battery Management System SIL Demo</span></h1>
+  <div style="display:flex;align-items:center"><span class="status-dot err" id="connDot"></span><span id="connLabel">Disconnected</span></div>
+</header>
+<div class="main">
+  <!-- Left: Battery Pack -->
+  <div class="panel">
+    <div class="panel-title">Battery Pack — 18s1p</div>
+    <div class="cell-grid" id="cellGrid"></div>
+  </div>
+  <!-- Center: State + Contactors -->
+  <div class="panel">
+    <div class="panel-title">BMS State Machine</div>
+    <ul class="state-list" id="stateList"></ul>
+    <div style="margin-top:auto">
+      <div class="panel-title" style="margin-top:10px">Contactors</div>
+      <div class="contactors-row" id="contactors"></div>
+    </div>
+  </div>
+  <!-- Right: Fault Injection + Diagnostics -->
+  <div class="panel">
+    <div class="panel-title">Fault Injection</div>
+    <div class="inject-group"><label>Overvoltage</label><div class="inject-row"><select id="ovCell"></select><button class="btn btn-inject" onclick="inject('ov')">Inject</button></div></div>
+    <div class="inject-group"><label>Undervoltage</label><div class="inject-row"><select id="uvCell"></select><button class="btn btn-inject" onclick="inject('uv')">Inject</button></div></div>
+    <div class="inject-group"><label>Overtemperature</label><div class="inject-row"><select id="otSens"></select><button class="btn btn-inject" onclick="inject('ot')">Inject</button></div></div>
+    <div class="inject-group"><label>Overcurrent</label><div class="inject-row"><span style="font-size:12px;color:var(--dim)">Fixed 200 A</span><button class="btn btn-inject" onclick="inject('oc')">Inject</button></div></div>
+    <button class="btn btn-clear" onclick="clearAll()">Clear All Faults</button>
+    <div class="diag" id="diag">
+      <div class="panel-title">Diagnostics</div>
+      <div class="diag-row"><span>Fault count</span><span class="val" id="dFaults">0</span></div>
+      <div class="diag-row"><span>Last ID</span><span class="val" id="dLastId">--</span></div>
+      <div class="diag-row"><span>Last event</span><span class="val" id="dLastEv">--</span></div>
+      <div class="diag-row"><span>Bitmap</span><span class="val" id="dBitmap" style="font-size:10px">0x0000000000000000</span></div>
+    </div>
+  </div>
+</div>
+<footer>
+  <div class="soc-bar"><span class="label">SOC</span><div class="soc-track"><div class="soc-fill" id="socFill" style="width:0%"></div></div><span class="soc-pct" id="socPct">---%</span></div>
+  <div class="stat"><span class="label">Pack</span><span class="val" id="fPackV">---V</span></div>
+  <div class="stat"><span class="label">Current</span><span class="val" id="fCurr">---A</span></div>
+  <div class="stat"><span class="label">Cell V</span><span class="val" id="fCellV">---mV</span></div>
+  <div class="stat"><span class="label">Temp</span><span class="val" id="fTemp">---°C</span></div>
+  <div class="stat"><span class="label">Uptime</span><span class="val" id="fUptime">0.0s</span></div>
+  <span class="sub">foxBMS 2 POSIX vECU &middot; Taktflow Systems</span>
+</footer>
+</div>
+<script>
+const STATES = ["UNINITIALIZED","INITIALIZATION","INITIALIZED","IDLE","STANDBY","PRECHARGE","DISCHARGE","NORMAL","CHARGE","OPEN_CONTACTORS","ERROR"];
+const CONTACTS = [{id:"plus",label:"String +"},{id:"minus",label:"String −"},{id:"pre",label:"Precharge"}];
+let ws, reconnTimer, activeFaults = new Set();
+
+// Build UI
+(function init() {
+  const grid = document.getElementById("cellGrid");
+  for (let i = 0; i < 18; i++) {
+    const d = document.createElement("div");
+    d.className = "cell ok";
+    d.id = "cell" + i;
+    d.innerHTML = `<span class="temp-dot" id="td${i}"></span><span class="cell-id">C${i}</span><span class="cell-v ok" id="cv${i}">0</span>`;
+    grid.appendChild(d);
+  }
+  const sl = document.getElementById("stateList");
+  STATES.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.className = "state-item" + (s === "ERROR" ? " error-state" : "") + (s === "NORMAL" ? " normal-state" : "");
+    li.id = "st" + i;
+    li.innerHTML = `<span class="dot"></span>${s}`;
+    sl.appendChild(li);
+  });
+  const cr = document.getElementById("contactors");
+  CONTACTS.forEach(c => {
+    const d = document.createElement("div");
+    d.className = "contactor";
+    d.innerHTML = `<div class="contactor-sym open" id="ct_${c.id}">╫</div><div class="contactor-label">${c.label}</div><div class="contactor-state" id="cts_${c.id}" style="color:var(--err)">OPEN</div>`;
+    cr.appendChild(d);
+  });
+  // Populate selects
+  for (let i = 0; i < 18; i++) { addOpt("ovCell", i, "C" + i); addOpt("uvCell", i, "C" + i); }
+  for (let i = 0; i < 8; i++) addOpt("otSens", i, "S" + i);
+  connect();
+})();
+
+function addOpt(id, v, t) { const o = document.createElement("option"); o.value = v; o.textContent = t; document.getElementById(id).appendChild(o); }
+
+function connect() {
+  const loc = location.hostname || "localhost";
+  const port = location.port || "8080";
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  ws = new WebSocket(`${proto}//${loc}:${port}/ws`);
+  ws.onopen = () => { setConn("ok", "Connected"); clearTimeout(reconnTimer); };
+  ws.onclose = () => { setConn("err", "Disconnected"); reconnTimer = setTimeout(connect, 2000); };
+  ws.onerror = () => { ws.close(); };
+  ws.onmessage = e => { try { update(JSON.parse(e.data)); } catch {} };
+}
+
+function setConn(cls, txt) { document.getElementById("connDot").className = "status-dot " + cls; document.getElementById("connLabel").textContent = txt; }
+
+function update(d) {
+  // Cells
+  const cvs = d.cell_voltages || [];
+  const temps = d.cell_temps_ddegc || [];
+  for (let i = 0; i < 18; i++) {
+    const mv = cvs[i] || 0, el = document.getElementById("cell" + i), vEl = document.getElementById("cv" + i);
+    let cls = "ok";
+    if (mv > 4100 || mv < 2800) cls = "fault";
+    else if (mv > 3800 || mv < 3400) cls = "warn";
+    if (activeFaults.has("ov_" + i) || activeFaults.has("uv_" + i)) cls = "fault";
+    el.className = "cell " + cls;
+    vEl.className = "cell-v " + cls;
+    vEl.textContent = mv;
+    // Temp dot (map cell to sensor: 0-1->S0, 2-3->S1, etc)
+    const si = Math.min(Math.floor(i / 2.25), 7);
+    const t = (temps[si] || 0) / 10;
+    const td = document.getElementById("td" + i);
+    td.style.background = t < 15 ? "var(--cold)" : t > 45 ? "var(--err)" : "var(--ok)";
+  }
+  // State machine
+  const bst = d.bms_state ?? 0;
+  STATES.forEach((_, i) => { const el = document.getElementById("st" + i); el.classList.toggle("active", i === bst); });
+  // Contactors (bit 0 = STRING_PLUS, bit 1 = STRING_MINUS, bit 2 = PRECHARGE)
+  const ca = d.contactor_actual ?? 0;
+  [["plus", 0], ["minus", 1], ["pre", 2]].forEach(([k, b]) => {
+    const closed = (ca >> b) & 1;
+    const sym = document.getElementById("ct_" + k), st = document.getElementById("cts_" + k);
+    sym.className = "contactor-sym " + (closed ? "closed" : "open");
+    sym.textContent = closed ? "═" : "╫";
+    st.textContent = closed ? "CLOSED" : "OPEN";
+    st.style.color = closed ? "var(--ok)" : "var(--err)";
+  });
+  // Diagnostics
+  document.getElementById("dFaults").textContent = d.diag_fault_count ?? 0;
+  document.getElementById("dLastId").textContent = d.diag_last_id ? "0x" + d.diag_last_id.toString(16).toUpperCase().padStart(2, "0") : "--";
+  document.getElementById("dLastEv").textContent = d.diag_last_event ?? "--";
+  document.getElementById("dBitmap").textContent = "0x" + (d.diag_bitmap ?? 0).toString(16).toUpperCase().padStart(16, "0");
+  // Footer
+  const soc = d.soc_pct ?? 0;
+  document.getElementById("socFill").style.width = Math.min(soc, 100) + "%";
+  document.getElementById("socPct").textContent = soc.toFixed(1) + "%";
+  document.getElementById("fPackV").textContent = ((d.pack_voltage_mv ?? 0) / 1000).toFixed(1) + " V";
+  const curr = (d.pack_current_ma ?? 0) / 1000;
+  document.getElementById("fCurr").textContent = (curr >= 0 ? "+" : "") + curr.toFixed(1) + " A";
+  const mn = d.cell_v_min ?? 0, mx = d.cell_v_max ?? 0, delta = d.cell_v_delta ?? 0;
+  document.getElementById("fCellV").textContent = mn + "–" + mx + " mV (Δ" + delta + ")";
+  const tMin = (d.cell_t_min ?? 0) / 10, tMax = (d.cell_t_max ?? 0) / 10;
+  document.getElementById("fTemp").textContent = tMin.toFixed(1) + "–" + tMax.toFixed(1) + " °C";
+  document.getElementById("fUptime").textContent = ((d.uptime_ms ?? 0) / 1000).toFixed(1) + " s";
+}
+
+function inject(type) {
+  if (!ws || ws.readyState !== 1) return;
+  let msg;
+  if (type === "ov") { const c = +document.getElementById("ovCell").value; msg = {type:"cell_voltage",cell:c,value:4500}; activeFaults.add("ov_"+c); }
+  else if (type === "uv") { const c = +document.getElementById("uvCell").value; msg = {type:"cell_voltage",cell:c,value:2000}; activeFaults.add("uv_"+c); }
+  else if (type === "ot") { const s = +document.getElementById("otSens").value; msg = {type:"temperature",sensor:s,value:600}; activeFaults.add("ot_"+s); }
+  else if (type === "oc") { msg = {type:"current",value:200000}; activeFaults.add("oc"); }
+  ws.send(JSON.stringify(msg));
+}
+
+function clearAll() {
+  if (!ws || ws.readyState !== 1) return;
+  ws.send(JSON.stringify({action:"clear"}));
+  activeFaults.clear();
+}
+</script>
+</body>
+</html>

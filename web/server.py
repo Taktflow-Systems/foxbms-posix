@@ -236,8 +236,6 @@ async def main(args: argparse.Namespace) -> None:
     await asyncio.gather(can_reader(args.can), broadcast_loop())
 
 if __name__ == "__main__":
-    import aiohttp  # noqa: F811
-
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
