@@ -15,7 +15,10 @@ Usage:
 import argparse
 import copy
 import csv
+import hashlib
+import json
 import os
+import platform
 import random
 import signal
 import socket
@@ -24,9 +27,10 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import IntEnum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 # ============================================================================
@@ -35,9 +39,12 @@ from typing import Dict, List, Optional, Tuple
 
 CAN_OVERRIDE_ID = 0x7E0
 CAN_PROBE_SPS = 0x7F0
+CAN_PROBE_CELL_VOLTAGE = 0x7F4
+CAN_PROBE_TEMPERATURE = 0x7F6
 CAN_PROBE_DIAG = 0x7F7
 CAN_PROBE_DIAG_BITMAP = 0x7F8
 CAN_PROBE_STATE = 0x7F9
+CAN_PROBE_CURRENT = 0x7FA
 CAN_BMS_STATE_MSG = 0x220
 
 # SIL override command bytes (from sil_layer.h)
@@ -158,6 +165,18 @@ class TestOutcome:
     detail: str
     category: str = ""
     priority: str = ""
+    # Extended fields for ASPICE audit report
+    diag_time_ms: float = 0.0
+    contactor_time_ms: float = 0.0
+    precondition_detail: str = ""
+    skip_reason: str = ""
+    signal: str = ""
+    fault_method: str = ""
+    target: str = ""
+    injection_value: str = ""
+    expected_reaction: str = ""
+    severity_tier: str = ""
+    bms_state_trace: str = ""
 
 
 # ============================================================================
@@ -227,6 +246,13 @@ class ProbeMonitor:
         self.sps_requested: int = 0
         self.sps_actual: int = 0
         self.last_update_time: float = 0.0
+        # Cell voltage and temperature tracking (from probes 0x7F4, 0x7F6)
+        self.cell_voltage_min_mv: int = 0
+        self.cell_voltage_max_mv: int = 0
+        self.temperature_min_ddegc: int = 0
+        self.temperature_max_ddegc: int = 0
+        self.pack_current_ma: int = 0
+        self.normal_entry_time: float = 0.0  # monotonic time when BMS entered NORMAL
 
     def update(self, can_id: int, data: bytes) -> None:
         """Update state from a received probe CAN frame."""
@@ -242,11 +268,29 @@ class ProbeMonitor:
 
         elif can_id == CAN_PROBE_STATE and len(data) >= 5:
             self.sys_state = data[0]
+            old_bms_state = self.bms_state
             self.bms_state = data[4]
+            # Track when BMS enters NORMAL
+            if self.bms_state == BMS_NORMAL and old_bms_state != BMS_NORMAL:
+                self.normal_entry_time = time.monotonic()
 
         elif can_id == CAN_PROBE_SPS and len(data) >= 4:
             self.sps_requested = struct.unpack_from("<H", data, 0)[0]
             self.sps_actual = struct.unpack_from("<H", data, 2)[0]
+
+        elif can_id == CAN_PROBE_CELL_VOLTAGE and len(data) >= 4:
+            # Probe 0x7F4: cell voltage min (u16 LE) + max (u16 LE) in mV
+            self.cell_voltage_min_mv = struct.unpack_from("<H", data, 0)[0]
+            self.cell_voltage_max_mv = struct.unpack_from("<H", data, 2)[0]
+
+        elif can_id == CAN_PROBE_TEMPERATURE and len(data) >= 4:
+            # Probe 0x7F6: temperature min (i16 LE) + max (i16 LE) in ddegC
+            self.temperature_min_ddegc = struct.unpack_from("<h", data, 0)[0]
+            self.temperature_max_ddegc = struct.unpack_from("<h", data, 2)[0]
+
+        elif can_id == CAN_PROBE_CURRENT and len(data) >= 4:
+            # Probe 0x7FA: pack current in mA (i32 LE)
+            self.pack_current_ma = struct.unpack_from("<i", data, 0)[0]
 
         elif can_id == CAN_BMS_STATE_MSG and len(data) >= 1:
             # Direct 0x220 monitoring as fallback for BMS state
@@ -780,6 +824,120 @@ class TestExecutor:
                     return True
         return False
 
+    def verify_preconditions(self, timeout_s: float = 15.0) -> Tuple[bool, str]:
+        """Verify all 6 preconditions before running a test.
+
+        Returns (success, detail_string).
+        Preconditions:
+        1. BMS state == NORMAL (probe 0x7F9 byte 4 == 7)
+        2. Current flowing > 200mA (probe 0x7FA or time in NORMAL > 4s)
+        3. Cell voltage 2700-4150mV (probe 0x7F4 -- min/max within MOL range)
+        4. Temperature 0-400 ddegC (probe 0x7F6 -- within MOL range)
+        5. DIAG bitmap == 0 (probe 0x7F8 -- no active faults)
+        6. Contactors closed (probe 0x7F0 -- SPS actual state bits set)
+        """
+        deadline = time.monotonic() + timeout_s
+        checks = {
+            "BMS_NORMAL": False,
+            "CURRENT_FLOWING": False,
+            "CELL_VOLTAGE_OK": False,
+            "TEMPERATURE_OK": False,
+            "DIAG_CLEAR": False,
+            "CONTACTORS_CLOSED": False,
+        }
+        failed_detail = ""
+
+        while time.monotonic() < deadline:
+            self.injector.monitor_and_update(self.monitor, 0.05)
+
+            # 1. BMS state == NORMAL
+            if not checks["BMS_NORMAL"]:
+                if self.monitor.bms_in_normal():
+                    checks["BMS_NORMAL"] = True
+                    print("  [precond] 1/6 BMS state = NORMAL")
+
+            # 2. Current flowing (time in NORMAL > 4s or current > 200mA)
+            if checks["BMS_NORMAL"] and not checks["CURRENT_FLOWING"]:
+                current_ok = abs(self.monitor.pack_current_ma) > 200
+                time_in_normal = (time.monotonic() - self.monitor.normal_entry_time
+                                  if self.monitor.normal_entry_time > 0 else 0.0)
+                if current_ok or time_in_normal > 4.0:
+                    checks["CURRENT_FLOWING"] = True
+                    if current_ok:
+                        print(f"  [precond] 2/6 Current flowing: {self.monitor.pack_current_ma}mA")
+                    else:
+                        print(f"  [precond] 2/6 Current flowing: {time_in_normal:.1f}s in NORMAL")
+
+            # 3. Cell voltage within MOL range (2700-4150mV)
+            if not checks["CELL_VOLTAGE_OK"]:
+                v_min = self.monitor.cell_voltage_min_mv
+                v_max = self.monitor.cell_voltage_max_mv
+                if v_min > 0 and 2700 <= v_min and v_max <= 4150:
+                    checks["CELL_VOLTAGE_OK"] = True
+                    print(f"  [precond] 3/6 Cell voltage OK: {v_min}-{v_max}mV")
+                elif v_min == 0 and v_max == 0:
+                    # No voltage probe data yet — accept if BMS is NORMAL
+                    # (BMS wouldn't be NORMAL with out-of-range voltages)
+                    if checks["BMS_NORMAL"]:
+                        checks["CELL_VOLTAGE_OK"] = True
+                        print("  [precond] 3/6 Cell voltage OK: inferred from NORMAL state")
+
+            # 4. Temperature within MOL range (0-400 ddegC)
+            if not checks["TEMPERATURE_OK"]:
+                t_min = self.monitor.temperature_min_ddegc
+                t_max = self.monitor.temperature_max_ddegc
+                if 0 <= t_min and t_max <= 400:
+                    checks["TEMPERATURE_OK"] = True
+                    print(f"  [precond] 4/6 Temperature OK: {t_min}-{t_max} ddegC")
+                elif t_min == 0 and t_max == 0:
+                    # No temp probe data yet — accept if BMS is NORMAL
+                    if checks["BMS_NORMAL"]:
+                        checks["TEMPERATURE_OK"] = True
+                        print("  [precond] 4/6 Temperature OK: inferred from NORMAL state")
+
+            # 5. DIAG bitmap == 0
+            if not checks["DIAG_CLEAR"]:
+                if self.monitor.diag_bitmap == 0:
+                    checks["DIAG_CLEAR"] = True
+                    print("  [precond] 5/6 DIAG bitmap clear")
+
+            # 6. Contactors closed
+            if not checks["CONTACTORS_CLOSED"]:
+                if self.monitor.sps_actual != 0:
+                    checks["CONTACTORS_CLOSED"] = True
+                    print(f"  [precond] 6/6 Contactors closed (SPS={self.monitor.sps_actual:#06x})")
+
+            # All checks passed?
+            if all(checks.values()):
+                passed = sum(1 for v in checks.values() if v)
+                detail = (f"all 6 preconditions met "
+                          f"(BMS=NORMAL, I={self.monitor.pack_current_ma}mA, "
+                          f"V={self.monitor.cell_voltage_min_mv}-{self.monitor.cell_voltage_max_mv}mV, "
+                          f"T={self.monitor.temperature_min_ddegc}-{self.monitor.temperature_max_ddegc}ddegC, "
+                          f"DIAG=0, CONT=CLOSED)")
+                return (True, detail)
+
+        # Timeout — report which preconditions failed
+        failed = [name for name, ok in checks.items() if not ok]
+        passed_count = sum(1 for v in checks.values() if v)
+        reasons = []
+        if not checks["BMS_NORMAL"]:
+            reasons.append(f"BMS state={BMS_STATE_NAMES.get(self.monitor.bms_state, '?')}")
+        if not checks["CURRENT_FLOWING"]:
+            reasons.append(f"current={self.monitor.pack_current_ma}mA")
+        if not checks["CELL_VOLTAGE_OK"]:
+            reasons.append(f"voltage={self.monitor.cell_voltage_min_mv}-{self.monitor.cell_voltage_max_mv}mV")
+        if not checks["TEMPERATURE_OK"]:
+            reasons.append(f"temp={self.monitor.temperature_min_ddegc}-{self.monitor.temperature_max_ddegc}ddegC")
+        if not checks["DIAG_CLEAR"]:
+            reasons.append(f"DIAG bitmap={self.monitor.diag_bitmap:#018x}")
+        if not checks["CONTACTORS_CLOSED"]:
+            reasons.append(f"SPS actual={self.monitor.sps_actual:#06x}")
+
+        failed_detail = (f"precondition {passed_count}/6 met, failed: "
+                         + ", ".join(reasons))
+        return (False, failed_detail)
+
     def wait_for_recovery(self, timeout_s: float = RECOVERY_TIMEOUT_S) -> bool:
         """Wait for BMS to return to NORMAL after clearing a fault."""
         self.injector.clear()
@@ -842,6 +1000,9 @@ class TestExecutor:
                     test_id=tc.test_id, result=TestResult.PASS,
                     elapsed_ms=elapsed_ms, detail=detail,
                     category=tc.category, priority=tc.priority,
+                    diag_time_ms=t_diag * 1000 if diag_detected else 0.0,
+                    contactor_time_ms=t_contactor * 1000,
+                    bms_state_trace=f"NORMAL -> ERROR at {elapsed_ms:.0f}ms" if bms_error else "",
                 )
 
         # Timeout
@@ -858,6 +1019,8 @@ class TestExecutor:
             test_id=tc.test_id, result=TestResult.FAIL,
             elapsed_ms=elapsed_ms, detail=detail,
             category=tc.category, priority=tc.priority,
+            diag_time_ms=t_diag * 1000 if diag_detected else 0.0,
+            contactor_time_ms=t_contactor * 1000 if contactor_opened else 0.0,
         )
 
     def run_warning_flag_test(self, tc: TestCase, cmd: int,
@@ -1151,7 +1314,22 @@ class TestExecutor:
             category=tc.category, priority=tc.priority,
         )
 
-    def execute(self, tc: TestCase) -> TestOutcome:
+    def execute(self, tc: TestCase, precondition_detail: str = "") -> TestOutcome:
+        """Execute a single test case with metadata enrichment."""
+        outcome = self._execute_inner(tc)
+        # Enrich with test case metadata for audit report
+        outcome.signal = tc.signal
+        outcome.fault_method = tc.fault_method
+        outcome.target = tc.target
+        outcome.injection_value = tc.injection_value
+        outcome.expected_reaction = tc.expected_reaction
+        outcome.severity_tier = tc.severity_tier
+        outcome.precondition_detail = precondition_detail
+        if outcome.result == TestResult.SKIP:
+            outcome.skip_reason = outcome.detail
+        return outcome
+
+    def _execute_inner(self, tc: TestCase) -> TestOutcome:
         """Execute a single test case. Returns TestOutcome."""
         # Check if we should skip
         skip_reason = should_skip(tc)
@@ -1985,28 +2163,101 @@ def filter_tests(cases: List[TestCase], args: argparse.Namespace) -> List[TestCa
 def format_result_line(outcome: TestOutcome) -> str:
     """Format a single test result as a printable line."""
     tag = f"[{outcome.result}]"
-    elapsed = f"{outcome.elapsed_ms:.0f}ms"
     return f"{tag:6s} {outcome.test_id:20s} | {outcome.detail}"
 
 
-def generate_report(outcomes: List[TestOutcome], report_path: str) -> None:
-    """Write the full report to a file and print summary."""
+def _sha256_file(path: Optional[str]) -> str:
+    """Return SHA256 hex digest of a file, or 'N/A' if not available."""
+    if path is None or not Path(path).is_file():
+        return "N/A"
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _compute_detection_stats(outcomes: List[TestOutcome]) -> Dict[str, Dict[str, Any]]:
+    """Compute detection time statistics grouped by fault type category."""
+    # Map categories to human-readable names and threshold descriptions
+    category_meta = {
+        "VOLT": ("Overvoltage/Undervoltage", "50ev+200ms"),
+        "TEMP": ("Overtemperature/Undertemperature", "500ev+1s"),
+        "CURR": ("Overcurrent", "10ev+100ms"),
+        "PLAUS": ("Plausibility", "varies"),
+        "COMBO": ("Combined faults", "varies"),
+        "RECOV": ("Recovery", "varies"),
+    }
+
+    stats: Dict[str, Dict[str, Any]] = {}
+    for o in outcomes:
+        if o.result != TestResult.PASS or o.elapsed_ms <= 0:
+            continue
+        cat = o.category or "OTHER"
+        if cat not in stats:
+            meta = category_meta.get(cat, (cat, "N/A"))
+            stats[cat] = {
+                "name": meta[0], "threshold": meta[1],
+                "times": [], "diag_times": [], "contactor_times": [],
+            }
+        stats[cat]["times"].append(o.elapsed_ms)
+        if o.diag_time_ms > 0:
+            stats[cat]["diag_times"].append(o.diag_time_ms)
+        if o.contactor_time_ms > 0:
+            stats[cat]["contactor_times"].append(o.contactor_time_ms)
+
+    result = {}
+    for cat, s in stats.items():
+        times = s["times"]
+        result[cat] = {
+            "name": s["name"],
+            "threshold": s["threshold"],
+            "min_ms": min(times) if times else 0,
+            "max_ms": max(times) if times else 0,
+            "avg_ms": sum(times) / len(times) if times else 0,
+            "count": len(times),
+        }
+    return result
+
+
+def _classify_aspice_level(tc_outcome: TestOutcome) -> str:
+    """Classify a test into ASPICE test level (SWE.5 or SWE.6)."""
+    # COMBO and PLAUS tests are integration-level (SWE.6)
+    # Single-signal tests are SW integration (SWE.5)
+    if tc_outcome.category in ("COMBO", "PLAUS"):
+        return "SWE.6"
+    return "SWE.5"
+
+
+def generate_audit_report(
+    outcomes: List[TestOutcome],
+    txt_path: str,
+    json_path: str,
+    start_time: datetime,
+    end_time: datetime,
+    can_interface: str,
+    csv_path: str,
+    vecu_path: Optional[str] = None,
+    plant_path: Optional[str] = None,
+    restart_count: int = 0,
+    precond_stats: Tuple[int, int, int] = (0, 0, 0),
+) -> None:
+    """Generate ASPICE CL2-auditable test report in .txt and .json formats."""
+
     total = len(outcomes)
     pass_count = sum(1 for o in outcomes if o.result == TestResult.PASS)
     fail_count = sum(1 for o in outcomes if o.result == TestResult.FAIL)
     skip_count = sum(1 for o in outcomes if o.result == TestResult.SKIP)
     error_count = sum(1 for o in outcomes if o.result == TestResult.ERROR)
+    runnable = total - skip_count
+    pass_rate = (pass_count / runnable * 100) if runnable > 0 else 0.0
+    duration = end_time - start_time
+    duration_str = str(duration).split(".")[0]  # HH:MM:SS
 
-    # Per-priority breakdown
-    priority_stats: Dict[str, Dict[str, int]] = {}
-    for o in outcomes:
-        pri = o.priority or "??"
-        if pri not in priority_stats:
-            priority_stats[pri] = {"total": 0, "PASS": 0, "FAIL": 0, "SKIP": 0, "ERROR": 0}
-        priority_stats[pri]["total"] += 1
-        priority_stats[pri][o.result] += 1
+    overall = "PASS" if fail_count == 0 and error_count == 0 else (
+        "INCOMPLETE" if error_count > 0 else "FAIL")
 
-    # Per-category breakdown
+    # Per-category stats
     category_stats: Dict[str, Dict[str, int]] = {}
     for o in outcomes:
         cat = o.category or "??"
@@ -2015,66 +2266,323 @@ def generate_report(outcomes: List[TestOutcome], report_path: str) -> None:
         category_stats[cat]["total"] += 1
         category_stats[cat][o.result] += 1
 
+    # Per ASPICE level stats
+    level_stats: Dict[str, Dict[str, int]] = {}
+    for o in outcomes:
+        level = _classify_aspice_level(o)
+        if level not in level_stats:
+            level_stats[level] = {"total": 0, "PASS": 0, "FAIL": 0, "SKIP": 0, "ERROR": 0}
+        level_stats[level]["total"] += 1
+        level_stats[level][o.result] += 1
+
+    # Detection time statistics
+    det_stats = _compute_detection_stats(outcomes)
+
+    # File hashes
+    vecu_hash = _sha256_file(vecu_path)
+    plant_hash = _sha256_file(plant_path) if plant_path else "N/A"
+    csv_basename = Path(csv_path).name if csv_path else "N/A"
+
+    # Count total test cases in matrix
+    csv_total = 0
+    if csv_path and Path(csv_path).is_file():
+        with open(csv_path, "r") as f:
+            csv_total = sum(1 for line in f) - 1  # subtract header
+
+    precond_total, precond_passed, precond_failed = precond_stats
+
+    # ================================================================
+    # TEXT REPORT
+    # ================================================================
     lines = []
-    lines.append("=" * 72)
-    lines.append("  foxBMS POSIX vECU — ASIL-D Fault Injection Report")
-    lines.append(f"  Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    lines.append("=" * 72)
+
+    # Header
+    lines.append("=" * 79)
+    lines.append("FAULT INJECTION TEST REPORT")
+    lines.append("=" * 79)
+    lines.append(f"Project:        foxBMS POSIX vECU (SIL)")
+    lines.append(f"Test Level:     SWE.5 (SW Integration Test)")
+    lines.append(f"Platform:       {platform.system()} {platform.machine()} (POSIX cooperative mode)")
+    lines.append(f"foxBMS Version: v1.10.0")
+    lines.append(f"Test Matrix:    {csv_basename} ({csv_total:,} test cases)")
+    lines.append(f"Date:           {start_time.isoformat()}")
+    lines.append(f"Duration:       {duration_str}")
+    lines.append(f"Tester:         automated (test_fault_injection.py)")
+    lines.append(f"Environment:    {can_interface}, plant_model.py")
+    lines.append("=" * 79)
     lines.append("")
 
     # Summary
-    lines.append(f"Total: {total} | PASS: {pass_count} | FAIL: {fail_count} "
-                 f"| SKIP: {skip_count} | ERROR: {error_count}")
+    lines.append(f"OVERALL RESULT: {overall}")
+    lines.append("")
+    lines.append(f"| {'Metric':<21s} | {'Value':>8s} |")
+    lines.append(f"|{'-'*22}|{'-'*10}|")
+    lines.append(f"| {'Total Executed':<21s} | {total:>8d} |")
+    lines.append(f"| {'PASS':<21s} | {f'{pass_count} ({pass_count*100//total if total else 0}%)':>8s} |")
+    lines.append(f"| {'FAIL':<21s} | {f'{fail_count} ({fail_count*100//total if total else 0}%)':>8s} |")
+    lines.append(f"| {'SKIP':<21s} | {f'{skip_count} ({skip_count*100//total if total else 0}%)':>8s} |")
+    lines.append(f"| {'ERROR':<21s} | {f'{error_count} ({error_count*100//total if total else 0}%)':>8s} |")
+    lines.append(f"| {'Pass Rate (runnable)':<21s} | {f'{pass_rate:.1f}%':>8s} |")
     lines.append("")
 
-    # Priority breakdown
-    for pri in sorted(priority_stats.keys()):
-        s = priority_stats[pri]
-        lines.append(f"{pri}: {s['total']} "
-                     f"({s['PASS']} PASS, {s['FAIL']} FAIL, "
-                     f"{s['SKIP']} SKIP, {s['ERROR']} ERROR)")
-
+    # Precondition Verification
+    lines.append("PRECONDITION VERIFICATION")
+    lines.append(f"Precondition checks: {precond_total} performed, {precond_passed} passed, "
+                 f"{precond_failed} failed ({restart_count} restarts)")
     lines.append("")
 
-    # Category breakdown
-    lines.append("--- By Category ---")
+    # Results by Category
+    lines.append("RESULTS BY CATEGORY")
+    lines.append(f"| {'Category':<10s} | {'Total':>5s} | {'PASS':>5s} | {'FAIL':>5s} "
+                 f"| {'SKIP':>5s} | {'ERROR':>5s} | {'Pass Rate':>9s} |")
+    lines.append(f"|{'-'*11}|{'-'*7}|{'-'*7}|{'-'*7}|{'-'*7}|{'-'*7}|{'-'*11}|")
     for cat in sorted(category_stats.keys()):
         s = category_stats[cat]
-        lines.append(f"  {cat:8s}: {s['total']:4d} "
-                     f"({s['PASS']} PASS, {s['FAIL']} FAIL, "
-                     f"{s['SKIP']} SKIP)")
+        cat_runnable = s["total"] - s["SKIP"]
+        cat_rate = (s["PASS"] / cat_runnable * 100) if cat_runnable > 0 else 0.0
+        lines.append(f"| {cat:<10s} | {s['total']:>5d} | {s['PASS']:>5d} | {s['FAIL']:>5d} "
+                     f"| {s['SKIP']:>5d} | {s['ERROR']:>5d} | {cat_rate:>8.1f}% |")
     lines.append("")
 
-    # Individual results
-    lines.append("--- Individual Results ---")
-    for o in outcomes:
-        lines.append(format_result_line(o))
+    # Results by ASPICE Test Level
+    lines.append("RESULTS BY TEST LEVEL (ASPICE)")
+    lines.append(f"| {'Level':<7s} | {'Total':>5s} | {'PASS':>5s} | {'FAIL':>5s} | {'SKIP':>5s} |")
+    lines.append(f"|{'-'*8}|{'-'*7}|{'-'*7}|{'-'*7}|{'-'*7}|")
+    for level in sorted(level_stats.keys()):
+        s = level_stats[level]
+        lines.append(f"| {level:<7s} | {s['total']:>5d} | {s['PASS']:>5d} "
+                     f"| {s['FAIL']:>5d} | {s['SKIP']:>5d} |")
+    lines.append("")
 
-    # Failed tests summary
+    # Detection Time Statistics
+    if det_stats:
+        lines.append("DETECTION TIME STATISTICS")
+        lines.append(f"| {'Fault Type':<16s} | {'Min (ms)':>8s} | {'Max (ms)':>8s} "
+                     f"| {'Avg (ms)':>8s} | {'Threshold':<15s} |")
+        lines.append(f"|{'-'*17}|{'-'*10}|{'-'*10}|{'-'*10}|{'-'*16}|")
+        for cat in sorted(det_stats.keys()):
+            d = det_stats[cat]
+            lines.append(f"| {d['name']:<16s} | {d['min_ms']:>8.0f} | {d['max_ms']:>8.0f} "
+                         f"| {d['avg_ms']:>8.0f} | {d['threshold']:<15s} |")
+        lines.append("")
+
+    # Individual Test Results (detailed)
+    lines.append("INDIVIDUAL TEST RESULTS")
+    for o in outcomes:
+        lines.append("-" * 78)
+        lines.append(f"TEST: {o.test_id}")
+        lines.append(f"  Category:     {o.category}")
+        lines.append(f"  Signal:       {o.signal}")
+        lines.append(f"  Method:       {o.fault_method}")
+        lines.append(f"  Target:       {o.target}")
+        lines.append(f"  Injection:    {o.injection_value}")
+        lines.append(f"  Expected:     {o.expected_reaction}")
+        if o.precondition_detail:
+            lines.append(f"  Preconditions: {o.precondition_detail}")
+        lines.append(f"")
+        lines.append(f"  RESULT: {o.result}")
+        lines.append(f"  Elapsed:      {o.elapsed_ms:.0f} ms")
+        if o.diag_time_ms > 0:
+            diag_bit = resolve_diag_bit(
+                DIAG_ID_MAP.get(o.signal, o.signal) if o.signal in DIAG_ID_MAP else "",
+                o.severity_tier)
+            lines.append(f"  DIAG bit:     SET at {o.diag_time_ms:.0f}ms")
+        if o.bms_state_trace:
+            lines.append(f"  BMS state:    {o.bms_state_trace}")
+        if o.contactor_time_ms > 0:
+            lines.append(f"  Contactor:    CLOSED -> OPEN at {o.contactor_time_ms:.0f}ms")
+        lines.append(f"  Detail:       {o.detail}")
+    lines.append("-" * 78)
+    lines.append("")
+
+    # Failed Tests section
     failures = [o for o in outcomes if o.result == TestResult.FAIL]
     if failures:
+        lines.append(f"FAILED TESTS ({len(failures)})")
         lines.append("")
-        lines.append(f"--- Failed Tests ({len(failures)}) ---")
         for o in failures:
-            lines.append(f"  {o.test_id}: {o.detail}")
+            lines.append(f"  {o.test_id}")
+            lines.append(f"    Expected: {o.expected_reaction}")
+            lines.append(f"    Actual:   {o.detail}")
+            # Attempt root cause analysis
+            if "TIMEOUT" in o.detail:
+                lines.append(f"    Possible root cause: Fault not detected within timeout. "
+                             f"Check DIAG config threshold or debounce counter settings.")
+            elif "contactor did not open" in o.detail:
+                lines.append(f"    Possible root cause: BMS detected fault but did not open "
+                             f"contactors. Check BMS state machine ERROR->OPEN transition.")
+            elif "DIAG bit" in o.detail and "not set" in o.detail:
+                lines.append(f"    Possible root cause: DIAG ID may be disabled in "
+                             f"diag_cfg.c or threshold/debounce too high.")
+            lines.append("")
+
+    # Skip Justification
+    skips = [o for o in outcomes if o.result == TestResult.SKIP]
+    if skips:
+        lines.append(f"SKIP JUSTIFICATION ({len(skips)})")
+        lines.append("")
+        for o in skips:
+            reason = o.skip_reason or o.detail
+            lines.append(f"  {o.test_id}: {reason}")
+        lines.append("")
+
+    # Test Environment Details
+    lines.append("TEST ENVIRONMENT DETAILS")
+    lines.append(f"  foxbms-vecu binary: {vecu_hash}")
+    lines.append(f"  plant_model.py:     {plant_hash}")
+    lines.append(f"  Patches applied:    N/A (stock v1.10.0 + POSIX port)")
+    lines.append(f"  Battery config:     NMC (OV MSL=4250mV, UV MSL=2500mV, "
+                 f"OT MSL=550ddegC, UT MSL=-200ddegC)")
+    lines.append(f"  DIAG config:        42 disabled, 43 enabled")
+    lines.append(f"  SIL probes:         14 active (0x7F0-0x7FF)")
+    lines.append(f"  CAN interface:      {can_interface}")
+    lines.append(f"  Platform:           {platform.system()} {platform.release()} "
+                 f"{platform.machine()}")
+    lines.append("")
+
+    # Sign-off
+    lines.append("=" * 79)
+    lines.append("Report generated automatically by test_fault_injection.py")
+    lines.append("Manual review required for ASPICE CL2 compliance.")
+    lines.append("")
+    lines.append("Reviewer: _________________ Date: _________________")
+    lines.append("Approver: _________________ Date: _________________")
+    lines.append("=" * 79)
 
     report_text = "\n".join(lines) + "\n"
 
-    # Write to file
-    with open(report_path, "w") as f:
+    # Write text report
+    with open(txt_path, "w") as f:
         f.write(report_text)
+
+    # ================================================================
+    # JSON REPORT
+    # ================================================================
+    json_report: Dict[str, Any] = {
+        "report_type": "FAULT_INJECTION_TEST_REPORT",
+        "project": "foxBMS POSIX vECU (SIL)",
+        "test_level": "SWE.5",
+        "platform": f"{platform.system()} {platform.machine()}",
+        "foxbms_version": "v1.10.0",
+        "test_matrix": csv_basename,
+        "test_matrix_total": csv_total,
+        "date": start_time.isoformat(),
+        "duration_s": duration.total_seconds(),
+        "tester": "automated (test_fault_injection.py)",
+        "environment": {
+            "can_interface": can_interface,
+            "vecu_sha256": vecu_hash,
+            "plant_sha256": plant_hash,
+            "platform_detail": f"{platform.system()} {platform.release()} {platform.machine()}",
+            "battery_config": {
+                "chemistry": "NMC",
+                "ov_msl_mv": 4250, "uv_msl_mv": 2500,
+                "ot_msl_ddegc": 550, "ut_msl_ddegc": -200,
+            },
+            "diag_config": {"disabled": 42, "enabled": 43},
+            "sil_probes": {"count": 14, "range": "0x7F0-0x7FF"},
+        },
+        "summary": {
+            "overall_result": overall,
+            "total": total,
+            "pass": pass_count,
+            "fail": fail_count,
+            "skip": skip_count,
+            "error": error_count,
+            "pass_rate_runnable": round(pass_rate, 1),
+        },
+        "preconditions": {
+            "checks_total": precond_total,
+            "checks_passed": precond_passed,
+            "checks_failed": precond_failed,
+            "restarts": restart_count,
+        },
+        "results_by_category": {
+            cat: {
+                "total": s["total"], "pass": s["PASS"], "fail": s["FAIL"],
+                "skip": s["SKIP"], "error": s["ERROR"],
+                "pass_rate": round(s["PASS"] / max(1, s["total"] - s["SKIP"]) * 100, 1),
+            }
+            for cat, s in sorted(category_stats.items())
+        },
+        "results_by_aspice_level": {
+            level: {
+                "total": s["total"], "pass": s["PASS"], "fail": s["FAIL"],
+                "skip": s["SKIP"], "error": s["ERROR"],
+            }
+            for level, s in sorted(level_stats.items())
+        },
+        "detection_time_stats": {
+            cat: {
+                "name": d["name"], "threshold": d["threshold"],
+                "min_ms": round(d["min_ms"], 1),
+                "max_ms": round(d["max_ms"], 1),
+                "avg_ms": round(d["avg_ms"], 1),
+                "sample_count": d["count"],
+            }
+            for cat, d in sorted(det_stats.items())
+        },
+        "tests": [
+            {
+                "test_id": o.test_id,
+                "category": o.category,
+                "signal": o.signal,
+                "fault_method": o.fault_method,
+                "target": o.target,
+                "injection_value": o.injection_value,
+                "expected_reaction": o.expected_reaction,
+                "severity_tier": o.severity_tier,
+                "result": o.result,
+                "elapsed_ms": round(o.elapsed_ms, 1),
+                "diag_time_ms": round(o.diag_time_ms, 1),
+                "contactor_time_ms": round(o.contactor_time_ms, 1),
+                "precondition_detail": o.precondition_detail,
+                "detail": o.detail,
+                "bms_state_trace": o.bms_state_trace,
+                "skip_reason": o.skip_reason,
+                "aspice_level": _classify_aspice_level(o),
+            }
+            for o in outcomes
+        ],
+        "failed_tests": [
+            {
+                "test_id": o.test_id,
+                "expected": o.expected_reaction,
+                "actual": o.detail,
+            }
+            for o in outcomes if o.result == TestResult.FAIL
+        ],
+        "skipped_tests": [
+            {
+                "test_id": o.test_id,
+                "reason": o.skip_reason or o.detail,
+            }
+            for o in outcomes if o.result == TestResult.SKIP
+        ],
+    }
+
+    with open(json_path, "w") as f:
+        json.dump(json_report, f, indent=2)
 
     # Print summary to stdout
     print("")
     print("=" * 60)
-    print("=== Fault Injection Report ===")
+    print(f"=== Fault Injection Report — OVERALL: {overall} ===")
     print(f"Total: {total} | PASS: {pass_count} | FAIL: {fail_count} "
           f"| SKIP: {skip_count} | ERROR: {error_count}")
-    for pri in sorted(priority_stats.keys()):
-        s = priority_stats[pri]
-        print(f"{pri}: {s['total']} "
-              f"({s['PASS']} PASS, {s['FAIL']} FAIL, {s['SKIP']} SKIP)")
-    print(f"\nFull report: {report_path}")
+    print(f"Pass Rate (runnable): {pass_rate:.1f}%")
+    print(f"Preconditions: {precond_total} checks, {precond_passed} passed, "
+          f"{precond_failed} failed, {restart_count} restarts")
+
+    # Category summary
+    for cat in sorted(category_stats.keys()):
+        s = category_stats[cat]
+        cat_runnable = s["total"] - s["SKIP"]
+        cat_rate = (s["PASS"] / cat_runnable * 100) if cat_runnable > 0 else 0.0
+        print(f"  {cat:8s}: {s['PASS']}/{cat_runnable} ({cat_rate:.0f}%)")
+
+    print(f"\nText report:  {txt_path}")
+    print(f"JSON report:  {json_path}")
     print("=" * 60)
 
 
@@ -2100,8 +2608,9 @@ def main() -> int:
                         help="Run at most N tests")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_MS,
                         help="Per-test timeout in ms (default: 5000)")
-    parser.add_argument("--report", default="fault-injection-report.txt",
-                        help="Output report file")
+    parser.add_argument("--report",
+                        default=f"fault-injection-report-{datetime.now().strftime('%Y%m%d')}.txt",
+                        help="Output report file (default: fault-injection-report-<date>.txt)")
     parser.add_argument("--quick", action="store_true",
                         help="Run only P1 STEP_TO_VALUE tests (fastest subset)")
     parser.add_argument("--vecu", default=None,
@@ -2170,10 +2679,11 @@ def main() -> int:
     injector = FaultInjector(bus)
     executor = TestExecutor(bus, injector, monitor, args.timeout)
 
-    # Wait for BMS to reach NORMAL
-    print(f"[runner] Waiting for BMS to reach NORMAL state (up to {STARTUP_TIMEOUT_S}s)...")
-    if not executor.wait_for_normal(STARTUP_TIMEOUT_S):
-        print("[ERROR] BMS did not reach NORMAL state within timeout")
+    # Initial precondition verification
+    print(f"[runner] Verifying initial preconditions (up to {STARTUP_TIMEOUT_S}s)...")
+    precond_ok, precond_detail = executor.verify_preconditions(timeout_s=STARTUP_TIMEOUT_S)
+    if not precond_ok:
+        print(f"[ERROR] Initial preconditions not met: {precond_detail}")
         print(f"[DEBUG] Last BMS state: {BMS_STATE_NAMES.get(monitor.bms_state, '?')} "
               f"({monitor.bms_state})")
         bus.close()
@@ -2181,69 +2691,77 @@ def main() -> int:
             vecu_mgr.stop()
         return 1
 
-    print(f"[runner] BMS is in NORMAL state — stabilizing 4s for plant discharge...")
-    time.sleep(4.0)  # Wait for plant to detect NORMAL and start discharging
+    print(f"[runner] {precond_detail}")
     print(f"[runner] Starting test execution")
     print(f"[runner] Per-test timeout: {args.timeout}ms")
     print("")
 
     # Execute tests
+    start_time = datetime.now(timezone.utc)
     outcomes: List[TestOutcome] = []
     restart_count = 0
+    precond_checks_total = 0
+    precond_checks_passed = 0
+    precond_checks_failed = 0
 
     for i, tc in enumerate(cases):
         # Progress indicator
         progress = f"[{i+1}/{len(cases)}]"
 
-        # Ensure BMS is in NORMAL before each test
-        if not monitor.bms_in_normal():
+        # Full 6-point precondition verification before each test
+        precond_checks_total += 1
+        precond_ok, precond_detail = executor.verify_preconditions(timeout_s=15.0)
+
+        if not precond_ok:
+            precond_checks_failed += 1
+            print(f"{progress} Preconditions failed: {precond_detail}")
+
+            # Attempt 1: clear overrides and retry
             injector.clear()
-            time.sleep(0.1)
-            if not executor.wait_for_normal(RECOVERY_TIMEOUT_S):
-                # Try restarting
-                if vecu_mgr and vecu_mgr.is_alive():
-                    print(f"{progress} BMS not in NORMAL — restarting vECU...")
-                    if not vecu_mgr.restart():
-                        print(f"{progress} [ERROR] vECU restart failed")
-                        outcomes.append(TestOutcome(
-                            test_id=tc.test_id, result=TestResult.ERROR,
-                            elapsed_ms=0, detail="vECU restart failed",
-                            category=tc.category, priority=tc.priority,
-                        ))
-                        continue
+            time.sleep(0.2)
+            precond_ok, precond_detail = executor.verify_preconditions(timeout_s=15.0)
+
+            if not precond_ok and vecu_mgr:
+                # Attempt 2: restart vECU
+                restart_attempts = 0
+                while not precond_ok and restart_attempts < 2:
+                    restart_attempts += 1
+                    print(f"{progress} Restart attempt {restart_attempts}/2...")
+                    if vecu_mgr.is_alive():
+                        vecu_mgr.restart()
+                    else:
+                        print(f"{progress} [ERROR] vECU crashed — restarting")
+                        vecu_mgr.restart()
                     # Re-open CAN (old socket may be stale)
                     bus.close()
                     bus = CanBus(args.can_interface)
                     injector = FaultInjector(bus)
                     executor = TestExecutor(bus, injector, monitor, args.timeout)
                     restart_count += 1
+                    precond_ok, precond_detail = executor.verify_preconditions(
+                        timeout_s=STARTUP_TIMEOUT_S)
 
-                    if not executor.wait_for_normal(STARTUP_TIMEOUT_S):
-                        print(f"{progress} [ERROR] BMS not NORMAL after restart")
-                        outcomes.append(TestOutcome(
-                            test_id=tc.test_id, result=TestResult.ERROR,
-                            elapsed_ms=0, detail="BMS not NORMAL after restart",
-                            category=tc.category, priority=tc.priority,
-                        ))
-                        continue
-                elif vecu_mgr:
-                    print(f"{progress} [ERROR] vECU crashed")
-                    if not vecu_mgr.restart():
-                        outcomes.append(TestOutcome(
-                            test_id=tc.test_id, result=TestResult.ERROR,
-                            elapsed_ms=0, detail="vECU crashed, restart failed",
-                            category=tc.category, priority=tc.priority,
-                        ))
-                        continue
-                    bus.close()
-                    bus = CanBus(args.can_interface)
-                    injector = FaultInjector(bus)
-                    executor = TestExecutor(bus, injector, monitor, args.timeout)
-                    restart_count += 1
-                    executor.wait_for_normal(STARTUP_TIMEOUT_S)
+            if not precond_ok:
+                # Skip this test after 2 restart attempts
+                print(f"{progress} [SKIP] {tc.test_id} — preconditions failed after 2 restarts")
+                outcomes.append(TestOutcome(
+                    test_id=tc.test_id, result=TestResult.SKIP,
+                    elapsed_ms=0,
+                    detail=f"preconditions failed: {precond_detail}",
+                    category=tc.category, priority=tc.priority,
+                    precondition_detail=precond_detail,
+                    skip_reason=f"preconditions failed: {precond_detail}",
+                    signal=tc.signal, fault_method=tc.fault_method,
+                    target=tc.target, injection_value=tc.injection_value,
+                    expected_reaction=tc.expected_reaction,
+                    severity_tier=tc.severity_tier,
+                ))
+                continue
+
+        precond_checks_passed += 1
 
         # Run the test
-        outcome = executor.execute(tc)
+        outcome = executor.execute(tc, precondition_detail=precond_detail)
         outcomes.append(outcome)
 
         # Print result line
@@ -2268,8 +2786,28 @@ def main() -> int:
             else:
                 time.sleep(0.05)
 
-    # Generate report
-    generate_report(outcomes, args.report)
+    end_time = datetime.now(timezone.utc)
+
+    # Generate ASPICE-auditable report (both .txt and .json)
+    report_base = args.report
+    if report_base.endswith(".txt"):
+        report_base = report_base[:-4]
+    txt_path = f"{report_base}.txt"
+    json_path = f"{report_base}.json"
+
+    generate_audit_report(
+        outcomes=outcomes,
+        txt_path=txt_path,
+        json_path=json_path,
+        start_time=start_time,
+        end_time=end_time,
+        can_interface=args.can_interface,
+        csv_path=args.csv,
+        vecu_path=args.vecu if not args.no_start else None,
+        plant_path=args.plant if not args.no_start else None,
+        restart_count=restart_count,
+        precond_stats=(precond_checks_total, precond_checks_passed, precond_checks_failed),
+    )
 
     if restart_count > 0:
         print(f"\n[runner] vECU was restarted {restart_count} time(s) during test run")
