@@ -17,6 +17,7 @@ Exit codes:
 # @verifies SW-REQ-070
 # @verifies SYS-REQ-090
 # @verifies SYS-REQ-130
+# @verifies SW-REQ-126# @verifies SW-REQ-128# @verifies SW-REQ-129
 
 import subprocess
 import sys

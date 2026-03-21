@@ -47,6 +47,19 @@ Usage:
 # @verifies SW-REQ-103
 # @verifies SW-REQ-120
 # @verifies SW-REQ-200
+# @verifies SW-REQ-072
+# @verifies SW-REQ-075
+# @verifies SW-REQ-076
+# @verifies SW-REQ-094
+# @verifies SW-REQ-095
+# @verifies SW-REQ-096
+# @verifies SW-REQ-097
+# @verifies SW-REQ-098
+# @verifies SW-REQ-099
+# @verifies SW-REQ-104
+# @verifies SW-REQ-108
+# @verifies SW-REQ-109
+# @verifies SW-REQ-111
 
 import subprocess
 import sys

@@ -30,6 +30,7 @@ Exit codes:
 # @verifies SW-REQ-102
 # @verifies SW-REQ-110
 # @verifies SW-REQ-120
+# @verifies SW-REQ-063# @verifies SW-REQ-064# @verifies SW-REQ-065# @verifies SW-REQ-066# @verifies SW-REQ-067# @verifies SW-REQ-068# @verifies SW-REQ-069# @verifies SW-REQ-081# @verifies SW-REQ-082# @verifies SW-REQ-083# @verifies SW-REQ-084# @verifies SW-REQ-085# @verifies SW-REQ-105# @verifies SW-REQ-106# @verifies SW-REQ-107# @verifies SW-REQ-112# @verifies SW-REQ-113# @verifies SW-REQ-203# @verifies SW-REQ-204
 
 import subprocess
 import sys

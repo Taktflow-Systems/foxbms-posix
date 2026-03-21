@@ -50,10 +50,15 @@ jobs:
           ls foxbms-2/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix/portmacro.h || echo "POSIX PORT MISSING"
           ls foxbms-2/src/app/engine/diag/diag.c || echo "diag.c MISSING"
 
-      - name: Copy HALCoGen headers
+      - name: Copy HALCoGen headers + FreeRTOS POSIX port
         run: |
           mkdir -p foxbms-2/build/app_host_unit_test/include
           cp halcogen-headers/* foxbms-2/build/app_host_unit_test/include/
+          mkdir -p foxbms-2/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix/utils
+          cp freertos-posix-port/port.c freertos-posix-port/portmacro.h \
+             foxbms-2/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix/
+          cp freertos-posix-port/utils/* \
+             foxbms-2/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix/utils/
 
       - name: Apply POSIX patches
         run: bash patches/apply_all.sh --force
