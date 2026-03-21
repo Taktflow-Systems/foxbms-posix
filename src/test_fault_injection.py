@@ -578,20 +578,20 @@ class VecuManager:
         print(f"[runner] Starting plant_model.py on {self.interface}...")
         self.plant_proc = subprocess.Popen(
             ["python3", self.plant_path, self.interface],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             preexec_fn=os.setsid,
         )
 
-        time.sleep(0.2)  # Let plant settle
+        time.sleep(0.5)  # Let plant settle and send initial data
 
         print(f"[runner] Starting foxbms-vecu on {self.interface}...")
         env = os.environ.copy()
         env["FOXBMS_CAN_IF"] = self.interface
         self.vecu_proc = subprocess.Popen(
             [self.vecu_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             preexec_fn=os.setsid,
             env=env,
         )
