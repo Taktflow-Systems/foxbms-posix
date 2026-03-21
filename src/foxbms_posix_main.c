@@ -373,6 +373,22 @@ int main(int argc, char *argv[])
                 }
                 sil_probe_2i32(SIL_PROBE_CURRENT, cur, 0);
 
+                /* DIAG status probe (0x7F7) */
+                extern uint32_t posix_diag_fault_count;
+                extern uint8_t posix_diag_last_id;
+                extern uint8_t posix_diag_last_event;
+                {
+                    uint8_t dbuf[8] = {0};
+                    memcpy(&dbuf[0], &posix_diag_fault_count, 4);
+                    dbuf[4] = posix_diag_last_id;
+                    dbuf[5] = posix_diag_last_event;
+                    sil_probe_raw(SIL_PROBE_DIAG, dbuf, 8u);
+                }
+
+                /* DIAG bitmap probe (0x7F8) */
+                extern uint64_t posix_diag_bitmap;
+                sil_probe_raw(SIL_PROBE_DIAG_BITMAP, (const uint8_t *)&posix_diag_bitmap, 8u);
+
                 /* DB counters probe */
                 extern uint32_t posix_sil_db_write_count;
                 extern uint32_t posix_sil_db_read_count;
