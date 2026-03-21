@@ -10,7 +10,7 @@
 #define __asm(x) ((void)0)
 
 /* Stub TI compiler pragmas */
-#define __curpc() ((unsigned long)0)
+#define __curpc() ((unsigned long)__builtin_return_address(0))
 
 /* Stub TI-specific keywords */
 #ifndef __attribute__

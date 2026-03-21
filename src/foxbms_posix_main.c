@@ -221,6 +221,12 @@ int main(int argc, char *argv[])
             last_1ms = now;
             FTSK_RunUserCodeCyclic1ms();
             FTSK_RunUserCodeEngine();
+            /* MEAS_Control() runs at 1ms rate — gated here rather than every loop
+             * iteration (which was 500µs) to match the AFE task period in FreeRTOS. */
+            {
+                extern void MEAS_Control(void);
+                MEAS_Control();
+            }
             uint64_t dt = get_time_us() - t0;
             if (dt > max_1ms_us) max_1ms_us = dt;
             if (dt > 1000) { /* exceeded 1ms deadline */
@@ -247,12 +253,6 @@ int main(int argc, char *argv[])
             }
         }
 
-        /* AFE trigger — normally in its own FreeRTOS task, must call manually */
-        {
-            extern void MEAS_Control(void);
-            MEAS_Control();
-        }
-
         /* 100ms cyclic */
         if (now - last_100ms >= 100000) {
             uint64_t t0 = get_time_us();
@@ -268,12 +268,6 @@ int main(int argc, char *argv[])
                 }
             }
         }
-
-        /* TODO (GA-32): posix_inject_cell_data() was removed — function body is dead code
-         * (only comments + a one-time log, no actual database writes). Cell data reaches
-         * foxBMS via the CAN path (plant_model.py → 0x270/0x280 → ring buffer → AFE).
-         * If direct DB injection is ever needed (e.g. for fault injection tests), implement
-         * it properly using the DATA_WRITE_DATA() API with the correct struct layout. */
 
         /* Status every 5 seconds */
         if (tick > 0 && tick % 5000 == 0) {

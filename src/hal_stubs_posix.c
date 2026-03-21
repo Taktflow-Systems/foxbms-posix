@@ -93,6 +93,10 @@ uint32_t canTransmit(void *node, uint32_t messageBox, const uint8_t *data)
     if (messageBox > 0u && messageBox <= CAN_MAX_MAILBOXES) {
         id = can_mailbox_id[messageBox - 1u];
     }
+    /* DLC is hardcoded to 8 because the HAL canTransmit() API does not pass DLC
+     * explicitly — it is embedded in the mailbox configuration register (Message
+     * Control Field / MCF) which we do not fully simulate on POSIX. All foxBMS
+     * CAN messages are fixed 8-byte frames, so this is safe for the current use case. */
     int ret = posix_can_send(id, data, 8u);
     can_tx_count++;
     if (can_tx_count <= 5u) {
@@ -859,51 +863,9 @@ uint32_t SpiTxStatus(void *node) { (void)node; return 1u; /* complete */ }
 void __TI_auto_init(void) { fprintf(stderr, "[POSIX] __TI_auto_init()\n"); fflush(stderr); }
 void vPortTaskUsesFPU(void) {}
 
-/* ================================================================
- * Direct database injection for POSIX — bypasses CAN encoding
- * ================================================================ */
-
-/* foxBMS database block IDs — must match DATA_BLOCK_ID_e enum */
-#define DATA_BLOCK_ID_CELL_VOLTAGE      (1u)
-#define DATA_BLOCK_ID_CELL_TEMPERATURE  (2u)
-#define DATA_BLOCK_ID_CURRENT_SENSOR    (6u)
-#define DATA_BLOCK_ID_PACK_VALUES       (21u)
-
-/* Write cell voltages and pack values directly to database */
-void posix_inject_cell_data(void) {
-    /* Access database structs through the extern data_database array */
-    extern const struct {
-        void *pDatabaseEntry;
-        uint32_t dataLength;
-    } data_database[];
-
-    /* Cell voltage block */
-    typedef struct {
-        uint32_t uniqueId;
-        uint32_t timestamp;
-        uint32_t previousTimestamp;
-        /* actual cell voltage data follows — set all to 3700mV */
-    } DataBlockHeader;
-
-    /* Instead of fighting with struct layouts, just set pack values directly */
-    /* Pack values struct has stringVoltage_mV, stringCurrent_mA, etc. */
-
-    /* For now: a simpler approach — just ensure the IVT data reaches the
-     * pack values database by calling the CAN current sensor processing
-     * which sets invalidStringVoltage etc. */
-
-    /* Actually the simplest fix: set invalidStringVoltage = 0 and
-     * stringVoltage_mV = 22200 directly in the pack values struct */
-
-    /* We can't easily get the struct pointer without including headers.
-     * Let me use the DATA API instead. */
-    static int injected = 0;
-    if (!injected) {
-        fprintf(stderr, "[POSIX] Cell data injection active (bypass CAN encoding)\n");
-        fflush(stderr);
-        injected = 1;
-    }
-}
+/* posix_inject_cell_data() was removed — dead code.
+ * Cell data reaches foxBMS via CAN path: plant_model.py → 0x270/0x280 → ring buffer → AFE.
+ * If direct DB injection is needed later, implement via DATA_WRITE_DATA() with correct struct layout. */
 
 /* portGET_HIGHEST_PRIORITY, portRECORD_READY_PRIORITY, portRESET_READY_PRIORITY
  * now defined as macros in posix_overrides.h using __builtin_clz */
