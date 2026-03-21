@@ -517,13 +517,37 @@ def parse_safety_goal_table(graph, filepath):
         graph.add_trace(sg_id, hz_id, source_file=rel_path)
 
 
+def parse_fi_csv(graph, root_dir):
+    """Parse fault injection CSV for TEST_ID → REQ_ID mappings."""
+    csv_path = root_dir / "docs" / "test" / "fault-injection-test-matrix-asild.csv"
+    if not csv_path.is_file():
+        return
+    import csv
+    try:
+        with open(csv_path, encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            count = 0
+            for row in reader:
+                test_id = row.get("TEST_ID", "").strip()
+                req_ids = row.get("REQ_ID", "").strip()
+                if test_id and req_ids:
+                    for rid in req_ids.split(";"):
+                        rid = rid.strip()
+                        if rid:
+                            graph.add_verification(test_id, rid, source_file="fault-injection-matrix")
+                            count += 1
+        print(f"  Parsed {count} test→req links from fault injection CSV")
+    except Exception as e:
+        print(f"  WARNING: Cannot parse FI CSV: {e}", file=sys.stderr)
+
+
 def parse_source_files(graph, src_dir):
     """Scan source files for @safety_req and @verifies tags."""
     if not src_dir.is_dir():
         print(f"  WARNING: Source directory not found: {src_dir}", file=sys.stderr)
         return
 
-    for fpath in sorted(src_dir.iterdir()):
+    for fpath in sorted(src_dir.rglob("*")):
         if not fpath.is_file():
             continue
         if fpath.suffix not in (".c", ".h", ".py"):
@@ -935,6 +959,10 @@ def main():
     # --- Scan source files ---
     print("Scanning source code...")
     parse_source_files(graph, SRC_DIR)
+
+    # --- Parse fault injection CSV ---
+    print("Parsing fault injection CSV...")
+    parse_fi_csv(graph, ROOT_DIR)
 
     # --- Validate ---
     print("Validating traceability...")
