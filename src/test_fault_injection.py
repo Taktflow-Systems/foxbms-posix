@@ -1480,7 +1480,9 @@ def main() -> int:
             vecu_mgr.stop()
         return 1
 
-    print(f"[runner] BMS is in NORMAL state — starting test execution")
+    print(f"[runner] BMS is in NORMAL state — stabilizing 4s for plant discharge...")
+    time.sleep(4.0)  # Wait for plant to detect NORMAL and start discharging
+    print(f"[runner] Starting test execution")
     print(f"[runner] Per-test timeout: {args.timeout}ms")
     print("")
 
