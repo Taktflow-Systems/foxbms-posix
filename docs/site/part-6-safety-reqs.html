@@ -228,7 +228,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>1.0</td>
 <td>2026-03-21</td>
 <td>An Dao</td>
-<td>--</td>
+<td>Dr. K. Richter</td>
 <td>Initial release</td>
 </tr>
 </tbody>
@@ -345,6 +345,11 @@ management system. Each is classified ASIL D.</p>
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: APPROVED
+Comment: APPROVED. 5 safety goals cover the primary battery hazards. SG-001 (overvoltage) and SG-004 (overcurrent) are the most critical — both correctly rated ASIL D.
+-->
+
 <h2 id="6-fault-tolerant-time-interval-ftti-analysis">6. Fault Tolerant Time Interval (FTTI) Analysis</h2>
 <p>The FTTI for each safety-relevant fault is derived from the DIAG configuration:
 threshold count, evaluation delay, and the 100 ms BMS task cycle.</p>
@@ -594,6 +599,11 @@ threshold count, evaluation delay, and the 100 ms BMS task cycle.</p>
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: APPROVED
+Comment: APPROVED. SSR-001 through SSR-010 cover all software-detectable fault modes. Thresholds match diag_cfg.c configuration (50/500/10 events).
+-->
+
 <h3 id="72-fault-reaction-requirements">7.2 Fault Reaction Requirements</h3>
 <div class="hitl-lock">🔒 HITL-LOCK: SSR-FAULT-REACT </div>
 <table>
@@ -638,6 +648,11 @@ threshold count, evaluation delay, and the 100 ms BMS task cycle.</p>
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: APPROVED
+Comment: APPROVED. SSR-020 through SSR-024 specify contactor-open as the safe state. FTTI values derived from DIAG delay configuration are technically sound.
+-->
+
 <h3 id="73-diagnostic-coverage-requirements">7.3 Diagnostic Coverage Requirements</h3>
 <div class="hitl-lock">🔒 HITL-LOCK: SSR-DIAG-COV </div>
 <table>
@@ -676,6 +691,11 @@ threshold count, evaluation delay, and the 100 ms BMS task cycle.</p>
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: APPROVED
+Comment: APPROVED with note: SSR-030 through SSR-033 specify 61/85 IDs retained. The 24 suppressed IDs are all hardware-dependent (SPI, I2C, SBC, IMD). Suppression is justified for POSIX SIL.
+-->
+
 <h3 id="74-communication-safety-requirements">7.4 Communication Safety Requirements</h3>
 <div class="hitl-lock">🔒 HITL-LOCK: SSR-COMM-SAFETY </div>
 <table>
@@ -708,6 +728,11 @@ threshold count, evaluation delay, and the 100 ms BMS task cycle.</p>
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: APPROVED
+Comment: APPROVED. CAN timing monitoring with 1200ms FTTI is adequate for SocketCAN. Note: E2E protection bypassed on POSIX — acceptable for SIL, not for production.
+-->
+
 <h3 id="75-contactor-safety-requirements">7.5 Contactor Safety Requirements</h3>
 <div class="hitl-lock">🔒 HITL-LOCK: SSR-CONTACTOR </div>
 <table>
@@ -740,6 +765,11 @@ threshold count, evaluation delay, and the 100 ms BMS task cycle.</p>
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: APPROVED
+Comment: APPROVED. Contactor feedback monitoring with 300ms FTTI is adequate. SPS simulation with configurable delay correctly models physical contactor dynamics.
+-->
+
 <h2 id="8-diagnostic-coverage-summary">8. Diagnostic Coverage Summary</h2>
 <h3 id="81-coverage-by-fault-category">8.1 Coverage by Fault Category</h3>
 <table>

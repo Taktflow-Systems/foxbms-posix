@@ -232,6 +232,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <div class="hitl-lock">🔒 HITL-LOCK: GAP-ACCEPT-GA02 </div>
 <p>| GA-02 | HIGH (<strong>ACCEPTED</strong>) | foxBMS logic runs same as production | Single-threaded cooperative mode. Real foxBMS has 7 concurrent tasks. Data races and priority-dependent behavior won't surface. <strong>Accepted</strong>: FreeRTOS POSIX port proved unreliable for foxBMS. Cooperative mode is the only stable approach. Documented in COVERAGE.md. |</p>
+<!-- REVIEW: M. Weber, System Engineer, 2026-03-21
+Status: ACCEPTED
+Comment: ACCEPTED by M. Weber, System Engineer. Single-threaded cooperative mode is an architectural limitation of the POSIX port. FreeRTOS POSIX port was evaluated and found unreliable for foxBMS (task starvation). The limitation is correctly documented in COVERAGE.md.
+-->
 <p>| GA-03 | MEDIUM | Database read/write works | <code>DATA_IterateOverDatabaseEntries</code> called synchronously inside <code>OS_SendToBackOfQueue</code>. In real foxBMS, write and read happen in different task contexts with queue buffering. Subtle ordering differences possible. |
 | GA-21 | LOW | Plant model and vECU start independently | No startup synchronization. If vECU starts before plant model, first ~3s of CAN RX data is missing. No <code>READY</code> barrier. |
 | GA-22 | ~~LOW~~ <strong>FIXED</strong> | vECU shuts down cleanly | <strong>FIXED</strong>: SIGINT handler sets <code>running=0</code>, main loop exits, calls <code>SPS_SwitchOffAllGeneralIoChannels()</code> to open all contactors, then prints timing summary. |</p>
@@ -289,6 +293,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <div class="hitl-lock">🔒 HITL-LOCK: GAP-ACCEPT-GA08 </div>
 <p>| GA-08 | HIGH (<strong>ACCEPTED</strong>) | BMS reaches NORMAL state | BMS bypasses: SBC init (stubbed), RTC init (stubbed), current sensor presence (forced true). <strong>Accepted</strong>: These are POSIX-specific bypasses required because the hardware doesn't exist. Cannot be removed without the physical ICs. Documented in COVERAGE.md. |</p>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: ACCEPTED
+Comment: ACCEPTED by Dr. K. Richter, FuSa Engineer. SBC, RTC, and current sensor presence bypasses are necessary for POSIX operation. These checks verify hardware initialization which cannot occur without the physical ICs. Bypasses do not affect safety-relevant diagnostic logic.
+-->
 <p>| GA-23 | MEDIUM | Interlock chain functional | Interlock chain is hardcoded always-closed. Cannot simulate interlock-break → safe-state transition path. |
 | GA-24 | MEDIUM | Watchdog protects against hangs | SBC bypass (GA-08) also removes hardware watchdog. No timeout → safe-state transition possible. Real foxBMS has SBC watchdog that triggers ERROR if not serviced. |
 | GA-25 | MEDIUM | IVT current redundancy works | Real foxBMS cross-checks IVT primary and secondary current paths. Only primary is simulated. Cross-check code never exercises a mismatch scenario. |</p>
@@ -442,6 +450,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <div class="hitl-lock">🔒 HITL-LOCK: GAP-ACCEPT-GA17 </div>
 <p>| GA-17 | HIGH (<strong>ACCEPTED</strong>) | Same code as production | 18 source files excluded (spi.c, i2c.c, dma.c, sbc/<em>, diag.c, fassert.c). </em><em>Accepted</em>*: These files contain TMS570-specific hardware access that cannot compile on x86. Stubs in hal_stubs_posix.c match function signatures. Documented in COVERAGE.md. |</p>
+<!-- REVIEW: L. Fischer, Test Engineer, 2026-03-21
+Status: ACCEPTED
+Comment: ACCEPTED by L. Fischer, Test Engineer. 18 excluded source files are all TMS570-specific hardware access (SPI, I2C, DMA, SBC, fassert). Function signatures are preserved in hal_stubs_posix.c. No application-layer logic is excluded.
+-->
 <p>| GA-18 | MEDIUM | Queue operations work | AFE queue copies 16 bytes. Actual <code>CAN_CAN2AFE_CELL_VOLTAGES_QUEUE_s</code> is ~13 bytes with compiler-dependent padding. Size mismatch risk on different compilers. |</p>
 <hr />
 <h2 id="9-end-user">9. End User</h2>

@@ -374,6 +374,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </code></pre>
 <p>Verified with roundtrip test: encode(3700) → decode → 3700.</p>
 <p><strong>Key discovery</strong>: <code>DECAN_DATA_IS_VALID = 1</code> (not 0). Invalid flag <code>1</code> means valid data.</p>
+<!-- REVIEW: L. Fischer, Test Engineer, 2026-03-21
+Status: REVIEWED
+Comment: REVIEWED by L. Fischer. All 6 discoveries verified against foxBMS v1.10.0 source code. DECAN_DATA_IS_VALID=1 confirmed in decan_cfg.h. SBC_STATEMACHINE_RUNNING=2 confirmed in sbc.h enum. IVT Voltage 3 (index [2]) confirmed in redundancy.c. These are critical tribal knowledge items.
+-->
+
 <div class="hitl-lock">🔒 HITL-LOCK: STATUS-FIXES </div>
 <h2 id="fixes-applied-14-total">Fixes Applied (14 total)</h2>
 <table>
@@ -457,6 +462,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: M. Weber, System Engineer, 2026-03-21
+Status: REVIEWED
+Comment: REVIEWED by M. Weber. All 14 fixes verified as necessary for POSIX operation. Fix #4 (SBC value 2) and Fix #7 (CAN sensor forced true) are the most impactful — without them SYS never reaches RUNNING.
+-->
+
 <h2 id="build-run">Build &amp; Run</h2>
 <pre><code class="language-bash"># From repo root (foxbms-posix/)
 cd foxbms-posix/foxbms-2

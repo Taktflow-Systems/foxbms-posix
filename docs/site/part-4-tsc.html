@@ -1631,6 +1631,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </table>
 <hr />
 <h2 id="traceability-tsr-downstream-ssr-sw-req">Traceability: TSR → Downstream (SSR / SW-REQ)</h2>
+<div class="hitl-lock">🔒 HITL-LOCK: TSC-TRACE-DOWN </div>
 <table>
 <thead>
 <tr>
@@ -1717,7 +1718,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: REVIEWED
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+-->
+
 <h2 id="traceability-tsr-fsr-upstream">Traceability: TSR → FSR (Upstream)</h2>
+<div class="hitl-lock">🔒 HITL-LOCK: TSC-TRACE-UP </div>
 <table>
 <thead>
 <tr>
@@ -1804,6 +1811,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: REVIEWED
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+-->
+
 <hr />
 <p><em>End of Document FOX-SAF-TSC-001</em></p></div>
 <div class="nav-buttons"><a href="part-4-fsc.html">&larr; Part 4: FSC</a><a href="part-5-hsi.html">Part 5: HSI &rarr;</a></div>
