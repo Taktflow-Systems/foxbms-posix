@@ -668,7 +668,7 @@ class TestExecutor:
             if self.monitor.bms_in_normal():
                 # BMS still normal after delay = plant is running + discharging
                 elapsed = time.monotonic() - (deadline - timeout_s)
-                if elapsed > 2.0:  # 2s in NORMAL = plant definitely discharging
+                if elapsed > 4.0:  # 4s in NORMAL = plant definitely discharging
                     return True
         return False
 
