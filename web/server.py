@@ -29,8 +29,8 @@ log = logging.getLogger("foxbms-ws")
 # -- BMS / SYS state enums -------------------------------------------------
 BMS_STATES = {
     0: "UNINITIALIZED", 1: "INITIALIZATION", 2: "INITIALIZED", 3: "IDLE",
-    4: "STANDBY", 5: "PRECHARGE", 6: "DISCHARGE", 7: "NORMAL",
-    8: "CHARGE", 9: "OPEN_CONTACTORS", 10: "ERROR",
+    4: "OPEN_CONTACTORS", 5: "STANDBY", 6: "PRECHARGE", 7: "NORMAL",
+    8: "DISCHARGE", 9: "CHARGE", 10: "ERROR",
 }
 
 # -- Live data store --------------------------------------------------------
@@ -44,6 +44,10 @@ state: dict[str, Any] = {
     "contactor_requested": 0, "contactor_actual": 0,
     "diag_fault_count": 0, "diag_last_id": 0, "diag_last_event": 0,
     "diag_bitmap": 0, "heartbeat_tick": 0, "uptime_ms": 0,
+    # Plant model telemetry
+    "plant_soc_pct": 0.0, "plant_current_ma": 0,
+    "plant_ocv_mv": 0, "plant_pack_voltage_mv": 0,
+    "plant_ir_drop_mv": 0, "plant_discharging": False, "plant_n_cells": 18,
 }
 
 ws_clients: set[web.WebSocketResponse] = set()
@@ -111,11 +115,39 @@ def _p_0x7ff(d: bytes) -> None:
     state["heartbeat_tick"] = struct.unpack_from("<I", d, 0)[0]
     state["uptime_ms"] = struct.unpack_from("<I", d, 4)[0]
 
+# -- Plant telemetry (0x600-0x602) ---------------------------------------------
+def _p_0x600(d: bytes) -> None:
+    state["plant_soc_pct"] = round(struct.unpack_from("<f", d, 0)[0], 2)
+    state["plant_current_ma"] = struct.unpack_from("<i", d, 4)[0]
+
+def _p_0x601(d: bytes) -> None:
+    state["plant_ocv_mv"] = struct.unpack_from("<i", d, 0)[0]
+    state["plant_pack_voltage_mv"] = struct.unpack_from("<i", d, 4)[0]
+
+def _p_0x602(d: bytes) -> None:
+    state["plant_ir_drop_mv"] = struct.unpack_from("<i", d, 0)[0]
+    state["plant_discharging"] = bool(d[4])
+    state["plant_n_cells"] = d[5]
+
+# -- CAN message log (last 20 frames) -----------------------------------------
+can_log: list[dict] = []
+
+def _log_can(can_id: int, d: bytes) -> None:
+    entry = {
+        "id": f"0x{can_id:03X}",
+        "data": d[:8].hex().upper(),
+        "t": round(time.time(), 3),
+    }
+    can_log.append(entry)
+    if len(can_log) > 30:
+        can_log.pop(0)
+
 PARSERS: dict[int, Any] = {
     0x220: _p_0x220, 0x221: _p_0x221, 0x235: _p_0x235, 0x260: _p_0x260,
     0x7F0: _p_0x7f0, 0x7F2: _p_0x7f2, 0x7F4: _p_0x7f4, 0x7F6: _p_0x7f6,
     0x7F7: _p_0x7f7, 0x7F8: _p_0x7f8, 0x7F9: _p_0x7f9, 0x7FA: _p_0x7fa,
     0x7FF: _p_0x7ff,
+    0x600: _p_0x600, 0x601: _p_0x601, 0x602: _p_0x602,
 }
 for _id in range(0x240, 0x246):
     PARSERS[_id] = (lambda d, a=_id: _p_cellv(a, d))
@@ -159,6 +191,9 @@ async def can_reader(interface: str) -> None:
         arb_id, dlc = struct.unpack_from("=IB", frame, 0)
         arb_id &= 0x1FFFFFFF
         data = frame[8 : 8 + dlc]
+        # Log selected CAN frames for the web CAN monitor
+        if arb_id in (0x220, 0x270, 0x280, 0x521, 0x210, 0x7F0, 0x7F7, 0x7F8, 0x7F9, 0x600, 0x601, 0x602):
+            _log_can(arb_id, data)
         parser = PARSERS.get(arb_id)
         if parser:
             try:
@@ -195,6 +230,7 @@ async def broadcast_loop() -> None:
     while True:
         if ws_clients:
             state["timestamp"] = time.time()
+            state["can_log"] = can_log[-20:]  # Last 20 CAN frames
             data = json.dumps(state, separators=(",", ":"))
             stale = []
             for c in ws_clients.copy():

@@ -261,6 +261,19 @@ try:
             can_send(0x280, encode_cell_temp_msg(mux, temps))
 
         # ============================================================
+        # Plant telemetry (0x600-0x602) — for web dashboard
+        # ============================================================
+        if tick % 100 == 0:  # Every 100ms (10Hz for web display)
+            # 0x600: SOC (float32 LE), current (int32 LE)
+            soc_bytes = struct.pack('<f', soc_pct)
+            cur_bytes = struct.pack('<i', current_ma)
+            can_send(0x600, soc_bytes + cur_bytes)
+            # 0x601: OCV (int32), pack_voltage (int32) — both in mV
+            can_send(0x601, struct.pack('<ii', v_ocv, pack_voltage_mv))
+            # 0x602: IR drop (int32), bms_state_normal (uint8), N_CELLS (uint8)
+            can_send(0x602, struct.pack('<iBB', ir_drop_mv, 1 if bms_state_normal else 0, N_CELLS) + b'\x00\x00')
+
+        # ============================================================
         # Status log
         # ============================================================
         if tick % 5000 == 0:  # Every 5 seconds at 1ms
