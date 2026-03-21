@@ -1,8 +1,9 @@
 # foxBMS POSIX vECU — Gap Analysis (Phase 1: BMS NORMAL State)
 
-**Date**: 2026-03-21
+**Date**: 2026-03-21 (last updated: 2026-03-21)
 **Scope**: Only gaps in what is currently implemented and claimed working.
-**NOT included**: Future phases (dynamic SOC, fault injection, Docker, GUI) — those are planned work, not gaps.
+**NOT included**: Future phases (fault injection, Docker, GUI) — those are planned work, not gaps.
+**Audit**: 10-role audit completed (Safety, CAN, Battery, RTOS, HW, Test, Build, Data, Contactor, Code Quality) — 120 findings consolidated into this report.
 
 ---
 
@@ -35,7 +36,7 @@
 
 | Gap | Severity | What we claim | What's actually true |
 |-----|----------|---------------|---------------------|
-| GA-04 | MEDIUM | Plant model sends realistic data | Plant sends static values (3700mV, 0A, 25°C) — never varies. Real battery data has noise, drift, IR drop. Not a gap in functionality, but in realism. |
+| GA-04 | ~~MEDIUM~~ **PARTIAL** | Plant model sends realistic data | **PARTIAL**: Dynamic plant model now has OCV(SOC) curve (3400–4200mV), IR drop (50mΩ/cell), 10A discharge when NORMAL, closed-loop contactor feedback. Still missing: per-cell noise (causes timing issues), temperature model, charge current. |
 | GA-05 | ~~MEDIUM~~ **FIXED** | Contactor control works | **FIXED**: SPS simulation now has configurable per-channel delay counter (`SPS_CONTACTOR_DELAY_CYCLES`, default 10 = ~10ms). Transition logged with old→new state. |
 
 ---
@@ -57,7 +58,7 @@
 
 | Gap | Severity | What we claim | What's actually true |
 |-----|----------|---------------|---------------------|
-| GA-09 | MEDIUM | SOC reports 50% | SOC never changes because current is always 0A. The counting algorithm runs but produces no change. Cannot verify SOC calculation correctness. |
+| GA-09 | ~~MEDIUM~~ **FIXED** | SOC reports 50% | **FIXED**: Dynamic plant model sends 10A discharge when NORMAL. SOC decreases via coulomb counting (50% → 48.6% in 15s verified). CAN 0x235 shows changing SOC. Smoke test verifies SOC non-zero. |
 | GA-10 | LOW | Balancing logic active | All cells identical (3700mV). Balancing calculates but has nothing to balance. Cannot verify balancing decisions. |
 
 ---
@@ -126,12 +127,22 @@
 
 | Severity | Count | Key Gaps |
 |----------|-------|----------|
-| CRITICAL | ~~2~~ 0 | ~~DIAG disabled (GA-06), FAS_ASSERT disabled (GA-07)~~ **BOTH FIXED** |
-| HIGH | ~~6~~ 0 fixed/accepted | GA-02, GA-08, GA-17 accepted (architectural). GA-01, GA-13, GA-31 fixed. GA-15 partial. |
-| MEDIUM | ~~17~~ 12 remaining | ~~GA-05, GA-14, GA-19, GA-20, GA-28, GA-30~~ FIXED/MITIGATED. Remaining: GA-03, GA-04, GA-09, GA-11, GA-16, GA-18, GA-23, GA-24, GA-25, GA-26, GA-27, GA-29 |
-| LOW | ~~8~~ 4 remaining | ~~GA-22, GA-32, GA-33~~ FIXED. Remaining: GA-10, GA-12, GA-21 |
+| Severity | Original | Current | Status |
+|----------|----------|---------|--------|
+| CRITICAL | 2 | **0** | GA-06, GA-07 FIXED |
+| HIGH | 6 | **0** | GA-01, GA-13, GA-31 FIXED. GA-02, GA-08, GA-17 ACCEPTED. GA-15 PARTIAL |
+| MEDIUM | 17 | **10 remaining** | 7 FIXED/MITIGATED (GA-05, GA-09, GA-14, GA-19, GA-20, GA-28, GA-30). GA-04 PARTIAL |
+| LOW | 8 | **3 remaining** | 5 FIXED (GA-22, GA-32, GA-33, + audit fixes) |
 
-**Total**: 33 gaps identified. **14 fixed/mitigated, 1 partial, 3 accepted** → 15 remaining (12 MEDIUM, 3 LOW).
+**Total**: 33 gaps identified → **17 FIXED, 2 PARTIAL, 3 ACCEPTED, 1 MITIGATED** → **10 MEDIUM + 3 LOW remaining**.
+
+### Verified by system test on Ubuntu laptop:
+```
+[SMOKE] BMS reached NORMAL state after 6.3s (connected_strings=1)
+[SMOKE] OK: connected_strings=1 when NORMAL
+[SMOKE] OK: SOC non-zero seen on 0x235
+[SMOKE] PASS: BMS NORMAL, connected_strings > 0, SOC > 0% confirmed
+```
 
 > **Note**: 47 additional future-phase gaps (Docker, XCP, FMU/FMI, academic framing, performance benchmarks, etc.) are documented in [archive/GAP-ANALYSIS-MULTI-PERSPECTIVE.md](archive/GAP-ANALYSIS-MULTI-PERSPECTIVE.md). Those are planned work, not Phase 1 gaps.
 
@@ -157,10 +168,37 @@
 | 16 | GA-08: BMS bypasses | **ACCEPTED** — required for POSIX |
 | 17 | GA-17: Excluded source files | **ACCEPTED** — TMS570-specific |
 
-### Remaining (15 gaps — no CRITICAL or HIGH)
+### Remaining (13 gaps — no CRITICAL or HIGH)
 
-**MEDIUM** (12): GA-03 (DB ordering), GA-04 (static plant), GA-09 (SOC static), GA-11 (no TX arbitration), GA-16 (HALCoGen headers), GA-18 (queue size), GA-23 (interlock), GA-24 (watchdog), GA-25 (IVT redundancy), GA-26 (CAN TX period), GA-27 (E2E), GA-29 (fault injection API)
+**MEDIUM — Architectural (cannot fix without changing approach)** (6):
+- GA-03: Database synchronous passthrough (no queue ordering)
+- GA-11: No CAN TX arbitration/bus-off (SocketCAN limitation)
+- GA-16: HALCoGen headers require Windows (Docker will solve)
+- GA-18: AFE queue copies fixed 16 bytes (struct size unknown)
+- GA-26: No CAN TX period enforcement (cooperative loop limitation)
+- GA-27: No AUTOSAR E2E protection (bypassed on POSIX)
 
-**LOW** (3): GA-10 (balancing), GA-12 (CAN node pointer), GA-21 (startup sync)
+**MEDIUM — Phase 2/3 work** (4):
+- GA-23: No interlock simulation (Phase 3: fault injection)
+- GA-24: No watchdog simulation (Phase 3: fault injection)
+- GA-25: No IVT redundancy validation (Phase 3)
+- GA-29: No fault injection API (Phase 3)
 
-Most remaining MEDIUM gaps are either architectural limitations of the POSIX approach (GA-03, GA-11, GA-16, GA-18, GA-26, GA-27) or require Phase 2+ work to address (GA-04, GA-09, GA-23, GA-24, GA-25, GA-29).
+**LOW** (3):
+- GA-10: Balancing never activates (all cells identical — needs per-cell noise, Phase 2)
+- GA-12: CAN node pointer comparison fragile (works for CAN_NODE_1 only)
+- GA-21: No startup synchronization (plant + vECU race condition)
+
+### 10-Auditor Review Findings (Phase 1 fixes applied)
+
+Additional findings from the 10-role audit that were fixed:
+- Triple socket open → idempotent `posix_can_open()` (CAN audit)
+- CAN RX extended/error frame filtering added (CAN audit)
+- RX ring buffer overflow counter added (Data audit)
+- `portGET_HIGHEST_PRIORITY` UB on zero input fixed (RTOS audit)
+- `-Wall -Wextra` added to Makefile (Code Quality audit)
+- `.gitignore` added (Build audit)
+- Patch version enforcement + idempotency guard (Build audit)
+- Smoke test SOC + connected_strings verification (Test audit)
+- Plant model `try/finally` socket close (Code Quality audit)
+- `stderr` routing fix for timing stability (Test audit — found by testing, not analysis)
