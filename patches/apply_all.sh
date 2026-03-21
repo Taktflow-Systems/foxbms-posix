@@ -51,6 +51,10 @@ PATCHES=(
 )
 
 FAILED=0
+# Patches use relative paths like "src/app/driver/sbc/sbc.c"
+# so we must run them from inside the foxbms-2 directory
+cd "$FOXBMS_DIR" || exit 1
+
 for patch in "${PATCHES[@]}"; do
     PATCH_PATH="$SCRIPT_DIR/$patch"
     if [ ! -f "$PATCH_PATH" ]; then
@@ -65,6 +69,8 @@ for patch in "${PATCHES[@]}"; do
         FAILED=$((FAILED + 1))
     fi
 done
+
+cd "$REPO_ROOT"
 
 echo ""
 if [ $FAILED -eq 0 ]; then
