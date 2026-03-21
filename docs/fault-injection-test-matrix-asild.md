@@ -186,6 +186,73 @@ FTTI (Fault Tolerant Time Interval) verification: reaction time measurement, exa
 | Recovery | Y | Y | Y | - | - | - |
 | Timing/FTTI | Y | Y | Y | - | - | - |
 
+## foxBMS Upstream Unit Test Cross-Reference
+
+foxBMS v1.10.0 includes 183 unit tests (Ceedling). The safety-relevant tests and their coverage gaps relative to our SIL matrix:
+
+### foxBMS Unit Test Count (Safety Modules)
+
+| Module | File | Tests | What they cover | Gap in our matrix? |
+|--------|------|------:|----------------|-------------------|
+| DIAG core | test_diag.c | 15 | Init, reset, fatal error send/clear/resend, occurrence counter | No — our tests exercise real DIAG_Handler end-to-end |
+| DIAG CBS voltage | test_diag_cbs_voltage.c | 3 | Invalid input assertions for OV/UV callbacks | **Add**: invalid DIAG_ID input to callbacks |
+| DIAG CBS temperature | test_diag_cbs_temperature.c | 4 | Invalid input for OT/UT callbacks | **Add**: invalid input assertions |
+| DIAG CBS current | test_diag_cbs_current.c | 8 | OC charge/discharge, current-on-open-string, measurement error | Covered by CURR category |
+| DIAG CBS contactor | test_diag_cbs_contactor.c | 5 | String/precharge contactor feedback | Disabled on POSIX (no HW) |
+| DIAG CBS CAN | test_diag_cbs_can.c | 6 | CAN timing, RX/TX queue | Partially covered by PLAUS/CAN tests |
+| DIAG CBS plausibility | test_diag_cbs_plausibility.c | 4 | Plausibility check callbacks | Covered by PLAUS category |
+| DIAG cfg | test_diag_cfg.c | — | Config validation | Not applicable to SIL |
+| SOA | test_soa.c | 2 | CheckVoltages, CheckTemperatures | Covered — our tests trigger SOA via plant model |
+| SOA cfg | test_soa_cfg.c | 5 | IsPackCurrentLimitViolated, IsStringCurrentLimitViolated, IsCellCurrentLimitViolated, IsCurrentOnOpenString | **Add**: explicit limit function boundary tests |
+| BMS | test_bms.c | 11 | Current flow direction, precharge, CAN request, fatal error flag, contactor feedback, state | Covered by STATE + COMBO categories |
+| Plausibility | test_plausibility.c | 10 | Pack voltage vs cell sum: zero, max, tolerance±1, INT32_MAX edge cases | **Add**: INT32_MAX edge cases for pack voltage |
+| Redundancy | test_redundancy.c | 10 | Measurement freshness, min/max/avg, null pointer, validation | **Add**: measurement staleness detection |
+| Contactor | test_contactor.c | 7 | Init, feedback check, open/close contactor and precharge | Disabled on POSIX (SPS simulation) |
+| SPS | test_sps.c | 31 | Channel state, feedback, affiliation, startup, SPI transactions, reset | Disabled on POSIX (SPS simulation) |
+| Battery cell cfg | test_battery_cell_cfg.c | 1 | Config assertions | Not applicable |
+| Battery system cfg | test_battery_system_cfg.c | 1 | Config assertions | Not applicable |
+| **Total safety-relevant** | | **~123** | | |
+
+### Gaps Identified from foxBMS Tests → Added to Matrix
+
+| Gap | foxBMS Test | Our Action |
+|-----|------------|------------|
+| Invalid DIAG_ID input | test_diag_cbs_voltage/temp: assert on wrong ID | Add to PLAUS: inject DIAG event with wrong ID |
+| INT32_MAX pack voltage | test_plausibility: edge cases at INT32_MAX | Add to PLAUS: inject extreme pack voltage values |
+| Measurement staleness | test_redundancy: MRC_MeasurementUpdatedRecently | Already covered by MISSING_TIMEOUT method |
+| Current flow at rest | test_soa_cfg: current below rest threshold | Add to CURR: inject 100mA (below 200mA rest) |
+| Current on open string | test_soa_cfg: IsCurrentOnOpenString | Already covered but disabled (DIAG_EVALUATION_DISABLED) |
+| Contactor feedback mismatch | test_contactor: CheckFeedback | Disabled on POSIX — document as HIL-only |
+| SPS channel state | test_sps: 31 tests | SPS simulated — these test HW SPI, not applicable |
+
+### Coverage Comparison
+
+| Aspect | foxBMS Unit Tests | Our SIL Matrix |
+|--------|-------------------|---------------|
+| **Scope** | Function-level (mocked dependencies) | System-level (full pipeline, real DIAG) |
+| **Data path** | Direct function call with test data | CAN → AFE queue → DB → SOA → DIAG → BMS |
+| **DIAG threshold** | Mocked (no real counting) | Real counting (50/500/10 events) |
+| **Contactor response** | Mocked (check callback flag) | Real (SPS simulation → contactor state → probe) |
+| **Timing** | Instantaneous (no cycle loop) | Real-time (1ms cycle, measurable FTTI) |
+| **Multi-fault** | Not tested | 71 combinatorial tests |
+| **State coverage** | Single state per test | 9 BMS states |
+| **Recovery** | Not tested | 68 recovery/persistence tests |
+| **Total tests** | ~123 safety-relevant | 2,005 |
+
+### What foxBMS Tests Cover That We Don't (HIL-Only)
+
+These foxBMS tests exercise hardware that doesn't exist on POSIX:
+
+| foxBMS Test | Why Not Applicable to SIL |
+|-------------|--------------------------|
+| SPS SPI transactions (31 tests) | No physical SPI bus |
+| Contactor feedback check (7 tests) | No physical contactor feedback GPIO |
+| AFE SPI/PEC/MUX (50+ tests across ADI/LTC/Maxim/NXP/TI) | No physical AFE chip |
+| I2C RTC/PEX (6 tests) | No physical I2C bus |
+| IMD Bender (10+ tests) | No physical insulation monitor |
+| DMA notification (4 tests) | No physical DMA controller |
+| These should be covered in HIL testing with real hardware. |
+
 ## File Reference
 
 - **Test Matrix CSV**: `fault-injection-test-matrix-asild.csv`
