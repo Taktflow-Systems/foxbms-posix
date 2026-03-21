@@ -153,6 +153,11 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
     <div class="inject-group"><label>Overcurrent</label><div class="inject-row"><span style="font-size:12px;color:var(--dim)">Fixed 200 A</span><button class="btn btn-inject" onclick="inject('oc')">Inject</button></div></div>
     <button class="btn btn-clear" onclick="clearAll()">Clear All Faults</button>
     <button class="btn" onclick="resetVecu()" style="background:rgba(234,179,8,.15);color:var(--warn);border:1px solid rgba(234,179,8,.3);width:100%;margin-top:6px;padding:7px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer" title="Clears overrides on both plant and BMS, restarts processes.">Reset System</button>
+    <!-- Event Log -->
+    <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px">
+      <div class="panel-title">Event Log</div>
+      <div id="eventLog" style="height:100px;overflow-y:auto;background:#0A0A14;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-family:monospace;font-size:10px;line-height:1.6"></div>
+    </div>
     <div class="diag" id="diag">
       <div class="panel-title">Diagnostics</div>
       <div class="diag-row"><span>Fault count</span><span class="val" id="dFaults">0</span></div>
@@ -324,6 +329,18 @@ function update(d){
   document.getElementById("fTemp").textContent=tMin.toFixed(1)+"\u2013"+tMax.toFixed(1)+" \u00B0C";
   document.getElementById("fUptime").textContent=((d.uptime_ms??0)/1000).toFixed(0)+" s";
   if(d.can_log&&d.can_log.length){canFrames=d.can_log.slice(-MAX_CAN);renderCanLog();}
+  // Event log
+  if(d.event_log&&d.event_log.length){
+    const el=document.getElementById("eventLog");
+    const icons={"inject":"⚡","diag":"🔍","state":"🔄","contactor":"🔓","clear":"✅","reset":"🔁"};
+    el.innerHTML=d.event_log.map(e=>{
+      const ts=new Date(e.t*1000).toTimeString().slice(0,8);
+      const icon=icons[e.icon]||"•";
+      const color=e.icon==="diag"?"var(--err)":e.icon==="contactor"?"var(--warn)":e.icon==="inject"?"var(--accent2)":e.icon==="clear"?"var(--ok)":"var(--text)";
+      return '<div style="color:'+color+'">'+ts+"  "+icon+" "+e.msg+"</div>";
+    }).join("");
+    el.scrollTop=el.scrollHeight;
+  }
 }
 
 function renderCanLog(){
@@ -347,21 +364,8 @@ function inject(type){
   const target=getInjectTarget();
   const action=target==="plant"?"plant_inject":"bms_inject";
   let msg={action:action};
-  if(type==="ov"){
-    if(target==="plant"){
-      // SWE.6: inject ALL 18 cells (avoids plausibility spread rejection)
-      for(let i=0;i<18;i++) ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:i,value:4500}));
-      activeFaults.add("ov_all"); return;
-    }
-    const c=+document.getElementById("ovCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=4500;activeFaults.add("ov_"+c);
-  }
-  else if(type==="uv"){
-    if(target==="plant"){
-      for(let i=0;i<18;i++) ws.send(JSON.stringify({action:action,type:"cell_voltage",cell:i,value:2000}));
-      activeFaults.add("uv_all"); return;
-    }
-    const c=+document.getElementById("uvCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=2000;activeFaults.add("uv_"+c);
-  }
+  if(type==="ov"){const c=+document.getElementById("ovCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=4500;activeFaults.add("ov_"+c);}
+  else if(type==="uv"){const c=+document.getElementById("uvCell").value;msg.type="cell_voltage";msg.cell=c;msg.value=2000;activeFaults.add("uv_"+c);}
   else if(type==="ot"){const s=+document.getElementById("otSens").value;msg.type="temperature";msg.sensor=s;msg.value=600;activeFaults.add("ot_"+s);}
   else if(type==="oc"){msg.type="current";msg.value=200000;activeFaults.add("oc");}
   ws.send(JSON.stringify(msg));

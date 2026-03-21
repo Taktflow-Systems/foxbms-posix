@@ -125,7 +125,7 @@ ASIL classification follows the ISO 26262-3 risk graph method using three parame
 | **ASIL**             | **S3 × E4 × C3 = ASIL D**                                       |
 | **Safety Goal**      | **SG-01:** The BMS shall prevent cell voltage from exceeding the maximum safety limit (2800 mV) by interrupting the charging current path within the Fault Tolerant Time Interval. |
 <!-- HITL-LOCK END:HARA-HZ-001 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E4/C3 → ASIL D confirmed. Li-ion thermal runaway from overvoltage is well-established in literature (NREL Battery Failure Databank). Severity S3 justified — fire/explosion risk to occupants.
 -->
@@ -147,7 +147,7 @@ Comment: S3/E4/C3 → ASIL D confirmed. Li-ion thermal runaway from overvoltage 
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-02:** The BMS shall prevent cell voltage from dropping below the minimum safety limit (1500 mV) by interrupting the discharge current path within the FTTI. |
 <!-- HITL-LOCK END:HARA-HZ-002 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E4/C3 → ASIL D confirmed. Copper dissolution and dendrite growth are documented failure modes leading to delayed thermal runaway.
 -->
@@ -169,7 +169,7 @@ Comment: S3/E4/C3 → ASIL D confirmed. Copper dissolution and dendrite growth a
 | **ASIL**             | **S2 × E2 × C2 = QM**                                           |
 | **Safety Goal**      | **SG-03:** The BMS shall detect deep discharge conditions and open all contactors immediately to prevent further energy extraction. Although classified QM, this hazard is treated with FATAL severity in the diagnostic configuration as defense-in-depth. |
 <!-- HITL-LOCK END:HARA-HZ-003 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S2/E3/C3 → ASIL C appropriate. Gas generation and venting are less immediately life-threatening than thermal runaway but still hazardous.
 -->
@@ -191,7 +191,7 @@ Comment: S2/E3/C3 → ASIL C appropriate. Gas generation and venting are less im
 | **ASIL**             | **S3 × E3 × C2 = ASIL B**                                       |
 | **Safety Goal**      | **SG-04:** The BMS shall limit discharge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI. |
 <!-- HITL-LOCK END:HARA-HZ-004 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E4/C3 → ASIL D confirmed. Resistive heating at 180A on a 3.5Ah cell exceeds safe operating envelope.
 -->
@@ -213,7 +213,7 @@ Comment: S3/E4/C3 → ASIL D confirmed. Resistive heating at 180A on a 3.5Ah cel
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-05:** The BMS shall limit charge current to the maximum rated value and open contactors if the overcurrent condition persists beyond the FTTI. |
 <!-- HITL-LOCK END:HARA-HZ-005 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E4/C3 → ASIL D confirmed. Lithium plating risk during charge overcurrent matches industry consensus.
 -->
@@ -235,7 +235,7 @@ Comment: S3/E4/C3 → ASIL D confirmed. Lithium plating risk during charge overc
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-06:** The BMS shall monitor cell temperatures and open contactors when temperature exceeds the maximum safety limit within the FTTI to remove the heat source (current flow). |
 <!-- HITL-LOCK END:HARA-HZ-006 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E4/C3 → ASIL D confirmed. SEI decomposition above 130°C is the primary thermal runaway trigger.
 -->
@@ -257,7 +257,7 @@ Comment: S3/E4/C3 → ASIL D confirmed. SEI decomposition above 130°C is the pr
 | **ASIL**             | **S3 × E2 × C3 = ASIL B**                                       |
 | **Safety Goal**      | **SG-07:** The BMS shall prevent charging when cell temperature is below the minimum charge temperature limit by opening contactors within the FTTI. |
 <!-- HITL-LOCK END:HARA-HZ-007 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S2/E3/C3 → ASIL C appropriate. Lithium plating at sub-zero charge is a known degradation mode, not immediately catastrophic.
 -->
@@ -279,7 +279,7 @@ Comment: S2/E3/C3 → ASIL C appropriate. Lithium plating at sub-zero charge is 
 | **ASIL**             | **S3 × E2 × C3 = ASIL B**                                       |
 | **Safety Goal**      | **SG-08:** The BMS shall detect contactor welding (mismatch between commanded state and feedback) and transition to a degraded state that prevents further operation of the affected string. |
 <!-- HITL-LOCK END:HARA-HZ-008 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E3/C3 → ASIL D confirmed. Inability to disconnect HV bus is a direct safety hazard.
 -->
@@ -301,7 +301,7 @@ Comment: S3/E3/C3 → ASIL D confirmed. Inability to disconnect HV bus is a dire
 | **ASIL**             | **S3 × E2 × C3 = ASIL B**                                       |
 | **Safety Goal**      | **SG-09:** The BMS shall detect current sensor communication failure and open all contactors within the FTTI to prevent unmonitored operation. |
 <!-- HITL-LOCK END:HARA-HZ-009 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S2/E3/C2 → ASIL B appropriate. Loss of measurement is a latent fault, not an immediate hazard. Controllability C2 because driver can pull over.
 -->
@@ -323,7 +323,7 @@ Comment: S2/E3/C2 → ASIL B appropriate. Loss of measurement is a latent fault,
 | **ASIL**             | **S2 × E1 × C2 = QM**                                           |
 | **Safety Goal**      | **SG-10:** The BMS shall detect interlock loop break and open all contactors within 200 ms to de-energize the HV path. Treated as FATAL in diagnostic configuration as defense-in-depth despite QM classification. |
 <!-- HITL-LOCK END:HARA-HZ-010 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E2/C3 → ASIL C confirmed. HV exposure during service is the primary risk. E2 because service is infrequent.
 -->
@@ -345,7 +345,7 @@ Comment: S3/E2/C3 → ASIL C confirmed. HV exposure during service is the primar
 | **ASIL**             | **S3 × E1 × C3 = ASIL A**                                       |
 | **Safety Goal**      | **SG-11:** The BMS shall detect insulation faults through voltage plausibility monitoring and transition to safe state. For higher ASIL requirements, integration of a dedicated Insulation Monitoring Device (IMD) is recommended. |
 <!-- HITL-LOCK END:HARA-HZ-011 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S3/E2/C3 → ASIL C confirmed. Electric shock risk via chassis. E2 because insulation degradation is gradual.
 -->
@@ -367,7 +367,7 @@ Comment: S3/E2/C3 → ASIL C confirmed. Electric shock risk via chassis. E2 beca
 | **ASIL**             | **S3 × E3 × C3 = ASIL C**                                       |
 | **Safety Goal**      | **SG-12:** The BMS shall monitor individual cell voltages and enforce per-cell overvoltage and undervoltage limits regardless of string-level measurements, ensuring that no individual cell exceeds its safe operating voltage range. |
 <!-- HITL-LOCK END:HARA-HZ-012 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: S1/E4/C3 → ASIL A appropriate. Imbalance causes accelerated aging, not immediate hazard. S1 because long-term capacity loss, not fire.
 -->

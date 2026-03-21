@@ -38,11 +38,34 @@ _can_sock = None
 
 # -- State transition history -----------------------------------------------
 state_history: list[dict] = []
+event_log: list[dict] = []  # Chain reaction events
 _prev_bms_state = -1
+_prev_diag_bitmap = 0
+_prev_contactor = 0
+
+DIAG_NAMES = {
+    18: "OV_MSL", 19: "OV_RSL", 20: "OV_MOL",
+    21: "UV_MSL", 22: "UV_RSL", 23: "UV_MOL",
+    24: "OT_CHG_MSL", 27: "OT_DIS_MSL",
+    30: "UT_CHG_MSL", 33: "UT_DIS_MSL",
+    36: "OC_CHG_CELL", 39: "OC_DIS_CELL",
+    42: "OC_CHG_STRING", 45: "OC_DIS_STRING",
+    48: "OC_CHG_PACK", 49: "OC_DIS_PACK",
+    16: "V_SPREAD", 17: "T_SPREAD",
+}
+
+def _add_event(icon: str, msg: str) -> None:
+    event_log.append({"t": time.time(), "icon": icon, "msg": msg})
+    if len(event_log) > 50:
+        event_log.pop(0)
 
 def _track_state(new_state: int) -> None:
     global _prev_bms_state
     if new_state != _prev_bms_state:
+        old_name = BMS_STATES.get(_prev_bms_state, "?")
+        new_name = BMS_STATES.get(new_state, "?")
+        if _prev_bms_state >= 0:
+            _add_event("state", f"{old_name} → {new_name}")
         if state_history and state_history[-1]["duration_ms"] is None:
             state_history[-1]["duration_ms"] = round(
                 (time.time() - state_history[-1]["entered_at"]) * 1000)
@@ -90,8 +113,18 @@ def _p_0x260(d: bytes) -> None:
         if idx < 8 and (off + 2) <= len(d):
             state["cell_temps_ddegc"][idx] = struct.unpack_from(">h", d, off)[0]
 def _p_0x7f0(d: bytes) -> None:
+    global _prev_contactor
     state["contactor_requested"] = struct.unpack_from("<H", d, 0)[0]
-    state["contactor_actual"] = struct.unpack_from("<H", d, 2)[0]
+    new_actual = struct.unpack_from("<H", d, 2)[0]
+    if new_actual != _prev_contactor:
+        names = ["Main+", "Main-", "Precharge"]
+        for bit in range(3):
+            old_b = (_prev_contactor >> bit) & 1
+            new_b = (new_actual >> bit) & 1
+            if old_b != new_b:
+                _add_event("contactor", f"{names[bit]} {'CLOSED' if new_b else 'OPENED'}")
+        _prev_contactor = new_actual
+    state["contactor_actual"] = new_actual
 def _p_0x7f2(d: bytes) -> None:
     state["soc_pct"] = round(struct.unpack_from("<f", d, 0)[0], 2)
 def _p_0x7f4(d: bytes) -> None:
@@ -104,7 +137,23 @@ def _p_0x7f7(d: bytes) -> None:
     state["diag_fault_count"] = struct.unpack_from("<I", d, 0)[0]
     state["diag_last_id"], state["diag_last_event"] = d[4], d[5]
 def _p_0x7f8(d: bytes) -> None:
-    state["diag_bitmap"] = struct.unpack_from("<Q", d, 0)[0]
+    global _prev_diag_bitmap
+    new_bm = struct.unpack_from("<Q", d, 0)[0]
+    if new_bm != _prev_diag_bitmap:
+        # Find newly set bits
+        new_bits = new_bm & ~_prev_diag_bitmap
+        for i in range(64):
+            if new_bits & (1 << i):
+                name = DIAG_NAMES.get(i, f"ID_{i}")
+                _add_event("diag", f"FAULT: {name} (DIAG ID {i})")
+        # Find cleared bits
+        cleared = _prev_diag_bitmap & ~new_bm
+        for i in range(64):
+            if cleared & (1 << i):
+                name = DIAG_NAMES.get(i, f"ID_{i}")
+                _add_event("clear", f"CLEARED: {name}")
+        _prev_diag_bitmap = new_bm
+    state["diag_bitmap"] = new_bm
 def _p_0x7f9(d: bytes) -> None:
     state["sys_state"] = d[0]
     state["bms_state"] = d[4]
@@ -231,17 +280,20 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
                 payload = _build_plant_inject(msg)
                 if payload is not None:
                     await _send_can(0x6E0, payload)
+                    t = msg.get("type","?"); v = msg.get("value",0); c = msg.get("cell", msg.get("sensor","?"))
+                    _add_event("inject", f"PLANT: {t} [{c}] = {v}")
                     log.info("Plant inject (SWE.6): %s", msg)
                 continue
             if action == "bms_inject":
-                # SWE.5: inject at BMS DB level via SIL override 0x7E0
-                # Format: [cmd, idx, active=1, value_i32_LE]
-                payload = _build_plant_inject(msg)  # Same format, different CAN ID
+                payload = _build_plant_inject(msg)
                 if payload is not None:
                     await _send_can(0x7E0, payload)
+                    t = msg.get("type","?"); v = msg.get("value",0); c = msg.get("cell", msg.get("sensor","?"))
+                    _add_event("inject", f"BMS: {t} [{c}] = {v}")
                     log.info("BMS inject (SWE.5): %s", msg)
                 continue
             if action == "clear":
+                _add_event("clear", "ALL overrides cleared")
                 await _send_can(0x7E0, struct.pack("<BBBi", 0x01, 0, 0, 0))  # Clear cell V
                 await _send_can(0x7E0, struct.pack("<BBBi", 0x02, 0, 0, 0))  # Clear temp
                 await _send_can(0x7E0, struct.pack("<BBBi", 0x03, 0, 0, 0))  # Clear current
@@ -271,6 +323,7 @@ async def broadcast_loop() -> None:
             if state["pack_voltage_mv"] == 0 and state["plant_pack_voltage_mv"] != 0:
                 state["pack_voltage_mv"] = state["plant_pack_voltage_mv"]
             state["can_log"] = can_log[-20:]
+            state["event_log"] = event_log[-20:]
             state["state_history"] = state_history[-20:]
             data = json.dumps(state, separators=(",", ":"))
             stale = []

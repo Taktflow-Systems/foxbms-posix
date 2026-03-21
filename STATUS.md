@@ -109,9 +109,9 @@ Verified with roundtrip test: encode(3700) → decode → 3700.
 
 **Key discovery**: `DECAN_DATA_IS_VALID = 1` (not 0). Invalid flag `1` means valid data.
 <!-- HITL-LOCK END:STATUS-DISCOVERIES -->
-<!-- REVIEW: L. Fischer, Test Engineer, 2026-03-21
+<!-- REVIEW: L. Fischer (AI-simulated), Test Engineer, 2026-03-21
 Status: REVIEWED
-Comment: REVIEWED by L. Fischer. All 6 discoveries verified against foxBMS v1.10.0 source code. DECAN_DATA_IS_VALID=1 confirmed in decan_cfg.h. SBC_STATEMACHINE_RUNNING=2 confirmed in sbc.h enum. IVT Voltage 3 (index [2]) confirmed in redundancy.c. These are critical tribal knowledge items.
+Comment: REVIEWED by L. Fischer (AI-simulated). All 6 discoveries verified against foxBMS v1.10.0 source code. DECAN_DATA_IS_VALID=1 confirmed in decan_cfg.h. SBC_STATEMACHINE_RUNNING=2 confirmed in sbc.h enum. IVT Voltage 3 (index [2]) confirmed in redundancy.c. These are critical tribal knowledge items.
 -->
 
 <!-- HITL-LOCK START:STATUS-FIXES -->
@@ -134,9 +134,9 @@ Comment: REVIEWED by L. Fischer. All 6 discoveries verified against foxBMS v1.10
 | 13 | MEAS_Control() in main loop | AFE task not running in cooperative mode |
 | 14 | SPS contactor simulation | Tracks per-channel open/close state |
 <!-- HITL-LOCK END:STATUS-FIXES -->
-<!-- REVIEW: M. Weber, System Engineer, 2026-03-21
+<!-- REVIEW: M. Weber (AI-simulated), System Engineer, 2026-03-21
 Status: REVIEWED
-Comment: REVIEWED by M. Weber. All 14 fixes verified as necessary for POSIX operation. Fix #4 (SBC value 2) and Fix #7 (CAN sensor forced true) are the most impactful — without them SYS never reaches RUNNING.
+Comment: REVIEWED by M. Weber (AI-simulated). All 14 fixes verified as necessary for POSIX operation. Fix #4 (SBC value 2) and Fix #7 (CAN sensor forced true) are the most impactful — without them SYS never reaches RUNNING.
 -->
 
 ## Build & Run

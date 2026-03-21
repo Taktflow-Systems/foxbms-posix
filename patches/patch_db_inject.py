@@ -93,6 +93,14 @@ INJECT_CODE = '''
                                 pMM->maximumTemperature_ddegC[s] = ot_max;
                             }
                         }
+                        /* Update temp probe variables from MIN_MAX */
+                        {
+                            extern int16_t posix_sil_cell_t_min, posix_sil_cell_t_max;
+                            int16_t t_db_min = pMM->minimumTemperature_ddegC[s];
+                            int16_t t_db_max = pMM->maximumTemperature_ddegC[s];
+                            if (t_db_min > -500 && t_db_min < 1000) posix_sil_cell_t_min = t_db_min;
+                            if (t_db_max > -500 && t_db_max < 1000) posix_sil_cell_t_max = t_db_max;
+                        }
                     }
                 }
 

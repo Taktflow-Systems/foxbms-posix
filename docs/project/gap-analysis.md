@@ -56,9 +56,9 @@ Comment: ACCEPTED by M. Weber, System Engineer. Single-threaded cooperative mode
 <!-- HITL-LOCK START:GAP-ACCEPT-GA08 -->
 | GA-08 | HIGH (**ACCEPTED**) | BMS reaches NORMAL state | BMS bypasses: SBC init (stubbed), RTC init (stubbed), current sensor presence (forced true). **Accepted**: These are POSIX-specific bypasses required because the hardware doesn't exist. Cannot be removed without the physical ICs. Documented in COVERAGE.md. |
 <!-- HITL-LOCK END:GAP-ACCEPT-GA08 -->
-<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
 Status: ACCEPTED
-Comment: ACCEPTED by Dr. K. Richter, FuSa Engineer. SBC, RTC, and current sensor presence bypasses are necessary for POSIX operation. These checks verify hardware initialization which cannot occur without the physical ICs. Bypasses do not affect safety-relevant diagnostic logic.
+Comment: ACCEPTED by Dr. K. Richter (AI-simulated), FuSa Engineer. SBC, RTC, and current sensor presence bypasses are necessary for POSIX operation. These checks verify hardware initialization which cannot occur without the physical ICs. Bypasses do not affect safety-relevant diagnostic logic.
 -->
 | GA-23 | MEDIUM | Interlock chain functional | Interlock chain is hardcoded always-closed. Cannot simulate interlock-break → safe-state transition path. |
 | GA-24 | MEDIUM | Watchdog protects against hangs | SBC bypass (GA-08) also removes hardware watchdog. No timeout → safe-state transition possible. Real foxBMS has SBC watchdog that triggers ERROR if not serviced. |
@@ -113,9 +113,9 @@ Comment: ACCEPTED by Dr. K. Richter, FuSa Engineer. SBC, RTC, and current sensor
 <!-- HITL-LOCK START:GAP-ACCEPT-GA17 -->
 | GA-17 | HIGH (**ACCEPTED**) | Same code as production | 18 source files excluded (spi.c, i2c.c, dma.c, sbc/*, diag.c, fassert.c). **Accepted**: These files contain TMS570-specific hardware access that cannot compile on x86. Stubs in hal_stubs_posix.c match function signatures. Documented in COVERAGE.md. |
 <!-- HITL-LOCK END:GAP-ACCEPT-GA17 -->
-<!-- REVIEW: L. Fischer, Test Engineer, 2026-03-21
+<!-- REVIEW: L. Fischer (AI-simulated), Test Engineer, 2026-03-21
 Status: ACCEPTED
-Comment: ACCEPTED by L. Fischer, Test Engineer. 18 excluded source files are all TMS570-specific hardware access (SPI, I2C, DMA, SBC, fassert). Function signatures are preserved in hal_stubs_posix.c. No application-layer logic is excluded.
+Comment: ACCEPTED by L. Fischer (AI-simulated), Test Engineer. 18 excluded source files are all TMS570-specific hardware access (SPI, I2C, DMA, SBC, fassert). Function signatures are preserved in hal_stubs_posix.c. No application-layer logic is excluded.
 -->
 | GA-18 | MEDIUM | Queue operations work | AFE queue copies 16 bytes. Actual `CAN_CAN2AFE_CELL_VOLTAGES_QUEUE_s` is ~13 bytes with compiler-dependent padding. Size mismatch risk on different compilers. |
 
