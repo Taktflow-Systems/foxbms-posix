@@ -1,0 +1,85 @@
+===============================================================================
+UNIT TEST REPORT — foxBMS 2 v1.10.0
+===============================================================================
+Project:        foxBMS POSIX vECU
+Test Level:     SWE.4 (Software Unit Verification)
+Framework:      Ceedling 1.0.1 + Unity + CMock
+Compiler:       GCC 15.2.0 (MSYS2/UCRT64)
+Platform:       Windows 10 x86-64 (host unit test build)
+foxBMS Version: v1.10.0 (commit d3be3f92)
+Date:           2026-03-21
+Tester:         automated (ceedling test:all)
+===============================================================================
+
+OVERALL RESULT: PASS
+
+| Metric              | Value    |
+|---------------------|----------|
+| Total Tests         | 183      |
+| PASS                | 183      |
+| FAIL                | 0        |
+| IGNORE              | 0        |
+| Pass Rate           | 100.0%   |
+
+===============================================================================
+TEST EXECUTION DETAILS
+===============================================================================
+
+Build command:  ceedling test:all
+Build config:   conf/unit/app_project_win32.yml
+Ruby:           3.4.4 (C:\foxbms\Ruby\Ruby34-x64\)
+Ceedling:       1.0.1 (C:\foxbms\Ceedling\1.0.1\bin\)
+gcovr:          8.3
+
+GCC suppression flags added for v15 compatibility:
+  -Wno-error=enum-conversion
+  -Wno-error=unterminated-string-initialization
+  -Wno-error=absolute-value
+  -Wno-error=attributes
+
+===============================================================================
+SAFETY-RELEVANT MODULE COVERAGE
+===============================================================================
+
+| Module             | File                      | Tests | Pass |
+|--------------------|---------------------------|------:|-----:|
+| DIAG core          | test_diag.c               |    15 |   15 |
+| DIAG CBS voltage   | test_diag_cbs_voltage.c   |     3 |    3 |
+| DIAG CBS temp      | test_diag_cbs_temperature.c|    4 |    4 |
+| DIAG CBS current   | test_diag_cbs_current.c   |     8 |    8 |
+| DIAG CBS contactor | test_diag_cbs_contactor.c |     5 |    5 |
+| DIAG CBS CAN       | test_diag_cbs_can.c       |     6 |    6 |
+| DIAG CBS plausibility| test_diag_cbs_plausibility.c| 4 |    4 |
+| DIAG cfg           | test_diag_cfg.c           |     1 |    1 |
+| SOA                | test_soa.c                |     2 |    2 |
+| SOA cfg            | test_soa_cfg.c            |     5 |    5 |
+| BMS                | test_bms.c                |    11 |   11 |
+| Plausibility       | test_plausibility.c       |    10 |   10 |
+| Redundancy         | test_redundancy.c         |    10 |   10 |
+| Contactor          | test_contactor.c          |     7 |    7 |
+| SPS                | test_sps.c                |    31 |   31 |
+| Battery cell cfg   | test_battery_cell_cfg.c   |     1 |    1 |
+| Battery system cfg | test_battery_system_cfg.c |     1 |    1 |
+| **Safety subtotal**|                           | **124**| **124** |
+
+===============================================================================
+NOTE
+===============================================================================
+
+These are upstream foxBMS unit tests run unmodified on the v1.10.0 codebase.
+They verify individual function behavior with mocked dependencies (CMock).
+They do NOT test the POSIX port — that is covered by SWE.5 integration tests.
+
+The POSIX port patches do not modify any code covered by these unit tests.
+Patches only modify: hal_stubs_posix.c, foxbms_posix_main.c, sil_layer.c/h,
+and foxBMS source files via #ifdef FOXBMS_SIL_PROBES guards.
+
+===============================================================================
+SIGN-OFF
+===============================================================================
+
+Report generated from Ceedling test:all output.
+Manual review required for ASPICE CL2 compliance.
+
+Reviewer: _________________ Date: _________________
+Approver: _________________ Date: _________________
