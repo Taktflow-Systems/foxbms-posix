@@ -75,6 +75,31 @@ Root causes found and fixed:
 
 **Overcurrent detection time: 116-219ms** (10 events + 100ms delay, theoretical 110ms)
 
+### PLAUS P1 — 6 tests
+
+All SKIP — compound injection values (`cell=3700/pack=81500`) not implemented.
+Needs multi-signal override (cell voltage + pack voltage simultaneously).
+
+### COMBO P1 — 6 tests
+
+All SKIP — compound targets (`CELL_0+STRING_0`) and non-NORMAL states not implemented.
+
+### RECOV P1 — 4 tests
+
+All SKIP/ERROR — two-phase injection (`inject=4260/clear=3700`) not implemented.
+Needs inject→wait→clear→verify recovery test flow.
+
+### TIMING P1 — 4 tests
+
+| # | Test ID | Method | Result | Time | Detail |
+|---|---------|--------|--------|------|--------|
+| 1 | FI-TIMING-1490 | OV REACTION | PASS | 1465ms | DIAG at 585ms, contactor at 1465ms |
+| 2 | FI-TIMING-1491 | OV MAX_THRESH | PASS | 1466ms | DIAG at 614ms |
+| 3 | FI-TIMING-1492 | OV BELOW_THRESH | FAIL | 1463ms | Runner injects continuously (can't limit to 49 events) |
+| 4 | FI-TIMING-1496 | OV WORSTCASE | SKIP | - | Complex timed injection |
+
+**Score: 2/4 runnable PASS, 1 runner limitation**
+
 ### Cross-category (from 50-test run, partial)
 
 | Method | Result | Detail |
@@ -82,6 +107,37 @@ Root causes found and fixed:
 | INVERTED cell 8 | PASS | 1324ms |
 | DELAYED cell 8 | PASS | 1494ms |
 | CORRUPTED cell 0 | PASS | 1500ms |
+
+---
+
+## Overall Score (2026-03-21)
+
+| Category | Runnable | PASS | FAIL | SKIP | Notes |
+|----------|----------|------|------|------|-------|
+| VOLT P1 | 18 | 18 | 0 | 2 | 100% — all methods work |
+| TEMP P1 | 4 | 4 | 0 | 0 | 100% — needs 10s timeout |
+| CURR P1 | 7 | 5 | 2 | 2 | STUCK_AT_0 = correct (0 is in range) |
+| PLAUS P1 | 0 | 0 | 0 | 6 | Compound injection not implemented |
+| COMBO P1 | 0 | 0 | 0 | 6 | Compound targets not implemented |
+| RECOV P1 | 0 | 0 | 0 | 4 | Two-phase injection not implemented |
+| TIMING P1 | 3 | 2 | 1 | 1 | Below-threshold needs event counting |
+| **Total** | **32** | **29** | **3** | **21** | **91% pass rate on runnable tests** |
+
+### Key Findings
+
+1. **DIAG detection times match theory**:
+   - Overvoltage: 585ms (50 events × ~11ms + overhead)
+   - Overcurrent: 116ms (10 events × ~11ms)
+   - Overtemperature: 5510ms (500 events × ~11ms)
+
+2. **STUCK_AT_0 is not a valid fault for OV/OT/OC**: 0 is within normal range.
+   These tests should be reclassified as NO_REACTION (verify system doesn't false-trigger).
+
+3. **PLAUS/COMBO/RECOV need test runner improvements**: compound injection, multi-target,
+   two-phase inject/clear flows.
+
+4. **Contactor opening adds ~900ms after DIAG**: DIAG fires → BMS state machine processes
+   → contactor open command → SPS delay → probe update. Total: ~900ms from DIAG to contactor.
 
 ## Known Issues
 
