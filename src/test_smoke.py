@@ -79,11 +79,12 @@ def main():
 
     env = os.environ.copy()
     env["FOXBMS_CAN_IF"] = CAN_IF
+    vecu_log = open("/tmp/foxbms-vecu-smoke.log", "w")
     vecu_proc = subprocess.Popen(
         [vecu_path],
         env=env,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stderr=vecu_log
     )
     print(f"[SMOKE] foxbms-vecu started (PID {vecu_proc.pid})")
 
