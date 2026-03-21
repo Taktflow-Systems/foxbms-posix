@@ -557,6 +557,7 @@ These system-level monitors have threshold=1 and no delay because they indicate 
 
 ## Traceability: TSR → Downstream (SSR / SW-REQ)
 
+<!-- HITL-LOCK START:TSC-TRACE-DOWN -->
 | TSR ID | Description | Traces Down To |
 |--------|-------------|---------------|
 | TSR-001 | Voltage monitoring | SSR-001, SSR-002, SW-REQ-001, SW-REQ-002 |
@@ -574,9 +575,15 @@ These system-level monitors have threshold=1 and no delay because they indicate 
 | TSR-013 | SOC estimation | SW-REQ-070 |
 | TSR-014 | Redundancy check | SSR-003 |
 | TSR-015 | Plausibility check | SSR-003, SW-REQ-060 |
+<!-- HITL-LOCK END:TSC-TRACE-DOWN -->
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: REVIEWED
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+-->
 
 ## Traceability: TSR → FSR (Upstream)
 
+<!-- HITL-LOCK START:TSC-TRACE-UP -->
 | TSR ID | Description | Traces Up To FSR |
 |--------|-------------|-----------------|
 | TSR-001 | Voltage monitoring | FSR-001, FSR-002, FSR-003 |
@@ -594,6 +601,11 @@ These system-level monitors have threshold=1 and no delay because they indicate 
 | TSR-013 | SOC estimation | FSR-012 |
 | TSR-014 | Redundancy check | FSR-009 |
 | TSR-015 | Plausibility check | FSR-009 |
+<!-- HITL-LOCK END:TSC-TRACE-UP -->
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: REVIEWED
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+-->
 
 ---
 

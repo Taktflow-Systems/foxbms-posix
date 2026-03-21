@@ -2,7 +2,7 @@
 # Usage: make -j4
 
 CC = gcc
-CFLAGS = -std=c11 -D_GNU_SOURCE -DFOXBMS_POSIX -DGNU_COMPILER -DFOXBMS_USES_FREERTOS=1 -DFOXBMS_SIL_PROBES
+CFLAGS = -std=c11 -D_GNU_SOURCE -DFOXBMS_POSIX -DGNU_COMPILER -DFOXBMS_USES_FREERTOS=1 -DFOXBMS_SIL_PROBES -DFOXBMS_AFE_DRIVER_TYPE_NO_FSM=1
 CFLAGS += -Wall -Wextra
 CFLAGS += -Wno-unused-parameter -Wno-attributes -Wno-enum-conversion
 CFLAGS += -Wno-address-of-packed-member -Wno-missing-braces -Wno-cpp

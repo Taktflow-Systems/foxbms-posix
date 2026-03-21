@@ -369,6 +369,7 @@ For ASIL D safety goals (SG-01), the diagnostic configuration provides independe
 
 ## Traceability: FSR → TSR
 
+<!-- HITL-LOCK START:FSC-TRACE-TABLE -->
 | FSR | Safety Goal | Traces Down To TSR | TSR Description |
 |-----|-------------|-------------------|-----------------|
 | FSR-001 | Prevent overvoltage | TSR-001 | Voltage monitoring |
@@ -383,5 +384,10 @@ For ASIL D safety goals (SG-01), the diagnostic configuration provides independe
 | FSR-010 | Prevent interlock exposure | TSR-007 | Interlock monitoring |
 | FSR-011 | Prevent insulation failure | TSR-011 | Insulation monitoring |
 | FSR-012 | Prevent cell imbalance damage | TSR-012, TSR-013 | Balancing, SOC estimation |
+<!-- HITL-LOCK END:FSC-TRACE-TABLE -->
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
+Status: REVIEWED
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+-->
 
 *End of Document FOX-SAF-FSC-001*
