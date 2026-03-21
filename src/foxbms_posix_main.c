@@ -205,6 +205,12 @@ int main(void)
             FTSK_RunUserCodeCyclic10ms();
         }
 
+        /* AFE trigger — normally in its own FreeRTOS task, must call manually */
+        {
+            extern void MEAS_Control(void);
+            MEAS_Control();
+        }
+
         /* 100ms cyclic */
         if (now - last_100ms >= 100000) {
             last_100ms = now;

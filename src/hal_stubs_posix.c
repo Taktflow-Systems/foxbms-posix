@@ -339,12 +339,32 @@ void posix_can_rx_inject(uint32_t id, uint8_t *data, uint8_t dlc) {
 /* Database: direct call instead of queue — DATA_IterateOverDatabaseEntries made extern */
 extern void DATA_IterateOverDatabaseEntries(const void *kpReceiveMessage);
 
+/* Forward declarations for AFE queue buffers (defined later with queue handles) */
+#define POSIX_AFE_QUEUE_SIZE 16
+static uint8_t posix_afe_volt_buf[POSIX_AFE_QUEUE_SIZE][64];
+static volatile uint32_t posix_afe_volt_head, posix_afe_volt_tail;
+static uint8_t posix_afe_temp_buf[POSIX_AFE_QUEUE_SIZE][64];
+static volatile uint32_t posix_afe_temp_head, posix_afe_temp_tail;
+
 /* Queue operations — CAN RX queue + database queue from ring buffers */
 OS_STD_RETURN_e OS_ReceiveFromQueue(void *xQueue, void *pvBuffer, uint32_t ticksToWait) {
     (void)ticksToWait;
     /* Only CAN RX queue has data */
     extern void *ftsk_canRxQueue;
-    /* Database queue: processed immediately in OS_SendToBackOfQueue, nothing to receive */
+    /* AFE cell voltage queue (defined later in this file) */
+    extern void *ftsk_canToAfeCellVoltagesQueue;
+    extern void *ftsk_canToAfeCellTemperaturesQueue;
+    if (xQueue == ftsk_canToAfeCellVoltagesQueue && posix_afe_volt_head != posix_afe_volt_tail) {
+        memcpy(pvBuffer, posix_afe_volt_buf[posix_afe_volt_tail], 16); /* ~13 bytes */
+        posix_afe_volt_tail = (posix_afe_volt_tail + 1) % POSIX_AFE_QUEUE_SIZE;
+        return OS_SUCCESS;
+    }
+    /* AFE cell temperature queue */
+    if (xQueue == ftsk_canToAfeCellTemperaturesQueue && posix_afe_temp_head != posix_afe_temp_tail) {
+        memcpy(pvBuffer, posix_afe_temp_buf[posix_afe_temp_tail], 16); /* ~13 bytes */
+        posix_afe_temp_tail = (posix_afe_temp_tail + 1) % POSIX_AFE_QUEUE_SIZE;
+        return OS_SUCCESS;
+    }
     /* CAN RX queue */
     if (xQueue == ftsk_canRxQueue && posix_can_rx_head != posix_can_rx_tail) {
         memcpy(pvBuffer, &posix_can_rx_buf[posix_can_rx_tail], sizeof(POSIX_CAN_RX_ELEMENT_s));
@@ -362,8 +382,25 @@ OS_STD_RETURN_e OS_SendToBackOfQueue(void *xQueue, const void *pvItem, uint32_t 
     (void)ticksToWait;
     extern void *ftsk_databaseQueue;
     if (xQueue == ftsk_databaseQueue && pvItem != NULL) {
-        /* Process database entry IMMEDIATELY instead of queuing */
         DATA_IterateOverDatabaseEntries(pvItem);
+    }
+    /* AFE cell voltage queue */
+    extern void *ftsk_canToAfeCellVoltagesQueue;
+    extern void *ftsk_canToAfeCellTemperaturesQueue;
+    if (xQueue == ftsk_canToAfeCellVoltagesQueue && pvItem != NULL) {
+        uint32_t next = (posix_afe_volt_head + 1) % POSIX_AFE_QUEUE_SIZE;
+        if (next != posix_afe_volt_tail) {
+            memcpy(posix_afe_volt_buf[posix_afe_volt_head], pvItem, 16);
+            posix_afe_volt_head = next;
+        }
+    }
+    /* AFE cell temperature queue */
+    if (xQueue == ftsk_canToAfeCellTemperaturesQueue && pvItem != NULL) {
+        uint32_t next = (posix_afe_temp_head + 1) % POSIX_AFE_QUEUE_SIZE;
+        if (next != posix_afe_temp_tail) {
+            memcpy(posix_afe_temp_buf[posix_afe_temp_head], pvItem, 16);
+            posix_afe_temp_head = next;
+        }
     }
     return OS_SUCCESS;
 }
@@ -394,8 +431,11 @@ void *ftsk_afeRequestQueue = NULL;
 void *ftsk_rtcSetTimeQueue = NULL;
 void *ftsk_afeToI2cQueue = NULL;
 void *ftsk_afeFromI2cQueue = NULL;
-void *ftsk_canToAfeCellTemperaturesQueue = NULL;
-void *ftsk_canToAfeCellVoltagesQueue = NULL;
+/* AFE cell data queue handles (buffers declared earlier) */
+static uint8_t dummy_afe_volt_q[1] = {0};
+static uint8_t dummy_afe_temp_q[1] = {0};
+void *ftsk_canToAfeCellTemperaturesQueue = dummy_afe_temp_q;
+void *ftsk_canToAfeCellVoltagesQueue = dummy_afe_volt_q;
 void *ftsk_taskHandleAfe = NULL;
 void *ftsk_taskHandleI2c = NULL;
 

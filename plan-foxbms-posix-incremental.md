@@ -1,4 +1,6 @@
-# foxBMS POSIX vECU — Incremental Implementation Plan
+# foxBMS POSIX vECU — Incremental Implementation Plan (ARCHIVED)
+
+> **ARCHIVED 2026-03-21**: This plan is superseded by [PLAN.md](PLAN.md) which consolidates all three plan documents and reflects actual progress. Kept for historical reference only.
 
 ## Current State (2026-03-20)
 - foxBMS binary compiles (170+ files) and runs on Ubuntu x86-64

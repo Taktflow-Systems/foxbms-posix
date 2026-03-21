@@ -1,4 +1,6 @@
-# foxBMS POSIX vECU — Realistic Simulation Plan
+# foxBMS POSIX vECU — Realistic Simulation Plan (ARCHIVED)
+
+> **ARCHIVED 2026-03-21**: This plan is superseded by [PLAN.md](PLAN.md) which consolidates all three plan documents and reflects actual progress. Kept for historical reference only.
 
 ## Current Stubs vs Realistic Replacements
 

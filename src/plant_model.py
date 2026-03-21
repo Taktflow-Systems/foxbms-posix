@@ -19,65 +19,61 @@ import sys
 
 CAN_INTERFACE = sys.argv[1] if len(sys.argv) > 1 else "vcan1"
 
-def set_can_signal_be(data, start_bit, length, value):
-    """Set a CAN signal in big-endian (Motorola) byte order.
-    start_bit: DBC-style big-endian start bit
-    length: signal length in bits
-    value: unsigned integer value to set
+# foxBMS CAN big-endian encoding using the exact same lookup table as foxBMS
+CAN_BIG_ENDIAN_TABLE = [
+    56, 57, 58, 59, 60, 61, 62, 63, 48, 49, 50, 51, 52, 53, 54, 55,
+    40, 41, 42, 43, 44, 45, 46, 47, 32, 33, 34, 35, 36, 37, 38, 39,
+    24, 25, 26, 27, 28, 29, 30, 31, 16, 17, 18, 19, 20, 21, 22, 23,
+     8,  9, 10, 11, 12, 13, 14, 15,  0,  1,  2,  3,  4,  5,  6,  7,
+]
+
+def foxbms_encode_signal(msg_data, start_bit, bit_length, value):
+    """Encode a CAN signal using foxBMS's big-endian bit numbering.
+    msg_data: 64-bit integer (message data, MSB=bit63, LSB=bit0)
+    start_bit: DBC-style big-endian start bit (MSB of signal)
+    bit_length: signal length in bits
+    value: unsigned integer value
+    Returns updated msg_data.
     """
-    # Convert DBC start bit to bit position in the 64-bit message data
-    for i in range(length):
-        # Calculate byte and bit from DBC-style big-endian numbering
-        byte_pos = start_bit // 8
-        bit_in_byte = start_bit % 8
-        bit_val = (value >> (length - 1 - i)) & 1
-        if bit_val:
-            data[byte_pos] |= (1 << bit_in_byte)
-        else:
-            data[byte_pos] &= ~(1 << bit_in_byte)
-        # Move to next bit in big-endian order
-        if bit_in_byte == 0:
-            start_bit = start_bit + 15  # next byte, MSB
-        else:
-            start_bit = start_bit - 1
+    # Convert DBC start bit to actual MSB position
+    msb_pos = CAN_BIG_ENDIAN_TABLE[start_bit]
+    # LSB position
+    lsb_pos = msb_pos - (bit_length - 1)
+    # Place value at the correct position
+    mask = ((1 << bit_length) - 1) << lsb_pos
+    msg_data &= ~mask  # clear bits
+    msg_data |= (value & ((1 << bit_length) - 1)) << lsb_pos
+    return msg_data
+
+def msg_data_to_bytes(msg_data):
+    """Convert 64-bit message data to 8-byte CAN frame (big-endian byte order)."""
+    return struct.pack(">Q", msg_data)
 
 def encode_cell_voltage_msg(mux, voltages_mv):
-    """Encode a foxBMS cell voltage CAN message (0x270).
-    mux: multiplexer value (0, 1, ...)
-    voltages_mv: list of 4 voltages in mV
-    Returns 8-byte data.
-    """
-    data = bytearray(8)
-    # Mux: start_bit=7, length=8
-    set_can_signal_be(data, 7, 8, mux)
-    # Invalid flags: start_bits 12,13,14,15, length=1 each → all 0 (valid)
-    # Voltage 0: start_bit=11, length=13
-    set_can_signal_be(data, 11, 13, voltages_mv[0] & 0x1FFF)
-    # Voltage 1: start_bit=30, length=13
-    set_can_signal_be(data, 30, 13, voltages_mv[1] & 0x1FFF)
-    # Voltage 2: start_bit=33, length=13
-    set_can_signal_be(data, 33, 13, voltages_mv[2] & 0x1FFF)
-    # Voltage 3: start_bit=52, length=13
-    set_can_signal_be(data, 52, 13, voltages_mv[3] & 0x1FFF)
-    return bytes(data)
+    """Encode foxBMS cell voltage message (0x270) using exact foxBMS encoding."""
+    d = 0
+    d = foxbms_encode_signal(d, 7, 8, mux)          # Mux
+    d = foxbms_encode_signal(d, 12, 1, 0)            # Invalid flag 0 (valid)
+    d = foxbms_encode_signal(d, 13, 1, 0)            # Invalid flag 1
+    d = foxbms_encode_signal(d, 14, 1, 0)            # Invalid flag 2
+    d = foxbms_encode_signal(d, 15, 1, 0)            # Invalid flag 3
+    d = foxbms_encode_signal(d, 11, 13, voltages_mv[0])  # Voltage 0
+    d = foxbms_encode_signal(d, 30, 13, voltages_mv[1])  # Voltage 1
+    d = foxbms_encode_signal(d, 33, 13, voltages_mv[2])  # Voltage 2
+    d = foxbms_encode_signal(d, 52, 13, voltages_mv[3])  # Voltage 3
+    return msg_data_to_bytes(d)
 
 def encode_cell_temp_msg(mux, temps_ddegc):
-    """Encode a foxBMS cell temperature CAN message (0x280).
-    mux: multiplexer value
-    temps_ddegc: list of temperatures in deci-degrees C
-    Returns 8-byte data.
-    """
-    data = bytearray(8)
-    # Mux: start_bit=7, length=8
-    set_can_signal_be(data, 7, 8, mux)
-    # Temperature signals — check foxBMS source for exact positions
-    # For now, use same layout as voltages (approximate)
-    set_can_signal_be(data, 11, 13, temps_ddegc[0] & 0x1FFF)
-    if len(temps_ddegc) > 1:
-        set_can_signal_be(data, 30, 13, temps_ddegc[1] & 0x1FFF)
-    if len(temps_ddegc) > 2:
-        set_can_signal_be(data, 33, 13, temps_ddegc[2] & 0x1FFF)
-    return bytes(data)
+    """Encode foxBMS cell temperature message (0x280)."""
+    d = 0
+    d = foxbms_encode_signal(d, 7, 8, mux)
+    d = foxbms_encode_signal(d, 12, 1, 0)  # Invalid flag 0
+    d = foxbms_encode_signal(d, 13, 1, 0)  # Invalid flag 1
+    d = foxbms_encode_signal(d, 14, 1, 0)  # Invalid flag 2
+    d = foxbms_encode_signal(d, 11, 13, temps_ddegc[0] if len(temps_ddegc) > 0 else 0)
+    d = foxbms_encode_signal(d, 30, 13, temps_ddegc[1] if len(temps_ddegc) > 1 else 0)
+    d = foxbms_encode_signal(d, 33, 13, temps_ddegc[2] if len(temps_ddegc) > 2 else 0)
+    return msg_data_to_bytes(d)
 
 # Open SocketCAN
 s = socket.socket(socket.AF_CAN, socket.SOCK_RAW, socket.CAN_RAW)

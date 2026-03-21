@@ -1,4 +1,6 @@
-# Plan: foxBMS 2 POSIX vECU (Virtual BMS)
+# Plan: foxBMS 2 POSIX vECU (Virtual BMS) (ARCHIVED)
+
+> **ARCHIVED 2026-03-21**: This plan is superseded by [PLAN.md](PLAN.md) which consolidates all three plan documents and reflects actual progress. Kept for historical reference only.
 
 ## Goal
 Run foxBMS 2 BMS application as a Linux process on the Ubuntu laptop or Netcup VPS, communicating via SocketCAN. No TMS570 hardware needed.

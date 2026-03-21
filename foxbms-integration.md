@@ -1,5 +1,7 @@
 # foxBMS 2 Integration — Findings & Setup (2026-03-20)
 
+> **Note**: This document contains historical findings from the integration process. Some sections describe approaches that were later abandoned (e.g., the FreeRTOS POSIX port with 7 pthreads was replaced by a cooperative main loop). See [STATUS.md](STATUS.md) for the current architecture and [PLAN.md](PLAN.md) for remaining work.
+
 ## foxBMS Unit Test Infrastructure (Windows PC)
 
 ### Tools Installed

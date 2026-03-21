@@ -5,11 +5,38 @@ A complete foxBMS 2 v1.10.0 Battery Management System running as a native Linux 
 
 ## Architecture
 ```
-Plant Model (Python)  ←→  SocketCAN (vcan1)  ←→  foxBMS vECU (C binary)
+Plant Model (Python)  <-->  SocketCAN (vcan1)  <-->  foxBMS vECU (C binary)
    - IVT current             CAN frames           - BMS state machine
    - IVT voltage                                  - SOC estimation
    - Cell voltages                                - Contactor control
    - State requests                               - 15 CAN TX messages
+```
+
+```
++---------------------------------------------+
+|  plant_model.py (Python)                     |
+|  +-------------+  +----------------------+  |
+|  | Cell Model   |  | Contactor Feedback   |  |
+|  | 6x 3.7V     |  | (not yet impl.)      |  |
+|  +------+-------+  +----------+-----------+  |
+|         | 0x270/280/521/522    |              |
+|         v                      |              |
++---------+----------------------+-------------+
+          | SocketCAN (vcan1)    |
++---------+----------------------+-------------+
+|  foxbms-vecu (C binary)       |              |
+|  +-------------+  +-----------+-----------+  |
+|  | CAN RX      |  | SPS Stub              |  |
+|  | -> Database  |  | contactor sim         |  |
+|  | -> BMS Logic |  | (tracks open/close)   |  |
+|  +-------------+  +-----------------------+  |
+|  +-------------+  +-----------------------+  |
+|  | BMS State   |  | CAN TX                |  |
+|  | Machine     |--| 0x220 BMS State       |  |
+|  | SOC/SOE/SOF |  | 0x235 SOC             |  |
+|  +-------------+  | 0x240 Contactors      |  |
+|                    +-----------------------+  |
++-----------------------------------------------+
 ```
 
 ## Step-by-Step Progress
