@@ -115,16 +115,19 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
     <div class="plant-row"><span class="lbl">Current</span><span class="val" id="plI">--- A</span></div>
     <div class="plant-row"><span class="lbl">Cells</span><span class="val" id="plCells">--</span></div>
     <div style="margin-top:10px"><span class="plant-status idle" id="plStatus">IDLE</span></div>
-    <!-- BMS Inputs panel -->
+    <!-- BMS Inputs — what foxBMS receives via CAN/SPI -->
     <div class="bms-perc">
-      <div class="panel-title"><span class="perc-indicator" id="percDot" style="background:var(--dim)"></span>BMS Inputs</div>
-      <div class="perc-row"><span class="lbl">V min</span><span class="val" id="percVmin">--- mV</span></div>
-      <div class="perc-row"><span class="lbl">V max</span><span class="val" id="percVmax">--- mV</span></div>
-      <div class="perc-row"><span class="lbl">V delta</span><span class="val" id="percVdelta">--- mV</span></div>
-      <div class="perc-row"><span class="lbl">T min</span><span class="val" id="percTmin">---</span></div>
-      <div class="perc-row"><span class="lbl">T max</span><span class="val" id="percTmax">---</span></div>
-      <div class="perc-row"><span class="lbl">Pack I</span><span class="val" id="percPackI">--- A</span></div>
-      <div class="perc-row"><span class="lbl">Pack V</span><span class="val" id="percPackV">--- V</span></div>
+      <div class="panel-title"><span class="perc-indicator" id="percDot" style="background:var(--dim)"></span>BMS Inputs (what foxBMS sees)</div>
+      <div style="font-size:10px;color:var(--accent2);margin:4px 0 2px;letter-spacing:1px">AFE (Cell Monitoring)</div>
+      <div class="perc-row"><span class="lbl">Cell V min</span><span class="val" id="percVmin">--- mV</span></div>
+      <div class="perc-row"><span class="lbl">Cell V max</span><span class="val" id="percVmax">--- mV</span></div>
+      <div class="perc-row"><span class="lbl">Cell V Δ</span><span class="val" id="percVdelta">--- mV</span></div>
+      <div class="perc-row"><span class="lbl">Cell T min</span><span class="val" id="percTmin">---</span></div>
+      <div class="perc-row"><span class="lbl">Cell T max</span><span class="val" id="percTmax">---</span></div>
+      <div style="font-size:10px;color:var(--accent2);margin:6px 0 2px;letter-spacing:1px">IVT (Current Sensor)</div>
+      <div class="perc-row"><span class="lbl">Pack Current</span><span class="val" id="percPackI">--- A</span></div>
+      <div class="perc-row"><span class="lbl">Pack Voltage</span><span class="val" id="percPackV">--- V</span></div>
+      <div class="perc-row"><span class="lbl">Pack Power</span><span class="val" id="percPackP">--- W</span></div>
     </div>
   </div>
   <!-- Col 3: BMS State + Contactors -->
@@ -274,6 +277,12 @@ function update(d){
   document.getElementById("percVmax").style.color=mx>4250?"var(--err)":"var(--ok)";
   document.getElementById("percTmin").style.color=tMin<-20?"var(--cold)":"var(--ok)";
   document.getElementById("percTmax").style.color=tMax>55?"var(--err)":"var(--ok)";
+  // IVT data
+  const packI=((d.pack_current_ma||d.plant_current_ma)??0)/1000;
+  const packV=((d.pack_voltage_mv||d.plant_pack_voltage_mv)??0)/1000;
+  document.getElementById("percPackI").textContent=packI.toFixed(1)+" A"+(packI>0.1?" dis":packI<-0.1?" chg":"");
+  document.getElementById("percPackV").textContent=packV.toFixed(1)+" V";
+  document.getElementById("percPackP").textContent=(Math.abs(packI*packV)).toFixed(0)+" W";
   // State machine
   const bst=d.bms_state??0;
   STATES.forEach((_,i)=>{document.getElementById("st"+i).classList.toggle("active",i===bst);});
@@ -305,18 +314,18 @@ function update(d){
   document.getElementById("dFaults").textContent=d.diag_fault_count??0;
   document.getElementById("dLastId").textContent=d.diag_last_id?"0x"+d.diag_last_id.toString(16).toUpperCase().padStart(2,"0"):"--";
   document.getElementById("dLastEv").textContent=d.diag_last_event??"--";
-  document.getElementById("dBitmap").textContent="0x"+(d.diag_bitmap??0).toString(16).toUpperCase().padStart(16,"0");
+  const bm=d.diag_bitmap??0;
+  if(bm===0){document.getElementById("dBitmap").textContent="none";document.getElementById("dBitmap").style.color="var(--ok)";}
+  else{const bits=[];for(let i=0;i<64;i++)if(bm&(1<<i))bits.push(i);document.getElementById("dBitmap").textContent="IDs: "+bits.join(",");document.getElementById("dBitmap").style.color="var(--err)";}
   // Footer
   const soc=(d.soc_pct&&d.soc_pct!==50)?d.soc_pct:(d.plant_soc_pct??0);
   document.getElementById("socFill").style.width=Math.min(soc,100)+"%";
   document.getElementById("socPct").textContent=soc.toFixed(1)+"%";
-  const packV=(d.pack_voltage_mv??0)||(d.plant_pack_voltage_mv??0);
-  document.getElementById("fPackV").textContent=(packV/1000).toFixed(1)+" V";
-  const curr=((d.pack_current_ma||d.plant_current_ma)??0)/1000;
-  document.getElementById("fCurr").textContent=(curr>0?"+":"")+curr.toFixed(1)+" A";
-  document.getElementById("fCellV").textContent=mn+"\u2013"+mx+" mV (\u0394"+delta+")";
+  document.getElementById("fPackV").textContent=packV.toFixed(1)+" V";
+  document.getElementById("fCurr").textContent=packI.toFixed(1)+" A"+(packI>0.1?" \u25B6":packI<-0.1?" \u25C0":"");
+  document.getElementById("fCellV").textContent=mn+"\u2013"+mx+" mV";
   document.getElementById("fTemp").textContent=tMin.toFixed(1)+"\u2013"+tMax.toFixed(1)+" \u00B0C";
-  document.getElementById("fUptime").textContent=((d.uptime_ms??0)/1000).toFixed(1)+" s";
+  document.getElementById("fUptime").textContent=((d.uptime_ms??0)/1000).toFixed(0)+" s";
   if(d.can_log&&d.can_log.length){canFrames=d.can_log.slice(-MAX_CAN);renderCanLog();}
 }
 

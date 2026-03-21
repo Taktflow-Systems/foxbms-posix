@@ -62,9 +62,14 @@ _plant_path: str | None = None
 _can_if: str = "vcan1"
 
 async def restart_system() -> None:
-    global vecu_proc, plant_proc
+    global vecu_proc, plant_proc, _prev_bms_state
+    # Kill tracked processes
     for p in [vecu_proc, plant_proc]:
         if p and p.poll() is None: p.kill()
+    # Also kill by name in case they were started externally
+    os.system("pkill -f foxbms-vecu 2>/dev/null")
+    os.system("pkill -f plant_model.py 2>/dev/null")
+    _prev_bms_state = -1  # Reset state tracking
     await asyncio.sleep(1)
     _null = subprocess.DEVNULL
     if _plant_path:
@@ -268,7 +273,12 @@ WEB_DIR = Path(__file__).resolve().parent
 
 async def main(args: argparse.Namespace) -> None:
     global _vecu_path, _plant_path, _can_if
-    _vecu_path, _plant_path, _can_if = args.vecu, args.plant, args.can
+    _can_if = args.can
+    # Auto-detect paths if not provided
+    src_dir = WEB_DIR.parent / "src"
+    _vecu_path = args.vecu or str(src_dir / "foxbms-vecu")
+    _plant_path = args.plant or str(src_dir / "plant_model.py")
+    log.info("vecu=%s plant=%s", _vecu_path, _plant_path)
     app = web.Application()
     app.router.add_get("/ws", ws_handler)
     app.router.add_get("/", lambda _r: web.FileResponse(WEB_DIR / "index.html"))
