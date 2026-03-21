@@ -1,0 +1,25 @@
+VERSION ""
+
+NS_ :
+
+BS_:
+
+BO_ 624 AFE_CellVoltages: 8 Vector__XXX
+ SG_ AFE_CellVoltage_Mux M : 7|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ AFE_CellVoltage0_InvalidFlag m0 : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AFE_CellVoltage1_InvalidFlag m0 : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AFE_CellVoltage2_InvalidFlag m0 : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AFE_CellVoltage3_InvalidFlag m0 : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AFE_CellVoltage0 m0 : 11|13@1+ (1,0) [0|8191] "mV" Vector__XXX
+ SG_ AFE_CellVoltage1 m0 : 30|13@1+ (1,0) [0|8191] "mV" Vector__XXX
+ SG_ AFE_CellVoltage2 m0 : 33|13@1+ (1,0) [0|8191] "mV" Vector__XXX
+ SG_ AFE_CellVoltage3 m0 : 52|13@1+ (1,0) [0|8191] "mV" Vector__XXX
+
+BO_ 640 AFE_CellTemperatures: 8 Vector__XXX
+ SG_ AFE_CellTemp_Mux M : 7|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ AFE_CellTemp0_InvalidFlag m0 : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AFE_CellTemp1_InvalidFlag m0 : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AFE_CellTemp2_InvalidFlag m0 : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AFE_CellTemp0 m0 : 11|13@1+ (10,-1000) [-1000|81910] "ddegC" Vector__XXX
+ SG_ AFE_CellTemp1 m0 : 30|13@1+ (10,-1000) [-1000|81910] "ddegC" Vector__XXX
+ SG_ AFE_CellTemp2 m0 : 33|13@1+ (10,-1000) [-1000|81910] "ddegC" Vector__XXX

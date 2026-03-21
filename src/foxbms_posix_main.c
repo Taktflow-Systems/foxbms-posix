@@ -212,6 +212,11 @@ int main(void)
             FTSK_RunUserCodeCyclicAlgorithm100ms();
         }
 
+        /* Inject cell voltages directly into database (bypass CAN encoding) */
+        if (tick % 100 == 0) {
+            posix_inject_cell_data();
+        }
+
         /* Status every 5 seconds */
         if (tick > 0 && tick % 5000 == 0) {
             fprintf(stderr, "[%u] foxBMS running\n", tick / 1000);
