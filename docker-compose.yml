@@ -1,0 +1,56 @@
+version: "3.8"
+
+# foxBMS POSIX vECU — Docker Compose
+#
+# Usage:
+#   docker compose up        — build + run vECU + plant + smoke test
+#   docker compose up vecu   — run vECU only (plant on host)
+#   docker compose run test  — run smoke test only
+#
+# Requires: --privileged (for vcan interface creation)
+#
+# CAN interface: vcan1 (created by entrypoint.sh)
+
+services:
+  vecu:
+    build: .
+    container_name: foxbms-vecu
+    privileged: true
+    environment:
+      - FOXBMS_CAN_IF=vcan1
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        # Setup vcan
+        modprobe vcan 2>/dev/null || true
+        ip link add vcan1 type vcan 2>/dev/null || true
+        ip link set vcan1 up
+        # Start plant model in background
+        python3 /app/plant_model.py vcan1 &
+        sleep 0.5
+        # Run vECU
+        exec /app/foxbms-vecu
+    networks:
+      - canbus
+
+  test:
+    build: .
+    container_name: foxbms-test
+    privileged: true
+    depends_on:
+      - vecu
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        # Setup vcan
+        modprobe vcan 2>/dev/null || true
+        ip link add vcan1 type vcan 2>/dev/null || true
+        ip link set vcan1 up
+        # Run smoke test
+        python3 /app/test_smoke.py vcan1
+    networks:
+      - canbus
+
+networks:
+  canbus:
+    driver: bridge
