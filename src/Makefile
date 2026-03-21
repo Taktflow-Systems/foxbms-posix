@@ -18,7 +18,7 @@ BUILD = build
 INC  = -I.
 INC += -I$(ROOT)/src/os/freertos/freertos/include
 INC += -I$(ROOT)/src/os/freertos/freertos/portable/ThirdParty/GCC/Posix
-INC += -I$(ROOT)/build/app_host_unit_test/include
+INC += -I../halcogen-headers
 INC += $(shell find $(ROOT)/src/app $(ROOT)/src/opt $(ROOT)/src/version -type d 2>/dev/null | sed 's/^/-I /')
 
 # FreeRTOS kernel — NOT USED in cooperative mode

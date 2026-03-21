@@ -1,6 +1,11 @@
 import re, os, glob
 
-base_dir = "build/app_host_unit_test/include"
+import pathlib
+# Headers are in halcogen-headers/ at repo root, or foxbms-2/build/... as fallback
+_repo_root = pathlib.Path(__file__).resolve().parent.parent
+_halcogen = _repo_root / "halcogen-headers"
+_fallback = pathlib.Path("build/app_host_unit_test/include")
+base_dir = str(_halcogen) if _halcogen.is_dir() else str(_fallback)
 stubs = []
 
 # Find all #define xxxREG ((type *)0xFFF...) patterns

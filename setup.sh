@@ -29,15 +29,14 @@ else
     echo "Submodule already present."
 fi
 
-# Step 2: Check HALCoGen headers
+# Step 2: Check HALCoGen headers (now committed in halcogen-headers/)
 echo ""
 echo "--- Step 2: Check HALCoGen headers ---"
-if [ ! -d "foxbms-2/build/app_host_unit_test/include" ]; then
-    echo "WARNING: HALCoGen headers not found at foxbms-2/build/app_host_unit_test/include/"
-    echo "You need to copy them from a Windows build. See README.md for details."
-    echo "Continuing anyway — build may fail."
+if [ ! -d "$SCRIPT_DIR/halcogen-headers" ] || [ ! -f "$SCRIPT_DIR/halcogen-headers/HL_reg_can.h" ]; then
+    echo "ERROR: halcogen-headers/ directory missing or incomplete."
+    exit 1
 else
-    echo "HALCoGen headers found."
+    echo "HALCoGen headers found ($(ls "$SCRIPT_DIR/halcogen-headers/" | wc -l) files)."
 fi
 
 # Step 3: Apply patches
