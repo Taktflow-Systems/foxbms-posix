@@ -1,88 +1,124 @@
 # foxBMS POSIX vECU — Consolidated Roadmap
 
 **Last updated**: 2026-03-21
-**Status**: BMS in NORMAL state — all critical milestones achieved
+**Status**: Phase 1 COMPLETE, Phase 2 PARTIAL
 
 ---
 
-## Completed Work
+## Phase 1: BMS NORMAL State — COMPLETE ✓
 
-- [x] Compile foxBMS 170+ sources for x86-64 with GCC 13
-- [x] Stub 60+ TMS570 register bases to RAM buffers
-- [x] Replace FreeRTOS scheduler with cooperative main loop
-- [x] Stub 80+ HAL functions (SPI, I2C, DMA, GIO, ADC, etc.)
-- [x] Bypass SBC, RTC, DIAG, current sensor presence checks
-- [x] CAN TX via SocketCAN (15+ message types periodic)
-- [x] CAN RX via SocketCAN ring buffer → foxBMS callbacks
-- [x] Database passthrough (direct call instead of FreeRTOS queue)
-- [x] SPS contactor simulation (track requested/actual state per channel)
-- [x] AFE queue routing: CAN → ftsk_canToAfeCellVoltagesQueue → DECAN
-- [x] MEAS_Control() in cooperative main loop
-- [x] Plant model: IVT current (0A), IVT voltage (66600mV)
-- [x] Plant model: cell voltages (18 cells × 3700mV) — foxBMS big-endian encoding verified
-- [x] Plant model: cell temperatures (25.0°C)
-- [x] Plant model: BMS state requests (STANDBY → NORMAL)
-- [x] Plant model: IVT voltage 3 (0x524) for redundancy module HV bus voltage
-- [x] Cell voltage invalid flag = 1 (DECAN_DATA_IS_VALID = 1, not 0)
-- [x] String voltage calculation: 18 × 3700 = 66600mV
-- [x] Precharge voltage check passes (string voltage ≈ HV bus voltage)
-- [x] SYS state machine reaches RUNNING
-- [x] BMS state machine: IDLE → STANDBY → PRECHARGE → **NORMAL**
-- [x] Contactors: 3 channels close during precharge, verified via SPS trace
-- [x] SOC: 50% initial (counting method)
-- [x] Windows unit tests: 183+ passing (Ceedling + GCC 15)
+**Goal**: foxBMS compiles on x86-64 and reaches NORMAL state through legitimate data flow.
 
-## Phase 2: Realistic Simulation (Priority: P2)
+### Exit Criteria (all met)
 
-### 2.1 Dynamic current model
-- [ ] Plant model: vary current based on contactor state (10A discharge when NORMAL)
-- [ ] SOC should decrease over time
-- [ ] Verify 0x235 SOC changes
+| # | Criterion | Test | Result |
+|---|-----------|------|--------|
+| 1.1 | BMS reaches NORMAL state | `test_smoke.py` → state 7 on 0x220 | **PASS** (6.3s) |
+| 1.2 | Full state transition verified | Smoke test logs all intermediate states | **PASS** (UNINIT→INIT→IDLE→STANDBY→PRECHARGE→NORMAL) |
+| 1.3 | At least 15 CAN message types on bus | `candump vcan1` shows 0x220–0x301 | **PASS** (15+ types) |
+| 1.4 | SOC reported non-zero | `test_smoke.py` → 0x235 byte 5 ≠ 0 | **PASS** |
+| 1.5 | Connected strings > 0 at NORMAL | `test_smoke.py` → 0x220 upper nibble > 0 | **PASS** (1 string) |
+| 1.6 | Contactors close during precharge | SPS trace in stderr log | **PASS** (3 channels) |
+| 1.7 | No CRITICAL or HIGH gaps in gap analysis | GAP-ANALYSIS.md | **PASS** (0 CRITICAL, 0 HIGH) |
+| 1.8 | Automated smoke test exists and passes | `make test` or `python3 test_smoke.py` | **PASS** |
+| 1.9 | Build from clean clone works | `git clone --recursive` + `setup.sh` | **PASS** (HALCoGen headers in repo) |
+| 1.10 | FAS_ASSERT crashes visibly | FAS_StoreAssertLocation → stderr + exit(1) | **PASS** |
 
-### 2.2 Cell voltage variation
-- [ ] Add small noise (±10mV) per cell
-- [ ] Vary voltage based on SOC (3.4V at 0%, 4.2V at 100%)
-- [ ] Verify plausibility checks don't trigger
+### Completed Work
 
-### 2.3 Dynamic pack voltage (IR drop)
-- [ ] V_pack = N_cells × V_cell - I × R_internal
-- [ ] R_internal = ~50mΩ per cell
+- 170+ foxBMS sources compiled with GCC 13 on x86-64
+- 80+ HAL stubs, 60+ register bases redirected to RAM
+- Cooperative main loop (replaces FreeRTOS scheduler)
+- CAN TX/RX via SocketCAN, CAN RX filtering (no extended/error frames)
+- Database passthrough, AFE queue routing, SPS contactor simulation (10ms delay)
+- Selective DIAG_Handler (40 HW suppressed, 45 SW logged)
+- `setup.sh`, `apply_all.sh`, `test_smoke.py`, `.gitignore`
+- GAP-ANALYSIS.md (33 gaps, 26 resolved), COVERAGE.md, TROUBLESHOOTING.md
+- 10-auditor review completed, Phase 1 fixes applied and verified
 
-## Phase 3: Fault Injection (Priority: P3)
+---
 
-### 3.1 Overvoltage
-- [ ] Set one cell to 4.5V → foxBMS opens contactors
-- [ ] Verify 0x220 shows ERROR state
+## Phase 2: Realistic Simulation — PARTIAL
 
-### 3.2 Undervoltage
-- [ ] Set one cell to 2.5V → foxBMS opens contactors
+**Goal**: Plant model produces dynamic, physics-based battery data. SOC changes over time.
 
-### 3.3 Overtemperature
-- [ ] Set one sensor to 60°C → warning, 80°C → contactors open
+### Exit Criteria
 
-### 3.4 Overcurrent
-- [ ] Set IVT current to 200A → foxBMS opens contactors
+| # | Criterion | Test | Result |
+|---|-----------|------|--------|
+| 2.1 | SOC decreases under discharge | Run 30s, check 0x235 SOC < 50% | **PASS** (49.5% at 10s) |
+| 2.2 | Cell voltage tracks SOC via OCV curve | candump 0x270, decode voltage, compare to OCV(SOC) | **PASS** (3800mV at 50%) |
+| 2.3 | Pack voltage shows IR drop under load | candump 0x522 during NORMAL, V_pack < V_OCV × N | **PASS** (9V drop at 10A) |
+| 2.4 | Closed-loop: discharge starts only at NORMAL | Plant log shows "foxBMS NORMAL detected" | **PASS** |
+| 2.5 | Per-cell noise (±5mV) without precharge failure | Smoke test passes with noise enabled | **NOT DONE** — timing issue |
+| 2.6 | Temperature mux covers all sensors (not just mux=0) | candump 0x280 shows mux 0–4 | **NOT DONE** |
+| 2.7 | Charge current path works (SOC increases) | Plant sends negative current, SOC rises | **NOT DONE** |
+| 2.8 | 20-second run shows monotonic SOC decrease | Plant log: SOC values strictly decreasing | **PASS** |
 
-### 3.5 Cell imbalance
-- [ ] Set cells to 3.5V, 3.7V, 3.9V → balancing activates
+### Status: 5/8 criteria met
 
-### 3.6 Sensor failure
-- [ ] Send invalid flag for one cell → foxBMS detects missing cell
+### Remaining Work
+- Fix per-cell noise timing (noise causes precharge voltage mismatch via CAN frame ordering)
+- Send temperature on all mux values (currently only mux=0)
+- Add charge current mode (regenerative braking scenario)
 
-## Phase 4: Integration (Priority: P4)
+---
 
-### 4.1 Dockerize
-- [ ] Dockerfile for foxbms-vecu
-- [ ] docker-compose alongside taktflow SIL ECUs
+## Phase 3: Fault Injection
 
-### 4.2 Connect to real CAN bus (HIL)
-- [ ] FOXBMS_CAN_IF=can0 → canable on HIL bench
-- [ ] Run alongside physical STM32/TMS570 ECUs
+**Goal**: foxBMS detects injected faults and responds correctly (opens contactors, enters ERROR state).
 
-### 4.3 XCP integration
-- [ ] Add XCP on TCP/UDP for real-time monitoring
-- [ ] Connect with CANape for visualization
+**Prerequisite**: Implement DIAG threshold counters (currently DIAG_Handler always returns OK — faults are logged but don't propagate to BMS state machine).
 
-### 4.4 Selective DIAG_Handler
-- [ ] Allow real error detection for software checks
-- [ ] Suppress only hardware-absent errors
+### Exit Criteria
+
+| # | Criterion | Test | Result |
+|---|-----------|------|--------|
+| 3.1 | Overvoltage → contactors open | Plant sends 1 cell at 4500mV, check 0x220 state ≠ 7 within 5s | NOT DONE |
+| 3.2 | Undervoltage → contactors open | Plant sends 1 cell at 2500mV | NOT DONE |
+| 3.3 | Overtemperature → contactors open | Plant sends 1 sensor at 80°C (800 deci-°C) | NOT DONE |
+| 3.4 | Overcurrent → contactors open | Plant sends IVT current 200A | NOT DONE |
+| 3.5 | Cell imbalance → balancing activates | Plant sends cells at 3500/3700/3900mV, check BAL state | NOT DONE |
+| 3.6 | Sensor loss → foxBMS detects | Plant stops sending 0x270 for 5s, check DIAG fault | NOT DONE |
+| 3.7 | Recovery after fault clears | Remove fault → BMS returns to NORMAL | NOT DONE |
+| 3.8 | Fault injection via runtime API | `test_fault.py` sends control message, plant injects fault | NOT DONE |
+| 3.9 | All 6 fault types automated in CI | `make test-faults` runs all fault tests, returns pass/fail | NOT DONE |
+
+### Status: 0/9 criteria met
+
+### Blockers
+- DIAG_Handler must implement per-ID threshold counters (not just log + return OK)
+- DIAG_IsAnyFatalErrorSet must track actual fatal state
+- Plant model needs fault injection API (runtime control, not source edits)
+
+---
+
+## Phase 4: Integration
+
+**Goal**: foxBMS vECU runs in Docker and connects to real CAN bus for HIL testing.
+
+### Exit Criteria
+
+| # | Criterion | Test | Result |
+|---|-----------|------|--------|
+| 4.1 | `docker build` produces working image | `docker build -t foxbms-vecu .` succeeds | NOT DONE |
+| 4.2 | `docker-compose up` runs vECU + plant | Smoke test passes inside container | NOT DONE |
+| 4.3 | Real CAN bus works (`can0`) | `FOXBMS_CAN_IF=can0` → candump on physical bus shows 0x220 | NOT DONE |
+| 4.4 | Runs alongside STM32 ECU on HIL bench | Both ECUs on same CAN bus, no errors | NOT DONE |
+| 4.5 | CI pipeline green | GitHub Actions builds + runs smoke test | NOT DONE |
+| 4.6 | XCP measurement working | CANape connects via XCP-on-TCP, reads SOC variable | NOT DONE |
+| 4.7 | E2E checksums on CAN TX | foxBMS CAN messages pass E2E validation | NOT DONE |
+
+### Status: 0/7 criteria met
+
+---
+
+## Overall Progress
+
+| Phase | Criteria | Met | Status |
+|-------|----------|-----|--------|
+| Phase 1: BMS NORMAL | 10 | **10/10** | **COMPLETE** ✓ |
+| Phase 2: Realistic Sim | 8 | **5/8** | PARTIAL (62%) |
+| Phase 3: Fault Injection | 9 | **0/9** | NOT STARTED |
+| Phase 4: Integration | 7 | **0/7** | NOT STARTED |
+| **Total** | **34** | **15/34** | **44%** |
