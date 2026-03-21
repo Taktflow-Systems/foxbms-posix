@@ -317,7 +317,7 @@ def main():
         soc_val = soc_raw[0] if soc_raw else 0
         check("SOC.04", "SOC stable but plausible (CAN resolution limit at low C-rate)",
               10 <= soc_val <= 250,
-              f"Stable at {soc_val} (0.25% resolution, ~90s per step at {CAPACITY_RATIO*100:.1f}% scaled current)")
+              f"Stable at {soc_val} (0.25% resolution, ~90s per step at low C-rate)")
 
     # SOC initial value plausible (40-60% = ~100-150 raw)
     if soc_raw:
