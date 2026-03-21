@@ -57,6 +57,24 @@ Root causes found and fixed:
 | UT_DIS OUT_OF_RANGE_HIGH | PASS | 7177ms | contactor open |
 | UT_CHG OUT_OF_RANGE_HIGH | PASS | 7126ms | contactor open |
 
+### CURR P1 — 10 tests
+
+| # | Test ID | Method | Result | Time | Detail |
+|---|---------|--------|--------|------|--------|
+| 1 | FI-CURR-1081 | STUCK_AT_0 DIS | FAIL | 5000ms | 0mA is not overcurrent |
+| 2 | FI-CURR-1082 | STUCK_AT_0 CHG | FAIL | 5000ms | 0mA is not overcurrent |
+| 3 | FI-CURR-1083 | STUCK_AT_MAX DIS | PASS | 4171ms | DIAG bit 45 at 148ms |
+| 4 | FI-CURR-1084 | STUCK_AT_MAX CHG | PASS | 4216ms | DIAG bit 42 at 116ms |
+| 5 | FI-CURR-1085 | STUCK_AT_LAST DIS | SKIP | - | not implementable |
+| 6 | FI-CURR-1086 | STUCK_AT_LAST CHG | SKIP | - | not implementable |
+| 7 | FI-CURR-1087 | OUT_OF_RANGE_HIGH DIS | PASS | 4182ms | DIAG bit 45 at 219ms |
+| 8 | FI-CURR-1088 | OUT_OF_RANGE_HIGH CHG | PASS | 4179ms | contactor open |
+| 9 | FI-CURR-1089 | OUT_OF_RANGE_LOW DIS | PASS | 4195ms | contactor open |
+
+**Score: 5/7 PASS (runnable), 2 SKIP, 2 FAIL (STUCK_AT_0 = correct behavior)**
+
+**Overcurrent detection time: 116-219ms** (10 events + 100ms delay, theoretical 110ms)
+
 ### Cross-category (from 50-test run, partial)
 
 | Method | Result | Detail |
