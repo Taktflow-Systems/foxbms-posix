@@ -18,11 +18,12 @@ STARTUP_CODE = '''
     /* SIL: startup grace period — suppress faults until plant data arrives.
        Cell database starts at 0mV; undervoltage threshold is ~50ms (50 events).
        Plant model needs ~200ms to send first frame + propagate through DB.
-       Grace period: 3000 calls ≈ 3 seconds. */
+       Grace period: 8000 calls ≈ 8 seconds (covers startup + precharge).
+       BMS reaches NORMAL at ~6.5s; grace expires 1.5s after. */
     {
         static uint32_t sil_diag_call_count = 0u;
         sil_diag_call_count++;
-        if (sil_diag_call_count < 3000u) {
+        if (sil_diag_call_count < 8000u) {
             if (event == DIAG_EVENT_NOT_OK) {
                 return DIAG_HANDLER_RETURN_OK;
             }
