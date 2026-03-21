@@ -34,11 +34,22 @@
 #define portRESET_READY_PRIORITY(uxPriority, uxReadyPriorities) \
     (uxReadyPriorities) &= ~(1UL << (uxPriority))
 
-/* Override FAS_ASSERT to no-op instead of infinite loop */
+/* GA-07: Override FAS_ASSERT to log location and exit instead of silently
+ * continuing (level 2 NO_OP) or spinning forever (level 0/1).
+ * This captures __FILE__ and __LINE__ which the original macro does not. */
 #undef FAS_ASSERT_LEVEL
-#define FAS_ASSERT_LEVEL (2u)  /* FAS_ASSERT_LEVEL_NO_OPERATION */
+#define FAS_ASSERT_LEVEL (2u)  /* FAS_ASSERT_LEVEL_NO_OPERATION — keeps FAS_InfiniteLoop as no-op */
 
-/* DIAG_Handler stubbed in hal_stubs_posix.c — diag.c excluded */
+#include <stdio.h>
+#include <stdlib.h>
+
+/* Override the entire FAS_ASSERT macro after fassert.h defines it.
+ * Since posix_overrides.h is force-included (-include), and fassert.h is
+ * included later by source files, we redefine in hal_stubs_posix.c instead.
+ * The FAS_ASSERT_LEVEL=2 makes FAS_InfiniteLoop() a no-op, and we override
+ * FAS_StoreAssertLocation() in hal_stubs_posix.c to log + exit. */
+
+/* DIAG_Handler: selective implementation in hal_stubs_posix.c (GA-06) */
 
 /* Override ALL hardware register pointer macros to RAM buffers.
  * These are defined AFTER HL_reg_*.h is included, so we can't

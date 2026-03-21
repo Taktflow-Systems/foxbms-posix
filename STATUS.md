@@ -130,17 +130,20 @@ Verified with roundtrip test: encode(3700) → decode → 3700.
 ## Build & Run
 
 ```bash
-# On Ubuntu laptop (192.168.0.158)
-cd /home/an-dao/foxbms-2/posix
+# From repo root (foxbms-posix/)
+cd foxbms-posix/foxbms-2
 
 # Apply patches (after git checkout)
-for p in /tmp/patch_sbc.py /tmp/patch_sbc2.py /tmp/patch_rtc.py \
-         /tmp/patch_can_sensor.py /tmp/patch_database.py /tmp/patch_ftask.py; do
-    python3 $p
-done
-python3 /tmp/patch_all_regs.py  # Patch HALCoGen register headers
+python3 ../patches/patch_all_regs.py   # Must run first — patches HALCoGen register headers
+python3 ../patches/patch_sbc.py
+python3 ../patches/patch_sbc2.py
+python3 ../patches/patch_rtc.py
+python3 ../patches/patch_can_sensor.py
+python3 ../patches/patch_database.py
+python3 ../patches/patch_ftask.py
 
 # Build
+cd ../src
 make clean && make -j4
 
 # Create virtual CAN

@@ -548,20 +548,123 @@ uint32_t I2C_WriteReadDma(void *i2c, uint32_t addr, uint32_t wlen, uint8_t *wdat
     (void)i2c; (void)addr; (void)wlen; (void)wdata; (void)rlen; (void)rdata; return 0u;
 }
 
-/* DIAG stubs — always return OK on POSIX */
+/* ================================================================
+ * GA-06: Selective DIAG_Handler
+ *
+ * Hardware-absent IDs (24): return OK unconditionally — these would
+ * false-fault because the physical IC/bus/pin doesn't exist on POSIX.
+ *
+ * Software-checkable IDs (61): log the event and return the appropriate
+ * result. This enables fault detection for overvoltage, overcurrent,
+ * overtemperature, plausibility, etc. when the plant model injects
+ * out-of-range values.
+ *
+ * DIAG_ID_e values from diag_cfg.h (foxBMS v1.10.0, 85 total IDs).
+ * ================================================================ */
+
+/* Hardware-absent DIAG IDs — suppress on POSIX.
+ * Uses enum values from diag_cfg.h so this stays correct if foxBMS reorders them. */
+
+/* DIAG_ID_e enum values from diag_cfg.h (foxBMS v1.10.0).
+ * hal_stubs_posix.c does not include foxBMS headers, so we use numeric
+ * values with comments referencing the enum name. If foxBMS reorders
+ * the enum, these must be updated — this is tracked as GA-15 (fragile patches). */
+
+static int posix_diag_is_hardware_id(uint32_t id) {
+    switch (id) {
+        /* AFE SPI/communication — no AFE IC on POSIX */
+        case 2u:  /* DIAG_ID_AFE_SPI */
+        case 3u:  /* DIAG_ID_AFE_COMMUNICATION_INTEGRITY */
+        case 4u:  /* DIAG_ID_AFE_MUX */
+        case 5u:  /* DIAG_ID_AFE_CONFIG */
+        case 52u: /* DIAG_ID_AFE_OPEN_WIRE */
+        /* SBC — no NXP FS85xx on POSIX */
+        case 58u: /* DIAG_ID_SBC_FIN_ERROR */
+        case 59u: /* DIAG_ID_SBC_RSTB_ERROR */
+        /* I2C peripherals — no I2C bus on POSIX */
+        case 77u: /* DIAG_ID_I2C_PEX_ERROR */
+        case 78u: /* DIAG_ID_I2C_RTC_ERROR */
+        case 79u: /* DIAG_ID_RTC_CLOCK_INTEGRITY_ERROR */
+        case 80u: /* DIAG_ID_RTC_BATTERY_LOW_ERROR */
+        /* FRAM — no SPI FRAM on POSIX */
+        case 81u: /* DIAG_ID_FRAM_READ_CRC_ERROR */
+        /* Flash CRC — no flash on POSIX (runs from ELF in RAM) */
+        case 0u:  /* DIAG_ID_FLASHCHECKSUM */
+        /* Interlock — no physical interlock circuit */
+        case 54u: /* DIAG_ID_INTERLOCK_FEEDBACK */
+        /* Contactor feedback — SPS sim doesn't have real feedback pins */
+        case 55u: /* DIAG_ID_STRING_MINUS_CONTACTOR_FEEDBACK */
+        case 56u: /* DIAG_ID_STRING_PLUS_CONTACTOR_FEEDBACK */
+        case 57u: /* DIAG_ID_PRECHARGE_CONTACTOR_FEEDBACK */
+        /* IMD — no insulation monitoring device */
+        case 73u: /* DIAG_ID_INSULATION_MEASUREMENT_VALID */
+        case 74u: /* DIAG_ID_LOW_INSULATION_RESISTANCE_ERROR */
+        case 75u: /* DIAG_ID_LOW_INSULATION_RESISTANCE_WARNING */
+        case 76u: /* DIAG_ID_INSULATION_GROUND_ERROR */
+        /* Other hardware */
+        case 82u: /* DIAG_ID_ALERT_MODE */
+        case 83u: /* DIAG_ID_AEROSOL_ALERT */
+        case 84u: /* DIAG_ID_SUPPLY_VOLTAGE_CLAMP_30C_LOST */
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static uint32_t posix_diag_fault_count = 0u;
+
 uint32_t DIAG_Handler(uint32_t id, uint32_t event, uint32_t impact, uint32_t data) {
-    (void)id; (void)event; (void)impact; (void)data;
+    (void)impact; (void)data;
+
+    /* Hardware-absent IDs: always OK */
+    if (posix_diag_is_hardware_id(id)) {
+        return 0u; /* DIAG_HANDLER_RETURN_OK */
+    }
+
+    /* Software-checkable IDs: pass through the event */
+    if (event == 1u) { /* DIAG_EVENT_NOT_OK */
+        posix_diag_fault_count++;
+        fprintf(stderr, "[DIAG] FAULT #%u: diagId=%u event=NOT_OK impact=%u data=%u\n",
+                posix_diag_fault_count, id, impact, data);
+        fflush(stderr);
+        return 1u; /* DIAG_HANDLER_RETURN_ERR_OCCURRED */
+    }
+
     return 0u; /* DIAG_HANDLER_RETURN_OK */
 }
+
 uint32_t DIAG_Initialize(void *dev) { (void)dev; return 0u; }
 /* DIAG_UpdateFlags defined in diag_cfg.c */
 uint32_t DIAG_GetDiagnosisEntryState(uint32_t id) { (void)id; return 0u; }
-void DIAG_Reset(void) {}
+void DIAG_Reset(void) { posix_diag_fault_count = 0u; }
 uint32_t DIAG_CheckEvent(uint32_t r, uint32_t id, uint32_t impact, uint32_t data) {
-    (void)r; (void)id; (void)impact; (void)data; return 0u;
+    if (r != 0u) { /* STD_NOT_OK */
+        return DIAG_Handler(id, 1u /* NOT_OK */, impact, data);
+    }
+    return DIAG_Handler(id, 0u /* OK */, impact, data);
 }
 uint32_t DIAG_GetDelay(uint32_t id) { (void)id; return 0u; }
-uint8_t DIAG_IsAnyFatalErrorSet(void) { return 0u; /* false — no fatal errors */ }
+uint8_t DIAG_IsAnyFatalErrorSet(void) {
+    return (posix_diag_fault_count > 0u) ? 1u : 0u;
+}
+
+/* ================================================================
+ * GA-07: FAS_ASSERT crash handler
+ *
+ * Override FAS_StoreAssertLocation to log file/line and exit(1).
+ * With FAS_ASSERT_LEVEL=2 (NO_OP), FAS_InfiniteLoop() returns
+ * immediately after this function, so we must exit() here.
+ *
+ * Note: The original macro only passes __LINE__ (not __FILE__),
+ * but the line number + pc value still helps locate the assertion.
+ * Exclude fassert.c from Makefile to avoid duplicate symbol.
+ * ================================================================ */
+void FAS_StoreAssertLocation(uint32_t *pc, uint32_t line) {
+    fprintf(stderr, "\n[FAS_ASSERT] ASSERTION FAILED at pc=%p line=%u\n", (void *)pc, line);
+    fprintf(stderr, "[FAS_ASSERT] This would be a crash in production. Exiting.\n");
+    fflush(stderr);
+    exit(1);
+}
 
 /* I2C blocking stubs */
 uint32_t I2C_Write(void *i2c, uint32_t addr, uint32_t len, uint8_t *data) {
@@ -769,27 +872,70 @@ void posix_inject_cell_data(void) {
 /* portGET_HIGHEST_PRIORITY, portRECORD_READY_PRIORITY, portRESET_READY_PRIORITY
  * now defined as macros in posix_overrides.h using __builtin_clz */
 
-/* SPS (Smart Power Switch) — realistic contactor simulation */
+/* ================================================================
+ * GA-05: SPS (Smart Power Switch) — realistic contactor simulation
+ *
+ * Real contactors have 5-20ms mechanical delay. This simulation adds a
+ * configurable per-channel delay counter. When requested state changes,
+ * a counter starts. After SPS_CONTACTOR_DELAY_CYCLES cycles (default 10,
+ * ~10ms at 1ms loop rate), actual state is updated to match requested.
+ * ================================================================ */
 #define SPS_MAX_CHANNELS 16u
-static uint8_t sps_channel_requested_state[SPS_MAX_CHANNELS] = {0};
-static uint8_t sps_channel_actual_state[SPS_MAX_CHANNELS] = {0}; /* 0=OPEN, 1=CLOSED */
+
+/* Configurable delay: number of SPS_Ctrl() calls before actual follows requested.
+ * Default 10 = ~10ms at 1ms task rate. Override via compile flag if needed. */
+#ifndef SPS_CONTACTOR_DELAY_CYCLES
+#define SPS_CONTACTOR_DELAY_CYCLES 10u
+#endif
+
+static uint8_t  sps_channel_requested_state[SPS_MAX_CHANNELS] = {0};
+static uint8_t  sps_channel_actual_state[SPS_MAX_CHANNELS]    = {0}; /* 0=OPEN, 1=CLOSED */
+static uint8_t  sps_channel_pending[SPS_MAX_CHANNELS]         = {0}; /* 1 = transition in progress */
+static uint32_t sps_channel_delay_ctr[SPS_MAX_CHANNELS]       = {0}; /* counts up to SPS_CONTACTOR_DELAY_CYCLES */
 
 void SPS_Initialize(void) {
-    fprintf(stderr, "[POSIX] SPS_Initialize() — contactor sim\n"); fflush(stderr);
+    fprintf(stderr, "[POSIX] SPS_Initialize() — contactor sim (delay=%u cycles)\n",
+            (unsigned)SPS_CONTACTOR_DELAY_CYCLES);
+    fflush(stderr);
     memset(sps_channel_requested_state, 0, sizeof(sps_channel_requested_state));
-    memset(sps_channel_actual_state, 0, sizeof(sps_channel_actual_state));
+    memset(sps_channel_actual_state,    0, sizeof(sps_channel_actual_state));
+    memset(sps_channel_pending,         0, sizeof(sps_channel_pending));
+    memset(sps_channel_delay_ctr,       0, sizeof(sps_channel_delay_ctr));
 }
+
 void SPS_Ctrl(void) {
-    /* Simulate contactor response: actual follows requested after 1 cycle */
-    for (uint8_t i = 0; i < SPS_MAX_CHANNELS; i++) {
-        sps_channel_actual_state[i] = sps_channel_requested_state[i];
+    /* Per-channel: if a transition is pending, count down.
+     * When counter expires, apply requested→actual and log. */
+    for (uint8_t i = 0u; i < SPS_MAX_CHANNELS; i++) {
+        if (sps_channel_pending[i] != 0u) {
+            sps_channel_delay_ctr[i]++;
+            if (sps_channel_delay_ctr[i] >= SPS_CONTACTOR_DELAY_CYCLES) {
+                uint8_t old_state = sps_channel_actual_state[i];
+                sps_channel_actual_state[i] = sps_channel_requested_state[i];
+                sps_channel_pending[i]      = 0u;
+                sps_channel_delay_ctr[i]    = 0u;
+                fprintf(stderr, "[SPS] Contactor ch=%u %s→%s (after %u-cycle delay)\n",
+                        i,
+                        old_state ? "CLOSED" : "OPEN",
+                        sps_channel_actual_state[i] ? "CLOSED" : "OPEN",
+                        (unsigned)SPS_CONTACTOR_DELAY_CYCLES);
+                fflush(stderr);
+            }
+        }
     }
 }
+
 void SPS_RequestContactorState(uint8_t ch, uint8_t state) {
     if (ch < SPS_MAX_CHANNELS) {
-        sps_channel_requested_state[ch] = state;
-        fprintf(stderr, "[SPS] RequestContactor ch=%u state=%u\n", ch, state);
-        fflush(stderr);
+        if (state != sps_channel_requested_state[ch]) {
+            sps_channel_requested_state[ch] = state;
+            sps_channel_pending[ch]         = 1u;
+            sps_channel_delay_ctr[ch]       = 0u;
+            fprintf(stderr, "[SPS] RequestContactor ch=%u → %s (pending %u-cycle delay)\n",
+                    ch, state ? "CLOSE" : "OPEN",
+                    (unsigned)SPS_CONTACTOR_DELAY_CYCLES);
+            fflush(stderr);
+        }
     }
 }
 uint8_t SPS_GetChannelFeedback(uint8_t ch) {
@@ -811,7 +957,9 @@ uint8_t SPS_GetChannelCurrentFeedback(uint8_t ch) {
 }
 void SPS_SwitchOffAllGeneralIoChannels(void) {
     memset(sps_channel_requested_state, 0, sizeof(sps_channel_requested_state));
-    memset(sps_channel_actual_state, 0, sizeof(sps_channel_actual_state));
+    memset(sps_channel_actual_state,    0, sizeof(sps_channel_actual_state));
+    memset(sps_channel_pending,         0, sizeof(sps_channel_pending));
+    memset(sps_channel_delay_ctr,       0, sizeof(sps_channel_delay_ctr));
 }
 
 /* Version info */

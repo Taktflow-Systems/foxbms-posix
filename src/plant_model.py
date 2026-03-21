@@ -5,7 +5,7 @@ Sends fake battery data on SocketCAN so foxBMS transitions to NORMAL state.
 
 CAN Messages sent:
   0x521 - IVT Current (0A)
-  0x522 - IVT Voltage (22200 mV = 22.2V for 6S pack)
+  0x522 - IVT Voltage (66600 mV = 66.6V for 18S pack)
   0x523 - IVT Voltage 2
   0x524 - IVT Voltage 3
   0x525 - IVT Current counter

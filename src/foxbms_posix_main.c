@@ -119,16 +119,28 @@ extern void posix_can_rx_inject(uint32_t id, uint8_t *data, uint8_t dlc);
 static volatile int running = 1;
 static void sigint_handler(int sig) { (void)sig; running = 0; }
 
-int main(void)
+int main(int argc, char *argv[])
 {
     signal(SIGINT, sigint_handler);
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
+    /* Parse --timeout N (seconds, 0 = run forever) */
+    int timeout_s = 0;
+    for (int i = 1; i < argc - 1; i++) {
+        if (strcmp(argv[i], "--timeout") == 0) {
+            timeout_s = atoi(argv[i + 1]);
+            break;
+        }
+    }
+
     /* Open SocketCAN early */
     const char *can_if = getenv("FOXBMS_CAN_IF");
     if (!can_if) can_if = "vcan1";
     fprintf(stderr, "=== foxBMS 2 POSIX vECU ===\n");
+    if (timeout_s > 0) {
+        fprintf(stderr, "[init] Timeout: %d s\n", timeout_s);
+    }
     posix_can_open(can_if);
 
     /* Phase 1: Hardware init (all stubbed) */
@@ -178,10 +190,22 @@ int main(void)
     uint64_t last_1ms = get_time_us();
     uint64_t last_10ms = last_1ms;
     uint64_t last_100ms = last_1ms;
+    uint64_t start_us = last_1ms;
     uint32_t tick = 0;
+
+    /* GA-01: Cycle time measurement */
+    uint64_t max_1ms_us = 0, max_10ms_us = 0, max_100ms_us = 0;
+    uint32_t deadline_violations = 0;
 
     while (running) {
         uint64_t now = get_time_us();
+
+        /* GA-28: Check timeout */
+        if (timeout_s > 0 && (now - start_us) >= (uint64_t)timeout_s * 1000000ULL) {
+            fprintf(stderr, "[run] Timeout (%d s) elapsed — stopping\n", timeout_s);
+            running = 0;
+            break;
+        }
 
         /* CAN RX from SocketCAN — read all pending frames */
         {
@@ -193,16 +217,34 @@ int main(void)
 
         /* 1ms cyclic */
         if (now - last_1ms >= 1000) {
+            uint64_t t0 = get_time_us();
             last_1ms = now;
             FTSK_RunUserCodeCyclic1ms();
             FTSK_RunUserCodeEngine();
+            uint64_t dt = get_time_us() - t0;
+            if (dt > max_1ms_us) max_1ms_us = dt;
+            if (dt > 1000) { /* exceeded 1ms deadline */
+                deadline_violations++;
+                if (deadline_violations <= 10) {
+                    fprintf(stderr, "[TIMING] 1ms task took %luus (deadline 1000us)\n", (unsigned long)dt);
+                }
+            }
             tick++;
         }
 
         /* 10ms cyclic */
         if (now - last_10ms >= 10000) {
+            uint64_t t0 = get_time_us();
             last_10ms = now;
             FTSK_RunUserCodeCyclic10ms();
+            uint64_t dt = get_time_us() - t0;
+            if (dt > max_10ms_us) max_10ms_us = dt;
+            if (dt > 10000) {
+                deadline_violations++;
+                if (deadline_violations <= 10) {
+                    fprintf(stderr, "[TIMING] 10ms task took %luus (deadline 10000us)\n", (unsigned long)dt);
+                }
+            }
         }
 
         /* AFE trigger — normally in its own FreeRTOS task, must call manually */
@@ -213,15 +255,25 @@ int main(void)
 
         /* 100ms cyclic */
         if (now - last_100ms >= 100000) {
+            uint64_t t0 = get_time_us();
             last_100ms = now;
             FTSK_RunUserCodeCyclic100ms();
             FTSK_RunUserCodeCyclicAlgorithm100ms();
+            uint64_t dt = get_time_us() - t0;
+            if (dt > max_100ms_us) max_100ms_us = dt;
+            if (dt > 100000) {
+                deadline_violations++;
+                if (deadline_violations <= 10) {
+                    fprintf(stderr, "[TIMING] 100ms task took %luus (deadline 100000us)\n", (unsigned long)dt);
+                }
+            }
         }
 
-        /* Inject cell voltages directly into database (bypass CAN encoding) */
-        if (tick % 100 == 0) {
-            posix_inject_cell_data();
-        }
+        /* TODO (GA-32): posix_inject_cell_data() was removed — function body is dead code
+         * (only comments + a one-time log, no actual database writes). Cell data reaches
+         * foxBMS via the CAN path (plant_model.py → 0x270/0x280 → ring buffer → AFE).
+         * If direct DB injection is ever needed (e.g. for fault injection tests), implement
+         * it properly using the DATA_WRITE_DATA() API with the correct struct layout. */
 
         /* Status every 5 seconds */
         if (tick > 0 && tick % 5000 == 0) {
@@ -232,6 +284,17 @@ int main(void)
         usleep(500);
     }
 
-    fprintf(stderr, "[exit] foxBMS stopped\n");
+    /* GA-22: Graceful shutdown — open all contactors */
+    fprintf(stderr, "[exit] Graceful shutdown — opening all contactors...\n");
+    {
+        extern void SPS_SwitchOffAllGeneralIoChannels(void);
+        SPS_SwitchOffAllGeneralIoChannels();
+    }
+
+    /* GA-01: Print timing summary */
+    fprintf(stderr, "[exit] foxBMS stopped after %u ticks\n", tick);
+    fprintf(stderr, "[TIMING] Max execution times: 1ms=%luus, 10ms=%luus, 100ms=%luus\n",
+            (unsigned long)max_1ms_us, (unsigned long)max_10ms_us, (unsigned long)max_100ms_us);
+    fprintf(stderr, "[TIMING] Deadline violations: %u\n", deadline_violations);
     return 0;
 }

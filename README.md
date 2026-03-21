@@ -64,23 +64,31 @@ Plant Model (Python)  <-->  SocketCAN (vcan1)  <-->  foxBMS vECU (C binary)
 |----------|-------------|
 | [STATUS.md](STATUS.md) | Full implementation history, 14 fixes, architecture details |
 | [PLAN.md](PLAN.md) | Roadmap: completed work + next phases |
+| [GAP-ANALYSIS.md](GAP-ANALYSIS.md) | 33 gaps identified, 17 fixed/accepted, 16 remaining |
+| [COVERAGE.md](COVERAGE.md) | Feature coverage matrix: 51 features across 7 categories |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 10 common failure modes with diagnosis + fixes |
 | [foxbms-posix-build-guide.md](foxbms-posix-build-guide.md) | Detailed build instructions, all patches listed |
-| [GAP-ANALYSIS-HANDOFF.md](GAP-ANALYSIS-HANDOFF.md) | Gap analysis and student onboarding plan |
 
 ## Repository Structure
 
 ```
 foxbms-posix/
-├── foxbms-2/          ← Upstream foxBMS v1.10.0 (git submodule)
-├── src/               ← POSIX port source files
+├── foxbms-2/              ← Upstream foxBMS v1.10.0 (git submodule)
+├── src/                   ← POSIX port source files
 │   ├── Makefile                   Build system (auto-discovers 170+ sources)
 │   ├── foxbms_posix_main.c        Entry point + cooperative main loop
-│   ├── hal_stubs_posix.c          80+ HAL stubs + queue routing + SPS sim
+│   ├── hal_stubs_posix.c          80+ HAL stubs + selective DIAG + SPS sim
 │   ├── posix_overrides.h          ARM asm + assert overrides
 │   ├── config_cpu_clock_hz.h      CPU clock for FreeRTOS config
 │   ├── plant_model.py             Python battery simulator
+│   ├── test_smoke.py              Automated smoke test (pass/fail)
 │   └── foxbms_signals.dbc         CAN signal definitions
-├── patches/           ← Python scripts to patch foxBMS source (14 patches)
+├── patches/               ← Python scripts to patch foxBMS source
+│   └── apply_all.sh               Apply all patches in correct order
+├── setup.sh               ← Single-command setup + build + test
+├── GAP-ANALYSIS.md        ← 33 gaps, 17 resolved
+├── COVERAGE.md            ← Feature coverage matrix
+├── TROUBLESHOOTING.md     ← 10 failure modes with fixes
 ├── STATUS.md
 ├── PLAN.md
 └── README.md

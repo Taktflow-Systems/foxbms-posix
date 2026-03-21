@@ -1,7 +1,10 @@
-# foxBMS POSIX vECU — Gap Analysis & Student Handoff
+# foxBMS POSIX vECU — Gap Analysis & Student Handoff (ARCHIVED)
 
 **Date**: 2026-03-21
+**Status**: ARCHIVED — written before BMS NORMAL state was achieved. Section 3.1 ("BMS Cannot Reach NORMAL") is now resolved. See [GAP-ANALYSIS.md](../GAP-ANALYSIS.md) for the current Phase 1 gap analysis.
 **Purpose**: Identify what's done, what's broken, what's missing, and what a student needs to continue this work.
+
+> **See also**: [GAP-ANALYSIS-MULTI-PERSPECTIVE.md](GAP-ANALYSIS-MULTI-PERSPECTIVE.md) — 10-perspective analysis (SIL architect, HIL tester, safety engineer, algorithm developer, new developer, test automation, release engineer, simulation engineer, technical writer, academic supervisor). 66 gaps identified with prioritized recommendations.
 
 ---
 
