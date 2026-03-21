@@ -470,8 +470,8 @@ def main():
     d = can.recv_filter(PROBE_CELL_T_SUMMARY, timeout_s=2.0)
     if d:
         t_max = struct.unpack("<h", d[2:4])[0]
-        check("OVR.04", "Temp override: T_max ≥ 500 ddegC after set to 550",
-              t_max >= 500, f"T_max={t_max/10:.1f}°C")
+        check("OVR.04", "Temp override: T_max ≥ 500 ddegC after set to 550 [Phase 3: needs DB intercept]",
+              t_max >= 500, f"T_max={t_max/10:.1f}°C — override affects probe only, not foxBMS pipeline")
     else:
         check("OVR.04", "Temp override", False, "no probe")
     can.release_override(OVR_CELL_TEMP, 3)
@@ -482,8 +482,8 @@ def main():
     d = can.recv_filter(PROBE_CURRENT, timeout_s=2.0)
     if d:
         cur = struct.unpack("<i", d[0:4])[0]
-        check("OVR.05", "Current override: I ≈ -30000mA",
-              abs(cur - (-30000)) < 2000, f"I={cur}mA")
+        check("OVR.05", "Current override: I ≈ -30000mA [Phase 3: needs DB intercept]",
+              abs(cur - (-30000)) < 2000, f"I={cur}mA — override affects probe only, not foxBMS pipeline")
     else:
         check("OVR.05", "Current override", False, "no probe")
     can.release_override(OVR_PACK_CURRENT, 0)
