@@ -520,6 +520,7 @@ interfaces with validated stubs.</p>
 <tr>
 <th>ID</th>
 <th>Requirement</th>
+<th>Acceptance Criteria</th>
 <th>Rationale</th>
 </tr>
 </thead>
@@ -527,153 +528,753 @@ interfaces with validated stubs.</p>
 <tr>
 <td>SYS-REQ-050</td>
 <td>The BMS shall maintain a diagnostic module with at least 85 diagnostic identifiers.</td>
+<td>Count of entries in <code>diag_cfg.c</code> DIAG_ID table &gt;= 85.</td>
 <td>Coverage of all monitored parameters</td>
 </tr>
 <tr>
 <td>SYS-REQ-051</td>
-<td>Each diagnostic identifier shall have a configurable threshold counter before triggering.</td>
+<td>Each diagnostic identifier shall have a configurable threshold counter (number of events before triggering).</td>
+<td>Every DIAG_ID entry has a non-zero <code>threshold</code> field; value is independently settable per ID.</td>
 <td>Debounce transient faults</td>
 </tr>
 <tr>
 <td>SYS-REQ-052</td>
-<td>Each diagnostic identifier shall have a configurable evaluation delay.</td>
+<td>Each diagnostic identifier shall have a configurable evaluation delay (period between consecutive checks).</td>
+<td>Every DIAG_ID entry has a <code>delay_ms</code> field; value is independently settable per ID.</td>
 <td>Allow periodic re-evaluation</td>
 </tr>
 <tr>
 <td>SYS-REQ-053</td>
-<td>A diagnostic reaching FATAL severity shall cause the BMS to enter ERROR state.</td>
+<td>A diagnostic reaching FATAL severity shall cause the BMS to transition to ERROR state within the configured FTTI.</td>
+<td>Inject fault → verify BMS state == ERROR within FTTI.</td>
 <td>Primary safety mechanism</td>
 </tr>
 <tr>
 <td>SYS-REQ-054</td>
-<td>In ERROR state the BMS shall open all contactors.</td>
+<td>In ERROR state the BMS shall open all three contactors (string+, string-, precharge).</td>
+<td>Observe SPS channels 0, 1, 2 all OFF within one control cycle after ERROR entry.</td>
 <td>Disconnect battery from load</td>
 </tr>
 <tr>
 <td>SYS-REQ-055</td>
-<td>The BMS shall not exit ERROR state until the fault is cleared AND an explicit STANDBY request is received.</td>
+<td>The BMS shall not exit ERROR state until the fault is cleared AND an explicit STANDBY request (0x210 byte 0 = 0x00) is received.</td>
+<td>Clear fault + send STANDBY → BMS leaves ERROR. Clear fault alone → BMS remains in ERROR. Send STANDBY alone → BMS remains in ERROR.</td>
 <td>Prevent unintended re-energization</td>
+</tr>
+<tr>
+<td>SYS-REQ-056</td>
+<td>Voltage fault FTTI shall be &lt;= 700 ms (threshold=50 events x 10 ms period = 500 ms detection + 200 ms delay).</td>
+<td>Inject overvoltage at t=0; verify contactors open by t &lt;= 700 ms.</td>
+<td>Derived from diag_cfg.c timing</td>
+</tr>
+<tr>
+<td>SYS-REQ-057</td>
+<td>Current fault FTTI shall be &lt;= 200 ms (threshold=10 x 10 ms = 100 ms detection + 100 ms delay).</td>
+<td>Inject overcurrent at t=0; verify contactors open by t &lt;= 200 ms.</td>
+<td>Fastest safety-critical fault path</td>
+</tr>
+<tr>
+<td>SYS-REQ-058</td>
+<td>Temperature fault FTTI shall be &lt;= 6000 ms (threshold=500 x 10 ms = 5000 ms detection + 1000 ms delay).</td>
+<td>Inject overtemperature at t=0; verify contactors open by t &lt;= 6000 ms.</td>
+<td>Thermal time constant is slow</td>
+</tr>
+<tr>
+<td>SYS-REQ-059</td>
+<td>Contactor feedback fault FTTI shall be &lt;= 300 ms (threshold=20 x 10 ms = 200 ms + 100 ms delay).</td>
+<td>Inject feedback mismatch at t=0; verify ERROR by t &lt;= 300 ms.</td>
+<td>Contactor weld detection</td>
+</tr>
+<tr>
+<td>SYS-REQ-05A</td>
+<td>CAN timing fault FTTI shall be &lt;= 1200 ms (threshold=100 x 10 ms = 1000 ms + 200 ms delay).</td>
+<td>Stop CAN TX at t=0; verify ERROR by t &lt;= 1200 ms.</td>
+<td>Communication loss detection</td>
 </tr>
 </tbody>
 </table>
-<h3 id="57-communication-requirements">5.7 Communication Requirements</h3>
+<h3 id="57-can-tx-communication-requirements">5.7 CAN TX Communication Requirements</h3>
 <table>
 <thead>
 <tr>
 <th>ID</th>
 <th>Requirement</th>
-<th>Rationale</th>
+<th>CAN ID</th>
+<th>Period</th>
+<th>Content / Encoding</th>
+<th>Acceptance Criteria</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>SYS-REQ-060</td>
-<td>The BMS shall transmit state and measurement data on CAN bus.</td>
-<td>Vehicle integration</td>
+<td>The BMS shall transmit the BMS state message.</td>
+<td>0x220</td>
+<td>100 ms</td>
+<td>Byte 0 lower nibble = BMS state enum; byte 0 upper nibble = number of connected strings.</td>
+<td>Receive 0x220 at 100 ms +/- 10 ms; decode state matches internal BMS state.</td>
 </tr>
 <tr>
 <td>SYS-REQ-061</td>
-<td>The BMS shall receive state requests on CAN bus at ID 0x210.</td>
-<td>External control interface</td>
+<td>The BMS shall transmit the BMS state details message.</td>
+<td>0x221</td>
+<td>100 ms</td>
+<td>BMS sub-state and error flags.</td>
+<td>Receive 0x221 at 100 ms +/- 10 ms; content changes on state transitions.</td>
 </tr>
 <tr>
 <td>SYS-REQ-062</td>
-<td>The BMS shall receive current sensor data on CAN IDs 0x521-0x527.</td>
-<td>Isabellenhuette IVT protocol</td>
+<td>The BMS shall transmit cell voltage summary.</td>
+<td>0x231</td>
+<td>100 ms</td>
+<td>Minimum, maximum, and average cell voltage (mV).</td>
+<td>Values match independently computed min/max/avg from cell voltage database within 1 mV.</td>
 </tr>
 <tr>
 <td>SYS-REQ-063</td>
-<td>The BMS shall detect CAN timing failures within the configured threshold.</td>
-<td>Communication integrity</td>
+<td>The BMS shall transmit cell temperature summary.</td>
+<td>0x232</td>
+<td>100 ms</td>
+<td>Minimum, maximum, and average cell temperature (deg C).</td>
+<td>Values match independently computed min/max/avg from temperature database within 1 deg C.</td>
+</tr>
+<tr>
+<td>SYS-REQ-064</td>
+<td>The BMS shall transmit pack values P0 (voltage and current).</td>
+<td>0x233</td>
+<td>100 ms</td>
+<td>Pack voltage in mV, pack current in mA.</td>
+<td>Decoded voltage == sum of cell voltages +/- 10 mV; current matches IVT reading +/- 1 mA.</td>
+</tr>
+<tr>
+<td>SYS-REQ-065</td>
+<td>The BMS shall transmit pack values P1 (power).</td>
+<td>0x234</td>
+<td>100 ms</td>
+<td>Pack power in W.</td>
+<td>Power == voltage x current / 1e6 +/- 1 W.</td>
+</tr>
+<tr>
+<td>SYS-REQ-066</td>
+<td>The BMS shall transmit SOC.</td>
+<td>0x235</td>
+<td>100 ms</td>
+<td>Byte 5 = SOC percentage x 2 (e.g., 0xC8 = 100%, 0x64 = 50%).</td>
+<td>Decode byte 5, divide by 2 → SOC in 0-100% range; value matches internal SOC +/- 0.5%.</td>
+</tr>
+<tr>
+<td>SYS-REQ-067</td>
+<td>The BMS shall transmit multiplexed cell voltages.</td>
+<td>0x250</td>
+<td>100 ms</td>
+<td>50 mux groups x 4 cells per frame; each voltage 13-bit unsigned, big-endian.</td>
+<td>All 18 cell voltages recoverable from mux groups 0-4; values match AFE input within 1 mV.</td>
+</tr>
+<tr>
+<td>SYS-REQ-068</td>
+<td>The BMS shall transmit multiplexed cell temperatures.</td>
+<td>0x260</td>
+<td>100 ms</td>
+<td>30 mux groups x 6 sensors per frame; each temperature 8-bit signed (deg C).</td>
+<td>All 8 temperature sensor values recoverable from mux groups 0-1; values match AFE input within 1 deg C.</td>
+</tr>
+<tr>
+<td>SYS-REQ-069</td>
+<td>The BMS shall transmit slave info.</td>
+<td>0x301</td>
+<td>1000 ms</td>
+<td>Slave status and version information.</td>
+<td>Receive 0x301 at 1000 ms +/- 100 ms.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="58-state-machine-requirements">5.8 State Machine Requirements</h3>
+<h3 id="58-can-rx-communication-requirements">5.8 CAN RX Communication Requirements</h3>
 <table>
 <thead>
 <tr>
 <th>ID</th>
 <th>Requirement</th>
-<th>Rationale</th>
+<th>CAN ID</th>
+<th>Content / Decoding</th>
+<th>Validity Check</th>
+<th>Acceptance Criteria</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>SYS-REQ-070</td>
-<td>The system state machine shall progress through UNINITIALIZED, INITIALIZATION, INITIALIZED, IDLE, RUNNING.</td>
-<td>Orderly system startup</td>
+<td>The BMS shall accept state request messages.</td>
+<td>0x210</td>
+<td>Byte 0: 0x00 = STANDBY, 0x02 = NORMAL.</td>
+<td>Frame received within CAN timing window.</td>
+<td>Send 0x210 with byte 0 = 0x02 → BMS initiates PRECHARGE within 1 s.</td>
 </tr>
 <tr>
 <td>SYS-REQ-071</td>
-<td>The BMS state machine shall support states STANDBY, PRECHARGE, NORMAL, ERROR.</td>
-<td>Operational mode management</td>
+<td>The BMS shall accept AFE cell voltage messages.</td>
+<td>0x270</td>
+<td>50 mux groups x 4 voltages; each 13-bit unsigned, big-endian; invalid_flag = 1 means VALID.</td>
+<td>Discard frame if invalid_flag != 1.</td>
+<td>Inject 0x270 with 18 known voltages → internal cell voltage database matches within 1 mV.</td>
 </tr>
 <tr>
 <td>SYS-REQ-072</td>
-<td>Transition from STANDBY to PRECHARGE shall require an explicit CAN state request.</td>
-<td>Prevent unintended energization</td>
+<td>The BMS shall accept AFE cell temperature messages.</td>
+<td>0x280</td>
+<td>30 mux groups x 6 temps; each 8-bit signed (deg C); invalid_flag = 1 means VALID.</td>
+<td>Discard frame if invalid_flag != 1.</td>
+<td>Inject 0x280 with 8 known temperatures → internal temperature database matches within 1 deg C.</td>
 </tr>
 <tr>
 <td>SYS-REQ-073</td>
-<td>Transition from any state to ERROR shall occur on any FATAL diagnostic event.</td>
-<td>Safety requirement</td>
+<td>The BMS shall accept IVT current measurement.</td>
+<td>0x521</td>
+<td>32-bit signed big-endian at byte offset 2; status in bytes 0-1.</td>
+<td>Status bytes indicate valid measurement.</td>
+<td>Inject 0x521 with known current → internal pack current matches within 1 mA.</td>
+</tr>
+<tr>
+<td>SYS-REQ-074</td>
+<td>The BMS shall accept IVT voltage 1 measurement.</td>
+<td>0x522</td>
+<td>32-bit signed big-endian at byte offset 2; status in bytes 0-1.</td>
+<td>Status bytes indicate valid measurement.</td>
+<td>Inject 0x522 with known voltage → internal IVT voltage 1 matches within 1 mV.</td>
+</tr>
+<tr>
+<td>SYS-REQ-075</td>
+<td>The BMS shall accept IVT voltage 2 measurement.</td>
+<td>0x523</td>
+<td>32-bit signed big-endian at byte offset 2; status in bytes 0-1.</td>
+<td>Status bytes indicate valid measurement.</td>
+<td>Inject 0x523 with known voltage → internal IVT voltage 2 matches within 1 mV.</td>
+</tr>
+<tr>
+<td>SYS-REQ-076</td>
+<td>The BMS shall accept IVT voltage 3 (HV bus voltage) for precharge and redundancy checks.</td>
+<td>0x524</td>
+<td>32-bit signed big-endian at byte offset 2; stored as highVoltage_mV[s][2].</td>
+<td>Status bytes indicate valid measurement.</td>
+<td>Inject 0x524 with known voltage → verify highVoltage_mV[0][2] matches; precharge uses this value for V_bus comparison.</td>
+</tr>
+<tr>
+<td>SYS-REQ-077</td>
+<td>The BMS shall accept IVT temperature measurement.</td>
+<td>0x527</td>
+<td>32-bit signed big-endian at byte offset 2; status in bytes 0-1.</td>
+<td>Status bytes indicate valid measurement.</td>
+<td>Inject 0x527 with known temperature → internal IVT temperature matches within 1 deg C.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="59-posix-port-requirements">5.9 POSIX Port Requirements</h3>
+<h3 id="59-sys-state-machine-requirements">5.9 SYS State Machine Requirements</h3>
 <table>
 <thead>
 <tr>
 <th>ID</th>
 <th>Requirement</th>
-<th>Rationale</th>
+<th>From State</th>
+<th>To State</th>
+<th>Trigger / Guard</th>
+<th>Timing</th>
+<th>Acceptance Criteria</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>SYS-REQ-080</td>
-<td>The POSIX port shall compile foxBMS 2 v1.10.0 for x86-64 using GCC 13.</td>
-<td>SIL execution target</td>
+<td>SYS shall transition from UNINITIALIZED to INITIALIZATION on startup.</td>
+<td>UNINIT (0)</td>
+<td>INIT (1)</td>
+<td>System reset / power-on.</td>
+<td>Immediate on first scheduler tick.</td>
+<td>After reset, SYS state == INIT within 10 ms.</td>
 </tr>
 <tr>
 <td>SYS-REQ-081</td>
-<td>The POSIX port shall replace FreeRTOS with a cooperative main loop.</td>
-<td>No RTOS on POSIX host</td>
+<td>SYS shall transition from INIT to INITIALIZED when all init conditions are met.</td>
+<td>INIT (1)</td>
+<td>INITIALIZED (2)</td>
+<td>SBC state == RUNNING (value 2) AND RTC initialized AND current sensor present.</td>
+<td>Within 500 ms of startup.</td>
+<td>Verify SBC stub returns RUNNING; SYS state == INITIALIZED within 500 ms.</td>
 </tr>
 <tr>
 <td>SYS-REQ-082</td>
-<td>The POSIX port shall replace hardware CAN with SocketCAN.</td>
-<td>Linux-native CAN interface</td>
+<td>SYS shall transition from INITIALIZED to IDLE automatically.</td>
+<td>INITIALIZED (2)</td>
+<td>IDLE (3)</td>
+<td>Automatic (no external trigger).</td>
+<td>Within one control cycle (10 ms) of INITIALIZED entry.</td>
+<td>SYS state == IDLE within 510 ms of startup.</td>
 </tr>
 <tr>
 <td>SYS-REQ-083</td>
-<td>The POSIX port shall suppress 24 hardware-absent diagnostic IDs.</td>
-<td>Avoid false FATAL on missing hardware</td>
+<td>SYS shall transition from IDLE to RUNNING when all subsystems are ready.</td>
+<td>IDLE (3)</td>
+<td>RUNNING (5)</td>
+<td>All subsystem init complete.</td>
+<td>Within 1 s of IDLE entry.</td>
+<td>SYS state == RUNNING within 1.5 s of startup.</td>
 </tr>
 <tr>
 <td>SYS-REQ-084</td>
+<td>SYS shall remain in RUNNING for the entire operational lifetime unless a system-level fault occurs.</td>
+<td>RUNNING (5)</td>
+<td>--</td>
+<td>--</td>
+<td>--</td>
+<td>SYS state == RUNNING continuously while BMS operates.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="510-bms-state-machine-requirements">5.10 BMS State Machine Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>From State</th>
+<th>To State</th>
+<th>Trigger / Guard</th>
+<th>Contactor Action</th>
+<th>Acceptance Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-090</td>
+<td>BMS shall not activate until SYS state == RUNNING.</td>
+<td>--</td>
+<td>STANDBY (5)</td>
+<td>SYS reaches RUNNING (5).</td>
+<td>All contactors open.</td>
+<td>BMS state remains inactive while SYS &lt; RUNNING.</td>
+</tr>
+<tr>
+<td>SYS-REQ-091</td>
+<td>BMS shall transition from STANDBY to PRECHARGE on NORMAL request.</td>
+<td>STANDBY (5)</td>
+<td>PRECHARGE (6)</td>
+<td>CAN 0x210 byte 0 == 0x02 (NORMAL).</td>
+<td>Close precharge contactor (ch2) + string- contactor (ch1).</td>
+<td>Send 0x210=0x02 → BMS enters PRECHARGE within 100 ms; ch1 and ch2 close.</td>
+</tr>
+<tr>
+<td>SYS-REQ-092</td>
+<td>BMS shall transition from PRECHARGE to NORMAL when precharge voltage converges.</td>
+<td>PRECHARGE (6)</td>
+<td>NORMAL (7)</td>
+<td>|V_string - V_bus| &lt; threshold, where V_bus = IVT Voltage 3 (0x524).</td>
+<td>Close string+ contactor (ch0); open precharge contactor (ch2).</td>
+<td>Precharge completes → ch0 closes, ch2 opens; BMS state == NORMAL.</td>
+</tr>
+<tr>
+<td>SYS-REQ-093</td>
+<td>BMS shall transition from any operational state to ERROR on FATAL diagnostic.</td>
+<td>STANDBY/PRECHARGE/NORMAL</td>
+<td>ERROR (9)</td>
+<td>Any DIAG ID reaches FATAL severity.</td>
+<td>Open all contactors (ch0, ch1, ch2).</td>
+<td>Inject FATAL fault → BMS == ERROR; all contactors open within one control cycle.</td>
+</tr>
+<tr>
+<td>SYS-REQ-094</td>
+<td>BMS shall transition from ERROR to STANDBY only when fault cleared AND STANDBY requested.</td>
+<td>ERROR (9)</td>
+<td>STANDBY (5)</td>
+<td>Fault condition cleared AND CAN 0x210 byte 0 == 0x00 (STANDBY).</td>
+<td>All contactors remain open.</td>
+<td>Clear fault + send STANDBY → BMS == STANDBY. Either condition alone → BMS remains ERROR.</td>
+</tr>
+<tr>
+<td>SYS-REQ-095</td>
+<td>BMS shall abort precharge on timeout.</td>
+<td>PRECHARGE (6)</td>
+<td>ERROR (9)</td>
+<td>Precharge timer expires before voltage convergence.</td>
+<td>Open all contactors (ch0, ch1, ch2).</td>
+<td>Block V_bus convergence → BMS == ERROR after precharge timeout.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="511-precharge-sequence-requirements">5.11 Precharge Sequence Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance Criteria</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-100</td>
+<td>On PRECHARGE entry, the BMS shall close the precharge contactor (SPS ch2) and string- contactor (SPS ch1).</td>
+<td>ch2 and ch1 transition to ON within one control cycle of PRECHARGE entry; ch0 remains OFF.</td>
+<td>Precharge resistor limits inrush current</td>
+</tr>
+<tr>
+<td>SYS-REQ-101</td>
+<td>The BMS shall compute V_string as the sum of all 18 cell voltages received from the AFE (CAN 0x270).</td>
+<td>V_string == sum of 18 decoded voltages from 0x270 mux groups 0-4, within 1 mV of independent calculation.</td>
+<td>String voltage reference for precharge check</td>
+</tr>
+<tr>
+<td>SYS-REQ-102</td>
+<td>The BMS shall use IVT Voltage 3 (CAN 0x524, stored as highVoltage_mV[s][2]) as V_bus for the precharge comparison.</td>
+<td>V_bus value read from highVoltage_mV[0][2], NOT highVoltage_mV[0][0].</td>
+<td>Bus-side voltage measurement via current sensor</td>
+</tr>
+<tr>
+<td>SYS-REQ-103</td>
+<td>The BMS shall evaluate |V_string - V_bus| &lt; precharge threshold on each 100 ms control cycle during PRECHARGE.</td>
+<td>Threshold comparison executes every 100 ms; log shows evaluation at each cycle.</td>
+<td>Continuous monitoring during precharge</td>
+</tr>
+<tr>
+<td>SYS-REQ-104</td>
+<td>On successful precharge (voltage convergence), the BMS shall close string+ contactor (SPS ch0) and then open precharge contactor (SPS ch2).</td>
+<td>ch0 transitions to ON; ch2 transitions to OFF; final state: ch0=ON, ch1=ON, ch2=OFF.</td>
+<td>Complete main path, remove precharge resistor</td>
+</tr>
+<tr>
+<td>SYS-REQ-105</td>
+<td>On precharge timeout (voltage does not converge within configured time), the BMS shall abort by opening all contactors and entering ERROR state.</td>
+<td>All contactors OFF; BMS state == ERROR.</td>
+<td>Prevent indefinite precharge with potential fault</td>
+</tr>
+</tbody>
+</table>
+<h3 id="512-contactor-control-requirements">5.12 Contactor Control Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance Criteria</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-110</td>
+<td>The BMS shall control three contactors via the SPS driver: ch0 = string+ contactor, ch1 = string- contactor, ch2 = precharge contactor.</td>
+<td>SPS channel mapping verified in configuration; each channel independently controllable.</td>
+<td>Hardware interface definition</td>
+</tr>
+<tr>
+<td>SYS-REQ-111</td>
+<td>During STANDBY, all three SPS channels shall be OFF (all contactors open).</td>
+<td>In STANDBY: ch0=OFF, ch1=OFF, ch2=OFF.</td>
+<td>No current path in standby</td>
+</tr>
+<tr>
+<td>SYS-REQ-112</td>
+<td>During PRECHARGE, SPS ch1 (string-) and ch2 (precharge) shall be ON; ch0 (string+) shall be OFF.</td>
+<td>In PRECHARGE: ch0=OFF, ch1=ON, ch2=ON.</td>
+<td>Precharge current path through precharge resistor</td>
+</tr>
+<tr>
+<td>SYS-REQ-113</td>
+<td>During NORMAL, SPS ch0 (string+) and ch1 (string-) shall be ON; ch2 (precharge) shall be OFF.</td>
+<td>In NORMAL: ch0=ON, ch1=ON, ch2=OFF.</td>
+<td>Main current path, precharge resistor bypassed</td>
+</tr>
+<tr>
+<td>SYS-REQ-114</td>
+<td>On ERROR entry, the BMS shall open all three contactors within one control cycle (10 ms).</td>
+<td>ch0=OFF, ch1=OFF, ch2=OFF within 10 ms of ERROR transition.</td>
+<td>Fastest possible disconnection</td>
+</tr>
+<tr>
+<td>SYS-REQ-115</td>
+<td>The SPS driver shall verify contactor feedback (actual state matches requested state) within 20 evaluation events.</td>
+<td>Inject feedback mismatch → contactor feedback DIAG triggers within 20 x 10 ms = 200 ms.</td>
+<td>Contactor weld / stuck detection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="513-balancing-requirements">5.13 Balancing Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance Criteria</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-120</td>
+<td>The BMS shall use voltage-based balancing: any cell where V_cell &gt; V_min + BAL_threshold shall be balanced (discharged).</td>
+<td>Inject cell voltages with one cell 50 mV above minimum → that cell's balancing flag is set; others are not.</td>
+<td>Equalize cell voltages to maximize usable capacity</td>
+</tr>
+<tr>
+<td>SYS-REQ-121</td>
+<td>Balancing shall employ hysteresis: stop balancing a cell when V_cell &lt;= V_min + BAL_threshold + hysteresis.</td>
+<td>Start balancing at threshold; verify balancing stops at threshold + hysteresis (not at threshold).</td>
+<td>Prevent rapid on/off cycling</td>
+</tr>
+<tr>
+<td>SYS-REQ-122</td>
+<td>Balancing shall only be active when BMS state == NORMAL.</td>
+<td>In STANDBY or PRECHARGE, no balancing flags are set regardless of cell voltage spread.</td>
+<td>Balancing requires stable pack connection</td>
+</tr>
+<tr>
+<td>SYS-REQ-123</td>
+<td>Balancing shall only be active when |I_pack| &lt; rest current threshold (200 mA).</td>
+<td>Set pack current to 500 mA → no balancing. Set to 100 mA → balancing activates per voltage criteria.</td>
+<td>Accurate voltage comparison requires near-zero current</td>
+</tr>
+</tbody>
+</table>
+<h3 id="514-soc-estimation-requirements">5.14 SOC Estimation Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance Criteria</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-130</td>
+<td>The BMS shall estimate SOC using Coulomb counting: SOC(t) = SOC(t-1) - (I x dt) / (Capacity x 3600).</td>
+<td>Apply known constant current for known duration → SOC change matches I x dt / (Capacity x 3600) within 0.1%.</td>
+<td>Standard SOC estimation method</td>
+</tr>
+<tr>
+<td>SYS-REQ-131</td>
+<td>The initial SOC at startup shall be 50%.</td>
+<td>On fresh startup with no prior data, SOC == 50.0%.</td>
+<td>Conservative default when no SOC persistence is available</td>
+</tr>
+<tr>
+<td>SYS-REQ-132</td>
+<td>The BMS shall report SOC on CAN message 0x235 byte 5, encoded as SOC percentage x 2 (e.g., 50% = 0x64, 100% = 0xC8).</td>
+<td>Read 0x235 byte 5; divide by 2 → value matches internal SOC within 0.5%.</td>
+<td>CAN encoding per DBC specification</td>
+</tr>
+<tr>
+<td>SYS-REQ-133</td>
+<td>SOC shall be clamped to the range 0-100%.</td>
+<td>Drive SOC calculation below 0% or above 100% → reported value remains within [0, 100].</td>
+<td>Prevent nonsensical SOC values</td>
+</tr>
+<tr>
+<td>SYS-REQ-134</td>
+<td>SOC shall be updated and transmitted every 100 ms.</td>
+<td>Measure 0x235 inter-frame timing == 100 ms +/- 10 ms.</td>
+<td>Matches CAN TX schedule</td>
+</tr>
+</tbody>
+</table>
+<h3 id="515-plant-model-requirements-posix-specific">5.15 Plant Model Requirements (POSIX-Specific)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance Criteria</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-140</td>
+<td>The plant model shall send all CAN RX messages (0x210, 0x270, 0x280, 0x521-0x524, 0x527) at 100 ms period on SocketCAN.</td>
+<td>Capture CAN traffic → all listed IDs present at 100 ms +/- 10 ms.</td>
+<td>Provide realistic stimulus to BMS under test</td>
+</tr>
+<tr>
+<td>SYS-REQ-141</td>
+<td>The plant model shall simulate 18 cell voltages derived from OCV(SOC) curve in the range 3400-4200 mV, with IR drop of 50 mOhm/cell x I_pack.</td>
+<td>At SOC=50%, I=0A → V_cell approx midpoint of OCV curve. At I=10A → V_cell drops by 500 mV (10A x 50 mOhm).</td>
+<td>Physically plausible cell behavior</td>
+</tr>
+<tr>
+<td>SYS-REQ-142</td>
+<td>The plant model shall encode cell voltages into CAN 0x270 using 50 mux groups x 4 voltages, 13-bit unsigned big-endian, with invalid_flag = 1 (VALID).</td>
+<td>BMS decodes 0x270 → internal cell voltages match plant model values within 1 mV.</td>
+<td>Match foxBMS DBC encoding</td>
+</tr>
+<tr>
+<td>SYS-REQ-143</td>
+<td>The plant model shall simulate IVT current: 0 A in STANDBY, 10 A discharge in NORMAL (closed-loop from contactor state).</td>
+<td>In STANDBY: 0x521 current field == 0. After contactors close: 0x521 current field == 10000 mA.</td>
+<td>Closed-loop behavior based on contactor feedback</td>
+</tr>
+<tr>
+<td>SYS-REQ-144</td>
+<td>The plant model shall simulate IVT voltages: V_pack = 18 x V_cell - I x R_internal.</td>
+<td>Decode 0x522/0x523/0x524 → pack voltage matches 18 x V_cell - I x R within 10 mV.</td>
+<td>Consistent electrical model</td>
+</tr>
+<tr>
+<td>SYS-REQ-145</td>
+<td>The plant model shall simulate cell temperatures at 25 deg C (static).</td>
+<td>Decode 0x280 → all temperature values == 25 deg C.</td>
+<td>Simplified thermal model for SIL</td>
+</tr>
+<tr>
+<td>SYS-REQ-146</td>
+<td>The plant model shall send state request: STANDBY (0x00) for the first 3 s, then NORMAL (0x02).</td>
+<td>CAN 0x210 byte 0 == 0x00 for t &lt; 3 s; == 0x02 for t &gt;= 3 s.</td>
+<td>Allow BMS initialization before energization</td>
+</tr>
+<tr>
+<td>SYS-REQ-147</td>
+<td>The plant model IVT Voltage 3 (0x524) shall reflect the HV bus voltage for precharge verification: 0 V when contactors open, rising toward V_string when precharge contactor is closed.</td>
+<td>During precharge: 0x524 voltage ramps from 0 toward V_string; BMS precharge check uses this value.</td>
+<td>Enable closed-loop precharge in SIL</td>
+</tr>
+</tbody>
+</table>
+<h3 id="516-posix-port-requirements">5.16 POSIX Port Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Acceptance Criteria</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYS-REQ-150</td>
+<td>The POSIX port shall compile foxBMS 2 v1.10.0 for x86-64 using GCC 13.</td>
+<td><code>make</code> completes with zero errors on GCC 13.x; binary executes on x86-64 Linux.</td>
+<td>SIL execution target</td>
+</tr>
+<tr>
+<td>SYS-REQ-151</td>
+<td>The POSIX port shall replace FreeRTOS with a cooperative main loop.</td>
+<td>No FreeRTOS symbols linked; main loop calls 1 ms / 10 ms / 100 ms task groups.</td>
+<td>No RTOS on POSIX host</td>
+</tr>
+<tr>
+<td>SYS-REQ-152</td>
+<td>The POSIX port shall replace hardware CAN with SocketCAN.</td>
+<td>CAN frames sent/received via <code>vcan0</code> interface; <code>candump vcan0</code> shows traffic.</td>
+<td>Linux-native CAN interface</td>
+</tr>
+<tr>
+<td>SYS-REQ-153</td>
+<td>The POSIX port shall suppress 24 hardware-absent diagnostic IDs.</td>
+<td>Exactly 24 DIAG IDs configured with DIAG_EVALUATION_DISABLED; none trigger FATAL in headless operation.</td>
+<td>Avoid false FATAL on missing hardware</td>
+</tr>
+<tr>
+<td>SYS-REQ-154</td>
 <td>The POSIX port shall retain 61 software-checkable diagnostic IDs.</td>
+<td>Exactly 61 DIAG IDs remain active; each can be triggered by injecting the corresponding fault condition.</td>
 <td>Preserve safety logic validation</td>
 </tr>
 <tr>
-<td>SYS-REQ-085</td>
+<td>SYS-REQ-155</td>
 <td>The POSIX port shall provide at least 80 HAL stub modules.</td>
+<td>Count of <code>*_posix.c</code> or stub files &gt;= 80.</td>
 <td>Cover all hardware abstraction points</td>
 </tr>
 <tr>
-<td>SYS-REQ-086</td>
+<td>SYS-REQ-156</td>
 <td>The POSIX port shall map 60+ TMS570 register bases to RAM buffers.</td>
+<td>Count of register base addresses in <code>posix_register_map.c</code> &gt;= 60; all reads/writes execute without segfault.</td>
 <td>Enable register-level code to execute without hardware</td>
 </tr>
 </tbody>
 </table>
 <h2 id="6-acceptance-criteria">6. Acceptance Criteria</h2>
-<p>Each requirement in Section 5 is accepted when:</p>
+<p>Each requirement in Section 5 is accepted when all three general criteria AND the section-specific verification method are satisfied.</p>
+<h3 id="61-general-criteria">6.1 General Criteria</h3>
 <ol>
-<li>It is traced forward to at least one software requirement in SWE.1-001.</li>
-<li>It is traced forward to at least one test case in SWE.5-001 or SWE.6-001.</li>
+<li>The requirement is traced forward to at least one software requirement in SWE.1-001.</li>
+<li>The requirement is traced forward to at least one test case in SWE.5-001 or SWE.6-001.</li>
 <li>The corresponding test case passes in the POSIX SIL environment.</li>
 </ol>
+<h3 id="62-section-specific-verification-methods">6.2 Section-Specific Verification Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Verification Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5.1 Battery Pack Configuration</td>
+<td>Inspection: verify <code>bms_cfg.h</code> constants match requirement values.</td>
+</tr>
+<tr>
+<td>5.2 Cell Electrical Parameters</td>
+<td>Inspection: verify <code>battery_cell_cfg.h</code> constants match requirement values.</td>
+</tr>
+<tr>
+<td>5.3 Voltage Safety Thresholds</td>
+<td>Test: inject cell voltages at MOL, RSL, MSL boundaries; verify correct DIAG severity at each level.</td>
+</tr>
+<tr>
+<td>5.4 Current Safety Thresholds</td>
+<td>Test: inject pack current at MOL, RSL, MSL boundaries; verify correct DIAG severity at each level.</td>
+</tr>
+<tr>
+<td>5.5 Temperature Safety Thresholds</td>
+<td>Test: inject temperatures at MOL, RSL, MSL boundaries per charge/discharge direction; verify correct DIAG severity.</td>
+</tr>
+<tr>
+<td>5.6 Diagnostic System</td>
+<td>Test: for each fault type, inject fault and measure time to ERROR state; verify FTTI per SYS-REQ-056 through SYS-REQ-05A.</td>
+</tr>
+<tr>
+<td>5.7 CAN TX Communication</td>
+<td>Test: run BMS with plant model; capture all TX messages on <code>vcan0</code>; verify IDs, periods, and decoded content match requirements.</td>
+</tr>
+<tr>
+<td>5.8 CAN RX Communication</td>
+<td>Test: send each RX message with known payloads; read BMS internal database; verify decoded values match within stated tolerances.</td>
+</tr>
+<tr>
+<td>5.9 SYS State Machine</td>
+<td>Test: start BMS from reset; log state transitions with timestamps; verify sequence UNINIT-&gt;INIT-&gt;INITIALIZED-&gt;IDLE-&gt;RUNNING and timing per requirements.</td>
+</tr>
+<tr>
+<td>5.10 BMS State Machine</td>
+<td>Test: exercise full cycle STANDBY-&gt;PRECHARGE-&gt;NORMAL-&gt;ERROR-&gt;STANDBY; verify each transition trigger, guard, and contactor action per requirements.</td>
+</tr>
+<tr>
+<td>5.11 Precharge Sequence</td>
+<td>Test: start precharge; monitor V_bus ramp on 0x524; verify contactor sequence ch2+ch1 ON -&gt; voltage convergence -&gt; ch0 ON, ch2 OFF. Test timeout by blocking V_bus.</td>
+</tr>
+<tr>
+<td>5.12 Contactor Control</td>
+<td>Test: verify SPS channel state in each BMS state; inject feedback mismatch and verify detection within 200 ms.</td>
+</tr>
+<tr>
+<td>5.13 Balancing</td>
+<td>Test: set cell voltages with known spread; verify balancing flags set only for cells above V_min + threshold; verify hysteresis; verify no balancing when I &gt; 200 mA or state != NORMAL.</td>
+</tr>
+<tr>
+<td>5.14 SOC Estimation</td>
+<td>Test: apply known current for known time; verify SOC change matches Coulomb counting formula; verify 0x235 encoding; verify clamping at 0% and 100%.</td>
+</tr>
+<tr>
+<td>5.15 Plant Model</td>
+<td>Test: run plant model standalone; capture CAN traffic; verify all message IDs, periods, encoding, and closed-loop response to contactor state changes.</td>
+</tr>
+<tr>
+<td>5.16 POSIX Port</td>
+<td>Test: compile and run; verify no FreeRTOS symbols; verify SocketCAN operation; count suppressed/active DIAG IDs; count HAL stubs and register mappings.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="7-open-issues">7. Open Issues</h2>
 <p>None at initial release.</p>
 <hr />

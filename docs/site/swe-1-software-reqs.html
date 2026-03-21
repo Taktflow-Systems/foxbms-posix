@@ -545,21 +545,69 @@ on the POSIX SIL target.</p>
 <tbody>
 <tr>
 <td>SW-REQ-060</td>
-<td>The database shall implement a producer/consumer pattern with single-writer per entry.</td>
+<td>The database module shall enforce single-writer-per-entry at architecture level. Each DATA_BLOCK_ID shall have exactly one producer module. If a second producer attempts to write the same entry, the behavior is undefined and shall be prevented by design review. <strong>Acceptance:</strong> static analysis confirms no DATA_BLOCK_ID is written by more than one module. <strong>DIAG on failure:</strong> N/A (design-time constraint).</td>
 <td>SYS-REQ-060</td>
 <td>C</td>
 </tr>
 <tr>
 <td>SW-REQ-061</td>
-<td>Database read operations shall return the most recent complete write. Partial writes shall not be visible to readers.</td>
+<td>Database read operations (DATA_READ_DATA) shall return the most recent complete snapshot. Partial writes shall not be visible to readers. The database engine shall use double-buffering or equivalent to guarantee atomicity. <strong>Acceptance:</strong> concurrent write + read test shows no torn data over 10,000 iterations. <strong>DIAG on failure:</strong> N/A (structural guarantee).</td>
 <td>SYS-REQ-060</td>
 <td>C</td>
 </tr>
 <tr>
 <td>SW-REQ-062</td>
-<td>The database shall provide typed entries for cell voltages (18 cells), cell temperatures (8 sensors), string current, pack current, and pack voltage.</td>
-<td>SYS-REQ-001 to SYS-REQ-007</td>
+<td>The database shall provide DATA_BLOCK_ID_CELL_VOLTAGE containing 18 cell voltages as uint16_t in millivolts (mV), one per cell index [0..17]. <strong>Acceptance:</strong> writing 3700 mV to cell index 5, then reading back, returns exactly 3700. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-001, SYS-REQ-002</td>
 <td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-063</td>
+<td>The database shall provide DATA_BLOCK_ID_CELL_TEMPERATURE containing 8 temperature sensor readings as int16_t in deci-degrees Celsius (ddegC). <strong>Acceptance:</strong> writing 250 ddegC (25.0 C) to sensor index 3, then reading back, returns exactly 250. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-003, SYS-REQ-004</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-064</td>
+<td>The database shall provide DATA_BLOCK_ID_CURRENT_SENSOR containing: current (int32_t, mA), voltage1/voltage2/voltage3 (int32_t, mV), power (int32_t, mW), and temperature (int16_t, ddegC). <strong>Acceptance:</strong> writing current=5000 mA, reading back returns 5000. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-005, SYS-REQ-006, SYS-REQ-007</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-065</td>
+<td>The database shall provide DATA_BLOCK_ID_SOC containing SOC percentage, SOE percentage, and min/max/avg values per string. <strong>Acceptance:</strong> after SOC algorithm writes 50.0%, read returns 50.0%. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-010, SYS-REQ-011</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-066</td>
+<td>The database shall provide DATA_BLOCK_ID_BALANCING_CONTROL containing a per-cell balancing flag (one bit per cell, 18 cells). <strong>Acceptance:</strong> setting flag for cell 7 and reading back shows cell 7 active, all others inactive. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-003</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-067</td>
+<td>The database shall provide DATA_BLOCK_ID_CONTACTOR_FEEDBACK containing per-contactor state for string-plus, string-minus, and precharge contactors. <strong>Acceptance:</strong> writing CLOSED for string-plus, reading back returns CLOSED. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-054</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-068</td>
+<td>A producer shall write data by calling DATA_WRITE_DATA(), which enqueues the data block. The database engine task (FTSK_RunUserCodeEngine) shall dequeue and apply writes via DATA_IterateOverDatabaseEntries(). <strong>Acceptance:</strong> data written in CAN RX callback is readable by SOA within the same 10 ms cycle. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-069</td>
+<td>A consumer shall read data by calling DATA_READ_DATA(), which copies the latest complete snapshot into the caller's buffer. The caller receives a consistent view even if the producer writes concurrently. <strong>Acceptance:</strong> reader never observes a mixture of old and new field values across a single read. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-06A</td>
+<td>On the POSIX port, DATA_WRITE_DATA() and DATA_READ_DATA() shall execute as direct synchronous calls (no FreeRTOS queue). DATA_IterateOverDatabaseEntries() shall be called synchronously within the engine task slot. <strong>Acceptance:</strong> database functional without FreeRTOS queue primitives on POSIX build. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-081</td>
+<td>QM</td>
 </tr>
 </tbody>
 </table>
@@ -576,14 +624,44 @@ on the POSIX SIL target.</p>
 <tbody>
 <tr>
 <td>SW-REQ-070</td>
-<td>The algorithm module shall compute state of charge (SOC) using coulomb counting integrated with the current sensor data from CAN IDs 0x521-0x527.</td>
+<td>The SOC algorithm module shall compute state of charge using coulomb counting: SOC(t) = SOC(t-1) - (I_mA x dt_ms) / (Capacity_mAh x 3600000). The current (I_mA) shall be read from DATA_BLOCK_ID_CURRENT_SENSOR. <strong>Acceptance:</strong> at 1000 mA discharge for 3600 s with 1000 mAh capacity, SOC decreases from 100% to 0%. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-010, SYS-REQ-062</td>
 <td>B</td>
 </tr>
 <tr>
 <td>SW-REQ-071</td>
-<td>The algorithm module shall compute state of energy (SOE) based on SOC and cell voltage.</td>
+<td>The SOC module shall initialize SOC to 50% at startup. <strong>Acceptance:</strong> on first algorithm cycle, SOC_avg reads 50.0%. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-010</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-072</td>
+<td>The SOC module shall execute in the algorithm 100 ms task (FTSK_RunUserCodeCyclicAlgorithm100ms), updating SOC every 100 ms. <strong>Acceptance:</strong> SOC timestamp increments by ~100 ms between consecutive updates. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-010</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-073</td>
+<td>The SOC module shall clamp the computed SOC to the range [0, 100] percent. Values below 0 shall be set to 0; values above 100 shall be set to 100. <strong>Acceptance:</strong> injecting a large negative current that would drive SOC below 0 results in SOC = 0.0%, not a negative value. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-010</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-074</td>
+<td>The CAN TX callback for CAN ID 0x235 shall encode SOC_avg as byte 5 with factor 0.5 (raw = SOC% x 2). A SOC of 50% shall produce raw value 0xC8 (100 decimal). A SOC of 0% shall produce 0x00. A computed SOC of 101% (before clamping) shall be clamped to 100% and encoded as 0xC8. <strong>Acceptance:</strong> decode(encode(50.0)) == 50.0. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-010, SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-075</td>
+<td>The SOE algorithm shall compute state of energy as: SOE = SOC x cell_energy x n_cells, where cell_energy is derived from the voltage-energy lookup. SOE shall be written to DATA_BLOCK_ID_SOC. <strong>Acceptance:</strong> at SOC=100% with nominal cell energy, SOE equals total pack energy. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-011</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-076</td>
+<td>The SOF (state of function) algorithm shall compute charge and discharge power limits based on current cell voltage, temperature, and SOC. Limits shall be written to the database for CAN transmission. <strong>Acceptance:</strong> at SOC=5%, discharge power limit is reduced relative to SOC=50%. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-012</td>
 <td>B</td>
 </tr>
 </tbody>
@@ -601,14 +679,38 @@ on the POSIX SIL target.</p>
 <tbody>
 <tr>
 <td>SW-REQ-080</td>
-<td>The balancing module shall identify cells whose voltage exceeds the mean cell voltage by more than a configurable threshold.</td>
+<td>The balancing module shall support three strategy selections: voltage-based (default), history-based, and none. The active strategy shall be selected at compile time via configuration. <strong>Acceptance:</strong> building with BAL_STRATEGY_VOLTAGE produces voltage-based balancing behavior. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-003</td>
 <td>QM</td>
 </tr>
 <tr>
 <td>SW-REQ-081</td>
-<td>The balancing module shall activate passive balancing for identified cells when the BMS is in NORMAL state and current is below the rest current threshold (200 mA).</td>
-<td>SYS-REQ-016</td>
+<td>In voltage-based strategy, the balancing module shall activate balancing for any cell whose voltage exceeds V_min + BAL_GetBalancingThreshold_mV() (default 50 mV). V_min is the minimum cell voltage across the string. <strong>Acceptance:</strong> with cells at [3700, 3700, 3760] mV and threshold=50 mV, cell 2 (3760 mV &gt; 3700+50=3750 mV) is flagged for balancing. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-003</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-082</td>
+<td>The balancing module shall implement hysteresis for deactivation: a cell's balancing shall deactivate only when its voltage falls below V_min + BAL_GetBalancingThreshold_mV() - BAL_HYSTERESIS_mV. This prevents oscillation at the threshold boundary. <strong>Acceptance:</strong> a cell at exactly threshold activates; it does not deactivate until it drops below (threshold - hysteresis). <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-003</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-083</td>
+<td>The balancing module shall activate balancing only when: (a) the BMS state machine is in NORMAL state, and (b) the absolute string current is below BS_REST_CURRENT_mA (200 mA). <strong>Acceptance:</strong> with BMS in STANDBY, no balancing flags are set regardless of voltage spread. With BMS in NORMAL and</td>
+<td>I</td>
+<td>=500 mA, no balancing flags are set. <strong>DIAG on failure:</strong> N/A.</td>
+</tr>
+<tr>
+<td>SW-REQ-084</td>
+<td>When the balancing module activates balancing for a cell, it shall set the corresponding per-cell flag in DATA_BLOCK_ID_BALANCING_CONTROL and write the block via DATA_WRITE_DATA(). <strong>Acceptance:</strong> after balancing decision, reading DATA_BLOCK_ID_BALANCING_CONTROL shows the correct cell flags. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-003</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-085</td>
+<td>When balancing strategy is set to "none", the balancing module shall clear all per-cell flags in DATA_BLOCK_ID_BALANCING_CONTROL on every cycle. <strong>Acceptance:</strong> with strategy=none, no cell ever has its balancing flag set. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-003</td>
 <td>QM</td>
 </tr>
 </tbody>
@@ -627,27 +729,93 @@ on the POSIX SIL target.</p>
 <tbody>
 <tr>
 <td>SW-REQ-090</td>
-<td>The CAN module shall transmit BMS state on CAN ID 0x220 every 100 ms.</td>
+<td>The CAN module shall transmit CAN ID 0x220 (DLC 8) every 100 ms via CAN_PeriodicTransmit() in the 10 ms task. Byte 0 lower nibble bits[3:0] = BmsState (STANDBY=5, PRECHARGE=6, NORMAL=7, ERROR=9). Byte 0 upper nibble bits[7:4] = ConnectedStrings count. Remaining bytes encode EmergencyShutoff flag and error flags. <strong>Acceptance:</strong> when BMS is in NORMAL with 1 string connected, byte 0 = 0x17 (upper nibble=1, lower nibble=7). <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-060</td>
 <td>B</td>
 </tr>
 <tr>
 <td>SW-REQ-091</td>
-<td>The CAN module shall transmit pack details on CAN ID 0x221 every 100 ms.</td>
+<td>The CAN module shall transmit CAN ID 0x221 (DLC 8) every 100 ms. This frame shall contain pack voltage (mV), pack current (mA), and pack power (mW) encoded per the DBC specification. <strong>Acceptance:</strong> at 0 A and 66.6 V pack voltage, the decoded pack voltage matches 66600 mV within rounding tolerance. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-060</td>
 <td>B</td>
 </tr>
 <tr>
 <td>SW-REQ-092</td>
-<td>The CAN module shall transmit individual cell voltages on CAN IDs 0x240 through 0x245 every 100 ms.</td>
+<td>The CAN module shall transmit CAN IDs 0x240 through 0x245 (DLC 8 each) every 100 ms. Each frame carries 3 cell voltages as uint16_t big-endian (6 frames x 3 = 18 cells). <strong>Acceptance:</strong> cell voltage index 0 appears in 0x240 bytes 0-1, index 1 in bytes 2-3, index 2 in bytes 4-5. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-060</td>
 <td>B</td>
 </tr>
 <tr>
 <td>SW-REQ-093</td>
-<td>The CAN module shall transmit multiplexed voltage data on CAN ID 0x250 and temperature data on 0x260 every 100 ms.</td>
+<td>The CAN module shall transmit CAN ID 0x250 (DLC 8) every 100 ms using multiplexing. Byte 0 = mux index (0 through 49). Each frame carries 4 cell voltages encoded as 13-bit values in big-endian format per CAN_BIG_ENDIAN_TABLE. <strong>Acceptance:</strong> encode(3700 mV) then decode yields exactly 3700 mV for each of the 4 voltage slots. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-060</td>
 <td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-094</td>
+<td>The CAN module shall transmit CAN ID 0x260 (DLC 8) every 100 ms using multiplexing. Byte 0 = mux index (0 through 29). Each frame carries 6 temperature values as 8-bit signed integers (degC). <strong>Acceptance:</strong> a temperature of 25 degC encodes as 0x19 in the corresponding byte position. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-095</td>
+<td>The CAN module shall transmit CAN ID 0x235 (DLC 8) every 100 ms. Byte 4 = SOC_min x 2, byte 5 = SOC_avg x 2, byte 6 = SOC_max x 2 (factor 0.5, offset 0). <strong>Acceptance:</strong> at SOC_avg=50%, byte 5 = 0x64 (100 decimal, since 50/0.5=100). SOC_avg decreases monotonically under constant discharge. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060, SYS-REQ-010</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-096</td>
+<td>All CAN TX messages shall be transmitted by CAN_PeriodicTransmit(), which is called from the 10 ms task (FTSK_RunUserCodeCyclic10ms). Each message shall maintain its own 100 ms period counter, decrementing every 10 ms call and transmitting when the counter reaches zero. <strong>Acceptance:</strong> CAN bus trace shows each TX ID appearing at 100 ms +/- 10 ms intervals. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-097</td>
+<td>The CAN TX module shall read all signal data from the database (DATA_READ_DATA) at the time of transmission. It shall not cache stale data between transmit cycles. <strong>Acceptance:</strong> a voltage change written to the database at time T appears in the next CAN TX frame at time T + [0, 100] ms. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-098</td>
+<td>Each CAN TX callback function shall construct the 8-byte CAN data payload and call CAN_DataSend() with the correct CAN node, message ID, data length, and data pointer. CAN_DataSend() shall write the frame to the SocketCAN interface. <strong>Acceptance:</strong> the frame appears on the vcan0 interface as captured by candump. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-099</td>
+<td>The CAN TX module shall transmit string-specific messages (contactor state, string voltage, string current) for each configured string. The string index shall be embedded in the message encoding. <strong>Acceptance:</strong> with 1 string configured, string 0 messages appear on the bus; no string 1 messages appear. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-09A</td>
+<td>The CAN TX module shall transmit SOF (state of function) data including recommended charge/discharge current limits and power limits. <strong>Acceptance:</strong> SOF limits decrease when cell voltage approaches overvoltage threshold. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060, SYS-REQ-012</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-09B</td>
+<td>The CAN TX module shall transmit minimum, maximum, and average cell voltage and temperature values. <strong>Acceptance:</strong> with cells at [3680, 3700, 3720] mV, min=3680, max=3720, avg=3700 in the transmitted frame. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SW-REQ-09C</td>
+<td>The CAN TX module shall transmit the insulation monitoring result (if available) or a default safe value when the hardware monitor is absent (POSIX port). <strong>Acceptance:</strong> on POSIX, no spurious insulation fault is reported. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-09D</td>
+<td>The CAN TX module shall transmit open-wire detection results for each cell tap. On the POSIX port, all taps shall report no open wire. <strong>Acceptance:</strong> open-wire byte fields are all zero on POSIX. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-09E</td>
+<td>The CAN TX module shall transmit balancing status per cell. The frame shall indicate which cells are currently being balanced. <strong>Acceptance:</strong> when cell 5 is flagged for balancing, the corresponding bit/byte in the TX frame is set. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-060</td>
+<td>QM</td>
 </tr>
 </tbody>
 </table>
@@ -664,25 +832,61 @@ on the POSIX SIL target.</p>
 <tbody>
 <tr>
 <td>SW-REQ-100</td>
-<td>The CAN module shall receive and decode state requests from CAN ID 0x210.</td>
+<td>The CAN RX module shall receive CAN ID 0x210 (DLC 8). Byte 0 encodes the state request: 0x00 = STANDBY, 0x02 = NORMAL. The decoded request shall be written to the database. The BMS state machine shall read the request from the database in the 10 ms task and act on it. <strong>Acceptance:</strong> sending 0x210 with byte0=0x02 causes BMS to initiate STANDBY-&gt;PRECHARGE-&gt;NORMAL transition. <strong>DIAG on failure:</strong> CAN_TIMING (if no frames received for timeout period).</td>
 <td>SYS-REQ-061</td>
 <td>D</td>
 </tr>
 <tr>
 <td>SW-REQ-101</td>
-<td>The CAN module shall receive and decode IVT current sensor frames from CAN IDs 0x521 through 0x527.</td>
+<td>The CAN RX module shall receive CAN ID 0x521 (DLC 8) for IVT current measurement. Bytes 2-5 encode a signed 32-bit big-endian integer representing current in milliamperes (mA). Bytes 0-1 encode the measurement status. The decoded current shall be written to DATA_BLOCK_ID_CURRENT_SENSOR.current. <strong>Acceptance:</strong> at rest (0 A physical), decoded current = 0 +/- 1 mA. <strong>DIAG on failure:</strong> CURRENT_SENSOR_RESPONDING.</td>
 <td>SYS-REQ-062</td>
 <td>C</td>
 </tr>
 <tr>
 <td>SW-REQ-102</td>
-<td>The CAN module shall receive and decode AFE cell voltages from CAN ID 0x270 (50 mux x 4 voltages).</td>
-<td>SYS-REQ-060</td>
+<td>The CAN RX module shall receive CAN ID 0x522 (DLC 8) for IVT voltage 1 measurement. Bytes 2-5 encode voltage in mV as signed 32-bit big-endian. The decoded value shall be written to DATA_BLOCK_ID_CURRENT_SENSOR.highVoltage_mV[string][0]. <strong>Acceptance:</strong> at 66600 mV pack voltage, decoded value = 66600 +/- 10 mV. <strong>DIAG on failure:</strong> CURRENT_SENSOR_RESPONDING.</td>
+<td>SYS-REQ-062</td>
 <td>C</td>
 </tr>
 <tr>
 <td>SW-REQ-103</td>
-<td>The CAN module shall receive and decode AFE cell temperatures from CAN ID 0x280 (30 mux x 6 temperatures).</td>
+<td>The CAN RX module shall receive CAN ID 0x523 (DLC 8) for IVT voltage 2. Decoded value written to highVoltage_mV[string][1]. <strong>Acceptance:</strong> value matches physical measurement within IVT tolerance. <strong>DIAG on failure:</strong> CURRENT_SENSOR_RESPONDING.</td>
+<td>SYS-REQ-062</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-104</td>
+<td>The CAN RX module shall receive CAN ID 0x524 (DLC 8) for IVT voltage 3. Decoded value written to highVoltage_mV[string][2]. This voltage is used by the redundancy module for precharge voltage comparison and MUST match the string voltage within the configured tolerance. <strong>Acceptance:</strong></td>
+<td>highVoltage_mV[s][2] - sum(cellVoltages)</td>
+<td>&lt; precharge_tolerance_mV. <strong>DIAG on failure:</strong> CURRENT_SENSOR_RESPONDING.</td>
+</tr>
+<tr>
+<td>SW-REQ-105</td>
+<td>The CAN RX module shall receive CAN ID 0x525 (DLC 8) for IVT power measurement. Decoded value (mW, signed 32-bit big-endian) written to DATA_BLOCK_ID_CURRENT_SENSOR.power. <strong>Acceptance:</strong> power = voltage x current within rounding tolerance. <strong>DIAG on failure:</strong> CURRENT_SENSOR_RESPONDING.</td>
+<td>SYS-REQ-062</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-106</td>
+<td>The CAN RX module shall receive CAN ID 0x526 (DLC 8) for IVT coulomb counting. The decoded value shall update the coulomb counter in the current sensor data block. <strong>Acceptance:</strong> accumulated charge matches integral of current over time. <strong>DIAG on failure:</strong> CURRENT_SENSOR_CC_RESPONDING.</td>
+<td>SYS-REQ-062</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-107</td>
+<td>The CAN RX module shall receive CAN ID 0x527 (DLC 8) for IVT energy counting. The decoded value shall update the energy counter in the current sensor data block. <strong>Acceptance:</strong> accumulated energy matches integral of power over time. <strong>DIAG on failure:</strong> CURRENT_SENSOR_CC_RESPONDING.</td>
+<td>SYS-REQ-062</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-108</td>
+<td>The CAN RX module shall receive CAN ID 0x270 (DLC 8) for AFE cell voltages. Byte 0 = mux index (0-49). Each frame carries 4 cell voltages encoded as 13-bit big-endian values per CAN_BIG_ENDIAN_TABLE. Each voltage slot includes a 1-bit invalid flag (1 = VALID, 0 = INVALID). Only voltages with invalid_flag = 1 shall be stored. <strong>Acceptance:</strong> after receiving mux frames 0-4, all 18 cell voltages are populated in the database. <strong>DIAG on failure:</strong> CAN_TIMING.</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-109</td>
+<td>The CAN RX module shall receive CAN ID 0x280 (DLC 8) for AFE cell temperatures. Byte 0 = mux index (0-29). Each frame carries 6 temperature values as 8-bit signed integers. <strong>Acceptance:</strong> after receiving mux frames 0-1, all 8 temperature sensors are populated. <strong>DIAG on failure:</strong> CAN_TIMING.</td>
 <td>SYS-REQ-060</td>
 <td>C</td>
 </tr>
@@ -701,19 +905,32 @@ on the POSIX SIL target.</p>
 <tbody>
 <tr>
 <td>SW-REQ-110</td>
-<td>The CAN module shall monitor message reception timing. If CAN timing exceeds the threshold (100 events, 200 ms delay), DIAG shall flag CAN_TIMING as FATAL.</td>
+<td>The CAN module shall monitor overall CAN message reception. If no valid CAN frame is received for 100 consecutive 10 ms checks (= 1000 ms), the DIAG module shall evaluate CAN_TIMING. After the configured 200 ms evaluation delay, CAN_TIMING shall be flagged as FATAL. Total fault-tolerant time interval (FTTI) = 1200 ms. <strong>Acceptance:</strong> stopping all CAN traffic for &gt;1200 ms causes BMS to enter ERROR state. <strong>DIAG on failure:</strong> DIAG_ID_CAN_TIMING.</td>
 <td>SYS-REQ-063</td>
 <td>D</td>
 </tr>
 <tr>
 <td>SW-REQ-111</td>
-<td>The CAN module shall monitor current sensor response. If the current sensor stops responding (100 events, 200 ms delay), DIAG shall flag CURRENT_SENSOR_RESPONDING as FATAL.</td>
+<td>The CAN module shall monitor IVT current sensor frames (0x521-0x527). If IVT frames stop arriving for 100 consecutive checks, the DIAG module shall evaluate CURRENT_SENSOR_RESPONDING. After 200 ms evaluation delay, it shall be flagged as FATAL. FTTI = 1200 ms. <strong>Acceptance:</strong> stopping IVT frames for &gt;1200 ms causes ERROR state. <strong>DIAG on failure:</strong> DIAG_ID_CURRENT_SENSOR_RESPONDING.</td>
+<td>SYS-REQ-062</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-112</td>
+<td>The CAN module shall monitor IVT coulomb counting frames (0x526). If coulomb counting frames stop arriving for 100 consecutive checks, the DIAG module shall evaluate CURRENT_SENSOR_CC_RESPONDING with a 2000 ms evaluation delay. FTTI = 3000 ms. <strong>Acceptance:</strong> stopping 0x526 for &gt;3000 ms triggers the diagnostic event. <strong>DIAG on failure:</strong> DIAG_ID_CURRENT_SENSOR_CC_RESPONDING.</td>
+<td>SYS-REQ-062</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-113</td>
+<td>The CAN module shall monitor IVT energy counting frames (0x527). If energy counting frames stop arriving for 100 consecutive checks, the DIAG module shall evaluate CURRENT_SENSOR_EC_RESPONDING with a 2000 ms evaluation delay. FTTI = 3000 ms. <strong>Acceptance:</strong> stopping 0x527 for &gt;3000 ms triggers the diagnostic event. <strong>DIAG on failure:</strong> DIAG_ID_CURRENT_SENSOR_EC_RESPONDING.</td>
 <td>SYS-REQ-062</td>
 <td>D</td>
 </tr>
 </tbody>
 </table>
 <h2 id="8-posix-port-specific-requirements">8. POSIX Port-Specific Requirements</h2>
+<h3 id="81-cooperative-loop">8.1 Cooperative Loop</h3>
 <table>
 <thead>
 <tr>
@@ -726,31 +943,135 @@ on the POSIX SIL target.</p>
 <tbody>
 <tr>
 <td>SW-REQ-120</td>
-<td>The POSIX cooperative main loop shall call task functions in priority order: Engine, 1ms, AFE, 10ms, 100ms, I2C, 100ms-Algorithm.</td>
+<td>The POSIX cooperative main loop shall iterate at approximately 2 kHz by calling usleep(500) (500 microseconds) per iteration. <strong>Acceptance:</strong> measured iteration rate is 1800-2200 Hz over a 10-second window. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-081</td>
 <td>QM</td>
 </tr>
 <tr>
 <td>SW-REQ-121</td>
-<td>The SocketCAN interface shall provide send and receive operations compatible with the foxBMS CAN driver API.</td>
-<td>SYS-REQ-082</td>
+<td>The 1 ms task slot shall fire every 1000 microseconds of elapsed time. It shall execute: FTSK_RunUserCodeCyclic1ms(), FTSK_RunUserCodeEngine() (database processing), and MEAS_Control(). <strong>Acceptance:</strong> task fires at 1.0 ms +/- 0.5 ms intervals measured by gettimeofday(). <strong>DIAG on failure:</strong> N/A (deadline violation counted).</td>
+<td>SYS-REQ-081</td>
 <td>QM</td>
 </tr>
 <tr>
 <td>SW-REQ-122</td>
-<td>HAL stubs shall implement all function signatures of the TMS570 HAL with no-op or RAM-mapped behavior.</td>
-<td>SYS-REQ-085, SYS-REQ-086</td>
+<td>The 10 ms task slot shall fire every 10000 microseconds of elapsed time. It shall execute: FTSK_RunUserCodeCyclic10ms() which contains SYS_Trigger(), BMS_Trigger(), and CAN_PeriodicTransmit(). <strong>Acceptance:</strong> BMS state machine advances within 10 ms of a state request. <strong>DIAG on failure:</strong> N/A (deadline violation counted).</td>
+<td>SYS-REQ-081</td>
 <td>QM</td>
 </tr>
 <tr>
 <td>SW-REQ-123</td>
-<td>The POSIX build shall compile 170+ source files with GCC 13 for x86-64 without errors.</td>
+<td>The 100 ms task slot shall fire every 100000 microseconds of elapsed time. It shall execute: FTSK_RunUserCodeCyclic100ms() and FTSK_RunUserCodeCyclicAlgorithm100ms() (SOC/SOE/SOF algorithms). <strong>Acceptance:</strong> SOC updates appear at 100 ms intervals. <strong>DIAG on failure:</strong> N/A (deadline violation counted).</td>
+<td>SYS-REQ-081</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-124</td>
+<td>The cooperative loop shall call task functions in priority order within each iteration: Engine, 1 ms, AFE, 10 ms, 100 ms, I2C, 100 ms-Algorithm. Higher-priority tasks are checked first. <strong>Acceptance:</strong> instrumenting task entry shows Engine always runs before 10 ms in any iteration where both fire. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-081</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-125</td>
+<td>The cooperative loop shall implement deadline monitoring. If any task slot takes longer to execute than its period (e.g., 1 ms task takes &gt;1 ms), the loop shall log the violation and increment a per-slot violation counter. <strong>Acceptance:</strong> injecting a 2 ms delay in the 1 ms task increments the 1 ms violation counter. <strong>DIAG on failure:</strong> N/A (logged, not FATAL).</td>
+<td>SYS-REQ-081</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-126</td>
+<td>The cooperative loop shall perform a non-blocking CAN read from the SocketCAN interface on every iteration. Received frames shall be injected into the foxBMS CAN RX path via posix_can_rx_inject(). <strong>Acceptance:</strong> a frame sent by the plant model is received and processed within 1 ms (2 loop iterations). <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-082</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-127</td>
+<td>Upon receiving SIGINT, the cooperative loop shall set running=0, command all contactors to open, print a timing summary (task counts, deadline violations), and exit with code 0. <strong>Acceptance:</strong> sending SIGINT during NORMAL operation results in contactors opening and a clean exit. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-081</td>
+<td>QM</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-socketcan-and-hal">8.2 SocketCAN and HAL</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-128</td>
+<td>The SocketCAN interface shall provide send and receive operations compatible with the foxBMS CAN driver API (CAN_DataSend, CAN receive callback). The interface shall bind to vcan0 (or a configurable interface name). <strong>Acceptance:</strong> CAN frames sent via CAN_DataSend() appear on the vcan0 interface. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-082</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-129</td>
+<td>HAL stubs shall implement all function signatures of the TMS570 HAL with no-op or RAM-mapped behavior. Functions that return status shall return success. <strong>Acceptance:</strong> the POSIX build links without undefined symbol errors for any HAL function. <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-085, SYS-REQ-086</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-12A</td>
+<td>The POSIX build shall compile 170+ source files with GCC 13 for x86-64 without errors or warnings treated as errors. <strong>Acceptance:</strong> <code>make</code> completes with exit code 0. <strong>DIAG on failure:</strong> N/A.</td>
 <td>SYS-REQ-080</td>
 <td>QM</td>
 </tr>
 </tbody>
 </table>
-<h2 id="9-acceptance-criteria">9. Acceptance Criteria</h2>
+<h2 id="9-negative-requirements">9. Negative Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Derives From</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SW-REQ-200</td>
+<td>The BMS state machine shall NOT transition directly from ERROR to NORMAL. Recovery from ERROR shall always pass through STANDBY first (ERROR -&gt; STANDBY -&gt; PRECHARGE -&gt; NORMAL). <strong>Acceptance:</strong> sending state request NORMAL (0x02) while in ERROR does not cause transition to NORMAL; BMS remains in ERROR. Only after fault clears and STANDBY request (0x00) moves BMS to STANDBY can NORMAL be requested. <strong>DIAG on failure:</strong> N/A (state machine design constraint).</td>
+<td>SYS-REQ-055</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-201</td>
+<td>The BMS shall NOT close any contactor (string+, string-, precharge) while in ERROR state. Any contactor close command shall be suppressed. <strong>Acceptance:</strong> injecting a contactor-close command while in ERROR results in all contactors remaining open. <strong>DIAG on failure:</strong> N/A (state machine design constraint).</td>
+<td>SYS-REQ-054</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SW-REQ-202</td>
+<td>The cooperative main loop shall NOT block on CAN read operations. The SocketCAN socket shall be configured as non-blocking (O_NONBLOCK or equivalent). If no frame is available, the read shall return immediately with EAGAIN/EWOULDBLOCK. <strong>Acceptance:</strong> with no CAN traffic, the loop iteration rate remains at ~2 kHz (not degraded by blocking). <strong>DIAG on failure:</strong> N/A.</td>
+<td>SYS-REQ-082</td>
+<td>QM</td>
+</tr>
+<tr>
+<td>SW-REQ-203</td>
+<td>The plant model shall NOT send cell voltage frames (0x270) with invalid_flag = 0 for valid data. The invalid_flag encoding is counterintuitive: 1 = VALID, 0 = INVALID. All valid cell voltages shall have invalid_flag = 1. <strong>Acceptance:</strong> all cell voltage frames from the plant model have invalid_flag = 1 for populated cells, and the BMS stores all 18 cell voltages. <strong>DIAG on failure:</strong> N/A (plant model constraint).</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-204</td>
+<td>The database shall NOT allow two producer modules to write the same DATA_BLOCK_ID. This is a design-time invariant enforced by code review and static analysis, not a runtime check. <strong>Acceptance:</strong> grep of all DATA_WRITE_DATA() call sites confirms each DATA_BLOCK_ID has exactly one writer. <strong>DIAG on failure:</strong> N/A (design-time constraint).</td>
+<td>SYS-REQ-060</td>
+<td>C</td>
+</tr>
+<tr>
+<td>SW-REQ-205</td>
+<td>FAS_ASSERT shall NOT silently continue execution on assertion failure. On the POSIX port, FAS_ASSERT shall log the file, line, and expression to stderr and call exit(1) to terminate the process. <strong>Acceptance:</strong> triggering FAS_ASSERT produces a log message on stderr and non-zero exit code. <strong>DIAG on failure:</strong> N/A (assertion = immediate termination).</td>
+<td>SYS-REQ-081</td>
+<td>D</td>
+</tr>
+</tbody>
+</table>
+<h2 id="10-acceptance-criteria">10. Acceptance Criteria</h2>
 <p>Each software requirement is accepted when:</p>
 <ol>
 <li>It is traced backward to at least one system requirement in SYS.2-001.</li>
