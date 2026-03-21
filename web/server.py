@@ -231,7 +231,22 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
                 payload = _build_plant_inject(msg)
                 if payload is not None:
                     await _send_can(0x6E0, payload)
-                    log.info("Plant inject: %s", msg)
+                    log.info("Plant inject (SWE.6): %s", msg)
+                continue
+            if action == "bms_inject":
+                # SWE.5: inject at BMS DB level via SIL override 0x7E0
+                # Format: [cmd, idx, active=1, value_i32_LE]
+                payload = _build_plant_inject(msg)  # Same format, different CAN ID
+                if payload is not None:
+                    await _send_can(0x7E0, payload)
+                    log.info("BMS inject (SWE.5): %s", msg)
+                continue
+            if action == "clear":
+                await _send_can(0x7E0, struct.pack("<BBBi", 0x01, 0, 0, 0))  # Clear cell V
+                await _send_can(0x7E0, struct.pack("<BBBi", 0x02, 0, 0, 0))  # Clear temp
+                await _send_can(0x7E0, struct.pack("<BBBi", 0x03, 0, 0, 0))  # Clear current
+                await _send_can(0x6E0, struct.pack("<B7x", 0xFF))  # Clear plant
+                log.info("Cleared all overrides (BMS + Plant)")
                 continue
             payload = _build_inject(msg)
             if payload is not None:
