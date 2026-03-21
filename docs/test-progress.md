@@ -40,7 +40,14 @@
 | 2 | FI-TEMP-0448 | OT_CHG OUT_OF_RANGE_HIGH | PASS | 2670ms | contactor open |
 | 3 | FI-TEMP-0451 | UT_DIS OUT_OF_RANGE_HIGH | FAIL | 5000ms | CSV bug: 1000 ddegC is HOT not COLD |
 
-**Score: 1/3 PASS — needs debugging**
+**Score: 1/3 PASS — ROOT CAUSE FOUND**
+
+**Root cause**: Temperature data from plant (0x280) never reaches the database.
+`MIN_MAX.maximumTemperature_ddegC` stays at 0 (default). The AFE queue routing
+in `hal_stubs_posix.c` only routes cell voltages, not temperatures. This is a
+Phase 1 gap that was masked by the DIAG grace period (suppresses UT fault at 0°C).
+
+**Fix needed**: Route 0x280 CAN RX → AFE temp queue → database (same pattern as 0x270 voltage).
 
 ### Cross-category (from 50-test run, partial)
 
