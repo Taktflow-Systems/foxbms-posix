@@ -1,0 +1,23 @@
+========================================================================
+  foxBMS POSIX vECU — ASIL-D Fault Injection Report
+  Generated: 2026-03-21 18:27:50
+========================================================================
+
+Total: 6 | PASS: 2 | FAIL: 2 | SKIP: 2 | ERROR: 0
+
+P1: 6 (2 PASS, 2 FAIL, 2 SKIP, 0 ERROR)
+
+--- By Category ---
+  PLAUS   :    6 (2 PASS, 2 FAIL, 2 SKIP)
+
+--- Individual Results ---
+[FAIL] FI-PLAUS-1246        | 10001ms TIMEOUT | DIAG bit 51 not set; contactor did not open
+[FAIL] FI-PLAUS-1247        | 10001ms TIMEOUT | DIAG bit 51 not set; contactor did not open
+[PASS] FI-PLAUS-1248        | contactor open confirmed
+[PASS] FI-PLAUS-1249        | contactor open confirmed
+[SKIP] FI-PLAUS-1264        | requires MISSING_TIMEOUT (not implemented)
+[SKIP] FI-PLAUS-1265        | requires MISSING_TIMEOUT (not implemented)
+
+--- Failed Tests (2) ---
+  FI-PLAUS-1246: 10001ms TIMEOUT | DIAG bit 51 not set; contactor did not open
+  FI-PLAUS-1247: 10001ms TIMEOUT | DIAG bit 51 not set; contactor did not open

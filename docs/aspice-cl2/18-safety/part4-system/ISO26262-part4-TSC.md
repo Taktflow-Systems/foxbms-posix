@@ -555,7 +555,7 @@ These system-level monitors have threshold=1 and no delay because they indicate 
 
 ---
 
-## Traceability
+## Traceability: TSR → Downstream (SSR / SW-REQ)
 
 | TSR ID | Description | Traces Down To |
 |--------|-------------|---------------|
@@ -574,6 +574,26 @@ These system-level monitors have threshold=1 and no delay because they indicate 
 | TSR-013 | SOC estimation | SW-REQ-070 |
 | TSR-014 | Redundancy check | SSR-003 |
 | TSR-015 | Plausibility check | SSR-003, SW-REQ-060 |
+
+## Traceability: TSR → FSR (Upstream)
+
+| TSR ID | Description | Traces Up To FSR |
+|--------|-------------|-----------------|
+| TSR-001 | Voltage monitoring | FSR-001, FSR-002, FSR-003 |
+| TSR-002 | Current monitoring | FSR-004, FSR-005 |
+| TSR-003 | Temperature monitoring | FSR-006, FSR-007 |
+| TSR-004 | DIAG threshold | FSR-009 |
+| TSR-005 | Contactor control | FSR-008 |
+| TSR-006 | Precharge check | FSR-008 |
+| TSR-007 | Interlock monitoring | FSR-010 |
+| TSR-008 | CAN timing | FSR-009 |
+| TSR-009 | Current sensor | FSR-009 |
+| TSR-010 | SBC watchdog | FSR-009 |
+| TSR-011 | Insulation monitoring | FSR-011 |
+| TSR-012 | Cell balancing | FSR-012 |
+| TSR-013 | SOC estimation | FSR-012 |
+| TSR-014 | Redundancy check | FSR-009 |
+| TSR-015 | Plausibility check | FSR-009 |
 
 ---
 

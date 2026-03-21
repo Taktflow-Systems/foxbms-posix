@@ -153,42 +153,103 @@ validate the port-specific adaptations and the integrated safety logic.
 
 ---
 
-## Traceability: SW-REQ to Unit Test
+## Traceability: SW-REQ to Unit Test (Complete)
 
 | SW-REQ | Verified By | Description |
 |--------|------------|-------------|
-| SW-REQ-001 | UT-016 | SOA overvoltage |
-| SW-REQ-002 | UT-016 | SOA overvoltage |
-| SW-REQ-003 | UT-016 | SOA overvoltage |
-| SW-REQ-004 | UT-016 | SOA overvoltage |
-| SW-REQ-005 | UT-016 | SOA overvoltage |
-| SW-REQ-010 | UT-020 | SOA overcurrent |
-| SW-REQ-011 | UT-020 | SOA overcurrent |
-| SW-REQ-012 | UT-020 | SOA overcurrent |
-| SW-REQ-013 | UT-020 | SOA overcurrent |
-| SW-REQ-014 | UT-020 | SOA overcurrent |
-| SW-REQ-020 | UT-024 | SOA overtemperature |
-| SW-REQ-021 | UT-024 | SOA overtemperature |
-| SW-REQ-022 | UT-024 | SOA overtemperature |
-| SW-REQ-023 | UT-024 | SOA overtemperature |
-| SW-REQ-030 | UT-001 | DIAG threshold |
-| SW-REQ-031 | UT-001 | DIAG threshold |
-| SW-REQ-032 | UT-001 | DIAG threshold |
-| SW-REQ-033 | UT-001 | DIAG threshold |
-| SW-REQ-034 | UT-040 | POSIX DIAG |
-| SW-REQ-035 | UT-040 | POSIX DIAG |
-| SW-REQ-040 | UT-030 | BMS state |
-| SW-REQ-041 | UT-030 | BMS state |
-| SW-REQ-042 | UT-030 | BMS state |
-| SW-REQ-043 | UT-030 | BMS state |
-| SW-REQ-044 | UT-060 | Contactor |
-| SW-REQ-045 | UT-030 | BMS state |
-| SW-REQ-060 | UT-042 | Database |
-| SW-REQ-061 | UT-042 | Database |
-| SW-REQ-070 | UT-070 | SOC |
-| SW-REQ-080 | UT-080 | Balancing |
-| SW-REQ-090 | UT-052 | CAN TX |
-| SW-REQ-100 | UT-052 | CAN RX |
+| SW-REQ-001 | UT-012, UT-015, UT-016 | SOA overvoltage MSL detection |
+| SW-REQ-002 | UT-013, UT-016 | SOA undervoltage MSL detection |
+| SW-REQ-003 | UT-010, UT-011, UT-016 | SOA overvoltage MOL/RSL thresholds |
+| SW-REQ-004 | UT-016 | SOA voltage range validation |
+| SW-REQ-005 | UT-014, UT-016 | SOA deep discharge detection |
+| SW-REQ-010 | UT-016, UT-020 | SOA discharge overcurrent MSL |
+| SW-REQ-011 | UT-017, UT-020 | SOA charge overcurrent MSL |
+| SW-REQ-012 | UT-020 | SOA overcurrent MOL threshold |
+| SW-REQ-013 | UT-020 | SOA overcurrent RSL threshold |
+| SW-REQ-014 | UT-020 | SOA current on open string |
+| SW-REQ-020 | UT-018, UT-024 | SOA overtemperature discharge MSL |
+| SW-REQ-021 | UT-019, UT-024 | SOA undertemperature discharge MSL |
+| SW-REQ-022 | UT-020, UT-024 | SOA overtemperature charge MSL |
+| SW-REQ-023 | UT-021, UT-024 | SOA undertemperature charge MSL |
+| SW-REQ-030 | UT-007, UT-008, UT-001 | DIAG configuration table validation |
+| SW-REQ-031 | UT-001, UT-002, UT-003 | DIAG counter increment/decrement/FATAL |
+| SW-REQ-032 | UT-005, UT-006, UT-001 | DIAG IsAnyFatalErrorSet |
+| SW-REQ-033 | UT-004, UT-001 | DIAG evaluation delay |
+| SW-REQ-034 | UT-001 | DIAG POSIX-specific ID handling |
+| SW-REQ-035 | UT-001 | DIAG suppressed ID handling |
+| SW-REQ-040 | UT-030, UT-102 | BMS STANDBY state initialization |
+| SW-REQ-041 | UT-031, UT-061, UT-030 | BMS STANDBY to PRECHARGE transition |
+| SW-REQ-042 | UT-032, UT-030 | BMS PRECHARGE to NORMAL transition |
+| SW-REQ-043 | UT-033, UT-030 | BMS transition to ERROR on FATAL |
+| SW-REQ-044 | UT-034, UT-060, UT-062 | Contactor open in ERROR state |
+| SW-REQ-045 | UT-035, UT-036, UT-030 | BMS ERROR persistence and recovery |
+| SW-REQ-050 | UT-030, UT-101 | SYS state machine UNINITIALIZED |
+| SW-REQ-051 | UT-030 | SYS state machine INITIALIZATION |
+| SW-REQ-052 | UT-030 | SYS state machine IDLE |
+| SW-REQ-053 | UT-030 | SYS state machine RUNNING |
+| SW-REQ-060 | UT-040, UT-042 | Database write/read consistency |
+| SW-REQ-061 | UT-041, UT-042 | Database latest write visible |
+| SW-REQ-062 | UT-042 | Database entries for all measurements |
+| SW-REQ-063 | UT-042 | Database cell voltage entries (18 cells) |
+| SW-REQ-064 | UT-042 | Database temperature entries (8 sensors) |
+| SW-REQ-065 | UT-042 | Database current entries |
+| SW-REQ-066 | UT-042 | Database SOC entries |
+| SW-REQ-067 | UT-042 | Database contactor state entries |
+| SW-REQ-068 | UT-042 | Database BMS state entries |
+| SW-REQ-069 | UT-042 | Database pack voltage entries |
+| SW-REQ-070 | UT-070 | SOC coulomb counting algorithm |
+| SW-REQ-071 | UT-070 | SOC initial value from OCV |
+| SW-REQ-072 | UT-070 | SOC clamp to 0-100% range |
+| SW-REQ-073 | UT-070 | SOC update on current integration |
+| SW-REQ-074 | UT-070 | SOC capacity parameter configuration |
+| SW-REQ-075 | UT-070 | SOC database write |
+| SW-REQ-076 | UT-070 | SOC energy counting |
+| SW-REQ-080 | UT-080 | Balancing enable/disable control |
+| SW-REQ-081 | UT-080 | Balancing threshold configuration |
+| SW-REQ-082 | UT-080 | Balancing cell selection algorithm |
+| SW-REQ-083 | UT-080 | Balancing timer management |
+| SW-REQ-084 | UT-080 | Balancing voltage delta calculation |
+| SW-REQ-085 | UT-080 | Balancing state reporting |
+| SW-REQ-090 | UT-050, UT-052 | CAN TX BMS state message 0x220 |
+| SW-REQ-091 | UT-052 | CAN TX cell voltage messages 0x240-0x245 |
+| SW-REQ-092 | UT-052 | CAN TX cell temperature messages 0x260 |
+| SW-REQ-093 | UT-052 | CAN TX SOC message |
+| SW-REQ-094 | UT-052 | CAN TX pack voltage message |
+| SW-REQ-095 | UT-052 | CAN TX current message |
+| SW-REQ-096 | UT-052 | CAN TX contactor state message |
+| SW-REQ-097 | UT-052 | CAN TX diagnostic status message |
+| SW-REQ-098 | UT-052 | CAN TX balancing status message |
+| SW-REQ-099 | UT-052 | CAN TX insulation monitoring message |
+| SW-REQ-100 | UT-051, UT-052 | CAN RX state request 0x210 |
+| SW-REQ-101 | UT-052 | CAN RX IVT current 0x521 |
+| SW-REQ-102 | UT-052 | CAN RX AFE cell voltages 0x270 |
+| SW-REQ-103 | UT-052 | CAN RX AFE cell temperatures 0x280 |
+| SW-REQ-104 | UT-052 | CAN RX IVT voltage 0x522-0x524 |
+| SW-REQ-105 | UT-052 | CAN RX IVT temperature 0x525 |
+| SW-REQ-106 | UT-052 | CAN RX charger request |
+| SW-REQ-107 | UT-052 | CAN RX balancing command |
+| SW-REQ-108 | UT-052 | CAN RX diagnostic reset command |
+| SW-REQ-109 | UT-052 | CAN RX configuration update |
+| SW-REQ-110 | UT-052 | CAN TX periodic timing 100 ms |
+| SW-REQ-111 | UT-052 | CAN RX timeout detection |
+| SW-REQ-112 | UT-052 | CAN message DLC validation |
+| SW-REQ-113 | UT-052 | CAN message counter/CRC validation |
+| SW-REQ-120 | UT-100, UT-104, UT-105 | POSIX binary startup |
+| SW-REQ-121 | UT-100 | POSIX SocketCAN initialization |
+| SW-REQ-122 | UT-110, UT-111, UT-112 | POSIX HAL stub functions |
+| SW-REQ-123 | UT-100, UT-104, UT-105 | POSIX clean shutdown |
+| SW-REQ-124 | UT-100 | POSIX cooperative main loop |
+| SW-REQ-125 | UT-100 | POSIX signal handling |
+| SW-REQ-126 | UT-100 | POSIX assert override |
+| SW-REQ-127 | UT-100 | POSIX register base allocation |
+| SW-REQ-128 | UT-100 | POSIX timeout flag (--timeout) |
+| SW-REQ-129 | UT-100 | POSIX vCAN interface configuration |
+| SW-REQ-200 | UT-030, UT-033 | Negative: invalid state transition rejected |
+| SW-REQ-201 | UT-042 | Negative: database read without write returns default |
+| SW-REQ-202 | UT-052 | Negative: malformed CAN frame rejected |
+| SW-REQ-203 | UT-030 | Negative: ERROR state blocks NORMAL request |
+| SW-REQ-204 | UT-042 | Negative: database overflow handled |
+| SW-REQ-205 | UT-052 | Negative: CAN TX buffer full handled |
 
 ---
 *End of Document*

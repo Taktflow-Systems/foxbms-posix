@@ -132,30 +132,59 @@ All stakeholder requirements for the POSIX SIL adaptation of foxBMS 2 v1.10.0, c
 
 All STKH-REQ-xxx requirements trace forward to SYS-REQ-xxx in the System Requirements Specification (SYS.2-001). The bidirectional traceability matrix in ISO26262-part8-traceability.md provides the complete mapping chain from stakeholder requirements through system requirements, software requirements, detailed design, and test cases.
 
-### 5.7 Traceability: STKH-REQ → SYS-REQ
+### 5.7 Traceability: STKH-REQ → SYS-REQ (Complete)
 
-| STKH-REQ | Traces Down To |
-|---|---|
-| STKH-REQ-001 | SYS-REQ-150 |
-| STKH-REQ-002 | SYS-REQ-150 |
-| STKH-REQ-003 | SYS-REQ-150 |
-| STKH-REQ-004 | SYS-REQ-150 |
-| STKH-REQ-005 | SYS-REQ-080, SYS-REQ-090 |
-| STKH-REQ-006 | SYS-REQ-080, SYS-REQ-081, SYS-REQ-090, SYS-REQ-091, SYS-REQ-092, SYS-REQ-093 |
-| STKH-REQ-007 | SYS-REQ-060, SYS-REQ-061, SYS-REQ-062, SYS-REQ-063, SYS-REQ-064, SYS-REQ-066 |
-| STKH-REQ-008 | SYS-REQ-130, SYS-REQ-131, SYS-REQ-132, SYS-REQ-133, SYS-REQ-134 |
-| STKH-REQ-009 | SYS-REQ-050, SYS-REQ-051, SYS-REQ-052, SYS-REQ-053 |
-| STKH-REQ-010 | SYS-REQ-153, SYS-REQ-154 |
-| STKH-REQ-011 | SYS-REQ-050, SYS-REQ-053, SYS-REQ-054 |
-| STKH-REQ-012 | SYS-REQ-050, SYS-REQ-053 |
-| STKH-REQ-013 | SYS-REQ-054, SYS-REQ-055 |
-| STKH-REQ-014 | SYS-REQ-150 |
-| STKH-REQ-015 | SYS-REQ-150 |
-| STKH-REQ-016 | SYS-REQ-150 |
-| STKH-REQ-017 | SYS-REQ-050, SYS-REQ-053 |
-| STKH-REQ-018 | SYS-REQ-150 |
-| STKH-REQ-019 | SYS-REQ-150 |
-| STKH-REQ-020 | SYS-REQ-150 |
+This table provides the complete bidirectional mapping between all 20 STKH-REQs and all 100 SYS-REQs.
+
+#### 5.7.1 Forward Trace: STKH-REQ → SYS-REQ
+
+| STKH-REQ | Category | Traces Down To |
+|---|---|---|
+| STKH-REQ-001 | Build/Setup | SYS-REQ-150, SYS-REQ-151, SYS-REQ-152, SYS-REQ-153, SYS-REQ-154, SYS-REQ-155, SYS-REQ-156 |
+| STKH-REQ-002 | Build/Setup | SYS-REQ-150, SYS-REQ-151, SYS-REQ-152, SYS-REQ-153, SYS-REQ-154, SYS-REQ-155, SYS-REQ-156 |
+| STKH-REQ-003 | Build/Setup | SYS-REQ-150, SYS-REQ-151, SYS-REQ-152, SYS-REQ-153, SYS-REQ-154, SYS-REQ-155, SYS-REQ-156 |
+| STKH-REQ-004 | Build/Setup | SYS-REQ-150, SYS-REQ-151, SYS-REQ-152, SYS-REQ-153, SYS-REQ-154, SYS-REQ-155, SYS-REQ-156 |
+| STKH-REQ-005 | Same BMS logic | SYS-REQ-001..016, SYS-REQ-080..086, SYS-REQ-090..095, SYS-REQ-100..115, SYS-REQ-120..123, SYS-REQ-140..147 |
+| STKH-REQ-006 | Full state transitions | SYS-REQ-080, SYS-REQ-081, SYS-REQ-082, SYS-REQ-083, SYS-REQ-090, SYS-REQ-091, SYS-REQ-092, SYS-REQ-093, SYS-REQ-094, SYS-REQ-095, SYS-REQ-100..115 |
+| STKH-REQ-007 | 15+ CAN messages | SYS-REQ-060, SYS-REQ-061, SYS-REQ-062, SYS-REQ-063, SYS-REQ-064, SYS-REQ-065, SYS-REQ-066, SYS-REQ-067, SYS-REQ-068, SYS-REQ-069 |
+| STKH-REQ-008 | SOC changes | SYS-REQ-130, SYS-REQ-131, SYS-REQ-132, SYS-REQ-133, SYS-REQ-134, SYS-REQ-140..147 |
+| STKH-REQ-009 | DIAG software-checkable | SYS-REQ-020..043, SYS-REQ-050, SYS-REQ-051, SYS-REQ-052, SYS-REQ-053, SYS-REQ-054, SYS-REQ-055, SYS-REQ-056, SYS-REQ-057, SYS-REQ-058, SYS-REQ-059 |
+| STKH-REQ-010 | HW DIAG suppressed | SYS-REQ-153, SYS-REQ-154 |
+| STKH-REQ-011 | Fault injection | SYS-REQ-050, SYS-REQ-051, SYS-REQ-052, SYS-REQ-053, SYS-REQ-054, SYS-REQ-055 |
+| STKH-REQ-012 | Fault same DIAG response | SYS-REQ-050, SYS-REQ-051, SYS-REQ-052, SYS-REQ-053 |
+| STKH-REQ-013 | FAS_ASSERT visible | SYS-REQ-150 |
+| STKH-REQ-014 | Smoke test | SYS-REQ-090, SYS-REQ-150 |
+| STKH-REQ-015 | Timeout flag | SYS-REQ-150, SYS-REQ-151 |
+| STKH-REQ-016 | Integration tests | SYS-REQ-060..069, SYS-REQ-070..077 |
+| STKH-REQ-017 | ASIL fault tests | SYS-REQ-020..043, SYS-REQ-050..059 |
+| STKH-REQ-018 | Troubleshooting guide | SYS-REQ-150 |
+| STKH-REQ-019 | Architecture diagrams | SYS-REQ-080..086, SYS-REQ-090..095 |
+| STKH-REQ-020 | Coverage matrix | SYS-REQ-150..156 |
+
+#### 5.7.2 Reverse Trace: SYS-REQ → STKH-REQ
+
+| SYS-REQ Range | Domain | STKH-REQ Parent(s) |
+|---|---|---|
+| SYS-REQ-001..016 | Pack configuration, cell parameters | STKH-REQ-005 (same BMS logic requires same config) |
+| SYS-REQ-020..043 | Safety thresholds (MOL/RSL/MSL) | STKH-REQ-009, STKH-REQ-017 |
+| SYS-REQ-050..053 | DIAG handler core | STKH-REQ-009, STKH-REQ-011, STKH-REQ-012, STKH-REQ-017 |
+| SYS-REQ-054..055 | DIAG error escalation | STKH-REQ-011, STKH-REQ-013 |
+| SYS-REQ-056..059 | DIAG suppression, coverage | STKH-REQ-009, STKH-REQ-017 |
+| SYS-REQ-060..069 | CAN TX messages | STKH-REQ-007, STKH-REQ-016 |
+| SYS-REQ-070..077 | CAN RX messages | STKH-REQ-016 |
+| SYS-REQ-080..086 | SYS state machine | STKH-REQ-005, STKH-REQ-006, STKH-REQ-019 |
+| SYS-REQ-090..095 | BMS state machine | STKH-REQ-005, STKH-REQ-006, STKH-REQ-014, STKH-REQ-019 |
+| SYS-REQ-100..115 | Precharge, contactor control | STKH-REQ-005, STKH-REQ-006 |
+| SYS-REQ-120..123 | Balancing | STKH-REQ-005 |
+| SYS-REQ-130..134 | SOC estimation | STKH-REQ-008 |
+| SYS-REQ-140..147 | Plant model | STKH-REQ-005, STKH-REQ-008 |
+| SYS-REQ-150 | POSIX build/compile | STKH-REQ-001..004, STKH-REQ-013, STKH-REQ-014, STKH-REQ-015, STKH-REQ-018, STKH-REQ-020 |
+| SYS-REQ-151 | POSIX timeout/CI | STKH-REQ-002, STKH-REQ-015, STKH-REQ-020 |
+| SYS-REQ-152 | POSIX SocketCAN | STKH-REQ-001..004, STKH-REQ-020 |
+| SYS-REQ-153 | POSIX HW DIAG suppress | STKH-REQ-010, STKH-REQ-020 |
+| SYS-REQ-154 | POSIX HW stub rationale | STKH-REQ-010, STKH-REQ-020 |
+| SYS-REQ-155 | POSIX cooperative loop | STKH-REQ-001..004, STKH-REQ-020 |
+| SYS-REQ-156 | POSIX register stubs | STKH-REQ-001..004, STKH-REQ-020 |
 
 ## 7. Acceptance Criteria
 

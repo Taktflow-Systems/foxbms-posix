@@ -367,4 +367,21 @@ For ASIL D safety goals (SG-01), the diagnostic configuration provides independe
 
 ---
 
+## Traceability: FSR → TSR
+
+| FSR | Safety Goal | Traces Down To TSR | TSR Description |
+|-----|-------------|-------------------|-----------------|
+| FSR-001 | Prevent overvoltage | TSR-001 | Voltage monitoring |
+| FSR-002 | Prevent undervoltage | TSR-001 | Voltage monitoring |
+| FSR-003 | Prevent deep discharge | TSR-001 | Voltage monitoring |
+| FSR-004 | Prevent discharge overcurrent | TSR-002 | Current monitoring |
+| FSR-005 | Prevent charge overcurrent | TSR-002 | Current monitoring |
+| FSR-006 | Prevent overtemperature | TSR-003 | Temperature monitoring |
+| FSR-007 | Prevent undertemp charge | TSR-003 | Temperature monitoring |
+| FSR-008 | Prevent contactor welding | TSR-005, TSR-006 | Contactor control, Precharge |
+| FSR-009 | Detect sensor failure | TSR-008, TSR-009, TSR-014, TSR-015 | CAN timing, Current sensor, Redundancy, Plausibility |
+| FSR-010 | Prevent interlock exposure | TSR-007 | Interlock monitoring |
+| FSR-011 | Prevent insulation failure | TSR-011 | Insulation monitoring |
+| FSR-012 | Prevent cell imbalance damage | TSR-012, TSR-013 | Balancing, SOC estimation |
+
 *End of Document FOX-SAF-FSC-001*
