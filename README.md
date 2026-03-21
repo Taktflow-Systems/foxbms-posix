@@ -2,18 +2,21 @@
 
 foxBMS 2 v1.10.0 Battery Management System running as a native Linux x86-64 process via SocketCAN. No TMS570 hardware required.
 
-## Status: BMS in NORMAL Operation
+## Status: Phase 3 Complete (93%)
 
-Full state transition verified — no hacks, proper CAN data flow:
-```
-UNINITIALIZED → INITIALIZATION → IDLE → STANDBY → PRECHARGE → NORMAL
-```
+| Phase | Status | Criteria |
+|-------|--------|----------|
+| Phase 1: BMS NORMAL | **COMPLETE** | 10/10 |
+| Phase 2: Realistic Simulation | **COMPLETE** | 8/8 |
+| Phase 2.5: SIL Probes | **COMPLETE** | 76/76 |
+| Phase 3: Fault Injection | **COMPLETE** | 10/11 (29/31 tests pass) |
+| Phase 4: Integration | Not started | 0/7 |
 
-- 15+ periodic CAN message types on SocketCAN
-- 18 cells × 3700mV, string voltage 66600mV
-- SOC 50% (counting method), 3 contactors closed
-- Plant model feeds realistic IVT + cell voltage data
-- Precharge passes with matching string/bus voltages
+- Full BMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR
+- Real `diag.c` with threshold counters — faults propagate to ERROR, contactors open
+- 2,005 ASIL-D test cases across 17 fault injection modules
+- 415 traced requirement IDs, 1,953 links, 0 broken — traceability PASS
+- 37 HITL locks protecting safety-critical content
 
 ## Quick Start
 
@@ -58,19 +61,55 @@ Plant Model (Python)  <-->  SocketCAN (vcan1)  <-->  foxBMS vECU (C binary)
   - State requests (0x210)                             - 15+ CAN TX messages
 ```
 
-## Documentation
+## Browse Documentation (HTML)
 
-| Document | Description |
-|----------|-------------|
-| [STATUS.md](STATUS.md) | Implementation history, 14 fixes, architecture details |
-| [PLAN.md](PLAN.md) | Roadmap: Phase 1-2.5 done, Phase 3-4 planned |
-| [docs/project/gap-analysis.md](docs/project/gap-analysis.md) | 33 gaps identified, 17 fixed, 3 accepted |
-| [docs/project/coverage.md](docs/project/coverage.md) | 51 features across 7 categories |
-| [docs/project/troubleshooting.md](docs/project/troubleshooting.md) | 10 failure modes with fixes |
-| [docs/project/build-guide.md](docs/project/build-guide.md) | Detailed build instructions |
-| [docs/project/audit-10-role.md](docs/project/audit-10-role.md) | 10-auditor review (1 CRITICAL, 9 HIGH findings) |
-| [docs/aspice-cl2/](docs/aspice-cl2/) | **27 ASPICE CL2 + ISO 26262 ASIL-D documents** |
-| [docs/foxbms-upstream/](docs/foxbms-upstream/) | 24 upstream foxBMS reference docs |
+The full documentation is available as an interactive HTML site with search, navigation, and **clickable traceability links**:
+
+```bash
+# Build the HTML site (requires: pip install markdown)
+python scripts/build-html.py
+python scripts/build-trace-html.py
+
+# Open in browser
+xdg-open docs/site/index.html           # Linux
+start docs/site/index.html              # Windows
+```
+
+**`docs/site/index.html`** — 59 document pages with sidebar navigation, search, and prev/next buttons.
+
+Every requirement ID (SYS-REQ-020, SW-REQ-001, SSR-003, etc.) is a **colored link**. Hover to see upstream/downstream trace links. Click to navigate to the linked requirement or the traceability explorer.
+
+**`docs/site/traceability.html`** — Interactive traceability explorer. Click any of the 415 requirement IDs to see:
+- Full trace chain from stakeholder → system → software → test
+- Safety chain from hazard → safety goal → FSR → TSR → SSR → test
+- Color-coded by level, searchable, keyboard-navigable
+
+### Documentation Map
+
+| Section | Documents | Description |
+|---------|-----------|-------------|
+| [STATUS.md](STATUS.md) | 1 | Implementation history, 14 fixes, architecture |
+| [PLAN.md](PLAN.md) | 1 | Roadmap: Phase 1-3 complete, Phase 4 planned |
+| [docs/aspice-cl2/](docs/aspice-cl2/) | **29** | ASPICE CL2 package (SYS, SWE, MAN, SUP) + ISO 26262 ASIL-D (HARA, FSC, TSC, FMEA, FTTI, HSI) |
+| [docs/foxbms-upstream/](docs/foxbms-upstream/) | 25 | foxBMS module reference from docs.foxbms.org |
+| [docs/project/](docs/project/) | 9 | Gap analysis, coverage, troubleshooting, audits, build guide |
+| [docs/business/](docs/business/) | 4 | ML integration, reusable pipeline, HIL data plan |
+| [docs/test/](docs/test/) | 3 | Fault injection test matrices |
+
+### Traceability
+
+```bash
+# Validate all trace links (CI also runs this)
+python scripts/trace-gen.py --check
+
+# Generate traceability matrix
+python scripts/trace-gen.py
+
+# Print summary
+python scripts/trace-gen.py --stats
+```
+
+Current status: **415 IDs, 1,953 links, 0 broken, 0 untested leaves — PASS**
 
 ## Repository Structure
 
@@ -92,7 +131,9 @@ foxbms-posix/
 ├── patches/                          ← Python scripts to patch foxBMS source
 │   └── apply_all.sh                  Apply all patches in correct order
 ├── scripts/
-│   └── trace-gen.py                  Traceability matrix generator (308 IDs)
+│   ├── trace-gen.py                  Traceability scanner (415 IDs, CI validation)
+│   ├── build-html.py                 Multi-page HTML doc site with trace popups
+│   └── build-trace-html.py           Interactive traceability explorer
 ├── .github/workflows/ci.yml          ← CI: smoke test + traceability + tests
 ├── halcogen-headers/                 ← Pre-generated TMS570 headers
 └── docs/

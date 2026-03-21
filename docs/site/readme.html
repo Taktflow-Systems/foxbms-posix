@@ -195,16 +195,49 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <div class="breadcrumb"><a href="index.html">Home</a> / Project Overview / README</div>
 <div class="content"><h1 id="foxbms-posix-port">foxBMS POSIX Port</h1>
 <p>foxBMS 2 v1.10.0 Battery Management System running as a native Linux x86-64 process via SocketCAN. No TMS570 hardware required.</p>
-<h2 id="status-bms-in-normal-operation">Status: BMS in NORMAL Operation</h2>
-<p>Full state transition verified — no hacks, proper CAN data flow:</p>
-<pre><code>UNINITIALIZED → INITIALIZATION → IDLE → STANDBY → PRECHARGE → NORMAL
-</code></pre>
+<h2 id="status-phase-3-complete-93">Status: Phase 3 Complete (93%)</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Status</th>
+<th>Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1: BMS NORMAL</td>
+<td><strong>COMPLETE</strong></td>
+<td>10/10</td>
+</tr>
+<tr>
+<td>Phase 2: Realistic Simulation</td>
+<td><strong>COMPLETE</strong></td>
+<td>8/8</td>
+</tr>
+<tr>
+<td>Phase 2.5: SIL Probes</td>
+<td><strong>COMPLETE</strong></td>
+<td>76/76</td>
+</tr>
+<tr>
+<td>Phase 3: Fault Injection</td>
+<td><strong>COMPLETE</strong></td>
+<td>10/11 (29/31 tests pass)</td>
+</tr>
+<tr>
+<td>Phase 4: Integration</td>
+<td>Not started</td>
+<td>0/7</td>
+</tr>
+</tbody>
+</table>
 <ul>
-<li>15+ periodic CAN message types on SocketCAN</li>
-<li>18 cells × 3700mV, string voltage 66600mV</li>
-<li>SOC 50% (counting method), 3 contactors closed</li>
-<li>Plant model feeds realistic IVT + cell voltage data</li>
-<li>Precharge passes with matching string/bus voltages</li>
+<li>Full BMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR</li>
+<li>Real <code>diag.c</code> with threshold counters — faults propagate to ERROR, contactors open</li>
+<li>2,005 ASIL-D test cases across 17 fault injection modules</li>
+<li>415 traced requirement IDs, 1,953 links, 0 broken — traceability PASS</li>
+<li>37 HITL locks protecting safety-critical content</li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
 <pre><code class="language-bash"># Prerequisites: Ubuntu 24.04, GCC 13+, Python 3.12
@@ -242,53 +275,80 @@ FOXBMS_CAN_IF=vcan1 ./foxbms-vecu
   - Cell temps 25C (0x280)                             - Precharge sequence
   - State requests (0x210)                             - 15+ CAN TX messages
 </code></pre>
-<h2 id="documentation">Documentation</h2>
+<h2 id="browse-documentation-html">Browse Documentation (HTML)</h2>
+<p>The full documentation is available as an interactive HTML site with search, navigation, and <strong>clickable traceability links</strong>:</p>
+<pre><code class="language-bash"># Build the HTML site (requires: pip install markdown)
+python scripts/build-html.py
+python scripts/build-trace-html.py
+
+# Open in browser
+xdg-open docs/site/index.html           # Linux
+start docs/site/index.html              # Windows
+</code></pre>
+<p><strong><code>docs/site/index.html</code></strong> — 59 document pages with sidebar navigation, search, and prev/next buttons.</p>
+<p>Every requirement ID (<span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-010">UT-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-011">UT-011</a><span style="color:var(--text2)"> +1 more</span></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-020">SYS-REQ-020</a><a class="tb-link tb-up" href="part-4-tsc.html#tsr-001">TSR-001</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-012">UT-012</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-015">UT-015</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-016">UT-016</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #f39c12;cursor:help"><a href="traceability.html" style="color:#f39c12;text-decoration:none">SSR-003</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability-matrix.html#hz-001">HZ-001</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-002">HZ-002</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-003">HZ-003</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-004">HZ-004</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-005">HZ-005</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-006">HZ-006</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-007">HZ-007</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-008">HZ-008</a><span style="color:var(--text2)"> +12 more</span></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-008">FM-008</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-018">FM-018</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-004">QT-004</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-016">UT-016</a></div></span></span>, etc.) is a <strong>colored link</strong>. Hover to see upstream/downstream trace links. Click to navigate to the linked requirement or the traceability explorer.</p>
+<p><strong><code>docs/site/traceability.html</code></strong> — Interactive traceability explorer. Click any of the 415 requirement IDs to see:
+- Full trace chain from stakeholder → system → software → test
+- Safety chain from hazard → safety goal → FSR → TSR → SSR → test
+- Color-coded by level, searchable, keyboard-navigable</p>
+<h3 id="documentation-map">Documentation Map</h3>
 <table>
 <thead>
 <tr>
-<th>Document</th>
+<th>Section</th>
+<th>Documents</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="STATUS.md">STATUS.md</a></td>
-<td>Implementation history, 14 fixes, architecture details</td>
+<td>1</td>
+<td>Implementation history, 14 fixes, architecture</td>
 </tr>
 <tr>
 <td><a href="PLAN.md">PLAN.md</a></td>
-<td>Roadmap: Phase 1-2.5 done, Phase 3-4 planned</td>
-</tr>
-<tr>
-<td><a href="docs/project/gap-analysis.md">docs/project/gap-analysis.md</a></td>
-<td>33 gaps identified, 17 fixed, 3 accepted</td>
-</tr>
-<tr>
-<td><a href="docs/project/coverage.md">docs/project/coverage.md</a></td>
-<td>51 features across 7 categories</td>
-</tr>
-<tr>
-<td><a href="docs/project/troubleshooting.md">docs/project/troubleshooting.md</a></td>
-<td>10 failure modes with fixes</td>
-</tr>
-<tr>
-<td><a href="docs/project/build-guide.md">docs/project/build-guide.md</a></td>
-<td>Detailed build instructions</td>
-</tr>
-<tr>
-<td><a href="docs/project/audit-10-role.md">docs/project/audit-10-role.md</a></td>
-<td>10-auditor review (1 CRITICAL, 9 HIGH findings)</td>
+<td>1</td>
+<td>Roadmap: Phase 1-3 complete, Phase 4 planned</td>
 </tr>
 <tr>
 <td><a href="docs/aspice-cl2/">docs/aspice-cl2/</a></td>
-<td><strong>27 ASPICE CL2 + ISO 26262 ASIL-D documents</strong></td>
+<td><strong>29</strong></td>
+<td>ASPICE CL2 package (SYS, SWE, MAN, SUP) + ISO 26262 ASIL-D (HARA, FSC, TSC, FMEA, FTTI, HSI)</td>
 </tr>
 <tr>
 <td><a href="docs/foxbms-upstream/">docs/foxbms-upstream/</a></td>
-<td>24 upstream foxBMS reference docs</td>
+<td>25</td>
+<td>foxBMS module reference from docs.foxbms.org</td>
+</tr>
+<tr>
+<td><a href="docs/project/">docs/project/</a></td>
+<td>9</td>
+<td>Gap analysis, coverage, troubleshooting, audits, build guide</td>
+</tr>
+<tr>
+<td><a href="docs/business/">docs/business/</a></td>
+<td>4</td>
+<td>ML integration, reusable pipeline, HIL data plan</td>
+</tr>
+<tr>
+<td><a href="docs/test/">docs/test/</a></td>
+<td>3</td>
+<td>Fault injection test matrices</td>
 </tr>
 </tbody>
 </table>
+<h3 id="traceability">Traceability</h3>
+<pre><code class="language-bash"># Validate all trace links (CI also runs this)
+python scripts/trace-gen.py --check
+
+# Generate traceability matrix
+python scripts/trace-gen.py
+
+# Print summary
+python scripts/trace-gen.py --stats
+</code></pre>
+<p>Current status: <strong>415 IDs, 1,953 links, 0 broken, 0 untested leaves — PASS</strong></p>
 <h2 id="repository-structure">Repository Structure</h2>
 <pre><code>foxbms-posix/
 ├── README.md, STATUS.md, PLAN.md    ← Top-level project docs
@@ -307,7 +367,9 @@ FOXBMS_CAN_IF=vcan1 ./foxbms-vecu
 ├── patches/                          ← Python scripts to patch foxBMS source
 │   └── apply_all.sh                  Apply all patches in correct order
 ├── scripts/
-│   └── trace-gen.py                  Traceability matrix generator (308 IDs)
+│   ├── trace-gen.py                  Traceability scanner (415 IDs, CI validation)
+│   ├── build-html.py                 Multi-page HTML doc site with trace popups
+│   └── build-trace-html.py           Interactive traceability explorer
 ├── .github/workflows/ci.yml          ← CI: smoke test + traceability + tests
 ├── halcogen-headers/                 ← Pre-generated TMS570 headers
 └── docs/

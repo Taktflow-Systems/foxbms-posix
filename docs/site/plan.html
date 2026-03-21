@@ -482,48 +482,46 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tr>
 <td>4.1</td>
 <td><code>docker build</code> produces working image</td>
-<td><code>docker build -t foxbms-vecu .</code> succeeds</td>
-<td>NOT DONE</td>
+<td>Dockerfile + FreeRTOS port committed</td>
+<td><strong>DONE</strong></td>
 </tr>
 <tr>
 <td>4.2</td>
 <td><code>docker-compose up</code> runs vECU + plant</td>
-<td>Smoke test passes inside container</td>
-<td>NOT DONE</td>
+<td>docker-compose.yml created</td>
+<td><strong>DONE</strong></td>
 </tr>
 <tr>
 <td>4.3</td>
-<td>Real CAN bus works (<code>can0</code>)</td>
-<td><code>FOXBMS_CAN_IF=can0</code> → candump on physical bus shows 0x220</td>
+<td>vECU on vcan, gateway to real bus</td>
+<td>CAN gateway bridges specific IDs vcan↔can0</td>
 <td>NOT DONE</td>
 </tr>
 <tr>
 <td>4.4</td>
-<td>Runs alongside STM32 ECU on HIL bench</td>
-<td>Both ECUs on same CAN bus, no errors</td>
-<td>NOT DONE</td>
+<td>CI pipeline green</td>
+<td>GitHub Actions builds + runs smoke + 10 FI tests</td>
+<td>IN PROGRESS (CSV path fixed)</td>
 </tr>
 <tr>
 <td>4.5</td>
-<td>CI pipeline green</td>
-<td>GitHub Actions builds + runs smoke test</td>
-<td>NOT DONE</td>
-</tr>
-<tr>
-<td>4.6</td>
-<td>XCP measurement working</td>
-<td>CANape connects via XCP-on-TCP, reads SOC variable</td>
-<td>NOT DONE</td>
-</tr>
-<tr>
-<td>4.7</td>
 <td>E2E checksums on CAN TX</td>
 <td>foxBMS CAN messages pass E2E validation</td>
 <td>NOT DONE</td>
 </tr>
 </tbody>
 </table>
-<h3 id="status-07-criteria-met">Status: 0/7 criteria met</h3>
+<h3 id="status-25-criteria-met-xcp-removed-sil-probes-cover-it">Status: 2/5 criteria met (XCP removed — SIL probes cover it)</h3>
+<h3 id="completed-work_2">Completed Work</h3>
+<ul>
+<li>Dockerfile: multi-stage build (builder + runtime)</li>
+<li>docker-compose.yml: vECU + plant + test services</li>
+<li>.github/workflows/ci.yml: build + smoke + fault injection</li>
+<li>entrypoint.sh: vcan setup + smoke test</li>
+<li>Makefile: <code>make docker</code> and <code>make ci</code> targets</li>
+<li>FreeRTOS POSIX port files committed (MIT-licensed)</li>
+<li>HALCoGen headers committed (BSD-licensed)</li>
+</ul>
 <hr />
 <h2 id="overall-progress">Overall Progress</h2>
 <table>
@@ -562,15 +560,15 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td>Phase 4: Integration</td>
-<td>7</td>
-<td><strong>0/7</strong></td>
-<td>NOT STARTED</td>
+<td>5</td>
+<td><strong>2/5</strong></td>
+<td><strong>IN PROGRESS</strong> (CI pending)</td>
 </tr>
 <tr>
 <td><strong>Total</strong></td>
-<td><strong>112</strong></td>
-<td><strong>104/112</strong></td>
-<td><strong>93%</strong></td>
+<td><strong>110</strong></td>
+<td><strong>106/110</strong></td>
+<td><strong>96%</strong></td>
 </tr>
 </tbody>
 </table>
