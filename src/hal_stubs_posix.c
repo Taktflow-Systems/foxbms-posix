@@ -895,20 +895,39 @@ void SPS_RequestContactorState(uint8_t ch, uint8_t state) {
     }
 }
 uint8_t SPS_GetChannelFeedback(uint8_t ch) {
-    if (ch < SPS_MAX_CHANNELS) return sps_channel_actual_state[ch];
+    if (ch < SPS_MAX_CHANNELS) {
+        if (sil_override_active(SIL_CONTACTOR_FB, ch)) {
+            return (uint8_t)sil_override_get_i32(SIL_CONTACTOR_FB, ch);
+        }
+        return sps_channel_actual_state[ch];
+    }
     return 0u;
 }
 uint8_t SPS_GetChannelAffiliation(uint8_t ch) { (void)ch; return 0u; }
 uint8_t SPS_GetChannelCurrentValue(uint8_t ch) { (void)ch; return 0u; }
 void SPS_RequestGioState(uint8_t ch, uint8_t state) { (void)ch; (void)state; }
 uint8_t SPS_GetGioState(uint8_t ch) { (void)ch; return 0u; }
-uint8_t SPS_GetChannelPexFeedback(uint8_t ch) {
-    /* Contactor feedback via PEX — return actual state from simulation */
-    if (ch < SPS_MAX_CHANNELS) return sps_channel_actual_state[ch];
+uint8_t SPS_GetChannelPexFeedback(uint8_t ch, uint8_t normallyOpen) {
+    /* Contactor feedback via PEX — return actual state from simulation.
+       normallyOpen: if 1, high pin = ON. if 0, low pin = ON.
+       Our simulation returns 1=CLOSED, 0=OPEN regardless of NO/NC. */
+    (void)normallyOpen;
+    if (ch < SPS_MAX_CHANNELS) {
+        if (sil_override_active(SIL_CONTACTOR_FB, ch)) {
+            return (uint8_t)sil_override_get_i32(SIL_CONTACTOR_FB, ch);
+        }
+        return sps_channel_actual_state[ch];
+    }
     return 0u;
 }
 uint8_t SPS_GetChannelCurrentFeedback(uint8_t ch) {
-    if (ch < SPS_MAX_CHANNELS) return sps_channel_actual_state[ch];
+    if (ch < SPS_MAX_CHANNELS) {
+        /* SIL: contactor feedback override — simulate welding, stuck open, etc. */
+        if (sil_override_active(SIL_CONTACTOR_FB, ch)) {
+            return (uint8_t)sil_override_get_i32(SIL_CONTACTOR_FB, ch);
+        }
+        return sps_channel_actual_state[ch];
+    }
     return 0u;
 }
 void SPS_SwitchOffAllGeneralIoChannels(void) {
