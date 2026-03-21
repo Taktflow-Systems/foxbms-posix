@@ -267,22 +267,19 @@ function update(d){
   document.getElementById("percVdelta").textContent=delta+" mV";
   document.getElementById("percTmin").textContent=tMin.toFixed(1)+"\u00B0C";
   document.getElementById("percTmax").textContent=tMax.toFixed(1)+"\u00B0C";
-  const bmsI=(d.pack_current_ma??0)/1000;
-  document.getElementById("percPackI").textContent=bmsI.toFixed(1)+" A";
-  const bmsV=(d.pack_voltage_mv??0)/1000;
-  document.getElementById("percPackV").textContent=bmsV.toFixed(1)+" V";
+  // IVT data — use plant fallback if BMS probe shows 0
+  const packI=((d.pack_current_ma||d.plant_current_ma)??0)/1000;
+  const packV=((d.pack_voltage_mv||d.plant_pack_voltage_mv)??0)/1000;
+  document.getElementById("percPackI").textContent=packI.toFixed(1)+" A"+(packI>0.1?" dis":packI<-0.1?" chg":"");
+  document.getElementById("percPackV").textContent=packV.toFixed(1)+" V";
+  document.getElementById("percPackP").textContent=(Math.abs(packI*packV)).toFixed(0)+" W";
+  // Color indicators
   const vOk=mn>=2500&&mx<=4250,tOk=tMin>=-20&&tMax<=55;
   document.getElementById("percDot").style.background=(vOk&&tOk)?"var(--ok)":"var(--err)";
   document.getElementById("percVmin").style.color=mn<2500?"var(--err)":"var(--ok)";
   document.getElementById("percVmax").style.color=mx>4250?"var(--err)":"var(--ok)";
   document.getElementById("percTmin").style.color=tMin<-20?"var(--cold)":"var(--ok)";
   document.getElementById("percTmax").style.color=tMax>55?"var(--err)":"var(--ok)";
-  // IVT data
-  const packI=((d.pack_current_ma||d.plant_current_ma)??0)/1000;
-  const packV=((d.pack_voltage_mv||d.plant_pack_voltage_mv)??0)/1000;
-  document.getElementById("percPackI").textContent=packI.toFixed(1)+" A"+(packI>0.1?" dis":packI<-0.1?" chg":"");
-  document.getElementById("percPackV").textContent=packV.toFixed(1)+" V";
-  document.getElementById("percPackP").textContent=(Math.abs(packI*packV)).toFixed(0)+" W";
   // State machine
   const bst=d.bms_state??0;
   STATES.forEach((_,i)=>{document.getElementById("st"+i).classList.toggle("active",i===bst);});
