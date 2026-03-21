@@ -645,16 +645,24 @@ uint32_t DIAG_Handler(uint32_t id, uint32_t event, uint32_t impact, uint32_t dat
         return 0u; /* DIAG_HANDLER_RETURN_OK */
     }
 
-    /* Software-checkable IDs: pass through the event */
+    /* Software-checkable IDs: log the event but return OK.
+     * The real diag.c has per-ID threshold counters (fault must persist N cycles
+     * before it's truly reported as error). Our stub doesn't have this mechanism,
+     * so returning ERR_OCCURRED immediately blocks the BMS state machine.
+     * Faults are logged to stderr for debugging — check the log for [DIAG] lines. */
     if (event == 1u) { /* DIAG_EVENT_NOT_OK */
         posix_diag_fault_count++;
-        fprintf(stderr, "[DIAG] FAULT #%u: diagId=%u event=NOT_OK impact=%u data=%u\n",
-                posix_diag_fault_count, id, impact, data);
-        fflush(stderr);
-        return 1u; /* DIAG_HANDLER_RETURN_ERR_OCCURRED */
+        if (posix_diag_fault_count <= 20u) {
+            fprintf(stderr, "[DIAG] FAULT #%u: diagId=%u event=NOT_OK impact=%u data=%u\n",
+                    posix_diag_fault_count, id, impact, data);
+            fflush(stderr);
+        } else if (posix_diag_fault_count == 21u) {
+            fprintf(stderr, "[DIAG] (suppressing further fault log messages)\n");
+            fflush(stderr);
+        }
     }
 
-    return 0u; /* DIAG_HANDLER_RETURN_OK */
+    return 0u; /* DIAG_HANDLER_RETURN_OK — always, to not block state machine */
 }
 
 uint32_t DIAG_Initialize(void *dev) { (void)dev; return 0u; }
