@@ -669,7 +669,11 @@ uint32_t DIAG_CheckEvent(uint32_t r, uint32_t id, uint32_t impact, uint32_t data
 }
 uint32_t DIAG_GetDelay(uint32_t id) { (void)id; return 0u; }
 uint8_t DIAG_IsAnyFatalErrorSet(void) {
-    return (posix_diag_fault_count > 0u) ? 1u : 0u;
+    /* Always return false — the "fatal error" mechanism requires the full
+     * diag.c implementation with per-ID thresholds and error counting.
+     * Our selective DIAG_Handler logs faults but cannot determine which
+     * are truly fatal vs. transient. Returning true blocks SYS state machine. */
+    return 0u;
 }
 
 /* ================================================================
