@@ -53,10 +53,10 @@ def encode_cell_voltage_msg(mux, voltages_mv):
     """Encode foxBMS cell voltage message (0x270) using exact foxBMS encoding."""
     d = 0
     d = foxbms_encode_signal(d, 7, 8, mux)          # Mux
-    d = foxbms_encode_signal(d, 12, 1, 0)            # Invalid flag 0 (valid)
-    d = foxbms_encode_signal(d, 13, 1, 0)            # Invalid flag 1
-    d = foxbms_encode_signal(d, 14, 1, 0)            # Invalid flag 2
-    d = foxbms_encode_signal(d, 15, 1, 0)            # Invalid flag 3
+    d = foxbms_encode_signal(d, 12, 1, 1)            # Invalid flag 0: 1=VALID (DECAN_DATA_IS_VALID=1)
+    d = foxbms_encode_signal(d, 13, 1, 1)            # Invalid flag 1: 1=VALID
+    d = foxbms_encode_signal(d, 14, 1, 1)            # Invalid flag 2: 1=VALID
+    d = foxbms_encode_signal(d, 15, 1, 1)            # Invalid flag 3: 1=VALID
     d = foxbms_encode_signal(d, 11, 13, voltages_mv[0])  # Voltage 0
     d = foxbms_encode_signal(d, 30, 13, voltages_mv[1])  # Voltage 1
     d = foxbms_encode_signal(d, 33, 13, voltages_mv[2])  # Voltage 2
@@ -67,9 +67,9 @@ def encode_cell_temp_msg(mux, temps_ddegc):
     """Encode foxBMS cell temperature message (0x280)."""
     d = 0
     d = foxbms_encode_signal(d, 7, 8, mux)
-    d = foxbms_encode_signal(d, 12, 1, 0)  # Invalid flag 0
-    d = foxbms_encode_signal(d, 13, 1, 0)  # Invalid flag 1
-    d = foxbms_encode_signal(d, 14, 1, 0)  # Invalid flag 2
+    d = foxbms_encode_signal(d, 12, 1, 1)  # Invalid flag 0: 1=VALID
+    d = foxbms_encode_signal(d, 13, 1, 1)  # Invalid flag 1: 1=VALID
+    d = foxbms_encode_signal(d, 14, 1, 1)  # Invalid flag 2: 1=VALID
     d = foxbms_encode_signal(d, 11, 13, temps_ddegc[0] if len(temps_ddegc) > 0 else 0)
     d = foxbms_encode_signal(d, 30, 13, temps_ddegc[1] if len(temps_ddegc) > 1 else 0)
     d = foxbms_encode_signal(d, 33, 13, temps_ddegc[2] if len(temps_ddegc) > 2 else 0)
@@ -103,12 +103,15 @@ try:
         current_ma = 0  # 0 A
         can_send(0x521, struct.pack(">BBi", msg_counter & 0xFF, 0, current_ma)[:6])
 
-        # IVT Voltage 1 (0x522)
-        pack_voltage_mv = 22200  # 22.2V
+        # IVT Voltage 1 (0x522): pack voltage = 18 cells × 3700mV = 66600mV
+        pack_voltage_mv = 66600
         can_send(0x522, struct.pack(">BBi", msg_counter & 0xFF, 0, pack_voltage_mv)[:6])
 
         # IVT Voltage 2 (0x523)
         can_send(0x523, struct.pack(">BBi", msg_counter & 0xFF, 0, pack_voltage_mv)[:6])
+
+        # IVT Voltage 3 (0x524) — used by redundancy module for HV bus voltage
+        can_send(0x524, struct.pack(">BBi", msg_counter & 0xFF, 0, pack_voltage_mv)[:6])
 
         # IVT Temperature (0x527)
         temp_degc = 250  # 25.0°C * 10
@@ -126,13 +129,14 @@ try:
         if tick == 30:
             print("[plant] Switching to NORMAL request")
 
-        # Cell Voltages (0x270) and Temperatures (0x280)
-        # Use CAN signal encoding helper
-        for mux in range(2):
+        # Cell Voltages (0x270): 18 cells, 4 per message, need 5 mux values (0-4)
+        # BS_NR_OF_CELL_BLOCKS_PER_MODULE = 18
+        for mux in range(5):  # 5 × 4 = 20 slots (18 used, 2 unused)
             data = encode_cell_voltage_msg(mux, [3700, 3700, 3700, 3700])
             can_send(0x270, data)
 
-        data = encode_cell_temp_msg(0, [250, 250, 250])  # 25.0°C in deci-degrees
+        # Cell Temperatures (0x280)
+        data = encode_cell_temp_msg(0, [250, 250, 250])
         can_send(0x280, data)
 
         if tick % 100 == 0:
