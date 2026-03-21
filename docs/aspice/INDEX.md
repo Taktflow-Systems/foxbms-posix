@@ -57,6 +57,17 @@ stubs replacing TMS570 hardware.
 | ISO-SSR-001 | Software Safety Requirements | [ISO26262-part6-safety-requirements.md](ISO26262-part6-safety-requirements.md) | Part 6, Clause 6 | SWE.1 (safety subset) |
 | ISO-TRC-001 | Bidirectional Traceability Matrix | [ISO26262-part8-traceability.md](ISO26262-part8-traceability.md) | Part 8, Clause 6 | All SWE/SYS areas |
 
+### 4.4 ISO 26262 Safety Analysis Work Products
+
+| ID | Title | File | ISO 26262 Part | ASPICE Mapping |
+|---|---|---|---|---|
+| FOX-SAF-HARA-001 | Hazard Analysis and Risk Assessment | [ISO26262-part3-HARA.md](ISO26262-part3-HARA.md) | Part 3, Clause 7 | SYS.2 (safety input) |
+| FOX-SAF-FSC-001 | Functional Safety Concept | [ISO26262-part4-FSC.md](ISO26262-part4-FSC.md) | Part 4, Clause 6 | SYS.2, SYS.3 |
+| FOX-SAF-TSC-001 | Technical Safety Concept | [ISO26262-part4-TSC.md](ISO26262-part4-TSC.md) | Part 4, Clause 7 | SYS.3, SWE.2 |
+| FOX-SAF-FMEA-001 | Software FMEA | [ISO26262-part5-FMEA.md](ISO26262-part5-FMEA.md) | Part 5, Clause 7 | SWE.2, SWE.3 |
+| FOX-SAF-FTTI-001 | FTTI Calculation Report | [ISO26262-part6-FTTI-calculations.md](ISO26262-part6-FTTI-calculations.md) | Part 6, Clause 7 | SWE.3 (timing) |
+| FOX-SAF-ASIL-DEC-001 | ASIL Decomposition Analysis | [ISO26262-part9-ASIL-decomposition.md](ISO26262-part9-ASIL-decomposition.md) | Part 9, Clause 5 | SYS.3, SWE.2 |
+
 ## 5. Completeness Status
 
 | Process Area | Base Practices Addressed | Status |
@@ -72,6 +83,12 @@ stubs replacing TMS570 hardware.
 | ISO 26262 Part 5 HSI | Clause 7 | Complete |
 | ISO 26262 Part 6 Safety | Clauses 6-10 | Complete |
 | ISO 26262 Part 8 Traceability | Clause 6 | Complete |
+| ISO 26262 Part 3 HARA | Clause 7 | Complete |
+| ISO 26262 Part 4 FSC | Clause 6 | Complete |
+| ISO 26262 Part 4 TSC | Clause 7 | Complete |
+| ISO 26262 Part 5 FMEA | Clause 7 | Complete |
+| ISO 26262 Part 6 FTTI | Clause 7 | Complete |
+| ISO 26262 Part 9 ASIL Decomposition | Clause 5 | Complete |
 
 ## 6. Cross-Reference to ASPICE Generic Practices
 
