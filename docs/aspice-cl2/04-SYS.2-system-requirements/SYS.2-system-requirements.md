@@ -225,6 +225,112 @@ interfaces with validated stubs.
 | SYS-REQ-155 | The POSIX port shall provide at least 80 HAL stub modules. | Count of `*_posix.c` or stub files >= 80. | Cover all hardware abstraction points |
 | SYS-REQ-156 | The POSIX port shall map 60+ TMS570 register bases to RAM buffers. | Count of register base addresses in `posix_register_map.c` >= 60; all reads/writes execute without segfault. | Enable register-level code to execute without hardware |
 
+### 5.17 Traceability: SYS-REQ → SW-REQ
+
+| SYS-REQ | Traces Down To |
+|---|---|
+| SYS-REQ-001 | SW-REQ-062 |
+| SYS-REQ-002 | SW-REQ-062 |
+| SYS-REQ-003 | SW-REQ-062, SW-REQ-080 |
+| SYS-REQ-004 | SW-REQ-062 |
+| SYS-REQ-005 | SW-REQ-062 |
+| SYS-REQ-006 | SW-REQ-044 |
+| SYS-REQ-007 | SW-REQ-101 |
+| SYS-REQ-010 | SW-REQ-070 |
+| SYS-REQ-011 | SW-REQ-071 |
+| SYS-REQ-012 | SW-REQ-062 |
+| SYS-REQ-013 | SW-REQ-012 |
+| SYS-REQ-014 | SW-REQ-013 |
+| SYS-REQ-015 | SW-REQ-044 |
+| SYS-REQ-016 | SW-REQ-081, SW-REQ-083 |
+| SYS-REQ-020 | SW-REQ-001, SW-REQ-003 |
+| SYS-REQ-021 | SW-REQ-002, SW-REQ-004 |
+| SYS-REQ-022 | SW-REQ-005 |
+| SYS-REQ-030 | SW-REQ-010 |
+| SYS-REQ-031 | SW-REQ-011 |
+| SYS-REQ-040 | SW-REQ-020 |
+| SYS-REQ-041 | SW-REQ-021 |
+| SYS-REQ-042 | SW-REQ-022 |
+| SYS-REQ-043 | SW-REQ-023 |
+| SYS-REQ-050 | SW-REQ-030 |
+| SYS-REQ-051 | SW-REQ-031 |
+| SYS-REQ-052 | SW-REQ-033 |
+| SYS-REQ-053 | SW-REQ-031, SW-REQ-032 |
+| SYS-REQ-054 | SW-REQ-044 |
+| SYS-REQ-055 | SW-REQ-045, SW-REQ-200 |
+| SYS-REQ-056 | SW-REQ-031 |
+| SYS-REQ-057 | SW-REQ-031 |
+| SYS-REQ-058 | SW-REQ-031 |
+| SYS-REQ-059 | SW-REQ-031 |
+| SYS-REQ-05A | SW-REQ-110 |
+| SYS-REQ-060 | SW-REQ-090 |
+| SYS-REQ-061 | SW-REQ-091 |
+| SYS-REQ-062 | SW-REQ-095 |
+| SYS-REQ-063 | SW-REQ-095 |
+| SYS-REQ-064 | SW-REQ-095 |
+| SYS-REQ-065 | SW-REQ-095 |
+| SYS-REQ-066 | SW-REQ-095, SW-REQ-074 |
+| SYS-REQ-067 | SW-REQ-092, SW-REQ-093 |
+| SYS-REQ-068 | SW-REQ-094 |
+| SYS-REQ-069 | SW-REQ-090 |
+| SYS-REQ-070 | SW-REQ-100 |
+| SYS-REQ-071 | SW-REQ-108 |
+| SYS-REQ-072 | SW-REQ-109 |
+| SYS-REQ-073 | SW-REQ-101, SW-REQ-111 |
+| SYS-REQ-074 | SW-REQ-102 |
+| SYS-REQ-075 | SW-REQ-103 |
+| SYS-REQ-076 | SW-REQ-104 |
+| SYS-REQ-077 | SW-REQ-107 |
+| SYS-REQ-080 | SW-REQ-050 |
+| SYS-REQ-081 | SW-REQ-051 |
+| SYS-REQ-082 | SW-REQ-052 |
+| SYS-REQ-083 | SW-REQ-053 |
+| SYS-REQ-084 | SW-REQ-044 |
+| SYS-REQ-085 | SW-REQ-045 |
+| SYS-REQ-086 | SW-REQ-090 |
+| SYS-REQ-090 | SW-REQ-040 |
+| SYS-REQ-091 | SW-REQ-041 |
+| SYS-REQ-092 | SW-REQ-042 |
+| SYS-REQ-093 | SW-REQ-043 |
+| SYS-REQ-094 | SW-REQ-045 |
+| SYS-REQ-095 | SW-REQ-044 |
+| SYS-REQ-100 | SW-REQ-042 |
+| SYS-REQ-101 | SW-REQ-042 |
+| SYS-REQ-102 | SW-REQ-042 |
+| SYS-REQ-103 | SW-REQ-044 |
+| SYS-REQ-104 | SW-REQ-044 |
+| SYS-REQ-105 | SW-REQ-044 |
+| SYS-REQ-110 | SW-REQ-044 |
+| SYS-REQ-111 | SW-REQ-044 |
+| SYS-REQ-112 | SW-REQ-044 |
+| SYS-REQ-113 | SW-REQ-044 |
+| SYS-REQ-114 | SW-REQ-044 |
+| SYS-REQ-115 | SW-REQ-044 |
+| SYS-REQ-120 | SW-REQ-080, SW-REQ-081 |
+| SYS-REQ-121 | SW-REQ-082 |
+| SYS-REQ-122 | SW-REQ-083 |
+| SYS-REQ-123 | SW-REQ-083 |
+| SYS-REQ-130 | SW-REQ-070 |
+| SYS-REQ-131 | SW-REQ-071 |
+| SYS-REQ-132 | SW-REQ-074 |
+| SYS-REQ-133 | SW-REQ-073 |
+| SYS-REQ-134 | SW-REQ-072 |
+| SYS-REQ-140 | SW-REQ-108 |
+| SYS-REQ-141 | SW-REQ-108 |
+| SYS-REQ-142 | SW-REQ-108 |
+| SYS-REQ-143 | SW-REQ-108 |
+| SYS-REQ-144 | SW-REQ-108 |
+| SYS-REQ-145 | SW-REQ-108 |
+| SYS-REQ-146 | SW-REQ-108, SW-REQ-109 |
+| SYS-REQ-147 | SW-REQ-108 |
+| SYS-REQ-150 | SW-REQ-129 |
+| SYS-REQ-151 | SW-REQ-120, SW-REQ-121, SW-REQ-122, SW-REQ-123, SW-REQ-124, SW-REQ-125 |
+| SYS-REQ-152 | SW-REQ-126, SW-REQ-128 |
+| SYS-REQ-153 | SW-REQ-034 |
+| SYS-REQ-154 | SW-REQ-035 |
+| SYS-REQ-155 | SW-REQ-129 |
+| SYS-REQ-156 | SW-REQ-129 |
+
 ## 6. Acceptance Criteria
 
 Each requirement in Section 5 is accepted when all three general criteria AND the section-specific verification method are satisfied.

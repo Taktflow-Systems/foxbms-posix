@@ -132,6 +132,31 @@ All stakeholder requirements for the POSIX SIL adaptation of foxBMS 2 v1.10.0, c
 
 All STKH-REQ-xxx requirements trace forward to SYS-REQ-xxx in the System Requirements Specification (SYS.2-001). The bidirectional traceability matrix in ISO26262-part8-traceability.md provides the complete mapping chain from stakeholder requirements through system requirements, software requirements, detailed design, and test cases.
 
+### 5.7 Traceability: STKH-REQ → SYS-REQ
+
+| STKH-REQ | Traces Down To |
+|---|---|
+| STKH-REQ-001 | SYS-REQ-150 |
+| STKH-REQ-002 | SYS-REQ-150 |
+| STKH-REQ-003 | SYS-REQ-150 |
+| STKH-REQ-004 | SYS-REQ-150 |
+| STKH-REQ-005 | SYS-REQ-080, SYS-REQ-090 |
+| STKH-REQ-006 | SYS-REQ-080, SYS-REQ-081, SYS-REQ-090, SYS-REQ-091, SYS-REQ-092, SYS-REQ-093 |
+| STKH-REQ-007 | SYS-REQ-060, SYS-REQ-061, SYS-REQ-062, SYS-REQ-063, SYS-REQ-064, SYS-REQ-066 |
+| STKH-REQ-008 | SYS-REQ-130, SYS-REQ-131, SYS-REQ-132, SYS-REQ-133, SYS-REQ-134 |
+| STKH-REQ-009 | SYS-REQ-050, SYS-REQ-051, SYS-REQ-052, SYS-REQ-053 |
+| STKH-REQ-010 | SYS-REQ-153, SYS-REQ-154 |
+| STKH-REQ-011 | SYS-REQ-050, SYS-REQ-053, SYS-REQ-054 |
+| STKH-REQ-012 | SYS-REQ-050, SYS-REQ-053 |
+| STKH-REQ-013 | SYS-REQ-054, SYS-REQ-055 |
+| STKH-REQ-014 | SYS-REQ-150 |
+| STKH-REQ-015 | SYS-REQ-150 |
+| STKH-REQ-016 | SYS-REQ-150 |
+| STKH-REQ-017 | SYS-REQ-050, SYS-REQ-053 |
+| STKH-REQ-018 | SYS-REQ-150 |
+| STKH-REQ-019 | SYS-REQ-150 |
+| STKH-REQ-020 | SYS-REQ-150 |
+
 ## 7. Acceptance Criteria
 
 Each stakeholder requirement is considered fulfilled when:
