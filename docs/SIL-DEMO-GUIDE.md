@@ -1,21 +1,58 @@
 # foxBMS 2 — Battery Management System SIL Demo Guide
 
+## Live Demo (no setup required)
+
+**Open in your browser right now:**
+
+| Link | What you see |
+|------|-------------|
+| [sil.taktflow-systems.com/bms/](https://sil.taktflow-systems.com/bms/) | Live BMS dashboard with fault injection |
+| [sil.taktflow-systems.com/bms-docs/](https://sil.taktflow-systems.com/bms-docs/) | Full portfolio documentation (60 pages) |
+
+The BMS is running 24/7 on a Netcup VPS in Germany. No login required. You can inject faults and watch the BMS react in real-time.
+
+---
+
+## Interview Demo Script (3 minutes)
+
+Use this walkthrough to demonstrate the system in a live interview:
+
+| Step | Action | What to say |
+|------|--------|-------------|
+| 1 | Open [sil.taktflow-systems.com/bms/](https://sil.taktflow-systems.com/bms/) | "This is a live foxBMS 2 BMS running on Linux. The same C code that runs on the TMS570 microcontroller is executing here with SocketCAN." |
+| 2 | Point to BMS State: NORMAL | "The BMS started from UNINITIALIZED, went through INIT, IDLE, STANDBY, PRECHARGE, and reached NORMAL. Contactors are closed, 18 cells are balanced at ~3700mV." |
+| 3 | Select **Overvoltage**, range **C0–C17**, click **Inject** | "I'm injecting an overvoltage fault on all 18 cells via the plant model — this is SWE.6 black-box testing through the full CAN path." |
+| 4 | Watch event log + state transition | "The BMS detected the fault in ~585ms via the DIAG threshold counter (50 events). It transitions to ERROR and opens all contactors — fail-safe." |
+| 5 | Click **Clear** | "After clearing the fault, the BMS recovers through the normal startup sequence. No manual restart needed." |
+| 6 | Show **SWE.5 method selector** | "For white-box testing, I can inject faults directly into the BMS database using 11 ISO 26262 Part 5 methods — STUCK_AT, DRIFT, NOISE, etc. This bypasses CAN and tests the safety logic directly." |
+
+**If asked about test coverage:** "We have 2,005 ASIL-D fault injection test cases. 29 of 31 scenarios PASS — the 2 deferred tests are for cell balancing timeout and deep discharge recovery, documented in the test results."
+
+---
+
 ## What This Is
 
 A complete Software-in-the-Loop (SIL) simulation of the foxBMS 2 open-source Battery Management System, running as a native Linux process with a web-based visualization dashboard. The foxBMS C source code (v1.10.0) compiles and runs on x86-64 with hardware abstracted — the same safety logic that runs on the TMS570 microcontroller executes here with full CAN communication via SocketCAN.
 
 **Key capabilities:**
 - Live 18-cell battery pack visualization
-- Real foxBMS state machine (UNINITIALIZED → NORMAL → ERROR)
+- Real foxBMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR
 - Real DIAG threshold counting (OV: 50 events, OT: 500 events, OC: 10 events)
 - Contactor control with welding/stuck-open detection
 - Fault injection at two levels:
   - **SWE.6 (Plant/Black-box)**: change battery physics → BMS reacts via CAN
   - **SWE.5 (BMS/White-box)**: override BMS internal database → bypass CAN path
 - 11 ISO 26262-5 fault injection methods (STUCK_AT, DRIFT, NOISE, etc.)
-- 2,005 automated test cases (ASIL-D fault injection matrix)
+- 2,005 automated test cases (ASIL-D fault injection matrix), 29/31 PASS
 - CAN monitor showing live bus traffic
 - Event log showing fault chain reaction
+
+**Measured detection times:**
+| Fault | Detection time | Threshold |
+|-------|---------------|-----------|
+| Overvoltage (OV) | 585 ms | 50 events + 200ms delay |
+| Overcurrent (OC) | 116 ms | 10 events + 100ms delay |
+| Overtemperature (OT) | 5,510 ms | 500 events + 1000ms delay |
 
 ---
 
@@ -38,7 +75,23 @@ pip3 install --user aiohttp   # for web dashboard
 
 ---
 
-## Quick Start (5 minutes)
+## Quick Start — Docker (2 minutes)
+
+The fastest way to run the BMS locally:
+
+```bash
+git clone --recursive https://github.com/nhuvaoanh123/foxbms-posix.git
+cd foxbms-posix
+docker compose up --build
+```
+
+Open **http://localhost:8080** — done. The Docker image handles vCAN setup, build, plant model, and web server automatically.
+
+To stop: `docker compose down`
+
+---
+
+## Quick Start — Manual (5 minutes)
 
 ### Step 1: Clone the repository
 
