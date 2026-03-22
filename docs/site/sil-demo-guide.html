@@ -1,67 +1,320 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>foxBMS SIL Demo Guide — Taktflow Systems</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIL Demo Guide — foxBMS POSIX vECU</title>
 <style>
-:root{--bg:#fafbfc;--text:#1a1a2e;--muted:#5a6170;--border:#e1e4e8;--accent:#4a3f8a;--accent-light:#6c5fc7;--code-bg:#f0f1f3;--table-alt:#f6f8fa}
-body{font-family:'Inter','Segoe UI',system-ui,sans-serif;max-width:860px;margin:0 auto;padding:40px 24px 80px;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
-h1{font-size:28px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:12px;margin-top:48px}
-h2{font-size:20px;font-weight:600;color:var(--accent);margin-top:40px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-h3{font-size:16px;font-weight:600;color:var(--text);margin-top:28px}
-p{margin:12px 0}
-a{color:var(--accent-light);text-decoration:none}a:hover{text-decoration:underline}
-code{background:var(--code-bg);padding:2px 6px;border-radius:3px;font-size:0.88em;font-family:'Cascadia Code','Fira Code','Consolas',monospace}
-pre{background:var(--code-bg);padding:16px 20px;border-radius:6px;overflow-x:auto;border:1px solid var(--border);line-height:1.5}
-pre code{padding:0;background:none;font-size:0.85em}
-table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
-td,th{border:1px solid var(--border);padding:8px 12px;text-align:left}
-th{background:var(--table-alt);font-weight:600;color:var(--accent);font-size:13px;text-transform:uppercase;letter-spacing:0.3px}
-tr:nth-child(even){background:var(--table-alt)}
-strong{color:var(--accent)}
-ul,ol{padding-left:24px}li{margin:4px 0}
-hr{border:none;border-top:1px solid var(--border);margin:32px 0}
-.header{text-align:center;padding:24px 0 8px;border-bottom:none}
-.header h1{border:none;font-size:32px;margin-bottom:4px}
-.footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);text-align:center}
-</style></head><body>
-<div class="header"><p style="color:var(--muted);font-size:13px;margin:0">Taktflow Systems</p></div>
-<h1>foxBMS 2 — Battery Management System SIL Demo Guide</h1>
-<h2>What This Is</h2>
+:root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
+    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --sidebar-w: 280px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'Consolas', 'Fira Code', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
+
+/* Sidebar */
+nav.sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--bg2); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
+}
+.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
+.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
+nav.sidebar h3 {
+    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+nav.sidebar a {
+    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
+    text-decoration: none; border-left: 2px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
+nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
+#search {
+    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; outline: none;
+}
+#search:focus { border-color: var(--accent); }
+.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
+
+/* Main */
+main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Content */
+.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
+.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
+.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
+.content p { margin: 8px 0; }
+.content a { color: var(--accent); text-decoration: none; }
+.content a:hover { text-decoration: underline; }
+.content strong { color: var(--heading); }
+.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
+.content li { margin: 3px 0; }
+.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
+.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
+.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
+.content tr:hover td { background: var(--bg2); }
+.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+.content pre code { background: none; padding: 0; color: var(--text); }
+.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
+
+/* Trace badges */
+.trace-id { position: relative; display: inline; }
+.trace-badges {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px 10px; min-width: 200px; max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
+}
+.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
+.trace-badges .tb-section { margin-bottom: 4px; }
+.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.trace-badges a.tb-link {
+    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; text-decoration: none;
+    border: 1px solid var(--border); transition: all 0.15s;
+}
+.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
+.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
+.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
+
+/* Index page cards */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--accent); }
+.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
+.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
+.card a:hover { color: var(--accent); }
+.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Nav buttons */
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
+.nav-buttons a {
+    color: var(--accent); text-decoration: none; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--bg2);
+}
+.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
+
+@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
+</style>
+</head>
+<body>
+<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
+<input type="text" id="search" placeholder="Search...">
+<a href="index.html" >Home</a>
+<h3>Project Overview</h3>
+<a href="readme.html" >README</a>
+<a href="status.html" >STATUS</a>
+<a href="plan.html" >PLAN</a>
+<a href="sil-demo-guide.html" class="active">SIL Demo Guide</a>
+<h3>Project Documentation</h3>
+<a href="gap-analysis.html" >Gap Analysis</a>
+<a href="coverage-matrix.html" >Coverage Matrix</a>
+<a href="troubleshooting.html" >Troubleshooting</a>
+<a href="build-guide.html" >Build Guide</a>
+<a href="integration-notes.html" >Integration Notes</a>
+<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
+<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
+<a href="lessons-learned.html" >Lessons Learned</a>
+<h3>ASPICE CL2 — Assessment</h3>
+<a href="assessment-scope.html" >Assessment Scope</a>
+<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
+<a href="traceability-guide.html" >Traceability Guide</a>
+<a href="traceability-matrix.html" >Traceability Matrix</a>
+<h3>ASPICE CL2 — Management</h3>
+<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
+<h3>ASPICE CL2 — System</h3>
+<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
+<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
+<h3>ASPICE CL2 — Software</h3>
+<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
+<h3>ISO 26262 — Safety</h3>
+<a href="part-3-hara.html" >Part 3: HARA</a>
+<a href="part-4-fsc.html" >Part 4: FSC</a>
+<a href="part-4-tsc.html" >Part 4: TSC</a>
+<a href="part-5-hsi.html" >Part 5: HSI</a>
+<a href="part-5-fmea.html" >Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html" >Part 6: FTTI</a>
+<a href="part-8-traceability.html" >Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
+<h3>foxBMS Reference</h3>
+<a href="index.html" >Index</a>
+<a href="aspice-extraction.html" >ASPICE Extraction</a>
+<a href="modules-index.html" >Modules Index</a>
+<a href="bms-state-machine.html" >BMS State Machine</a>
+<a href="diag-handler.html" >DIAG Handler</a>
+<a href="database.html" >Database</a>
+<a href="can-module.html" >CAN Module</a>
+<a href="ftask.html" >FTASK</a>
+<a href="soa.html" >SOA</a>
+<a href="balancing.html" >Balancing</a>
+<a href="sbc.html" >SBC</a>
+<a href="precharging.html" >Precharging</a>
+<a href="interlock.html" >Interlock</a>
+<a href="dbc-signals.html" >DBC Signals</a>
+<h3>Business & Service</h3>
+<a href="reusable-pipeline.html" >Reusable Pipeline</a>
+<a href="ml-integration.html" >ML Integration</a>
+<a href="ml-feasibility.html" >ML Feasibility</a>
+<a href="hil-data-plan.html" >HIL Data Plan</a>
+<div class="stats">59 documents</div>
+</nav>
+<main>
+<div class="breadcrumb"><a href="index.html">Home</a> / Project Overview / SIL Demo Guide</div>
+<div class="content"><h1 id="foxbms-2-battery-management-system-sil-demo-guide">foxBMS 2 — Battery Management System SIL Demo Guide</h1>
+<h2 id="live-demo-no-setup-required">Live Demo (no setup required)</h2>
+<p><strong>Open in your browser right now:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Link</th>
+<th>What you see</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://sil.taktflow-systems.com/bms/">sil.taktflow-systems.com/bms/</a></td>
+<td>Live BMS dashboard with fault injection</td>
+</tr>
+<tr>
+<td><a href="https://sil.taktflow-systems.com/bms-docs/">sil.taktflow-systems.com/bms-docs/</a></td>
+<td>Full portfolio documentation (60 pages)</td>
+</tr>
+</tbody>
+</table>
+<p>The BMS is running 24/7 on a Netcup VPS in Germany. No login required. You can inject faults and watch the BMS react in real-time.</p>
+<hr />
+<h2 id="interview-demo-script-3-minutes">Interview Demo Script (3 minutes)</h2>
+<p>Use this walkthrough to demonstrate the system in a live interview:</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Action</th>
+<th>What to say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Open <a href="https://sil.taktflow-systems.com/bms/">sil.taktflow-systems.com/bms/</a></td>
+<td>"This is a live foxBMS 2 BMS running on Linux. The same C code that runs on the TMS570 microcontroller is executing here with SocketCAN."</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Point to BMS State: NORMAL</td>
+<td>"The BMS started from UNINITIALIZED, went through INIT, IDLE, STANDBY, PRECHARGE, and reached NORMAL. Contactors are closed, 18 cells are balanced at ~3700mV."</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Select <strong>Overvoltage</strong>, range <strong>C0–C17</strong>, click <strong>Inject</strong></td>
+<td>"I'm injecting an overvoltage fault on all 18 cells via the plant model — this is SWE.6 black-box testing through the full CAN path."</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Watch event log + state transition</td>
+<td>"The BMS detected the fault in ~585ms via the DIAG threshold counter (50 events). It transitions to ERROR and opens all contactors — fail-safe."</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Click <strong>Clear</strong></td>
+<td>"After clearing the fault, the BMS recovers through the normal startup sequence. No manual restart needed."</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Show <strong>SWE.5 method selector</strong></td>
+<td>"For white-box testing, I can inject faults directly into the BMS database using 11 ISO 26262 Part 5 methods — STUCK_AT, DRIFT, NOISE, etc. This bypasses CAN and tests the safety logic directly."</td>
+</tr>
+</tbody>
+</table>
+<p><strong>If asked about test coverage:</strong> "We have 2,005 ASIL-D fault injection test cases. 29 of 31 scenarios PASS — the 2 deferred tests are for cell balancing timeout and deep discharge recovery, documented in the test results."</p>
+<hr />
+<h2 id="what-this-is">What This Is</h2>
 <p>A complete Software-in-the-Loop (SIL) simulation of the foxBMS 2 open-source Battery Management System, running as a native Linux process with a web-based visualization dashboard. The foxBMS C source code (v1.10.0) compiles and runs on x86-64 with hardware abstracted — the same safety logic that runs on the TMS570 microcontroller executes here with full CAN communication via SocketCAN.</p>
 <p><strong>Key capabilities:</strong>
 - Live 18-cell battery pack visualization
-- Real foxBMS state machine (UNINITIALIZED → NORMAL → ERROR)
+- Real foxBMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR
 - Real DIAG threshold counting (OV: 50 events, OT: 500 events, OC: 10 events)
 - Contactor control with welding/stuck-open detection
 - Fault injection at two levels:
   - <strong>SWE.6 (Plant/Black-box)</strong>: change battery physics → BMS reacts via CAN
   - <strong>SWE.5 (BMS/White-box)</strong>: override BMS internal database → bypass CAN path
 - 11 ISO 26262-5 fault injection methods (STUCK_AT, DRIFT, NOISE, etc.)
-- 2,005 automated test cases (ASIL-D fault injection matrix)
+- 2,005 automated test cases (ASIL-D fault injection matrix), 29/31 PASS
 - CAN monitor showing live bus traffic
 - Event log showing fault chain reaction</p>
+<p><strong>Measured detection times:</strong>
+| Fault | Detection time | Threshold |
+|-------|---------------|-----------|
+| Overvoltage (OV) | 585 ms | 50 events + 200ms delay |
+| Overcurrent (OC) | 116 ms | 10 events + 100ms delay |
+| Overtemperature (OT) | 5,510 ms | 500 events + 1000ms delay |</p>
 <hr />
-<h2>Prerequisites</h2>
-<h3>Hardware</h3>
+<h2 id="prerequisites">Prerequisites</h2>
+<h3 id="hardware">Hardware</h3>
 <ul>
 <li>Linux PC or laptop (Ubuntu 22.04+ recommended)</li>
 <li>4+ GB RAM, any modern x86-64 CPU</li>
 <li>No special hardware needed — everything runs in software</li>
 </ul>
-<h3>Software</h3>
+<h3 id="software">Software</h3>
 <pre><code class="language-bash">sudo apt-get install -y gcc make python3 python3-pip can-utils iproute2 git
 pip3 install --user aiohttp   # for web dashboard
 </code></pre>
-<h3>Network (for remote access)</h3>
+<h3 id="network-for-remote-access">Network (for remote access)</h3>
 <ul>
 <li>Web dashboard accessible on port 8080</li>
 <li>If accessing from another machine, both must be on the same network</li>
 </ul>
 <hr />
-<h2>Quick Start (5 minutes)</h2>
-<h3>Step 1: Clone the repository</h3>
+<h2 id="quick-start-docker-2-minutes">Quick Start — Docker (2 minutes)</h2>
+<p>The fastest way to run the BMS locally:</p>
+<pre><code class="language-bash">git clone --recursive https://github.com/nhuvaoanh123/foxbms-posix.git
+cd foxbms-posix
+docker compose up --build
+</code></pre>
+<p>Open <strong>http://localhost:8080</strong> — done. The Docker image handles vCAN setup, build, plant model, and web server automatically.</p>
+<p>To stop: <code>docker compose down</code></p>
+<hr />
+<h2 id="quick-start-manual-5-minutes">Quick Start — Manual (5 minutes)</h2>
+<h3 id="step-1-clone-the-repository">Step 1: Clone the repository</h3>
 <pre><code class="language-bash">git clone --recursive https://github.com/nhuvaoanh123/foxbms-posix.git
 cd foxbms-posix
 </code></pre>
-<h3>Step 2: Copy HALCoGen headers and apply patches</h3>
+<h3 id="step-2-copy-halcogen-headers-and-apply-patches">Step 2: Copy HALCoGen headers and apply patches</h3>
 <pre><code class="language-bash">mkdir -p foxbms-2/build/app_host_unit_test/include
 cp halcogen-headers/* foxbms-2/build/app_host_unit_test/include/
 
@@ -75,17 +328,17 @@ cp freertos-posix-port/utils/* \
 # Apply all foxBMS source patches
 bash patches/apply_all.sh
 </code></pre>
-<h3>Step 3: Build</h3>
+<h3 id="step-3-build">Step 3: Build</h3>
 <pre><code class="language-bash">cd src
 make -j$(nproc)
 # Output: foxbms-vecu binary
 </code></pre>
-<h3>Step 4: Set up virtual CAN interface</h3>
+<h3 id="step-4-set-up-virtual-can-interface">Step 4: Set up virtual CAN interface</h3>
 <pre><code class="language-bash">sudo modprobe vcan
 sudo ip link add vcan1 type vcan
 sudo ip link set vcan1 up
 </code></pre>
-<h3>Step 5: Run the SIL demo</h3>
+<h3 id="step-5-run-the-sil-demo">Step 5: Run the SIL demo</h3>
 <p>Open three terminals (or use <code>&amp;</code> for background):</p>
 <p><strong>Terminal 1 — Plant model (battery simulator):</strong></p>
 <pre><code class="language-bash">python3 src/plant_model.py vcan1
@@ -96,7 +349,7 @@ sudo ip link set vcan1 up
 <p><strong>Terminal 3 — Web dashboard:</strong></p>
 <pre><code class="language-bash">python3 web/server.py --can vcan1 --port 8080 --host 0.0.0.0
 </code></pre>
-<h3>Step 6: Open the dashboard</h3>
+<h3 id="step-6-open-the-dashboard">Step 6: Open the dashboard</h3>
 <p>Browse to: <strong>http://localhost:8080</strong></p>
 <p>(Or from another machine: <code>http://&lt;laptop-ip&gt;:8080</code>)</p>
 <p>You should see:
@@ -105,7 +358,7 @@ sudo ip link set vcan1 up
 - SOC slowly decreasing (1A discharge at 0.33C)
 - CAN monitor showing live traffic</p>
 <hr />
-<h2>One-Command Start</h2>
+<h2 id="one-command-start">One-Command Start</h2>
 <p>After building once, use this to start everything:</p>
 <pre><code class="language-bash">cd foxbms-posix
 python3 src/plant_model.py vcan1 &amp;&gt;/dev/null &amp;
@@ -116,14 +369,14 @@ python3 web/server.py --can vcan1 --port 8080 --host 0.0.0.0
 <pre><code class="language-bash">killall foxbms-vecu python3
 </code></pre>
 <hr />
-<h2>Dashboard Guide</h2>
-<h3>Battery — Physical (Plant Model)</h3>
+<h2 id="dashboard-guide">Dashboard Guide</h2>
+<h3 id="battery-physical-plant-model">Battery — Physical (Plant Model)</h3>
 <p>The left panel shows 18 battery cells in a 3×6 grid. These represent the <strong>physical reality</strong> — what the battery actually produces. Each cell shows:
 - Cell ID (C0–C17)
 - Voltage in mV
 - Temperature dot (blue=cold, green=normal, red=hot)
 - Color: green (normal), yellow (warning), red (fault)</p>
-<h3>Plant Model — Physics</h3>
+<h3 id="plant-model-physics">Plant Model — Physics</h3>
 <p>Shows the battery simulation parameters:
 - <strong>SOC</strong>: State of Charge (decreases under discharge)
 - <strong>OCV</strong>: Open-circuit voltage from SOC lookup
@@ -131,25 +384,25 @@ python3 web/server.py --can vcan1 --port 8080 --host 0.0.0.0
 - <strong>IR Drop</strong>: Voltage loss due to internal resistance (I × R_total)
 - <strong>Current</strong>: Discharge current (positive = discharge)
 - <strong>Status</strong>: DISCHARGING / IDLE / CHARGING</p>
-<h3>BMS Inputs (What foxBMS Sees)</h3>
+<h3 id="bms-inputs-what-foxbms-sees">BMS Inputs (What foxBMS Sees)</h3>
 <p>Shows what the BMS actually reads from the battery via CAN/SPI:
 - <strong>AFE</strong>: Cell voltage min/max/delta, cell temperature min/max
 - <strong>IVT</strong>: Pack current, pack voltage, pack power</p>
 <p>When you inject a fault via SWE.6 (Plant), these values change because the plant's CAN output changes. When you inject via SWE.5 (BMS), these values change because the internal database is overridden.</p>
-<h3>BMS State Machine</h3>
+<h3 id="bms-state-machine">BMS State Machine</h3>
 <p>Shows the foxBMS state machine with the current state highlighted:
 - <strong>UNINITIALIZED</strong> → <strong>INITIALIZATION</strong> → <strong>INITIALIZED</strong> → <strong>IDLE</strong>
 - <strong>STANDBY</strong> → <strong>PRECHARGE</strong> → <strong>NORMAL</strong> (operating state)
 - <strong>ERROR</strong> (fault detected, contactors opened)</p>
 <p>State history shows timestamped transitions.</p>
-<h3>Contactors</h3>
+<h3 id="contactors">Contactors</h3>
 <p>Three contactors:
 - <strong>Main+</strong> (String Plus): connects positive terminal
 - <strong>Main-</strong> (String Minus): connects negative terminal
 - <strong>Precharge</strong>: pre-charges the bus capacitance (opens after precharge sequence)</p>
 <p>In NORMAL state: Main+ CLOSED, Main- CLOSED, Precharge OPEN.
 On fault: all three OPEN.</p>
-<h3>Fault Injection</h3>
+<h3 id="fault-injection">Fault Injection</h3>
 <p>Two modes:</p>
 <p><strong>Plant (SWE.6)</strong> — Black-box testing:
 - Changes the plant model's CAN output
@@ -166,7 +419,7 @@ On fault: all three OPEN.</p>
 - <strong>Undervoltage</strong>: Set cell voltage below UV MSL (2500mV). Range: C0 to C17.
 - <strong>Overtemperature</strong>: Set sensor temperature above OT MSL (55°C). Range: S0 to S7.
 - <strong>Overcurrent</strong>: Set pack current above OC MSL (15A). Fixed 200A.</p>
-<h3>Event Log</h3>
+<h3 id="event-log">Event Log</h3>
 <p>Shows the fault chain reaction with timestamps:</p>
 <pre><code>22:15:00  ⚡ PLANT: cell_voltage [0] = 4500
 22:15:01  🔍 FAULT: OV_MSL (DIAG ID 18)
@@ -174,35 +427,35 @@ On fault: all three OPEN.</p>
 22:15:01  🔓 Main+ OPENED
 22:15:01  🔓 Main- OPENED
 </code></pre>
-<h3>Diagnostics</h3>
+<h3 id="diagnostics">Diagnostics</h3>
 <ul>
 <li><strong>Fault count</strong>: Number of unique DIAG IDs that exceeded threshold</li>
 <li><strong>Last ID</strong>: Most recent DIAG event ID</li>
 <li><strong>Bitmap</strong>: Active fault IDs (e.g., "IDs: 18,19,20" for OV MSL/RSL/MOL)</li>
 </ul>
-<h3>CAN Monitor</h3>
+<h3 id="can-monitor">CAN Monitor</h3>
 <p>Live CAN bus traffic, color-coded:
 - <strong>Green</strong> (0x2xx): foxBMS CAN TX (state, SOC, cell voltages)
 - <strong>Blue</strong> (0x6xx): Plant telemetry (SOC, OCV, IR drop)
 - <strong>Purple</strong> (0x7Fx): SIL probes (internal state)</p>
 <hr />
-<h2>Running Automated Tests</h2>
-<h3>Smoke test (15 seconds)</h3>
+<h2 id="running-automated-tests">Running Automated Tests</h2>
+<h3 id="smoke-test-15-seconds">Smoke test (15 seconds)</h3>
 <pre><code class="language-bash">python3 src/test_smoke.py vcan1
 </code></pre>
-<h3>Fault injection tests (P1, 10 tests, ~2 minutes)</h3>
+<h3 id="fault-injection-tests-p1-10-tests-2-minutes">Fault injection tests (P1, 10 tests, ~2 minutes)</h3>
 <pre><code class="language-bash">python3 src/test_fault_injection.py vcan1 --max 10 --priority P1 \
   --csv docs/test/fault-injection-test-matrix-asild.csv --timeout 10000
 </code></pre>
-<h3>Full test suite (2,005 tests, ~5 hours)</h3>
+<h3 id="full-test-suite-2005-tests-5-hours">Full test suite (2,005 tests, ~5 hours)</h3>
 <pre><code class="language-bash">python3 src/test_fault_injection.py vcan1 \
   --csv docs/test/fault-injection-test-matrix-asild.csv --timeout 15000
 </code></pre>
-<h3>Scenario tests (high-risk scenarios)</h3>
+<h3 id="scenario-tests-high-risk-scenarios">Scenario tests (high-risk scenarios)</h3>
 <pre><code class="language-bash">python3 src/test_scenarios.py vcan1
 </code></pre>
 <hr />
-<h2>Architecture</h2>
+<h2 id="architecture">Architecture</h2>
 <pre><code>┌─────────────────┐     SocketCAN (vcan1)      ┌──────────────────┐
 │                 │                              │                  │
 │  Plant Model    │ ──── 0x270 Cell Voltages ──→ │                  │
@@ -240,7 +493,7 @@ On fault: all three OPEN.</p>
                     │             │
                     └─────────────┘
 </code></pre>
-<h3>CAN Message Map</h3>
+<h3 id="can-message-map">CAN Message Map</h3>
 <table>
 <thead>
 <tr>
@@ -312,7 +565,7 @@ On fault: all three OPEN.</p>
 </tr>
 </tbody>
 </table>
-<h3>foxBMS Configuration (NMC Chemistry)</h3>
+<h3 id="foxbms-configuration-nmc-chemistry">foxBMS Configuration (NMC Chemistry)</h3>
 <table>
 <thead>
 <tr>
@@ -373,7 +626,7 @@ On fault: all three OPEN.</p>
 </tr>
 </tbody>
 </table>
-<h3>Battery Pack Configuration</h3>
+<h3 id="battery-pack-configuration">Battery Pack Configuration</h3>
 <table>
 <thead>
 <tr>
@@ -417,7 +670,7 @@ On fault: all three OPEN.</p>
 </tbody>
 </table>
 <hr />
-<h2>Patches Applied to foxBMS</h2>
+<h2 id="patches-applied-to-foxbms">Patches Applied to foxBMS</h2>
 <p>The foxBMS source (v1.10.0) is unmodified in the submodule. All changes are applied at build time via Python patch scripts in <code>patches/</code>:</p>
 <table>
 <thead>
@@ -494,7 +747,7 @@ On fault: all three OPEN.</p>
 </tbody>
 </table>
 <hr />
-<h2>File Structure</h2>
+<h2 id="file-structure">File Structure</h2>
 <pre><code>foxbms-posix/
 ├── foxbms-2/              # foxBMS v1.10.0 submodule (unmodified)
 ├── halcogen-headers/      # 91 HALCoGen generated headers (BSD)
@@ -531,32 +784,32 @@ On fault: all three OPEN.</p>
 └── docker-compose.yml        # Docker compose
 </code></pre>
 <hr />
-<h2>Troubleshooting</h2>
-<h3>BMS doesn't reach NORMAL</h3>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="bms-doesnt-reach-normal">BMS doesn't reach NORMAL</h3>
 <ul>
 <li>Ensure plant_model.py is running BEFORE foxbms-vecu</li>
 <li>Check vcan1 is up: <code>ip link show vcan1</code></li>
 <li>Wait 8-10 seconds (startup + precharge takes time)</li>
 </ul>
-<h3>Web dashboard shows no data</h3>
+<h3 id="web-dashboard-shows-no-data">Web dashboard shows no data</h3>
 <ul>
 <li>Ensure all 3 processes are running: <code>ps aux | grep -E 'plant|foxbms|server'</code></li>
 <li>Check web server log: <code>cat /tmp/bms-web.log</code></li>
 <li>Verify CAN traffic: <code>candump vcan1 -n 5</code></li>
 </ul>
-<h3>Cell voltages all zero</h3>
+<h3 id="cell-voltages-all-zero">Cell voltages all zero</h3>
 <ul>
 <li>The plant needs ~1 second to start sending data</li>
 <li>Hard refresh browser: Ctrl+Shift+R</li>
 </ul>
-<h3>Fault injection doesn't trigger BMS reaction</h3>
+<h3 id="fault-injection-doesnt-trigger-bms-reaction">Fault injection doesn't trigger BMS reaction</h3>
 <ul>
 <li><strong>SWE.6 (Plant)</strong>: For voltage, inject ALL cells (C0 to C17) — single cell gets rejected by plausibility check</li>
 <li><strong>SWE.5 (BMS)</strong>: Single cell works (bypasses plausibility)</li>
 <li>Temperature needs 500 events (~5.5s) — wait longer</li>
 <li>Check event log for DIAG events</li>
 </ul>
-<h3>Processes die after SSH disconnect</h3>
+<h3 id="processes-die-after-ssh-disconnect">Processes die after SSH disconnect</h3>
 <ul>
 <li>Use <code>nohup</code> or <code>screen</code>/<code>tmux</code>:
   <code>bash
@@ -565,12 +818,27 @@ On fault: all three OPEN.</p>
   nohup python3 web/server.py --can vcan1 --port 8080 --host 0.0.0.0 &amp;&gt;/dev/null &amp;</code></li>
 </ul>
 <hr />
-<h2>License</h2>
+<h2 id="license">License</h2>
 <ul>
 <li>foxBMS 2: BSD-3-Clause (Fraunhofer IISB)</li>
 <li>HALCoGen headers: BSD-3-Clause (Texas Instruments)</li>
 <li>FreeRTOS POSIX port: MIT (Amazon)</li>
 <li>foxbms-posix (our code): proprietary (Taktflow Systems)</li>
-</ul>
-<div class="footer">foxBMS 2 POSIX vECU &middot; Taktflow Systems &middot; 2026</div>
-</body></html>
+</ul></div>
+<div class="nav-buttons"><a href="plan.html">&larr; PLAN</a><a href="gap-analysis.html">Gap Analysis &rarr;</a></div>
+</main>
+<script>
+document.getElementById('search')?.addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
+        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
+    });
+    document.querySelectorAll('nav.sidebar h3').forEach(h => {
+        let el = h.nextElementSibling, any = false;
+        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
+        h.style.display = any || q === '' ? '' : 'none';
+    });
+});
+</script>
+</body>
+</html>

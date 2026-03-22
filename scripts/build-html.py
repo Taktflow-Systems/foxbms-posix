@@ -91,6 +91,7 @@ SECTIONS = [
         ("README", ROOT / "README.md"),
         ("STATUS", ROOT / "STATUS.md"),
         ("PLAN", ROOT / "PLAN.md"),
+        ("SIL Demo Guide", DOCS_DIR / "SIL-DEMO-GUIDE.md"),
     ]),
     ("Project Documentation", [
         ("Gap Analysis", DOCS_DIR / "project" / "gap-analysis.md"),

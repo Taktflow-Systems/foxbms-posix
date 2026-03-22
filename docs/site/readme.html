@@ -126,6 +126,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="readme.html" class="active">README</a>
 <a href="status.html" >STATUS</a>
 <a href="plan.html" >PLAN</a>
+<a href="sil-demo-guide.html" >SIL Demo Guide</a>
 <h3>Project Documentation</h3>
 <a href="gap-analysis.html" >Gap Analysis</a>
 <a href="coverage-matrix.html" >Coverage Matrix</a>
@@ -189,13 +190,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="ml-integration.html" >ML Integration</a>
 <a href="ml-feasibility.html" >ML Feasibility</a>
 <a href="hil-data-plan.html" >HIL Data Plan</a>
-<div class="stats">58 documents</div>
+<div class="stats">59 documents</div>
 </nav>
 <main>
 <div class="breadcrumb"><a href="index.html">Home</a> / Project Overview / README</div>
 <div class="content"><h1 id="foxbms-posix-port">foxBMS POSIX Port</h1>
 <p>foxBMS 2 v1.10.0 Battery Management System running as a native Linux x86-64 process via SocketCAN. No TMS570 hardware required.</p>
-<h2 id="status-phase-3-complete-93">Status: Phase 3 Complete (93%)</h2>
+<h2 id="status-phase-5-complete-98">Status: Phase 5 Complete (98%)</h2>
 <table>
 <thead>
 <tr>
@@ -207,44 +208,59 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td>Phase 1: BMS NORMAL</td>
-<td><strong>COMPLETE</strong></td>
+<td><strong>COMPLETE</strong> ✓</td>
 <td>10/10</td>
 </tr>
 <tr>
 <td>Phase 2: Realistic Simulation</td>
-<td><strong>COMPLETE</strong></td>
+<td><strong>COMPLETE</strong> ✓</td>
 <td>8/8</td>
 </tr>
 <tr>
 <td>Phase 2.5: SIL Probes</td>
-<td><strong>COMPLETE</strong></td>
+<td><strong>COMPLETE</strong> ✓</td>
 <td>76/76</td>
 </tr>
 <tr>
 <td>Phase 3: Fault Injection</td>
-<td><strong>COMPLETE</strong></td>
-<td>10/11 (29/31 tests pass)</td>
+<td><strong>COMPLETE</strong> ✓</td>
+<td>10/11</td>
 </tr>
 <tr>
 <td>Phase 4: Integration</td>
-<td><strong>COMPLETE</strong></td>
+<td><strong>COMPLETE</strong> ✓</td>
 <td>3/3</td>
 </tr>
 <tr>
+<td>Phase 5: Web Demo &amp; Portfolio</td>
+<td><strong>COMPLETE</strong> ✓</td>
+<td>6/7</td>
+</tr>
+<tr>
 <td><strong>Overall</strong></td>
-<td><strong>99%</strong></td>
-<td><strong>107/108</strong></td>
+<td><strong>98%</strong></td>
+<td><strong>113/115</strong></td>
 </tr>
 </tbody>
 </table>
-<p>CI: GitHub Actions — build + smoke test + fault injection + traceability check</p>
+<h3 id="live-demo">Live Demo</h3>
+<ul>
+<li><strong>SIL Demo</strong>: <a href="https://sil.taktflow-systems.com/bms/">sil.taktflow-systems.com/bms/</a> — live BMS with fault injection</li>
+<li><strong>Documentation</strong>: <a href="https://sil.taktflow-systems.com/bms-docs/">sil.taktflow-systems.com/bms-docs/</a> — 60-page portfolio</li>
+<li><strong>Demo Guide</strong>: <a href="https://sil.taktflow-systems.com/bms-docs/sil-demo-guide.html">SIL Demo Guide</a></li>
+</ul>
+<h3 id="key-capabilities">Key Capabilities</h3>
 <ul>
 <li>Full BMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR</li>
 <li>Real <code>diag.c</code> with threshold counters — faults propagate to ERROR, contactors open</li>
-<li>Docker build + compose, CI pipeline green</li>
-<li>2,005 ASIL-D test cases across 17 fault injection modules</li>
-<li>415 traced requirement IDs, ~2,000 links, 0 broken — traceability PASS</li>
-<li>37 HITL locks protecting safety-critical content</li>
+<li><strong>SWE.6 (Black-box)</strong>: Plant model injects faults via CAN → BMS reacts through normal path</li>
+<li><strong>SWE.5 (White-box)</strong>: 11 ISO 26262-5 fault methods with DB override injection</li>
+<li>2,005 ASIL-D test cases, 29/31 PASS (100% runnable)</li>
+<li>Detection times: OV 585ms, OC 116ms, OT 5510ms</li>
+<li>Web dashboard: 18-cell battery pack, contactor schematic, event log, CAN monitor</li>
+<li>Docker build + compose, CI pipeline</li>
+<li>60-page ASPICE CL2 documentation portfolio</li>
+<li>Bidirectional requirement traceability (0 orphans)</li>
 </ul>
 <h2 id="quick-start">Quick Start</h2>
 <pre><code class="language-bash"># Prerequisites: Ubuntu 24.04, GCC 13+, Python 3.12
