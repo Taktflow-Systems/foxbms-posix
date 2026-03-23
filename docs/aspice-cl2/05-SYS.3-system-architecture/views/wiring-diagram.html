@@ -13,6 +13,8 @@ nav h1{font-size:.85rem;color:#fff;padding:8px 14px 8px 0;border-right:1px solid
 .tab:hover{color:#c9d1d9}
 .tab.active{color:#fff;border-color:#8b5cf6}
 iframe{flex:1;border:none;width:100%;background:#0d1117}
+.edit-btn{margin-left:auto;padding:6px 14px;font-size:.75rem;background:#238636;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:600}
+.edit-btn:hover{background:#2ea043}
 </style>
 </head>
 <body>
@@ -22,7 +24,9 @@ iframe{flex:1;border:none;width:100%;background:#0d1117}
     <div class="tab active" onclick="load('wiring/page1.html',this)">System Overview</div>
     <div class="tab" onclick="load('wiring/page2.html',this)">MCU Details</div>
     <div class="tab" onclick="load('wiring/page3.html',this)">Board-to-Board</div>
+    <div class="tab" onclick="loadDrawio(this)">Interactive Editor</div>
   </div>
+  <button class="edit-btn" onclick="openInDrawio()">Open in draw.io ↗</button>
 </nav>
 <iframe id="f" src="wiring/page1.html"></iframe>
 <script>
@@ -30,6 +34,31 @@ function load(src,el){
   document.getElementById('f').src=src;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
+}
+function loadDrawio(el){
+  // Load the drawio XML into the embedded diagrams.net editor
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  var f=document.getElementById('f');
+  f.src='https://embed.diagrams.net/?embed=1&spin=1&proto=json&ui=dark&dark=1';
+  window.addEventListener('message',function handler(e){
+    if(e.data.length>0){
+      var msg=JSON.parse(e.data);
+      if(msg.event==='init'){
+        // Load our drawio XML into the editor
+        fetch('wiring/page1-interactive.drawio')
+          .then(r=>r.text())
+          .then(xml=>{
+            f.contentWindow.postMessage(JSON.stringify({action:'load',xml:xml}),'*');
+          });
+        window.removeEventListener('message',handler);
+      }
+    }
+  });
+}
+function openInDrawio(){
+  // Open diagrams.net in new tab — user can File > Open to load the .drawio file
+  window.open('https://app.diagrams.net/?ui=dark&dark=1','_blank');
 }
 </script>
 </body>

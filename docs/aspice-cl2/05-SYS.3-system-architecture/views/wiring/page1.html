@@ -7,341 +7,341 @@
 :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--dim:#6e7681;
 --can:#58a6ff;--spi:#3fb950;--sps:#d29922;--red:#f85149;--i2c:#bc8cff;--iso:#56d4dd;--pwr:#8b949e;--accent:#8b5cf6}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;padding:20px}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;padding:20px;overflow:auto}
 h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 .sub{color:var(--dim);font-size:.72rem;margin-bottom:12px}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.7rem;margin-bottom:10px}
-.legend span{display:flex;align-items:center;gap:4px}
-.legend i{width:20px;height:3px;border-radius:2px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.72rem;margin-bottom:14px}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:22px;height:3px;border-radius:2px}
 </style>
 </head>
 <body>
-<h2>Page 1 — System Overview (Top-Down Wiring)</h2>
-<p class="sub">All boards connected end-to-end. ASIL D critical path highlighted in red. Dashed lines = galvanic isolation. Arrows show signal direction.</p>
-
+<h2>Page 1 — System Overview</h2>
+<p class="sub">All boards connected end-to-end. ASIL D path in red. Dashed = galvanic isolation. Arrows = signal direction.</p>
 <div class="legend">
   <span><i style="background:var(--can)"></i>CAN</span>
   <span><i style="background:var(--spi)"></i>SPI (AFE)</span>
   <span><i style="background:var(--sps)"></i>SPI (SPS/SBC)</span>
   <span><i style="background:var(--red)"></i>Safety</span>
-  <span><i style="background:var(--i2c)"></i>I2C/Feedback</span>
+  <span><i style="background:var(--i2c)"></i>I2C / Feedback</span>
   <span><i style="background:var(--iso)"></i>isoSPI</span>
   <span><i style="background:var(--pwr)"></i>Power</span>
-  <span style="color:var(--red);font-weight:700">━ ASIL D path</span>
 </div>
 
-<svg width="1300" height="820" viewBox="0 0 1300 820" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+<svg width="1800" height="1100" viewBox="0 0 1800 1100" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
 <defs>
-  <marker id="ac" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="var(--can)"/></marker>
-  <marker id="ag" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="var(--spi)"/></marker>
-  <marker id="ay" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="var(--sps)"/></marker>
-  <marker id="ar" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="var(--red)"/></marker>
-  <marker id="ap" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="var(--i2c)"/></marker>
-  <marker id="ai" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="var(--iso)"/></marker>
+  <marker id="ac" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--can)"/></marker>
+  <marker id="ag" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--spi)"/></marker>
+  <marker id="ay" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--sps)"/></marker>
+  <marker id="ar" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--red)"/></marker>
+  <marker id="ap" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--i2c)"/></marker>
+  <marker id="ai" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="var(--iso)"/></marker>
 </defs>
 
-<!-- ================================================================ -->
-<!--  LEFT COLUMN: External connectors                                -->
-<!-- ================================================================ -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  LEFT COLUMN (x=30..230) — External connectors              -->
+<!-- ════════════════════════════════════════════════════════════ -->
 
-<!-- J2009 Supply -->
-<rect x="30" y="20" width="170" height="42" rx="8" fill="var(--card)" stroke="var(--pwr)" stroke-width="1.5"/>
-<text x="115" y="38" text-anchor="middle" fill="var(--pwr)" font-size="10" font-weight="700">J2009 SUPPLY</text>
-<text x="115" y="52" text-anchor="middle" fill="var(--dim)" font-size="7.5">8-pin | 12V CL15/30/31</text>
+<rect x="30" y="20" width="200" height="50" rx="8" fill="var(--card)" stroke="var(--pwr)" stroke-width="1.5"/>
+<text x="130" y="42" text-anchor="middle" fill="var(--pwr)" font-size="11" font-weight="700">J2009 SUPPLY</text>
+<text x="130" y="58" text-anchor="middle" fill="var(--dim)" font-size="8">8-pin | 12V CL15/30/31</text>
 
-<!-- J2021 CAN1 -->
-<rect x="30" y="85" width="170" height="55" rx="8" fill="var(--card)" stroke="var(--can)" stroke-width="1.5"/>
-<text x="115" y="103" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">J2021 CAN1 (IVT)</text>
-<text x="115" y="118" text-anchor="middle" fill="var(--dim)" font-size="7.5">4-pin | TJA1044 | NOT isolated</text>
-<text x="115" y="132" text-anchor="middle" fill="var(--dim)" font-size="7">RX: 0x521-0x527 | 500 kbit/s | 120Ω</text>
+<rect x="30" y="100" width="200" height="65" rx="8" fill="var(--card)" stroke="var(--can)" stroke-width="1.5"/>
+<text x="130" y="122" text-anchor="middle" fill="var(--can)" font-size="11" font-weight="700">J2021 CAN1 (IVT)</text>
+<text x="130" y="138" text-anchor="middle" fill="var(--dim)" font-size="8">4-pin | TJA1044 | NOT isolated</text>
+<text x="130" y="154" text-anchor="middle" fill="var(--dim)" font-size="7.5">RX: 0x521-0x527 | 500 kbit/s | 120Ω</text>
 
-<!-- J2024 CAN2 -->
-<rect x="30" y="160" width="170" height="50" rx="8" fill="var(--card)" stroke="var(--can)" stroke-width="1.5"/>
-<text x="115" y="178" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">J2024 CAN2 ⚡ (Vehicle)</text>
-<text x="115" y="193" text-anchor="middle" fill="var(--dim)" font-size="7.5">4-pin | TJA1042 | ISOLATED</text>
-<text x="115" y="205" text-anchor="middle" fill="var(--dim)" font-size="7">TX: 0x220-0x260 | RX: 0x210</text>
+<rect x="30" y="195" width="200" height="60" rx="8" fill="var(--card)" stroke="var(--can)" stroke-width="1.5"/>
+<text x="130" y="217" text-anchor="middle" fill="var(--can)" font-size="11" font-weight="700">J2024 CAN2 ⚡ (Vehicle)</text>
+<text x="130" y="233" text-anchor="middle" fill="var(--dim)" font-size="8">4-pin | TJA1042 | ISOLATED</text>
+<text x="130" y="248" text-anchor="middle" fill="var(--dim)" font-size="7.5">TX: 0x220-0x260 | RX: 0x210</text>
 
-<!-- J2033 Interlock -->
-<rect x="30" y="230" width="170" height="45" rx="8" fill="var(--card)" stroke="var(--red)" stroke-width="1.5"/>
-<text x="115" y="248" text-anchor="middle" fill="var(--red)" font-size="10" font-weight="700">J2033 INTERLOCK</text>
-<text x="115" y="263" text-anchor="middle" fill="var(--dim)" font-size="7.5">2-pin | Safety loop | TSR-13</text>
+<rect x="30" y="290" width="200" height="50" rx="8" fill="var(--card)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="130" y="312" text-anchor="middle" fill="var(--red)" font-size="11" font-weight="700">J2033 INTERLOCK</text>
+<text x="130" y="330" text-anchor="middle" fill="var(--dim)" font-size="8">2-pin | Safety loop | TSR-13</text>
 
-<!-- J2034 IMD -->
-<rect x="30" y="295" width="170" height="42" rx="8" fill="var(--card)" stroke="var(--pwr)" stroke-width="1"/>
-<text x="115" y="313" text-anchor="middle" fill="var(--pwr)" font-size="10" font-weight="700">J2034 IMD</text>
-<text x="115" y="328" text-anchor="middle" fill="var(--dim)" font-size="7.5">4-pin | IR155/iso165C</text>
+<rect x="30" y="370" width="200" height="50" rx="8" fill="var(--card)" stroke="var(--pwr)" stroke-width="1"/>
+<text x="130" y="392" text-anchor="middle" fill="var(--pwr)" font-size="11" font-weight="700">J2034 IMD</text>
+<text x="130" y="408" text-anchor="middle" fill="var(--dim)" font-size="8">4-pin | IR155 / iso165C</text>
 
 
-<!-- ================================================================ -->
-<!--  CENTER: MASTER BOARD (MCU)                                      -->
-<!-- ================================================================ -->
-<rect x="330" y="10" width="520" height="340" rx="12" fill="var(--card)" stroke="var(--accent)" stroke-width="2.5"/>
-<text x="590" y="35" text-anchor="middle" fill="var(--accent)" font-size="14" font-weight="700">MASTER BOARD — TMS570LC4357 (SE-001)</text>
-<text x="590" y="50" text-anchor="middle" fill="var(--dim)" font-size="9">ARM Cortex-R4F Lockstep | 300 MHz | FreeRTOS | foxBMS v1.10.0</text>
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  CENTER — MASTER BOARD (x=380..1060)                        -->
+<!-- ════════════════════════════════════════════════════════════ -->
 
-<!-- Peripheral blocks — arranged in 2 rows -->
-<!-- Row 1 -->
-<rect x="350" y="65" width="90" height="32" rx="5" fill="rgba(88,166,255,.1)" stroke="var(--can)"/>
-<text x="395" y="85" text-anchor="middle" fill="var(--can)" font-size="9" font-weight="700">DCAN1</text>
+<rect x="380" y="10" width="680" height="470" rx="14" fill="var(--card)" stroke="var(--accent)" stroke-width="2.5"/>
+<text x="720" y="38" text-anchor="middle" fill="var(--accent)" font-size="15" font-weight="700">MASTER BOARD — TMS570LC4357 (SE-001)</text>
+<text x="720" y="56" text-anchor="middle" fill="var(--dim)" font-size="9">ARM Cortex-R4F Lockstep | 300 MHz | FreeRTOS | foxBMS v1.10.0</text>
 
-<rect x="350" y="105" width="90" height="32" rx="5" fill="rgba(88,166,255,.1)" stroke="var(--can)"/>
-<text x="395" y="125" text-anchor="middle" fill="var(--can)" font-size="9" font-weight="700">DCAN2</text>
+<!-- Peripheral grid: 3 columns × 4 rows, generous spacing -->
+<!-- Col 1: x=410, Col 2: x=560, Col 3: x=720, Col 4: x=880 -->
+<!-- Row 1: y=75, Row 2: y=135, Row 3: y=200, Row 4: y=265   -->
 
-<rect x="350" y="150" width="90" height="32" rx="5" fill="rgba(248,81,73,.1)" stroke="var(--red)"/>
-<text x="395" y="170" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="700">N2HET1</text>
+<!-- Col 1 -->
+<rect x="410" y="75" width="120" height="40" rx="6" fill="rgba(88,166,255,.1)" stroke="var(--can)" stroke-width="1.5"/>
+<text x="470" y="100" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">DCAN1</text>
 
-<rect x="350" y="195" width="90" height="32" rx="5" fill="rgba(139,148,158,.1)" stroke="var(--pwr)"/>
-<text x="395" y="215" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="700">ADC1</text>
+<rect x="410" y="135" width="120" height="40" rx="6" fill="rgba(88,166,255,.1)" stroke="var(--can)" stroke-width="1.5"/>
+<text x="470" y="160" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">DCAN2</text>
 
-<!-- Row 2 -->
-<rect x="480" y="65" width="90" height="32" rx="5" fill="rgba(63,185,80,.1)" stroke="var(--spi)"/>
-<text x="525" y="85" text-anchor="middle" fill="var(--spi)" font-size="9" font-weight="700">MibSPI1</text>
+<rect x="410" y="200" width="120" height="40" rx="6" fill="rgba(248,81,73,.1)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="470" y="225" text-anchor="middle" fill="var(--red)" font-size="10" font-weight="700">N2HET1</text>
 
-<rect x="480" y="105" width="90" height="32" rx="5" fill="rgba(63,185,80,.1)" stroke="var(--spi)"/>
-<text x="525" y="125" text-anchor="middle" fill="var(--spi)" font-size="9" font-weight="700">MibSPI4</text>
+<rect x="410" y="265" width="120" height="40" rx="6" fill="rgba(139,148,158,.1)" stroke="var(--pwr)"/>
+<text x="470" y="290" text-anchor="middle" fill="var(--pwr)" font-size="10" font-weight="700">ADC1</text>
 
-<rect x="480" y="150" width="90" height="32" rx="5" fill="rgba(210,153,34,.1)" stroke="var(--sps)"/>
-<text x="525" y="170" text-anchor="middle" fill="var(--sps)" font-size="9" font-weight="700">N2HET2</text>
+<!-- Col 2 -->
+<rect x="570" y="75" width="120" height="40" rx="6" fill="rgba(63,185,80,.1)" stroke="var(--spi)" stroke-width="1.5"/>
+<text x="630" y="100" text-anchor="middle" fill="var(--spi)" font-size="10" font-weight="700">MibSPI1</text>
 
-<rect x="480" y="195" width="90" height="32" rx="5" fill="rgba(86,212,221,.1)" stroke="var(--iso)"/>
-<text x="525" y="215" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="700">DMA 0-3</text>
+<rect x="570" y="135" width="120" height="40" rx="6" fill="rgba(63,185,80,.1)" stroke="var(--spi)" stroke-width="1.5"/>
+<text x="630" y="160" text-anchor="middle" fill="var(--spi)" font-size="10" font-weight="700">MibSPI4</text>
 
-<!-- Row 3 -->
-<rect x="620" y="65" width="90" height="32" rx="5" fill="rgba(210,153,34,.1)" stroke="var(--sps)"/>
-<text x="665" y="85" text-anchor="middle" fill="var(--sps)" font-size="9" font-weight="700">MibSPI2</text>
+<rect x="570" y="200" width="120" height="40" rx="6" fill="rgba(210,153,34,.1)" stroke="var(--sps)" stroke-width="1.5"/>
+<text x="630" y="225" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">N2HET2</text>
 
-<rect x="620" y="105" width="90" height="32" rx="5" fill="rgba(188,140,255,.1)" stroke="var(--i2c)"/>
-<text x="665" y="125" text-anchor="middle" fill="var(--i2c)" font-size="9" font-weight="700">I2C1</text>
+<rect x="570" y="265" width="120" height="40" rx="6" fill="rgba(86,212,221,.1)" stroke="var(--iso)"/>
+<text x="630" y="290" text-anchor="middle" fill="var(--iso)" font-size="10" font-weight="700">DMA 0-3</text>
 
-<rect x="620" y="150" width="90" height="32" rx="5" fill="rgba(139,148,158,.08)" stroke="var(--pwr)" stroke-width=".5"/>
-<text x="665" y="170" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="600">MibSPI3</text>
+<!-- Col 3 -->
+<rect x="730" y="75" width="120" height="40" rx="6" fill="rgba(210,153,34,.1)" stroke="var(--sps)" stroke-width="1.5"/>
+<text x="790" y="100" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">MibSPI2</text>
 
-<rect x="620" y="195" width="90" height="32" rx="5" fill="rgba(139,148,158,.08)" stroke="var(--pwr)" stroke-width=".5"/>
-<text x="665" y="215" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="600">GIO</text>
+<rect x="730" y="135" width="120" height="40" rx="6" fill="rgba(188,140,255,.1)" stroke="var(--i2c)" stroke-width="1.5"/>
+<text x="790" y="160" text-anchor="middle" fill="var(--i2c)" font-size="10" font-weight="700">I2C1</text>
 
-<!-- On-board devices — moved further right to avoid wire crossing -->
-<rect x="760" y="150" width="75" height="28" rx="5" fill="rgba(139,148,158,.05)" stroke="var(--pwr)" stroke-dasharray="4,2"/>
-<text x="797" y="168" text-anchor="middle" fill="var(--pwr)" font-size="8" font-weight="600">FRAM</text>
+<rect x="730" y="200" width="120" height="40" rx="6" fill="rgba(139,148,158,.06)" stroke="var(--pwr)" stroke-width=".5"/>
+<text x="790" y="225" text-anchor="middle" fill="var(--pwr)" font-size="10">MibSPI3 (FRAM)</text>
 
-<!-- ASIL D critical path highlight bar -->
-<rect x="340" y="245" width="500" height="20" rx="4" fill="rgba(248,81,73,.06)" stroke="var(--red)" stroke-width=".5"/>
-<text x="590" y="259" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="700">ASIL D: Cell → AFE → isoSPI → SPI1 → SOA → DIAG → ERROR → SPS → Contactor (FTTI 750ms)</text>
+<rect x="730" y="265" width="120" height="40" rx="6" fill="rgba(139,148,158,.06)" stroke="var(--pwr)" stroke-width=".5"/>
+<text x="790" y="290" text-anchor="middle" fill="var(--pwr)" font-size="10">GIO A/B</text>
 
-<!-- J9000 connector at bottom of master -->
-<rect x="380" y="280" width="360" height="30" rx="6" fill="rgba(63,185,80,.06)" stroke="var(--spi)" stroke-width="1.5"/>
-<text x="560" y="300" text-anchor="middle" fill="var(--spi)" font-size="10" font-weight="700">J9000 — 40-pin Samtec — SPI1/4 + GPIO</text>
+<!-- Col 4: On-board devices -->
+<rect x="890" y="75" width="120" height="40" rx="6" fill="rgba(210,153,34,.05)" stroke="var(--sps)" stroke-dasharray="5,3"/>
+<text x="950" y="100" text-anchor="middle" fill="var(--sps)" font-size="9" font-weight="600">SPS IC</text>
 
-<!-- (removed SPS label box — info is on the right-side wire) -->
+<rect x="890" y="135" width="120" height="40" rx="6" fill="rgba(210,153,34,.05)" stroke="var(--sps)" stroke-dasharray="5,3"/>
+<text x="950" y="160" text-anchor="middle" fill="var(--sps)" font-size="9" font-weight="600">SBC FS8x</text>
 
+<rect x="890" y="200" width="120" height="40" rx="6" fill="rgba(139,148,158,.03)" stroke="var(--pwr)" stroke-dasharray="5,3"/>
+<text x="950" y="225" text-anchor="middle" fill="var(--pwr)" font-size="9">FRAM</text>
 
-<!-- ================================================================ -->
-<!--  RIGHT COLUMN: External connectors                               -->
-<!-- ================================================================ -->
+<!-- ASIL D bar -->
+<rect x="400" y="325" width="640" height="22" rx="5" fill="rgba(248,81,73,.06)" stroke="var(--red)" stroke-width=".5"/>
+<text x="720" y="340" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="700">ASIL D: Cell → AFE → isoSPI → SPI1 → SOA → DIAG → ERROR → SPS → Contactor (FTTI 750ms)</text>
 
-<!-- J200x SPS -->
-<rect x="1020" y="65" width="240" height="80" rx="8" fill="var(--card)" stroke="var(--sps)" stroke-width="1.5"/>
-<text x="1140" y="85" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">J200x SPS ×8 CONTACTORS</text>
-<text x="1140" y="100" text-anchor="middle" fill="var(--dim)" font-size="7.5">4-pin each | CH0=Str+ CH1=Str- CH2=Pre</text>
-<text x="1140" y="115" text-anchor="middle" fill="var(--dim)" font-size="7">Feedback via I2C PEX (not direct GPIO)</text>
-<text x="1140" y="132" text-anchor="middle" fill="var(--red)" font-size="7.5" font-weight="600">CH2: NO FEEDBACK (GAP-02)</text>
+<!-- J9000 -->
+<rect x="450" y="370" width="440" height="35" rx="7" fill="rgba(63,185,80,.06)" stroke="var(--spi)" stroke-width="2"/>
+<text x="670" y="393" text-anchor="middle" fill="var(--spi)" font-size="12" font-weight="700">J9000 — 40-pin Samtec — SPI1/4 + GPIO</text>
 
-<!-- SBC external — positioned below SPS with gap -->
-<rect x="1020" y="170" width="240" height="48" rx="8" fill="var(--card)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
-<text x="1140" y="190" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">SBC FS8x (on-board)</text>
-<text x="1140" y="205" text-anchor="middle" fill="var(--dim)" font-size="7.5">Watchdog | spiREG2 shared | CONSTRAINT-001</text>
+<!-- Register labels (small, under each peripheral) -->
+<text x="470" y="118" text-anchor="middle" fill="#374151" font-size="7">canREG1 0xDC00</text>
+<text x="470" y="178" text-anchor="middle" fill="#374151" font-size="7">canREG2 0xDE00</text>
+<text x="470" y="243" text-anchor="middle" fill="#374151" font-size="7">hetREG1 0xB800</text>
+<text x="470" y="308" text-anchor="middle" fill="#374151" font-size="7">adcREG1 0xC000</text>
+<text x="630" y="118" text-anchor="middle" fill="#374151" font-size="7">spiREG1 0xF400</text>
+<text x="630" y="178" text-anchor="middle" fill="#374151" font-size="7">spiREG4 0xFA00</text>
+<text x="630" y="243" text-anchor="middle" fill="#374151" font-size="7">hetREG2 0xB900</text>
+<text x="790" y="118" text-anchor="middle" fill="#374151" font-size="7">spiREG2 0xF600</text>
+<text x="790" y="178" text-anchor="middle" fill="#374151" font-size="7">i2cREG1 0xD400</text>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  RIGHT COLUMN (x=1200..1700) — External connectors          -->
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<rect x="1300" y="60" width="280" height="100" rx="10" fill="var(--card)" stroke="var(--sps)" stroke-width="1.5"/>
+<text x="1440" y="85" text-anchor="middle" fill="var(--sps)" font-size="12" font-weight="700">J200x SPS ×8 CONTACTORS</text>
+<text x="1440" y="105" text-anchor="middle" fill="var(--dim)" font-size="8">4-pin each | CH0=Str+ CH1=Str- CH2=Pre</text>
+<text x="1440" y="120" text-anchor="middle" fill="var(--dim)" font-size="8">Feedback via I2C PEX (not direct GPIO)</text>
+<text x="1440" y="145" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="600">CH2: NO FEEDBACK (GAP-02)</text>
+
+<rect x="1300" y="200" width="280" height="60" rx="10" fill="var(--card)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="1440" y="225" text-anchor="middle" fill="var(--sps)" font-size="12" font-weight="700">SBC FS8x (on-board)</text>
+<text x="1440" y="245" text-anchor="middle" fill="var(--dim)" font-size="8">Watchdog | spiREG2 shared | CONSTRAINT-001</text>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  WIRES: LEFT → MCU                                          -->
+<!--  Wire channels: 290, 310, 330, 350                          -->
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<!-- Supply → MCU top -->
+<path d="M230,45 L300,45 L300,25 L380,25" stroke="var(--pwr)" stroke-width="1.5" fill="none" marker-end="url(#ac)"/>
+
+<!-- CAN1 → DCAN1 (ch 290) -->
+<path d="M230,130 L290,130 L290,95 L410,95" stroke="var(--can)" stroke-width="2.5" fill="none" marker-end="url(#ac)"/>
+<rect x="248" y="88" width="40" height="14" rx="3" fill="var(--bg)"/>
+<text x="268" y="99" text-anchor="middle" fill="var(--can)" font-size="7.5" font-weight="600">CAN H/L</text>
+
+<!-- CAN2 → DCAN2 (ch 310, dashed) -->
+<path d="M230,225 L310,225 L310,155 L410,155" stroke="var(--can)" stroke-width="2" fill="none" stroke-dasharray="8,4" marker-end="url(#ac)"/>
+<rect x="258" y="185" width="50" height="14" rx="3" fill="var(--bg)"/>
+<text x="283" y="196" text-anchor="middle" fill="var(--can)" font-size="7.5">⚡ isolated</text>
 
-
-<!-- ================================================================ -->
-<!--  WIRES: Left connectors → MCU (90° bends, arrows)               -->
-<!-- ================================================================ -->
-
-<!-- J2009 Supply → MCU (gray, top) -->
-<path d="M200,41 L270,41 L270,30 L330,30" stroke="var(--pwr)" stroke-width="1.5" fill="none" marker-end="url(#ac)"/>
-
-<!-- Left wires use separate vertical columns to avoid crossing:     -->
-<!-- CAN1=250  CAN2=265  Interlock=280  IMD=295                      -->
-
-<!-- J2021 CAN1 → DCAN1 (blue solid) -->
-<path d="M200,108 L250,108 L250,81 L350,81" stroke="var(--can)" stroke-width="2.5" fill="none" marker-end="url(#ac)"/>
-<rect x="210" y="68" width="38" height="13" rx="3" fill="var(--bg)"/>
-<text x="229" y="78" text-anchor="middle" fill="var(--can)" font-size="7" font-weight="600">CAN H/L</text>
-
-<!-- J2024 CAN2 → DCAN2 (blue dashed, isolated) -->
-<path d="M200,180 L265,180 L265,121 L350,121" stroke="var(--can)" stroke-width="2" fill="none" stroke-dasharray="8,4" marker-end="url(#ac)"/>
-<rect x="210" y="145" width="48" height="13" rx="3" fill="var(--bg)"/>
-<text x="234" y="155" text-anchor="middle" fill="var(--can)" font-size="7">⚡ isolated</text>
-
-<!-- J2033 Interlock → N2HET1 (red) -->
-<path d="M200,248 L280,248 L280,166 L350,166" stroke="var(--red)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
-<rect x="210" y="220" width="50" height="13" rx="3" fill="var(--bg)"/>
-<text x="235" y="230" text-anchor="middle" fill="var(--red)" font-size="7" font-weight="600">[B11] [A3]</text>
-
-<!-- J2034 IMD → ADC1 (gray) -->
-<path d="M200,305 L295,305 L295,211 L350,211" stroke="var(--pwr)" stroke-width="1.5" fill="none"/>
-<rect x="210" y="290" width="50" height="13" rx="3" fill="var(--bg)"/>
-<text x="235" y="300" text-anchor="middle" fill="var(--pwr)" font-size="7">[A9] [M3]</text>
-
-
-<!-- ================================================================ -->
-<!--  WIRES: MCU → Right connectors                                   -->
-<!--  Each wire gets its own vertical channel to avoid crossing:       -->
-<!--  ch1=870  ch2=900  ch3=940  ch4=970                              -->
-<!-- ================================================================ -->
-
-<!-- Right-side wires — each at different Y with labels ABOVE the wire -->
-
-<!-- Wire 1: MibSPI2 → J200x SPS_OUT (yellow solid, y=78) -->
-<path d="M710,78 L860,78 L860,90 L1020,90" stroke="var(--sps)" stroke-width="2.5" fill="none" marker-end="url(#ay)"/>
-<text x="860" y="72" fill="var(--sps)" font-size="7" font-weight="600">[D1] SPI2 → SPS_OUT</text>
-
-<!-- Wire 2: I2C1 → PEX → J200x feedback (purple dashed, y=120) -->
-<path d="M710,120 L880,120 L880,115 L1020,115" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ap)"/>
-<text x="880" y="135" fill="var(--i2c)" font-size="7">[B2/C3] I2C→PEX FB</text>
-
-<!-- Wire 3: MibSPI2 → SBC (yellow dashed, y=88 → down to SBC at y=190) -->
-<path d="M710,88 L960,88 L960,190 L1020,190" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ay)"/>
-<text x="965" y="145" fill="var(--sps)" font-size="7" transform="rotate(90,965,145)">spiREG2 shared</text>
-
-<!-- Wire 4: N2HET2 → SPS ctrl (route ABOVE MibSPI3 row, along y=145) -->
-<path d="M570,166 L575,166 L575,145 L760,145" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
-<text x="680" y="140" fill="var(--dim)" font-size="6">HET2 → SPS ctrl [D8] CS [T5] RST</text>
-
-
-<!-- ================================================================ -->
-<!--  WIRES: MCU peripherals → J9000 (green, routed out bottom)      -->
-<!--  Route: exit peripheral RIGHT edge → down along column → left   -->
-<!--  along y=238 clear channel → down to J9000                      -->
-<!--  Columns: SPI1=445, SPI4=485, HET2=560, I2C=600                -->
-<!-- ================================================================ -->
-
-<!-- SPI1 → J9000 (exit left of MibSPI1, go down outside peripheral grid) -->
-<path d="M480,85 L440,85 L440,280" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
-
-<!-- SPI4 → J9000 (exit left of MibSPI4, slight offset) -->
-<path d="M480,120 L455,120 L455,280" stroke="var(--spi)" stroke-width="2" fill="none" marker-end="url(#ag)"/>
-
-<!-- Labels for SPI1/SPI4 — placed at the bottom, horizontal, next to arrows -->
-<text x="380" y="270" fill="var(--spi)" font-size="7" font-weight="700">SPI1 ↓</text>
-<text x="380" y="280" fill="var(--spi)" font-size="6">DMA CH0/1</text>
-<text x="458" y="275" fill="var(--spi)" font-size="7">SPI4 ↓</text>
-
-<!-- N2HET2 GPIO → J9000 (route outside grid, col 640) -->
-<path d="M570,170 L640,170 L640,280" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
-
-<!-- I2C PEX → J9000 (route outside grid, col 660) -->
-<path d="M710,120 L720,120 L720,145 L660,145 L660,280" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ap)"/>
-
-<!-- Labels for GPIO/I2C — at bottom, horizontal -->
-<text x="642" y="275" fill="var(--dim)" font-size="6">GPIO</text>
-<text x="662" y="275" fill="var(--dim)" font-size="6">I2C</text>
-
-
-<!-- ================================================================ -->
-<!--  J9000 → INTERFACE BOARD (green/cyan vertical)                   -->
-<!-- ================================================================ -->
-
-<rect x="350" y="400" width="480" height="55" rx="10" fill="var(--card)" stroke="var(--iso)" stroke-width="2"/>
-<text x="590" y="422" text-anchor="middle" fill="var(--iso)" font-size="12" font-weight="700">INTERFACE BOARD — LTC6820 ×4 (SE-003)</text>
-<text x="590" y="440" text-anchor="middle" fill="var(--dim)" font-size="8">SPI-to-isoSPI bridge | Transformer isolation | 1 Mbps | 4 channels</text>
-
-<!-- J9000 → Interface wires (90° routing, no overlap) -->
-<path d="M460,310 L460,340 L440,340 L440,400" stroke="var(--iso)" stroke-width="3" fill="none" marker-end="url(#ai)"/>
-<path d="M560,310 L560,345 L540,345 L540,400" stroke="var(--iso)" stroke-width="2.5" fill="none" marker-end="url(#ai)"/>
-<path d="M660,310 L660,350 L640,350 L640,400" stroke="var(--iso)" stroke-width="2" fill="none" marker-end="url(#ai)"/>
-<path d="M720,310 L720,355 L740,355 L740,400" stroke="var(--iso)" stroke-width="2" fill="none" marker-end="url(#ai)"/>
-
-<text x="490" y="370" fill="var(--iso)" font-size="8" font-weight="600">SPI1 [F3] [G3] | SPI4 [U1] [B12]</text>
-<text x="490" y="382" fill="var(--dim)" font-size="7">+ GPIO.0-7 (LTC6820 enable/master via PEX I2C)</text>
-
-
-<!-- ================================================================ -->
-<!--  GALVANIC ISOLATION BOUNDARY                                     -->
-<!-- ================================================================ -->
-
-<line x1="60" y1="510" x2="1250" y2="510" stroke="var(--red)" stroke-width="2" stroke-dasharray="14,7"/>
-<rect x="440" y="497" width="300" height="24" rx="6" fill="var(--bg)" stroke="var(--red)" stroke-width="1.5"/>
-<text x="590" y="514" text-anchor="middle" fill="var(--red)" font-size="10" font-weight="700">⚡ GALVANIC ISOLATION BOUNDARY ⚡</text>
-<text x="180" y="514" fill="var(--dim)" font-size="8">LOW VOLTAGE (Master + Interface)</text>
-<text x="960" y="514" fill="var(--dim)" font-size="8">HIGH VOLTAGE (Slave + Cells)</text>
-
-
-<!-- ================================================================ -->
-<!--  Interface → Slave (isoSPI crossing isolation)                   -->
-<!-- ================================================================ -->
-
-<path d="M440,455 L440,560" stroke="var(--iso)" stroke-width="3" fill="none" stroke-dasharray="10,5" marker-end="url(#ai)"/>
-<path d="M540,455 L540,560" stroke="var(--iso)" stroke-width="2.5" fill="none" stroke-dasharray="10,5" marker-end="url(#ai)"/>
-<path d="M640,455 L640,560" stroke="var(--iso)" stroke-width="2" fill="none" stroke-dasharray="10,5"/>
-<path d="M740,455 L740,560" stroke="var(--iso)" stroke-width="2" fill="none" stroke-dasharray="10,5"/>
-
-<text x="800" y="490" fill="var(--iso)" font-size="8" font-weight="600">isoSPI differential (IN+/IN-)</text>
-<text x="800" y="502" fill="var(--dim)" font-size="7">Max 100m (practical &lt;2m) | PEC-15 HD=6 | 2s watchdog</text>
-
-
-<!-- ================================================================ -->
-<!--  SLAVE BOARD                                                     -->
-<!-- ================================================================ -->
-
-<rect x="280" y="570" width="700" height="230" rx="12" fill="var(--card)" stroke="var(--red)" stroke-width="2"/>
-<text x="630" y="595" text-anchor="middle" fill="var(--red)" font-size="14" font-weight="700">SLAVE BOARD — 18-cell LTC6813-1 (SE-002)</text>
-<text x="630" y="610" text-anchor="middle" fill="var(--dim)" font-size="9">AEC-Q100 Grade 1 | 16-bit ADC ±2.2mV (7kHz) | PEC-15 HD=6 | 0.1 mV/LSB</text>
+<!-- Interlock → N2HET1 (ch 330) -->
+<path d="M230,315 L330,315 L330,220 L410,220" stroke="var(--red)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+<rect x="268" y="278" width="55" height="14" rx="3" fill="var(--bg)"/>
+<text x="295" y="289" text-anchor="middle" fill="var(--red)" font-size="7.5" font-weight="600">[B11] [A3]</text>
+
+<!-- IMD → ADC1 (ch 350) -->
+<path d="M230,395 L350,395 L350,285 L410,285" stroke="var(--pwr)" stroke-width="1.5" fill="none"/>
+<rect x="268" y="370" width="55" height="14" rx="3" fill="var(--bg)"/>
+<text x="295" y="381" text-anchor="middle" fill="var(--pwr)" font-size="7.5">[A9] [M3]</text>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  WIRES: MCU → RIGHT                                         -->
+<!--  Wire channels: 1100, 1150, 1200                            -->
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<!-- MibSPI2 → SPS IC → J200x (ch 1100) -->
+<path d="M850,95 L890,95" stroke="var(--sps)" stroke-width="2" fill="none"/>
+<path d="M1010,95 L1100,95 L1100,100 L1300,100" stroke="var(--sps)" stroke-width="2.5" fill="none" marker-end="url(#ay)"/>
+<rect x="1110" y="80" width="100" height="14" rx="3" fill="var(--bg)"/>
+<text x="1160" y="91" text-anchor="middle" fill="var(--sps)" font-size="7.5" font-weight="600">[D1] SPI2 → SPS_OUT</text>
+
+<!-- I2C1 → PEX → J200x feedback (ch 1150, purple dashed) -->
+<path d="M850,155 L1150,155 L1150,130 L1300,130" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ap)"/>
+<rect x="1110" y="138" width="100" height="14" rx="3" fill="var(--bg)"/>
+<text x="1160" y="149" text-anchor="middle" fill="var(--i2c)" font-size="7.5">[B2/C3] I2C→PEX FB</text>
+
+<!-- MibSPI2 → SBC (ch 1200, yellow dashed) -->
+<path d="M850,100 L1200,100 L1200,230 L1300,230" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ay)"/>
+<rect x="1208" y="155" width="80" height="14" rx="3" fill="var(--bg)"/>
+<text x="1248" y="166" text-anchor="middle" fill="var(--sps)" font-size="7.5">spiREG2 shared</text>
+
+<!-- HET2 → SPS IC (internal, short) -->
+<path d="M690,220 L890,220 L890,115 L890,115" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+<text x="800" y="215" fill="var(--dim)" font-size="7">HET2 ctrl [D8] CS [T5] RST</text>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  WIRES: MCU → J9000 (downward)                              -->
+<!--  Columns: SPI1=520, SPI4=560, GPIO=650, I2C=690             -->
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<!-- SPI1 → J9000 (exit left of MibSPI1, down col 520) -->
+<path d="M570,95 L520,95 L520,370" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
+<text x="500" y="350" fill="var(--spi)" font-size="8" font-weight="700">SPI1 ↓</text>
+<text x="500" y="362" fill="var(--spi)" font-size="7">DMA CH0/1</text>
+
+<!-- SPI4 → J9000 (col 560) -->
+<path d="M570,155 L560,155 L560,370" stroke="var(--spi)" stroke-width="2" fill="none" marker-end="url(#ag)"/>
+<text x="545" y="355" fill="var(--spi)" font-size="7">SPI4 ↓</text>
+
+<!-- N2HET2 GPIO → J9000 (col 700) -->
+<path d="M690,225 L700,225 L700,370" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
+<text x="705" y="355" fill="var(--dim)" font-size="7">GPIO ↓</text>
+
+<!-- I2C PEX → J9000 (col 740) -->
+<path d="M850,155 L850,165 L740,165 L740,370" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ap)"/>
+<text x="745" y="355" fill="var(--dim)" font-size="7">I2C ↓</text>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  J9000 → INTERFACE BOARD                                    -->
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<!-- Labels between J9000 and Interface -->
+<text x="670" y="445" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">SPI1 [F3] [G3] | SPI4 [U1] [B12] | GPIO.0-7 (PEX I2C)</text>
+
+<!-- 4 wires going down to Interface -->
+<path d="M520,405 L520,490" stroke="var(--iso)" stroke-width="3" fill="none" marker-end="url(#ai)"/>
+<path d="M600,405 L600,490" stroke="var(--iso)" stroke-width="2.5" fill="none" marker-end="url(#ai)"/>
+<path d="M750,405 L750,490" stroke="var(--iso)" stroke-width="2" fill="none" marker-end="url(#ai)"/>
+<path d="M830,405 L830,490" stroke="var(--iso)" stroke-width="2" fill="none" marker-end="url(#ai)"/>
+
+<!-- INTERFACE BOARD -->
+<rect x="400" y="500" width="580" height="60" rx="12" fill="var(--card)" stroke="var(--iso)" stroke-width="2"/>
+<text x="690" y="525" text-anchor="middle" fill="var(--iso)" font-size="13" font-weight="700">INTERFACE BOARD — LTC6820 ×4 (SE-003)</text>
+<text x="690" y="545" text-anchor="middle" fill="var(--dim)" font-size="9">SPI-to-isoSPI bridge | Transformer isolation | 1 Mbps | 4 channels</text>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  GALVANIC ISOLATION BOUNDARY                                -->
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<line x1="50" y1="640" x2="1700" y2="640" stroke="var(--red)" stroke-width="2" stroke-dasharray="16,8"/>
+<rect x="530" y="626" width="320" height="28" rx="7" fill="var(--bg)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="690" y="645" text-anchor="middle" fill="var(--red)" font-size="11" font-weight="700">⚡ GALVANIC ISOLATION BOUNDARY ⚡</text>
+<text x="180" y="645" fill="var(--dim)" font-size="9">LOW VOLTAGE (Master + Interface)</text>
+<text x="1200" y="645" fill="var(--dim)" font-size="9">HIGH VOLTAGE (Slave + Cells)</text>
+
+<!-- isoSPI wires crossing boundary -->
+<path d="M520,560 L520,700" stroke="var(--iso)" stroke-width="3" fill="none" stroke-dasharray="12,6" marker-end="url(#ai)"/>
+<path d="M600,560 L600,700" stroke="var(--iso)" stroke-width="2.5" fill="none" stroke-dasharray="12,6" marker-end="url(#ai)"/>
+<path d="M750,560 L750,700" stroke="var(--iso)" stroke-width="2" fill="none" stroke-dasharray="12,6"/>
+<path d="M830,560 L830,700" stroke="var(--iso)" stroke-width="2" fill="none" stroke-dasharray="12,6"/>
+
+<text x="1050" y="600" fill="var(--iso)" font-size="9" font-weight="600">isoSPI differential (IN+/IN-)</text>
+<text x="1050" y="616" fill="var(--dim)" font-size="8">Max 100m (practical &lt;2m) | PEC-15 HD=6 | 2s watchdog</text>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  SLAVE BOARD                                                -->
+<!-- ════════════════════════════════════════════════════════════ -->
+
+<rect x="300" y="710" width="900" height="330" rx="14" fill="var(--card)" stroke="var(--red)" stroke-width="2"/>
+<text x="750" y="740" text-anchor="middle" fill="var(--red)" font-size="15" font-weight="700">SLAVE BOARD — 18-cell LTC6813-1 (SE-002)</text>
+<text x="750" y="760" text-anchor="middle" fill="var(--dim)" font-size="10">AEC-Q100 Grade 1 | 16-bit ADC ±2.2mV (7kHz) | PEC-15 HD=6 | 0.1 mV/LSB</text>
 
 <!-- LTC6813 IC -->
-<rect x="470" y="620" width="200" height="32" rx="6" fill="var(--bg)" stroke="var(--accent)" stroke-width="1.5"/>
-<text x="570" y="641" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="700">LTC6813-1</text>
+<rect x="570" y="780" width="250" height="38" rx="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="1.5"/>
+<text x="695" y="804" text-anchor="middle" fill="var(--accent)" font-size="13" font-weight="700">LTC6813-1</text>
 
-<!-- Connect isoSPI → LTC6813 (90° bends into IC) -->
-<path d="M440,560 L440,632 L470,632" stroke="var(--iso)" stroke-width="2.5" fill="none" marker-end="url(#ai)"/>
-<path d="M540,560 L540,640 L470,640" stroke="var(--iso)" stroke-width="2" fill="none"/>
+<!-- Connect isoSPI → LTC6813 -->
+<path d="M520,700 L520,790 L570,790" stroke="var(--iso)" stroke-width="2.5" fill="none" marker-end="url(#ai)"/>
+<path d="M600,700 L600,800 L570,800" stroke="var(--iso)" stroke-width="2" fill="none"/>
 
 <!-- Daisy chain -->
-<rect x="300" y="625" width="80" height="24" rx="4" fill="rgba(86,212,221,.06)" stroke="var(--iso)"/>
-<text x="340" y="641" text-anchor="middle" fill="var(--iso)" font-size="8" font-weight="600">Daisy In</text>
-<rect x="300" y="655" width="80" height="24" rx="4" fill="rgba(86,212,221,.06)" stroke="var(--iso)"/>
-<text x="340" y="671" text-anchor="middle" fill="var(--iso)" font-size="8" font-weight="600">Daisy Out</text>
+<rect x="340" y="785" width="100" height="28" rx="5" fill="rgba(86,212,221,.06)" stroke="var(--iso)"/>
+<text x="390" y="803" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">Daisy In</text>
+<rect x="340" y="825" width="100" height="28" rx="5" fill="rgba(86,212,221,.06)" stroke="var(--iso)"/>
+<text x="390" y="843" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">Daisy Out</text>
 
-<!-- Cell Voltage connector -->
-<rect x="310" y="695" width="300" height="90" rx="8" fill="rgba(248,81,73,.04)" stroke="var(--red)" stroke-width="1.5"/>
-<text x="460" y="715" text-anchor="middle" fill="var(--red)" font-size="11" font-weight="700">CELL VOLTAGE — 24-pin</text>
-<text x="460" y="730" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="600">ASIL D | TSR-01 (OV) / TSR-02 (UV)</text>
-<text x="460" y="748" text-anchor="middle" fill="var(--dim)" font-size="8">18 cells: VBAT-, CELL_0+ to CELL_17+, VBAT+</text>
-<text x="460" y="762" text-anchor="middle" fill="var(--dim)" font-size="7.5">Interleaved pinout | FTTI: 750ms</text>
-<text x="460" y="778" text-anchor="middle" fill="var(--red)" font-size="7.5" font-weight="600">⚠ GAP-03: Plausibility (300mV, WARNING) suppresses single-cell OV</text>
+<!-- Cell Voltage Connector -->
+<rect x="340" y="880" width="380" height="130" rx="10" fill="rgba(248,81,73,.04)" stroke="var(--red)" stroke-width="1.5"/>
+<text x="530" y="905" text-anchor="middle" fill="var(--red)" font-size="13" font-weight="700">CELL VOLTAGE — 24-pin</text>
+<text x="530" y="925" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="600">ASIL D | TSR-01 (OV) / TSR-02 (UV)</text>
+<text x="530" y="948" text-anchor="middle" fill="var(--dim)" font-size="9">18 cells: VBAT-, CELL_0+ to CELL_17+, VBAT+</text>
+<text x="530" y="966" text-anchor="middle" fill="var(--dim)" font-size="8.5">Interleaved pinout: even on row 1, odd on row 2</text>
+<text x="530" y="984" text-anchor="middle" fill="var(--dim)" font-size="8.5">FTTI: 750ms | Threshold: 50 × 10ms + 200ms delay</text>
+<text x="530" y="1002" text-anchor="middle" fill="var(--red)" font-size="8.5" font-weight="600">⚠ GAP-03: Plausibility (300mV, WARNING) suppresses single-cell OV</text>
 
-<!-- LTC6813 → Cell connector (90° bend) -->
-<path d="M520,652 L520,680 L460,680 L460,695" stroke="var(--red)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+<!-- LTC6813 → Cell connector -->
+<path d="M630,818 L630,860 L530,860 L530,880" stroke="var(--red)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
 
-<!-- Temperature connector -->
-<rect x="650" y="695" width="300" height="90" rx="8" fill="rgba(210,153,34,.04)" stroke="var(--sps)" stroke-width="1.5"/>
-<text x="800" y="715" text-anchor="middle" fill="var(--sps)" font-size="11" font-weight="700">TEMPERATURE — 16-pin</text>
-<text x="800" y="730" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">ASIL C | TSR-06 (OT) / TSR-07 (UT)</text>
-<text x="800" y="748" text-anchor="middle" fill="var(--dim)" font-size="8">8× NTC (10kΩ) + FUSED_VBAT- return</text>
-<text x="800" y="762" text-anchor="middle" fill="var(--dim)" font-size="7.5">MUX grp 0+1 | FTTI: 6050ms</text>
-<text x="800" y="778" text-anchor="middle" fill="var(--red)" font-size="7.5" font-weight="600">⚠ GAP-01: No independent temp path</text>
+<!-- Temperature Connector -->
+<rect x="770" y="880" width="380" height="130" rx="10" fill="rgba(210,153,34,.04)" stroke="var(--sps)" stroke-width="1.5"/>
+<text x="960" y="905" text-anchor="middle" fill="var(--sps)" font-size="13" font-weight="700">TEMPERATURE — 16-pin</text>
+<text x="960" y="925" text-anchor="middle" fill="var(--sps)" font-size="9" font-weight="600">ASIL C | TSR-06 (OT) / TSR-07 (UT)</text>
+<text x="960" y="948" text-anchor="middle" fill="var(--dim)" font-size="9">8× NTC (10kΩ) + FUSED_VBAT- return</text>
+<text x="960" y="966" text-anchor="middle" fill="var(--dim)" font-size="8.5">MUX grp 0: GPIO1-5 (T0-4) | grp 1: GPIO1-3 (T5-7)</text>
+<text x="960" y="984" text-anchor="middle" fill="var(--dim)" font-size="8.5">FTTI: 6050ms (thermal inertia justified)</text>
+<text x="960" y="1002" text-anchor="middle" fill="var(--red)" font-size="8.5" font-weight="600">⚠ GAP-01: No independent temperature path</text>
 
-<!-- LTC6813 → Temp connector (90° bend) -->
-<path d="M620,652 L620,680 L800,680 L800,695" stroke="var(--sps)" stroke-width="2" fill="none" marker-end="url(#ay)"/>
+<!-- LTC6813 → Temp connector -->
+<path d="M760,818 L760,860 L960,860 L960,880" stroke="var(--sps)" stroke-width="2" fill="none" marker-end="url(#ay)"/>
 
 
-<!-- ================================================================ -->
-<!--  EXTERNAL TEST EQUIPMENT (dashed, bottom left)                   -->
-<!-- ================================================================ -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  EXTERNAL TEST EQUIPMENT (bottom left)                      -->
+<!-- ════════════════════════════════════════════════════════════ -->
 
-<!-- External test equipment — stacked cleanly with separate wire paths -->
-<rect x="30" y="710" width="170" height="32" rx="6" fill="rgba(248,81,73,.03)" stroke="var(--red)" stroke-width="1" stroke-dasharray="5,3"/>
-<text x="115" y="726" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="600">CELL EMULATOR (PP-01)</text>
-<text x="115" y="738" text-anchor="middle" fill="var(--dim)" font-size="7">19 ch | ≤0.5mV | TSR-01/02/03</text>
-<!-- Wire: emulator → cell connector (90° bend, goes right then down) -->
-<path d="M200,726 L260,726 L260,750 L310,750" stroke="var(--red)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+<rect x="30" y="900" width="220" height="40" rx="7" fill="rgba(248,81,73,.03)" stroke="var(--red)" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="140" y="918" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="600">CELL EMULATOR (PP-01)</text>
+<text x="140" y="934" text-anchor="middle" fill="var(--dim)" font-size="7.5">19 ch | ≤0.5mV | TSR-01/02/03</text>
+<path d="M250,920 L300,920 L300,950 L340,950" stroke="var(--red)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ar)"/>
 
-<rect x="30" y="755" width="170" height="32" rx="6" fill="rgba(210,153,34,.03)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
-<text x="115" y="771" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">NTC RESISTOR BANK (PP-02)</text>
-<text x="115" y="783" text-anchor="middle" fill="var(--dim)" font-size="7">8× switched | TSR-06/07</text>
-<!-- Wire: NTC bank → temp connector (90° bend, goes right then up) -->
-<path d="M200,771 L270,771 L270,750 L650,750 L650,695" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
+<rect x="30" y="960" width="220" height="40" rx="7" fill="rgba(210,153,34,.03)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="140" y="978" text-anchor="middle" fill="var(--sps)" font-size="9" font-weight="600">NTC RESISTOR BANK (PP-02)</text>
+<text x="140" y="994" text-anchor="middle" fill="var(--dim)" font-size="7.5">8× switched | TSR-06/07</text>
+<path d="M250,980 L310,980 L310,950 L770,950 L770,880" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ay)"/>
 
-<!-- Cross-check footer -->
-<text x="590" y="812" text-anchor="middle" fill="var(--dim)" font-size="7.5">Verified: hw-datasheet-oracle ✓ | data-flow-checker ✓ | lessons-librarian ✓ (8 gotchas) | 11 gaps | HalCoGen HL_pinmux.c signal routing</text>
+
+<!-- Footer -->
+<text x="750" y="1080" text-anchor="middle" fill="var(--dim)" font-size="8">Verified: hw-datasheet-oracle ✓ | data-flow-checker ✓ | lessons-librarian ✓ (8 gotchas) | 11 gaps | HalCoGen HL_pinmux.c signal routing</text>
 
 </svg>
 </body>
