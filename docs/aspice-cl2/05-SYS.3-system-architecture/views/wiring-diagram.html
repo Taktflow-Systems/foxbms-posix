@@ -25,7 +25,7 @@ iframe{flex:1;border:none;width:100%;background:#0d1117}
     <div class="tab" onclick="load('wiring/page2.html',this)">MCU Details</div>
     <div class="tab" onclick="load('wiring/page3.html',this)">Board-to-Board</div>
   </div>
-  <button class="edit-btn" onclick="window.open('https://app.diagrams.net/?ui=dark','_blank')">Edit in draw.io ↗</button>
+  <button class="edit-btn" onclick="openDrawio()">Edit in draw.io</button>
 </nav>
 <iframe id="f" src="wiring/page1.html"></iframe>
 <script>
@@ -33,6 +33,16 @@ function load(src,el){
   document.getElementById('f').src=src;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
+}
+function openDrawio(){
+  // Build absolute path to .drawio file from current HTML location
+  var base=window.location.pathname.replace(/\\/g,'/');
+  var dir=base.substring(0,base.lastIndexOf('/'));
+  var drawioPath=dir+'/wiring/page1-interactive.drawio';
+  // Remove leading slash on Windows (e.g. /H:/... → H:/...)
+  if(drawioPath.match(/^\/[A-Z]:/)) drawioPath=drawioPath.substring(1);
+  // Open in VS Code via vscode:// protocol (works offline, uses draw.io extension)
+  window.location.href='vscode://file/'+drawioPath;
 }
 </script>
 </body>
