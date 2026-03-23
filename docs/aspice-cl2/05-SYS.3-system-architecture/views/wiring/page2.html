@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wiring — MCU Interface Details</title>
+<style>
+<title>foxBMS 2 — Wiring Diagrams</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--dim:#6e7681;--accent:#8b5cf6;
+--can:#58a6ff;--spi:#3fb950;--sps:#d29922;--red:#f85149;--i2c:#bc8cff;--iso:#56d4dd;--pwr:#8b949e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif}
+nav{position:sticky;top:0;z-index:50;background:#010409;border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center}
+nav h1{font-size:.9rem;color:#fff;padding:10px 20px 10px 0;border-right:1px solid var(--border);white-space:nowrap}
+.tabs{display:flex;gap:0}
+.tab{padding:10px 20px;cursor:pointer;font-size:.8rem;color:var(--dim);font-weight:500;border-bottom:2px solid transparent}
+.tab:hover{color:var(--text)}
+.tab.active{color:#fff;border-color:var(--accent)}
+.page{display:none;padding:24px;max-width:1500px;margin:0 auto}
+.page.active{display:block}
+.page>h2{color:#fff;font-size:1.1rem;margin-bottom:4px}
+.page>.sub{color:var(--dim);font-size:.75rem;margin-bottom:20px}
+.svg-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;overflow-x:auto}
+.svg-box h3{color:#fff;font-size:.9rem;margin-bottom:4px}
+.svg-box .sub{color:var(--dim);font-size:.72rem;margin-bottom:12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;margin-bottom:16px}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{width:22px;height:3px;border-radius:2px;display:inline-block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.detail-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav>
+  <h1>foxBMS 2 Wiring</h1>
+  <div class="tabs">
+    <div class="tab active" onclick="show('p1')">Page 1: System Overview</div>
+    <div class="tab" onclick="show('p2')">Page 2: MCU ↔ Components</div>
+    <div class="tab" onclick="show('p3')">Page 3: Board ↔ Board</div>
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.detail-grid{grid-template-columns:1fr}}
+.svg-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;overflow-x:auto}
+.svg-box h3{color:#fff;font-size:.9rem;margin-bottom:4px}
+.svg-box .sub{color:var(--dim);font-size:.72rem;margin-bottom:12px}
+</style>
+</head>
+<body>
+<h2>MCU Interface Details</h2>
+<p class="sub">Each MCU peripheral ↔ component with pin-level wiring.</p>
+<p class="sub">Each interface shown individually. Only the relevant MCU peripheral is drawn — not the whole chip.</p>
+
+<div class="detail-grid">
+
+<!-- ── DCAN1 ↔ J2021 (IVT) ── -->
+<div class="svg-box">
+<h3>DCAN1 ↔ J2021 CAN1 (IVT Current Sensor)</h3>
+<div class="sub">TSR-04/05/09 | FTTI: 250ms (overcurrent), 1250ms (comms loss) | canREG1 0xFFF7DC00</div>
+<svg width="580" height="220" viewBox="0 0 580 220" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <!-- MCU peripheral -->
+  <rect x="20" y="30" width="130" height="160" rx="8" fill="#0d1117" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="85" y="50" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">TMS570 MCU</text>
+  <rect x="30" y="60" width="110" height="30" rx="4" fill="rgba(88,166,255,.1)" stroke="var(--can)"/>
+  <text x="85" y="79" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">DCAN1</text>
+  <text x="85" y="100" text-anchor="middle" fill="var(--dim)" font-size="7">canREG1 0xDC00</text>
+  <!-- Ball labels -->
+  <text x="85" y="115" text-anchor="middle" fill="var(--accent)" font-size="7">[ded.] DCAN1TX</text>
+  <text x="85" y="127" text-anchor="middle" fill="var(--accent)" font-size="7">[ded.] DCAN1RX</text>
+  <!-- HET2 controls -->
+  <rect x="30" y="140" width="110" height="40" rx="4" fill="rgba(210,153,34,.08)" stroke="var(--sps)" stroke-width=".5"/>
+  <text x="85" y="157" text-anchor="middle" fill="var(--sps)" font-size="7" font-weight="600">N2HET2 GPIO</text>
+  <text x="85" y="169" text-anchor="middle" fill="var(--dim)" font-size="6.5">[N4] ch18 CAN1_EN</text>
+  <text x="85" y="179" text-anchor="middle" fill="var(--dim)" font-size="6.5">⚠TBV ch23 CAN1_STB</text>
+
+  <!-- Transceiver -->
+  <rect x="230" y="55" width="100" height="50" rx="6" fill="rgba(88,166,255,.06)" stroke="var(--can)"/>
+  <text x="280" y="77" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">TJA1044</text>
+  <text x="280" y="93" text-anchor="middle" fill="var(--dim)" font-size="7">CAN transceiver</text>
+  <text x="280" y="118" text-anchor="middle" fill="var(--dim)" font-size="7">NOT isolated | 120Ω term</text>
+
+  <!-- Connector -->
+  <rect x="410" y="35" width="150" height="130" rx="8" fill="var(--card)" stroke="var(--can)" stroke-width="1.5"/>
+  <text x="485" y="55" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">J2021</text>
+  <text x="485" y="68" text-anchor="middle" fill="var(--dim)" font-size="7">4-pin Micro-Fit 3.0</text>
+  <!-- Pins -->
+  <rect x="425" y="80" width="55" height="22" rx="3" fill="#1e293b"/><text x="452" y="95" text-anchor="middle" fill="var(--dim)" font-size="8">Pin 1 GND</text>
+  <rect x="490" y="80" width="55" height="22" rx="3" fill="#1e293b"/><text x="517" y="95" text-anchor="middle" fill="var(--dim)" font-size="8">Pin 2 NC</text>
+  <rect x="425" y="108" width="55" height="22" rx="3" fill="rgba(88,166,255,.15)"/><text x="452" y="123" text-anchor="middle" fill="var(--can)" font-size="8" font-weight="600">Pin 3 L</text>
+  <rect x="490" y="108" width="55" height="22" rx="3" fill="rgba(88,166,255,.15)"/><text x="517" y="123" text-anchor="middle" fill="var(--can)" font-size="8" font-weight="600">Pin 4 H</text>
+
+  <!-- Wires -->
+  <line x1="150" y1="75" x2="230" y2="75" stroke="var(--can)" stroke-width="2.5"/>
+  <text x="188" y="68" text-anchor="middle" fill="var(--can)" font-size="7" font-weight="600">TX →</text>
+  <line x1="150" y1="85" x2="230" y2="85" stroke="var(--can)" stroke-width="2.5"/>
+  <text x="188" y="96" text-anchor="middle" fill="var(--can)" font-size="7" font-weight="600">← RX</text>
+
+  <line x1="330" y1="70" x2="425" y2="119" stroke="var(--can)" stroke-width="2.5"/>
+  <text x="375" y="86" fill="var(--can)" font-size="7">CAN_H</text>
+  <line x1="330" y1="85" x2="425" y2="113" stroke="var(--can)" stroke-width="2.5"/>
+  <text x="375" y="115" fill="var(--can)" font-size="7">CAN_L</text>
+
+  <!-- EN/STB wires -->
+  <line x1="150" y1="157" x2="230" y2="80" stroke="var(--sps)" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="175" y="130" fill="var(--sps)" font-size="6">EN/STB</text>
+
+  <!-- Info -->
+  <text x="280" y="150" text-anchor="middle" fill="var(--dim)" font-size="7.5">RX: IVT 0x521 (I), 0x522-0x524 (V1-V3)</text>
+  <text x="280" y="162" text-anchor="middle" fill="var(--dim)" font-size="7.5">0x525 (T), 0x526 (P), 0x527 (CC)</text>
+  <text x="280" y="178" text-anchor="middle" fill="var(--sps)" font-size="7">⚠ L-009: invalidFlag=1 means VALID</text>
+  <text x="280" y="190" text-anchor="middle" fill="var(--sps)" font-size="7">⚠ L-011: must send 0x524 every cycle</text>
+  <text x="280" y="210" text-anchor="middle" fill="var(--dim)" font-size="7">DIAG: CURRENT_SENSOR_RESPONDING (100×10ms)</text>
+</svg>
+</div>
+
+<!-- ── DCAN2 ↔ J2024 (Vehicle) ── -->
+<div class="svg-box">
+<h3>DCAN2 ↔ J2024 CAN2 (Vehicle Controller)</h3>
+<div class="sub">TSR-11 | FTTI: 1250ms | canREG2 0xFFF7DE00 | Galvanically isolated</div>
+<svg width="580" height="220" viewBox="0 0 580 220" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <rect x="20" y="30" width="130" height="100" rx="8" fill="#0d1117" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="85" y="50" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">TMS570 MCU</text>
+  <rect x="30" y="60" width="110" height="30" rx="4" fill="rgba(88,166,255,.1)" stroke="var(--can)"/>
+  <text x="85" y="79" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">DCAN2</text>
+  <text x="85" y="100" text-anchor="middle" fill="var(--dim)" font-size="7">canREG2 0xDE00 | [ded.]</text>
+  <text x="85" y="118" text-anchor="middle" fill="var(--dim)" font-size="7">EN/STB via I2C PEX</text>
+
+  <rect x="230" y="45" width="100" height="65" rx="6" fill="rgba(88,166,255,.06)" stroke="var(--can)"/>
+  <text x="280" y="67" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">TJA1042</text>
+  <text x="280" y="82" text-anchor="middle" fill="var(--dim)" font-size="7">CAN transceiver</text>
+  <text x="280" y="100" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="700">⚡ ISOLATED</text>
+
+  <rect x="410" y="35" width="150" height="100" rx="8" fill="var(--card)" stroke="var(--can)" stroke-width="1.5"/>
+  <text x="485" y="55" text-anchor="middle" fill="var(--can)" font-size="10" font-weight="700">J2024</text>
+  <text x="485" y="68" text-anchor="middle" fill="var(--dim)" font-size="7">4-pin Micro-Fit 3.0</text>
+  <rect x="425" y="80" width="55" height="22" rx="3" fill="rgba(88,166,255,.15)"/><text x="452" y="95" text-anchor="middle" fill="var(--can)" font-size="8" font-weight="600">Pin 3 L</text>
+  <rect x="490" y="80" width="55" height="22" rx="3" fill="rgba(88,166,255,.15)"/><text x="517" y="95" text-anchor="middle" fill="var(--can)" font-size="8" font-weight="600">Pin 4 H</text>
+
+  <line x1="150" y1="75" x2="230" y2="75" stroke="var(--can)" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <line x1="330" y1="75" x2="410" y2="85" stroke="var(--can)" stroke-width="2.5" stroke-dasharray="8,4"/>
+
+  <text x="280" y="140" text-anchor="middle" fill="var(--dim)" font-size="7.5">TX: 0x220-0x260 (BMS state, voltages, temps)</text>
+  <text x="280" y="155" text-anchor="middle" fill="var(--dim)" font-size="7.5">RX: 0x210 (state request from vehicle)</text>
+  <text x="280" y="175" text-anchor="middle" fill="var(--dim)" font-size="7">DIAG: CAN_TIMING (100×10ms, FTTI 1250ms)</text>
+  <text x="280" y="195" text-anchor="middle" fill="var(--dim)" font-size="7">120Ω termination on master board</text>
+</svg>
+</div>
+
+<!-- ── N2HET1 ↔ J2033 (Interlock) ── -->
+<div class="svg-box">
+<h3>N2HET1 + ADC1 ↔ J2033 Interlock</h3>
+<div class="sub">TSR-13 | FTTI: 250ms | hetREG1 0xFFF7B800 + adcREG1 0xFFF7C000</div>
+<svg width="580" height="200" viewBox="0 0 580 200" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <rect x="20" y="20" width="150" height="160" rx="8" fill="#0d1117" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="95" y="40" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">TMS570 MCU</text>
+  <rect x="30" y="50" width="130" height="30" rx="4" fill="rgba(248,81,73,.1)" stroke="var(--red)"/>
+  <text x="95" y="69" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="700">N2HET1</text>
+  <text x="95" y="88" text-anchor="middle" fill="var(--accent)" font-size="7">[B11] ch30 = IL_HS_ENABLE (out)</text>
+  <text x="95" y="100" text-anchor="middle" fill="var(--accent)" font-size="7">[A3] ch29 = IL_STATE (in)</text>
+  <rect x="30" y="110" width="130" height="30" rx="4" fill="rgba(139,148,158,.08)" stroke="var(--pwr)" stroke-width=".5"/>
+  <text x="95" y="129" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="600">ADC1</text>
+  <text x="95" y="148" text-anchor="middle" fill="var(--dim)" font-size="6.5">ch2=IL_HS_VS ch3=IL_LS_VS</text>
+  <text x="95" y="160" text-anchor="middle" fill="var(--dim)" font-size="6.5">ch4=IL_HS_CS ch5=IL_LS_CS</text>
+
+  <rect x="380" y="30" width="180" height="130" rx="8" fill="var(--card)" stroke="var(--red)" stroke-width="1.5"/>
+  <text x="470" y="52" text-anchor="middle" fill="var(--red)" font-size="10" font-weight="700">J2033 INTERLOCK</text>
+  <text x="470" y="67" text-anchor="middle" fill="var(--dim)" font-size="7">2-pin Micro-Fit 3.0</text>
+  <rect x="400" y="80" width="65" height="28" rx="4" fill="rgba(248,81,73,.12)"/><text x="432" y="98" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="600">Pin 1 IL_H</text>
+  <rect x="475" y="80" width="65" height="28" rx="4" fill="rgba(248,81,73,.12)"/><text x="507" y="98" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="600">Pin 2 IL_L</text>
+  <text x="470" y="130" text-anchor="middle" fill="var(--dim)" font-size="7">Current loop: H → external → L</text>
+  <text x="470" y="145" text-anchor="middle" fill="var(--dim)" font-size="7">Open loop = fault</text>
+
+  <!-- Wires -->
+  <line x1="170" y1="65" x2="400" y2="94" stroke="var(--red)" stroke-width="3"/>
+  <text x="270" y="60" fill="var(--red)" font-size="8" font-weight="600">IL_HS_ENABLE [B11] →</text>
+  <line x1="170" y1="72" x2="475" y2="94" stroke="var(--red)" stroke-width="3"/>
+  <text x="330" y="95" fill="var(--red)" font-size="8" font-weight="600">← IL_STATE [A3]</text>
+  <line x1="170" y1="125" x2="380" y2="110" stroke="var(--pwr)" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="280" y="120" fill="var(--pwr)" font-size="7">ADC ch2-5 (V+I measurement)</text>
+
+  <text x="290" y="180" text-anchor="middle" fill="var(--dim)" font-size="7">DIAG: INTERLOCK_FEEDBACK | Threshold: 10×10ms | FTTI: 250ms</text>
+</svg>
+</div>
+
+<!-- ── MibSPI2 ↔ SPS + SBC ── -->
+<div class="svg-box">
+<h3>MibSPI2 ↔ SPS IC + SBC FS8x (Shared Bus)</h3>
+<div class="sub">TSR-08/14 | FTTI: 350ms (contactor) | spiREG2 0xFFF7F600 | CONSTRAINT-001</div>
+<svg width="580" height="260" viewBox="0 0 580 260" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <rect x="20" y="20" width="150" height="220" rx="8" fill="#0d1117" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="95" y="40" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">TMS570 MCU</text>
+  <rect x="30" y="50" width="130" height="30" rx="4" fill="rgba(210,153,34,.1)" stroke="var(--sps)"/>
+  <text x="95" y="69" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">MibSPI2</text>
+  <text x="95" y="90" text-anchor="middle" fill="var(--accent)" font-size="7">[D1] SIMO | [D2] SOMI | [E2] CLK</text>
+  <text x="95" y="102" text-anchor="middle" fill="var(--dim)" font-size="7">DMA CH2 TX / CH3 RX</text>
+  <rect x="30" y="112" width="130" height="50" rx="4" fill="rgba(210,153,34,.06)" stroke="var(--sps)" stroke-width=".5"/>
+  <text x="95" y="128" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">N2HET2 Control</text>
+  <text x="95" y="141" text-anchor="middle" fill="var(--dim)" font-size="6.5">[D8] pin1 = SPS_CS (SW)</text>
+  <text x="95" y="151" text-anchor="middle" fill="var(--dim)" font-size="6.5">[T5] pin16 = SPS_RESET</text>
+  <text x="95" y="161" text-anchor="middle" fill="var(--dim)" font-size="6.5">pin9 = SPS_FB_ENABLE</text>
+  <rect x="30" y="172" width="130" height="30" rx="4" fill="rgba(188,140,255,.08)" stroke="var(--i2c)" stroke-width=".5"/>
+  <text x="95" y="191" text-anchor="middle" fill="var(--i2c)" font-size="8" font-weight="600">I2C1 [B2/C3]</text>
+  <text x="95" y="210" text-anchor="middle" fill="var(--dim)" font-size="7">→ PEX1 (feedback)</text>
+
+  <!-- SPS IC -->
+  <rect x="260" y="30" width="120" height="70" rx="6" fill="rgba(210,153,34,.06)" stroke="var(--sps)"/>
+  <text x="320" y="52" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">SPS IC</text>
+  <text x="320" y="68" text-anchor="middle" fill="var(--dim)" font-size="7">MOSFET driver ×8</text>
+  <text x="320" y="82" text-anchor="middle" fill="var(--dim)" font-size="7">UVLO → fail-safe open</text>
+
+  <!-- SBC -->
+  <rect x="260" y="120" width="120" height="55" rx="6" fill="rgba(210,153,34,.04)" stroke="var(--sps)" stroke-dasharray="5,3"/>
+  <text x="320" y="140" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">SBC FS8x</text>
+  <text x="320" y="155" text-anchor="middle" fill="var(--dim)" font-size="7">Watchdog | RSTB | FS0B</text>
+  <text x="320" y="167" text-anchor="middle" fill="var(--dim)" font-size="7">ASIL D qualified</text>
+
+  <!-- J200x Connector -->
+  <rect x="440" y="20" width="120" height="120" rx="8" fill="var(--card)" stroke="var(--sps)" stroke-width="1.5"/>
+  <text x="500" y="40" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">J200x ×8</text>
+  <text x="500" y="55" text-anchor="middle" fill="var(--dim)" font-size="7">4-pin Micro-Fit each</text>
+  <rect x="450" y="63" width="48" height="20" rx="3" fill="rgba(188,140,255,.12)"/><text x="474" y="77" text-anchor="middle" fill="var(--i2c)" font-size="8" font-weight="600">1 FB</text>
+  <rect x="502" y="63" width="48" height="20" rx="3" fill="rgba(210,153,34,.15)"/><text x="526" y="77" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">3 OUT</text>
+  <rect x="450" y="88" width="48" height="20" rx="3" fill="#1e293b"/><text x="474" y="102" text-anchor="middle" fill="var(--dim)" font-size="8">2 SUP</text>
+  <rect x="502" y="88" width="48" height="20" rx="3" fill="#1e293b"/><text x="526" y="102" text-anchor="middle" fill="var(--dim)" font-size="8">4 GND</text>
+  <text x="500" y="130" text-anchor="middle" fill="var(--dim)" font-size="7">CH0=Str+ CH1=Str- CH2=Pre</text>
+
+  <!-- Wires: MCU → SPS -->
+  <line x1="170" y1="65" x2="260" y2="55" stroke="var(--sps)" stroke-width="2.5"/>
+  <text x="210" y="52" fill="var(--sps)" font-size="7" font-weight="600">SIMO/SOMI/CLK →</text>
+  <!-- Wires: SPS → J200x -->
+  <line x1="380" y1="55" x2="440" y2="77" stroke="var(--sps)" stroke-width="2.5"/>
+  <text x="405" y="55" fill="var(--sps)" font-size="7">SPS_OUT →</text>
+  <!-- Wires: MCU → SBC (shared) -->
+  <line x1="170" y1="65" x2="260" y2="140" stroke="var(--sps)" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="210" y="110" fill="var(--sps)" font-size="7">SPI2 shared →</text>
+  <!-- Feedback: J200x → PEX → MCU -->
+  <line x1="450" y1="73" x2="170" y2="187" stroke="var(--i2c)" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="330" y="200" fill="var(--i2c)" font-size="7">← FB via I2C PEX1 pins 0-2</text>
+
+  <!-- Constraint warning -->
+  <rect x="230" y="195" width="330" height="50" rx="6" fill="rgba(248,81,73,.05)" stroke="var(--red)" stroke-width="1"/>
+  <text x="395" y="212" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="700">⚠ CONSTRAINT-001</text>
+  <text x="395" y="225" text-anchor="middle" fill="var(--red)" font-size="7">SPS_Ctrl() must execute BEFORE SBC_Trigger() in 10ms task</text>
+  <text x="395" y="237" text-anchor="middle" fill="var(--dim)" font-size="7">GAP-08: SPS bypasses SPI_Lock | GAP-02: Precharge has NO_FEEDBACK</text>
+</svg>
+</div>
+
+<!-- ── MibSPI1/4 ↔ J9000 (Interface) ── -->
+<div class="svg-box" style="grid-column:1/-1">
+<h3>MibSPI1 + MibSPI4 ↔ J9000 Interface Connector (40-pin)</h3>
+<div class="sub">TSR-01/02/06/07/10 | ASIL D | spiREG1 0xFFF7F400 + spiREG4 0xFFF7FA00 | DMA CH0 TX / CH1 RX</div>
+<svg width="1100" height="280" viewBox="0 0 1100 280" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <!-- MCU -->
+  <rect x="20" y="20" width="170" height="240" rx="8" fill="#0d1117" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="105" y="42" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">TMS570 MCU</text>
+  <rect x="30" y="52" width="150" height="28" rx="4" fill="rgba(63,185,80,.1)" stroke="var(--spi)"/>
+  <text x="105" y="70" text-anchor="middle" fill="var(--spi)" font-size="10" font-weight="700">MibSPI1 (spiREG1)</text>
+  <text x="105" y="88" text-anchor="middle" fill="var(--accent)" font-size="7">[ded.] SOMI0, SIMO0, CLK</text>
+  <text x="105" y="100" text-anchor="middle" fill="var(--accent)" font-size="7">[F3] CS1 | [G3] CS2</text>
+  <rect x="30" y="108" width="150" height="28" rx="4" fill="rgba(63,185,80,.1)" stroke="var(--spi)"/>
+  <text x="105" y="126" text-anchor="middle" fill="var(--spi)" font-size="10" font-weight="700">MibSPI4 (spiREG4)</text>
+  <text x="105" y="145" text-anchor="middle" fill="var(--accent)" font-size="7">[U1] CS0 | [B12] CS1</text>
+  <rect x="30" y="158" width="150" height="25" rx="4" fill="rgba(86,212,221,.08)" stroke="var(--iso)" stroke-width=".5"/>
+  <text x="105" y="175" text-anchor="middle" fill="var(--iso)" font-size="8" font-weight="600">DMA CH0 TX / CH1 RX</text>
+  <rect x="30" y="192" width="150" height="25" rx="4" fill="rgba(139,148,158,.08)" stroke="var(--pwr)" stroke-width=".5"/>
+  <text x="105" y="209" text-anchor="middle" fill="var(--pwr)" font-size="8">GIO: [C1] [E1] [A6] [H3]</text>
+  <text x="105" y="235" text-anchor="middle" fill="var(--dim)" font-size="7">I2C1 → PEX (IF_GPIO.0-7)</text>
+
+  <!-- J9000 Connector (full 40-pin) -->
+  <rect x="380" y="10" width="700" height="260" rx="10" fill="var(--card)" stroke="var(--spi)" stroke-width="2"/>
+  <text x="730" y="35" text-anchor="middle" fill="var(--spi)" font-size="12" font-weight="700">J9000 — 40-pin Samtec Connector</text>
+  <text x="730" y="50" text-anchor="middle" fill="var(--dim)" font-size="8">Mates with Interface Board</text>
+
+  <!-- Pin 1-10: SPI1 -->
+  <text x="400" y="72" fill="var(--spi)" font-size="8" font-weight="600">SPI1 (AFE ch1/ch2):</text>
+  <rect x="400" y="78" width="75" height="24" rx="3" fill="rgba(63,185,80,.1)" stroke="var(--spi)" stroke-width=".5"/>
+  <text x="437" y="94" text-anchor="middle" fill="var(--spi)" font-size="8" font-weight="600">Pin 1 SOMI0</text>
+  <rect x="480" y="78" width="75" height="24" rx="3" fill="rgba(63,185,80,.1)" stroke="var(--spi)" stroke-width=".5"/>
+  <text x="517" y="94" text-anchor="middle" fill="var(--spi)" font-size="8" font-weight="600">Pin 3 SIMO0</text>
+  <rect x="560" y="78" width="65" height="24" rx="3" fill="rgba(63,185,80,.1)" stroke="var(--spi)" stroke-width=".5"/>
+  <text x="592" y="94" text-anchor="middle" fill="var(--spi)" font-size="8" font-weight="600">Pin 5 CLK</text>
+  <rect x="630" y="78" width="65" height="24" rx="3" fill="rgba(63,185,80,.15)" stroke="var(--spi)"/>
+  <text x="662" y="94" text-anchor="middle" fill="var(--spi)" font-size="8" font-weight="700">Pin 6 CS1</text>
+  <rect x="700" y="78" width="65" height="24" rx="3" fill="rgba(63,185,80,.15)" stroke="var(--spi)"/>
+  <text x="732" y="94" text-anchor="middle" fill="var(--spi)" font-size="8" font-weight="700">Pin 7 CS2</text>
+  <!-- Ball labels -->
+  <text x="437" y="112" text-anchor="middle" fill="var(--accent)" font-size="7">ded.</text>
+  <text x="517" y="112" text-anchor="middle" fill="var(--accent)" font-size="7">ded.</text>
+  <text x="592" y="112" text-anchor="middle" fill="var(--accent)" font-size="7">ded.</text>
+  <text x="662" y="112" text-anchor="middle" fill="var(--accent)" font-size="7" font-weight="600">[F3]</text>
+  <text x="732" y="112" text-anchor="middle" fill="var(--accent)" font-size="7" font-weight="600">[G3]</text>
+
+  <!-- Pin 14-15: SPI4 -->
+  <text x="800" y="72" fill="var(--spi)" font-size="8" font-weight="600">SPI4 (AFE ch3/ch4):</text>
+  <rect x="800" y="78" width="75" height="24" rx="3" fill="rgba(63,185,80,.15)" stroke="var(--spi)"/>
+  <text x="837" y="94" text-anchor="middle" fill="var(--spi)" font-size="8" font-weight="700">Pin 14 CS0</text>
+  <rect x="880" y="78" width="75" height="24" rx="3" fill="rgba(63,185,80,.15)" stroke="var(--spi)"/>
+  <text x="917" y="94" text-anchor="middle" fill="var(--spi)" font-size="8" font-weight="700">Pin 15 CS1</text>
+  <text x="837" y="112" text-anchor="middle" fill="var(--accent)" font-size="7" font-weight="600">[U1]</text>
+  <text x="917" y="112" text-anchor="middle" fill="var(--accent)" font-size="7" font-weight="600">[B12]</text>
+
+  <!-- Pin 20-23: Interrupts -->
+  <text x="400" y="138" fill="var(--sps)" font-size="8" font-weight="600">Interrupts (AFE → MCU):</text>
+  <rect x="400" y="144" width="65" height="24" rx="3" fill="rgba(210,153,34,.08)"/>
+  <text x="432" y="160" text-anchor="middle" fill="var(--sps)" font-size="8">Pin 20 INT0</text>
+  <rect x="470" y="144" width="65" height="24" rx="3" fill="rgba(210,153,34,.08)"/>
+  <text x="502" y="160" text-anchor="middle" fill="var(--sps)" font-size="8">Pin 21 INT1</text>
+  <rect x="540" y="144" width="65" height="24" rx="3" fill="rgba(210,153,34,.08)"/>
+  <text x="572" y="160" text-anchor="middle" fill="var(--sps)" font-size="8">Pin 22 INT2</text>
+  <rect x="610" y="144" width="65" height="24" rx="3" fill="rgba(210,153,34,.08)"/>
+  <text x="642" y="160" text-anchor="middle" fill="var(--sps)" font-size="8">Pin 23 INT3</text>
+  <text x="432" y="178" text-anchor="middle" fill="var(--accent)" font-size="7">[C1] GIOA2</text>
+  <text x="502" y="178" text-anchor="middle" fill="var(--accent)" font-size="7">[E1] GIOA3</text>
+  <text x="572" y="178" text-anchor="middle" fill="var(--accent)" font-size="7">[A6] GIOA4</text>
+  <text x="642" y="178" text-anchor="middle" fill="var(--accent)" font-size="7">[H3] GIOA6</text>
+
+  <!-- Pin 24-31: GPIO (PEX) -->
+  <text x="720" y="138" fill="var(--i2c)" font-size="8" font-weight="600">GPIO via I2C PEX:</text>
+  <rect x="720" y="144" width="180" height="24" rx="3" fill="rgba(188,140,255,.06)" stroke="var(--i2c)" stroke-width=".5"/>
+  <text x="810" y="160" text-anchor="middle" fill="var(--i2c)" font-size="8">Pin 24-31: IF_GPIO.0-7</text>
+  <text x="810" y="178" text-anchor="middle" fill="var(--dim)" font-size="7">LTC6820 enable/master select per channel</text>
+
+  <!-- Power pins -->
+  <text x="400" y="205" fill="var(--pwr)" font-size="8" font-weight="600">Power:</text>
+  <rect x="400" y="210" width="80" height="22" rx="3" fill="rgba(139,148,158,.06)"/>
+  <text x="440" y="225" text-anchor="middle" fill="var(--pwr)" font-size="8">Pin 32-33 GND</text>
+  <rect x="490" y="210" width="90" height="22" rx="3" fill="rgba(139,148,158,.06)"/>
+  <text x="535" y="225" text-anchor="middle" fill="var(--pwr)" font-size="8">Pin 34-35 3.3V</text>
+  <rect x="590" y="210" width="90" height="22" rx="3" fill="rgba(139,148,158,.06)"/>
+  <text x="635" y="225" text-anchor="middle" fill="var(--pwr)" font-size="8">Pin 36-37 5.0V</text>
+  <rect x="690" y="210" width="90" height="22" rx="3" fill="rgba(139,148,158,.06)"/>
+  <text x="735" y="225" text-anchor="middle" fill="var(--pwr)" font-size="8">Pin 38 12V</text>
+  <rect x="790" y="210" width="90" height="22" rx="3" fill="rgba(139,148,158,.06)"/>
+  <text x="835" y="225" text-anchor="middle" fill="var(--pwr)" font-size="8">Pin 39-40 VSUP</text>
+
+  <!-- DIAG info -->
+  <text x="400" y="255" fill="var(--dim)" font-size="7.5">DIAG: AFE_SPI (5×10ms, 200ms) | AFE_COMMUNICATION_INTEGRITY | AFE_MUX | AFE_CONFIG (1×10ms, 160ms)</text>
+  <text x="400" y="268" fill="var(--sps)" font-size="7.5">⚠ L-010: 5 mux groups needed for 18 cells | ⚠ GAP-09: no DMA reset | ⚠ GAP-10: no PEC retry</text>
+
+  <!-- Wires: MCU → J9000 -->
+  <line x1="190" y1="66" x2="400" y2="90" stroke="var(--spi)" stroke-width="3"/>
+  <line x1="190" y1="122" x2="800" y2="90" stroke="var(--spi)" stroke-width="2"/>
+  <line x1="190" y1="170" x2="400" y2="156" stroke="var(--iso)" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="190" y1="205" x2="400" y2="156" stroke="var(--pwr)" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="280" y="58" fill="var(--spi)" font-size="8" font-weight="700">SPI1 (ASIL D) →</text>
+  <text x="350" y="118" fill="var(--spi)" font-size="7">SPI4 →</text>
+</svg>
+</div>
+
+</div><!-- end detail-grid -->
+</div>
+</body>
+</html>

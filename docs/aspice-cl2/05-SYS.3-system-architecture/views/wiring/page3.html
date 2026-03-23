@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wiring — Board-to-Board Connections</title>
+<style>
+<title>foxBMS 2 — Wiring Diagrams</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--dim:#6e7681;--accent:#8b5cf6;
+--can:#58a6ff;--spi:#3fb950;--sps:#d29922;--red:#f85149;--i2c:#bc8cff;--iso:#56d4dd;--pwr:#8b949e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif}
+nav{position:sticky;top:0;z-index:50;background:#010409;border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center}
+nav h1{font-size:.9rem;color:#fff;padding:10px 20px 10px 0;border-right:1px solid var(--border);white-space:nowrap}
+.tabs{display:flex;gap:0}
+.tab{padding:10px 20px;cursor:pointer;font-size:.8rem;color:var(--dim);font-weight:500;border-bottom:2px solid transparent}
+.tab:hover{color:var(--text)}
+.tab.active{color:#fff;border-color:var(--accent)}
+.page{display:none;padding:24px;max-width:1500px;margin:0 auto}
+.page.active{display:block}
+.page>h2{color:#fff;font-size:1.1rem;margin-bottom:4px}
+.page>.sub{color:var(--dim);font-size:.75rem;margin-bottom:20px}
+.svg-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;overflow-x:auto}
+.svg-box h3{color:#fff;font-size:.9rem;margin-bottom:4px}
+.svg-box .sub{color:var(--dim);font-size:.72rem;margin-bottom:12px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;margin-bottom:16px}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{width:22px;height:3px;border-radius:2px;display:inline-block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.detail-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav>
+  <h1>foxBMS 2 Wiring</h1>
+  <div class="tabs">
+    <div class="tab active" onclick="show('p1')">Page 1: System Overview</div>
+    <div class="tab" onclick="show('p2')">Page 2: MCU ↔ Components</div>
+    <div class="tab" onclick="show('p3')">Page 3: Board ↔ Board</div>
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.detail-grid{grid-template-columns:1fr}}
+.svg-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;overflow-x:auto}
+.svg-box h3{color:#fff;font-size:.9rem;margin-bottom:4px}
+.svg-box .sub{color:var(--dim);font-size:.72rem;margin-bottom:12px}
+</style>
+</head>
+<body>
+<h2>Board-to-Board Connections</h2>
+<p class="sub">Non-ECU connections: isoSPI, contactors, cell emulator.</p>
+<p class="sub">1:1 physical wiring between boards. No MCU involved — these are board-to-board or board-to-sensor connections.</p>
+
+<div class="detail-grid">
+
+<!-- ── Interface ↔ Slave (isoSPI) ── -->
+<div class="svg-box" style="grid-column:1/-1">
+<h3>Interface Board ↔ Slave Board (isoSPI Daisy Chain)</h3>
+<div class="sub">Transformer-coupled galvanic isolation | 1 Mbps | PEC-15 HD=6 | Max 100m (practical &lt;2m) | 2s watchdog</div>
+<svg width="1100" height="200" viewBox="0 0 1100 200" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <!-- Interface Board -->
+  <rect x="20" y="20" width="400" height="160" rx="10" fill="var(--card)" stroke="var(--iso)" stroke-width="2"/>
+  <text x="220" y="42" text-anchor="middle" fill="var(--iso)" font-size="12" font-weight="700">INTERFACE BOARD (LTC6820 ×4)</text>
+
+  <rect x="40" y="55" width="170" height="50" rx="6" fill="rgba(86,212,221,.06)" stroke="var(--iso)"/>
+  <text x="125" y="72" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">ch1 (SPI1.CS1 [F3])</text>
+  <text x="125" y="86" text-anchor="middle" fill="var(--dim)" font-size="7">GPIO.0 enable | GPIO.1 master</text>
+  <text x="125" y="98" text-anchor="middle" fill="var(--dim)" font-size="7">1:1 pulse transformer</text>
+
+  <rect x="230" y="55" width="170" height="50" rx="6" fill="rgba(86,212,221,.06)" stroke="var(--iso)"/>
+  <text x="315" y="72" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">ch2 (SPI1.CS2 [G3])</text>
+  <text x="315" y="86" text-anchor="middle" fill="var(--dim)" font-size="7">GPIO.2 enable | GPIO.3 master</text>
+
+  <!-- isoSPI output connector -->
+  <rect x="60" y="120" width="100" height="35" rx="5" fill="rgba(86,212,221,.1)" stroke="var(--iso)"/>
+  <text x="110" y="138" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">isoSPI OUT</text>
+  <text x="110" y="150" text-anchor="middle" fill="var(--dim)" font-size="7">Pin 1: isospi_p (+)</text>
+  <!-- Pin 2 -->
+  <text x="110" y="160" fill="var(--dim)" font-size="7" text-anchor="middle">Pin 2: isospi_n (−)</text>
+
+  <!-- Isolation boundary -->
+  <line x1="440" y1="10" x2="440" y2="190" stroke="var(--red)" stroke-width="2" stroke-dasharray="10,5"/>
+  <text x="440" y="195" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="700">⚡ ISOLATION</text>
+
+  <!-- Slave Board -->
+  <rect x="480" y="20" width="600" height="160" rx="10" fill="var(--card)" stroke="var(--red)" stroke-width="2"/>
+  <text x="780" y="42" text-anchor="middle" fill="#fca5a5" font-size="12" font-weight="700">SLAVE BOARD (LTC6813-1)</text>
+
+  <rect x="500" y="55" width="100" height="35" rx="5" fill="rgba(86,212,221,.1)" stroke="var(--iso)"/>
+  <text x="550" y="72" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">Daisy IN</text>
+  <text x="550" y="86" text-anchor="middle" fill="var(--dim)" font-size="7">Pin 1: IN+ | Pin 2: IN-</text>
+
+  <rect x="620" y="55" width="100" height="35" rx="5" fill="rgba(86,212,221,.1)" stroke="var(--iso)"/>
+  <text x="670" y="72" text-anchor="middle" fill="var(--iso)" font-size="9" font-weight="600">Daisy OUT</text>
+  <text x="670" y="86" text-anchor="middle" fill="var(--dim)" font-size="7">Pin 1: OUT+ | Pin 2: OUT-</text>
+
+  <!-- LTC6813 -->
+  <rect x="750" y="55" width="160" height="35" rx="6" fill="#0d1117" stroke="var(--accent)" stroke-width="1"/>
+  <text x="830" y="77" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">LTC6813-1</text>
+
+  <!-- Cell/Temp outputs -->
+  <rect x="500" y="110" width="120" height="55" rx="5" fill="rgba(248,81,73,.05)" stroke="var(--red)"/>
+  <text x="560" y="128" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="600">→ Cell Voltage</text>
+  <text x="560" y="142" text-anchor="middle" fill="var(--dim)" font-size="7">24-pin connector</text>
+  <text x="560" y="156" text-anchor="middle" fill="var(--dim)" font-size="7">C0-C17 (18 cells)</text>
+
+  <rect x="640" y="110" width="120" height="55" rx="5" fill="rgba(210,153,34,.05)" stroke="var(--sps)"/>
+  <text x="700" y="128" text-anchor="middle" fill="var(--sps)" font-size="9" font-weight="600">→ Temperature</text>
+  <text x="700" y="142" text-anchor="middle" fill="var(--dim)" font-size="7">16-pin connector</text>
+  <text x="700" y="156" text-anchor="middle" fill="var(--dim)" font-size="7">8× NTC (10kΩ)</text>
+
+  <rect x="780" y="110" width="120" height="55" rx="5" fill="rgba(139,148,158,.05)" stroke="var(--pwr)"/>
+  <text x="840" y="128" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="600">→ Analog In</text>
+  <text x="840" y="142" text-anchor="middle" fill="var(--dim)" font-size="7">18-pin: AIN 0-15</text>
+  <text x="840" y="156" text-anchor="middle" fill="var(--dim)" font-size="7">Not safety path</text>
+
+  <rect x="920" y="110" width="120" height="55" rx="5" fill="rgba(139,148,158,.05)" stroke="var(--pwr)"/>
+  <text x="980" y="128" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="600">→ Digital I/O</text>
+  <text x="980" y="142" text-anchor="middle" fill="var(--dim)" font-size="7">9-pin: DIO 0-6</text>
+  <text x="980" y="156" text-anchor="middle" fill="var(--dim)" font-size="7">Not safety path</text>
+
+  <!-- LTC6813 → connectors -->
+  <line x1="800" y1="90" x2="560" y2="110" stroke="var(--red)" stroke-width="2"/>
+  <line x1="830" y1="90" x2="700" y2="110" stroke="var(--sps)" stroke-width="1.5"/>
+  <line x1="860" y1="90" x2="840" y2="110" stroke="var(--pwr)" stroke-width="1"/>
+  <line x1="880" y1="90" x2="980" y2="110" stroke="var(--pwr)" stroke-width="1"/>
+
+  <!-- isoSPI wires (crossing isolation) -->
+  <line x1="160" y1="137" x2="500" y2="72" stroke="var(--iso)" stroke-width="3" stroke-dasharray="10,5"/>
+  <text x="300" y="95" fill="var(--iso)" font-size="8" font-weight="700">isospi_p (+) ────────></text>
+  <line x1="160" y1="150" x2="500" y2="82" stroke="var(--iso)" stroke-width="3" stroke-dasharray="10,5"/>
+  <text x="300" y="132" fill="var(--iso)" font-size="8" font-weight="700">isospi_n (−) ────────></text>
+
+  <!-- Daisy IN → LTC6813 -->
+  <line x1="600" y1="72" x2="750" y2="72" stroke="var(--iso)" stroke-width="2"/>
+  <!-- LTC6813 → Daisy OUT -->
+  <line x1="670" y1="90" x2="750" y2="80" stroke="var(--iso)" stroke-width="1.5" stroke-dasharray="4,3"/>
+</svg>
+</div>
+
+<!-- ── SPS IC ↔ Contactors (J200x) ── -->
+<div class="svg-box">
+<h3>SPS IC ↔ Contactors (Physical Actuation)</h3>
+<div class="sub">SPS output drives contactor coil. Spring-return mechanism = fail-safe open.</div>
+<svg width="580" height="200" viewBox="0 0 580 200" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <rect x="20" y="30" width="130" height="140" rx="8" fill="rgba(210,153,34,.04)" stroke="var(--sps)" stroke-width="1.5"/>
+  <text x="85" y="52" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">SPS IC</text>
+  <text x="85" y="68" text-anchor="middle" fill="var(--dim)" font-size="7">8-ch MOSFET driver</text>
+  <rect x="30" y="80" width="110" height="20" rx="3" fill="rgba(210,153,34,.1)"/><text x="85" y="94" text-anchor="middle" fill="var(--sps)" font-size="8">CH0 → SPS_OUT_0</text>
+  <rect x="30" y="105" width="110" height="20" rx="3" fill="rgba(210,153,34,.1)"/><text x="85" y="119" text-anchor="middle" fill="var(--sps)" font-size="8">CH1 → SPS_OUT_1</text>
+  <rect x="30" y="130" width="110" height="20" rx="3" fill="rgba(210,153,34,.1)"/><text x="85" y="144" text-anchor="middle" fill="var(--sps)" font-size="8">CH2 → SPS_OUT_2</text>
+
+  <!-- Contactors -->
+  <rect x="310" y="30" width="250" height="140" rx="8" fill="var(--card)" stroke="var(--sps)" stroke-width="1.5"/>
+  <text x="435" y="52" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">CONTACTORS (via J200x)</text>
+
+  <rect x="325" y="65" width="220" height="28" rx="4" fill="rgba(63,185,80,.05)"/>
+  <text x="435" y="83" text-anchor="middle" fill="var(--spi)" font-size="9">J2000 CH0: <tspan font-weight="700">STRING+ CONTACTOR</tspan></text>
+  <rect x="325" y="98" width="220" height="28" rx="4" fill="rgba(63,185,80,.05)"/>
+  <text x="435" y="116" text-anchor="middle" fill="var(--spi)" font-size="9">J2002 CH1: <tspan font-weight="700">STRING- CONTACTOR</tspan></text>
+  <rect x="325" y="131" width="220" height="28" rx="4" fill="rgba(248,81,73,.05)"/>
+  <text x="435" y="149" text-anchor="middle" fill="var(--red)" font-size="9">J2003 CH2: <tspan font-weight="700">PRECHARGE</tspan> (NO FB!)</text>
+
+  <!-- Wires -->
+  <line x1="150" y1="90" x2="325" y2="79" stroke="var(--sps)" stroke-width="2.5"/>
+  <line x1="150" y1="115" x2="325" y2="112" stroke="var(--sps)" stroke-width="2.5"/>
+  <line x1="150" y1="140" x2="325" y2="145" stroke="var(--sps)" stroke-width="2" stroke-dasharray="6,3"/>
+
+  <text x="240" y="75" fill="var(--sps)" font-size="7">Pin 3 SPS_OUT →</text>
+  <text x="240" y="150" fill="var(--red)" font-size="7">Pin 3 (no feedback!) →</text>
+
+  <text x="290" y="185" text-anchor="middle" fill="var(--dim)" font-size="7.5">Coil de-energized → spring opens contactor (fail-safe). SPS UVLO forces all outputs LOW on supply loss (GAP-11 resolved).</text>
+</svg>
+</div>
+
+<!-- ── Slave ↔ Cells (Cell Emulator for HIL) ── -->
+<div class="svg-box">
+<h3>Slave Cell Connector ↔ Battery Cells / Emulator</h3>
+<div class="sub">24-pin connector | Interleaved pinout | 19 channels for emulator</div>
+<svg width="580" height="280" viewBox="0 0 580 280" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+  <rect x="20" y="10" width="250" height="260" rx="8" fill="var(--card)" stroke="var(--red)" stroke-width="1.5"/>
+  <text x="145" y="32" text-anchor="middle" fill="var(--red)" font-size="10" font-weight="700">CELL VOLTAGE CONNECTOR</text>
+  <text x="145" y="46" text-anchor="middle" fill="var(--dim)" font-size="7">24-pin | Kelvin sense</text>
+
+  <text x="30" y="64" fill="var(--dim)" font-size="7.5" font-weight="600">Row 1 (even cells):</text>
+  <rect x="30" y="70" width="45" height="16" rx="2" fill="rgba(248,81,73,.1)"/><text x="52" y="82" text-anchor="middle" fill="var(--red)" font-size="7">1 BAT-</text>
+  <rect x="78" y="70" width="35" height="16" rx="2" fill="rgba(248,81,73,.1)"/><text x="95" y="82" text-anchor="middle" fill="var(--red)" font-size="7">2 C0+</text>
+  <rect x="116" y="70" width="35" height="16" rx="2" fill="rgba(248,81,73,.1)"/><text x="133" y="82" text-anchor="middle" fill="var(--red)" font-size="7">3 C2+</text>
+  <rect x="154" y="70" width="35" height="16" rx="2" fill="rgba(248,81,73,.1)"/><text x="171" y="82" text-anchor="middle" fill="var(--red)" font-size="7">4 C4+</text>
+  <rect x="192" y="70" width="15" height="16" rx="2" fill="rgba(248,81,73,.06)"/><text x="199" y="82" text-anchor="middle" fill="var(--red)" font-size="7">…</text>
+  <rect x="210" y="70" width="45" height="16" rx="2" fill="rgba(248,81,73,.1)"/><text x="232" y="82" text-anchor="middle" fill="var(--red)" font-size="7">11 BAT+</text>
+
+  <text x="30" y="104" fill="var(--dim)" font-size="7.5" font-weight="600">Row 2 (odd cells):</text>
+  <rect x="30" y="110" width="35" height="16" rx="2" fill="rgba(248,81,73,.08)"/><text x="47" y="122" text-anchor="middle" fill="var(--red)" font-size="7">14 C1+</text>
+  <rect x="68" y="110" width="35" height="16" rx="2" fill="rgba(248,81,73,.08)"/><text x="85" y="122" text-anchor="middle" fill="var(--red)" font-size="7">15 C3+</text>
+  <rect x="106" y="110" width="35" height="16" rx="2" fill="rgba(248,81,73,.08)"/><text x="123" y="122" text-anchor="middle" fill="var(--red)" font-size="7">16 C5+</text>
+  <rect x="144" y="110" width="15" height="16" rx="2" fill="rgba(248,81,73,.04)"/><text x="151" y="122" text-anchor="middle" fill="var(--red)" font-size="7">…</text>
+  <rect x="162" y="110" width="45" height="16" rx="2" fill="rgba(248,81,73,.08)"/><text x="184" y="122" text-anchor="middle" fill="var(--red)" font-size="7">22 C17+</text>
+
+  <text x="145" y="148" text-anchor="middle" fill="var(--dim)" font-size="7">Each cell: V(n) = CELL_(n)+ minus CELL_(n-1)+</text>
+  <text x="145" y="162" text-anchor="middle" fill="var(--dim)" font-size="7">LTC6813 measures: C0 to C17 (0.1 mV/LSB)</text>
+
+  <!-- Emulator wiring -->
+  <rect x="350" y="10" width="210" height="260" rx="8" fill="var(--card)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="455" y="32" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">CELL EMULATOR</text>
+  <text x="455" y="46" text-anchor="middle" fill="var(--dim)" font-size="7">19 ch | 0-5V | ≤0.5mV | PP-01</text>
+
+  <text x="360" y="68" fill="var(--dim)" font-size="7">Emulator → Connector wiring:</text>
+  <text x="360" y="84" fill="var(--sps)" font-size="7" font-weight="600">Ref GND → Pin 1 (VBAT-)</text>
+  <text x="360" y="98" fill="var(--sps)" font-size="7">Ch 0 → Pin 2 (CELL_0+)</text>
+  <text x="360" y="110" fill="var(--sps)" font-size="7">Ch 1 → Pin 14 (CELL_1+) ← odd row!</text>
+  <text x="360" y="122" fill="var(--sps)" font-size="7">Ch 2 → Pin 3 (CELL_2+)</text>
+  <text x="360" y="134" fill="var(--sps)" font-size="7">Ch 3 → Pin 15 (CELL_3+) ← odd row!</text>
+  <text x="360" y="146" fill="var(--sps)" font-size="7">…</text>
+  <text x="360" y="158" fill="var(--sps)" font-size="7">Ch 16 → Pin 10 (CELL_16+)</text>
+  <text x="360" y="170" fill="var(--sps)" font-size="7">Ch 17 → Pin 22 (CELL_17+)</text>
+  <text x="360" y="182" fill="var(--sps)" font-size="7">Ch 18 → Pin 11 (VBAT+)</text>
+
+  <text x="455" y="205" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="600">⚠ INTERLEAVED PINOUT</text>
+  <text x="455" y="218" text-anchor="middle" fill="var(--dim)" font-size="7">Even cells: pins 2-11 (row 1)</text>
+  <text x="455" y="230" text-anchor="middle" fill="var(--dim)" font-size="7">Odd cells: pins 14-22 (row 2)</text>
+  <text x="455" y="248" text-anchor="middle" fill="var(--red)" font-size="7" font-weight="600">⚠ L-018: Set ALL 18 cells for OV test</text>
+  <text x="455" y="260" text-anchor="middle" fill="var(--red)" font-size="7">⚠ GAP-03: Single-cell OV rejected (300mV spread)</text>
+
+  <!-- Wires -->
+  <line x1="270" y1="76" x2="350" y2="82" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <line x1="270" y1="118" x2="350" y2="108" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4,3"/>
+</svg>
+</div>
+
+</div><!-- end detail-grid -->
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+</body>
+</html>
