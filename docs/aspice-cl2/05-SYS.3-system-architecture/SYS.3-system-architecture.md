@@ -297,8 +297,8 @@ v1.1.3 (slave 18-cell), and v1.0.3 (interface).
 
 | File | Description |
 |------|-------------|
-| [SYS.3-ecu-pin-mapping.html](SYS.3-ecu-pin-mapping.html) | Color-coded ECU pin mapping tables (dark theme, ASIL badges, gap markers) |
-| [SYS.3-wiring-diagram.html](SYS.3-wiring-diagram.html) | SVG wiring diagram with connectors, MCU balls, colored signal paths |
+| [views/ecu-pin-mapping.html](views/ecu-pin-mapping.html) | Color-coded ECU pin mapping tables (dark theme, ASIL badges, gap markers) |
+| [views/wiring-diagram.html](views/wiring-diagram.html) | SVG wiring diagram with connectors, MCU balls, colored signal paths |
 
 ### 11.1 System Board Topology
 
