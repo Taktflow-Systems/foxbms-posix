@@ -131,9 +131,7 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <rect x="380" y="280" width="360" height="30" rx="6" fill="rgba(63,185,80,.06)" stroke="var(--spi)" stroke-width="1.5"/>
 <text x="560" y="300" text-anchor="middle" fill="var(--spi)" font-size="10" font-weight="700">J9000 — 40-pin Samtec — SPI1/4 + GPIO</text>
 
-<!-- SPS connectors label at bottom right -->
-<rect x="380" y="318" width="150" height="22" rx="4" fill="rgba(210,153,34,.06)" stroke="var(--sps)" stroke-width="1"/>
-<text x="455" y="333" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">SPS → J200x (contactors)</text>
+<!-- (removed SPS label box — info is on the right-side wire) -->
 
 
 <!-- ================================================================ -->
@@ -163,21 +161,25 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <!-- Left wires use separate vertical columns to avoid crossing:     -->
 <!-- CAN1=250  CAN2=265  Interlock=280  IMD=295                      -->
 
-<!-- J2021 CAN1 → DCAN1 (blue solid, col 250) -->
+<!-- J2021 CAN1 → DCAN1 (blue solid) -->
 <path d="M200,108 L250,108 L250,81 L350,81" stroke="var(--can)" stroke-width="2.5" fill="none" marker-end="url(#ac)"/>
-<text x="215" y="80" fill="var(--can)" font-size="7" font-weight="600">CAN_H/L</text>
+<rect x="210" y="68" width="38" height="13" rx="3" fill="var(--bg)"/>
+<text x="229" y="78" text-anchor="middle" fill="var(--can)" font-size="7" font-weight="600">CAN H/L</text>
 
-<!-- J2024 CAN2 → DCAN2 (blue dashed, col 265) -->
+<!-- J2024 CAN2 → DCAN2 (blue dashed, isolated) -->
 <path d="M200,180 L265,180 L265,121 L350,121" stroke="var(--can)" stroke-width="2" fill="none" stroke-dasharray="8,4" marker-end="url(#ac)"/>
-<text x="215" y="155" fill="var(--can)" font-size="7">⚡ isolated</text>
+<rect x="210" y="145" width="48" height="13" rx="3" fill="var(--bg)"/>
+<text x="234" y="155" text-anchor="middle" fill="var(--can)" font-size="7">⚡ isolated</text>
 
-<!-- J2033 Interlock → N2HET1 (red, col 280) -->
+<!-- J2033 Interlock → N2HET1 (red) -->
 <path d="M200,248 L280,248 L280,166 L350,166" stroke="var(--red)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
-<text x="215" y="230" fill="var(--red)" font-size="7" font-weight="600">[B11] [A3]</text>
+<rect x="210" y="220" width="50" height="13" rx="3" fill="var(--bg)"/>
+<text x="235" y="230" text-anchor="middle" fill="var(--red)" font-size="7" font-weight="600">[B11] [A3]</text>
 
-<!-- J2034 IMD → ADC1 (gray, col 295) -->
+<!-- J2034 IMD → ADC1 (gray) -->
 <path d="M200,305 L295,305 L295,211 L350,211" stroke="var(--pwr)" stroke-width="1.5" fill="none"/>
-<text x="215" y="298" fill="var(--pwr)" font-size="7">[A9] [M3]</text>
+<rect x="210" y="290" width="50" height="13" rx="3" fill="var(--bg)"/>
+<text x="235" y="300" text-anchor="middle" fill="var(--pwr)" font-size="7">[A9] [M3]</text>
 
 
 <!-- ================================================================ -->
@@ -186,18 +188,19 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <!--  ch1=870  ch2=900  ch3=940  ch4=970                              -->
 <!-- ================================================================ -->
 
-<!-- Wire 1: MibSPI2 → J200x SPS_OUT (yellow solid, channel 870) -->
-<!--   MibSPI2 right edge → down to SPS IC row → right along y=81 → up at ch1 → across to J200x -->
-<path d="M710,81 L870,81 L870,95 L1020,95" stroke="var(--sps)" stroke-width="2.5" fill="none" marker-end="url(#ay)"/>
-<text x="880" y="88" fill="var(--sps)" font-size="7" font-weight="600">[D1] SPI2 → SPS_OUT</text>
+<!-- Right-side wires — each at different Y with labels ABOVE the wire -->
 
-<!-- Wire 2: I2C1 → PEX → J200x feedback (purple dashed, channel 900) -->
-<path d="M710,121 L900,121 L900,110 L1020,110" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ap)"/>
-<text x="910" y="125" fill="var(--i2c)" font-size="7">[B2/C3] I2C→PEX FB</text>
+<!-- Wire 1: MibSPI2 → J200x SPS_OUT (yellow solid, y=78) -->
+<path d="M710,78 L860,78 L860,90 L1020,90" stroke="var(--sps)" stroke-width="2.5" fill="none" marker-end="url(#ay)"/>
+<text x="860" y="72" fill="var(--sps)" font-size="7" font-weight="600">[D1] SPI2 → SPS_OUT</text>
 
-<!-- Wire 3: MibSPI2 → SBC (yellow dashed, channel 940) -->
-<path d="M710,85 L940,85 L940,183 L1020,183" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ay)"/>
-<text x="950" y="150" fill="var(--sps)" font-size="7">spiREG2 shared</text>
+<!-- Wire 2: I2C1 → PEX → J200x feedback (purple dashed, y=120) -->
+<path d="M710,120 L880,120 L880,115 L1020,115" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ap)"/>
+<text x="880" y="135" fill="var(--i2c)" font-size="7">[B2/C3] I2C→PEX FB</text>
+
+<!-- Wire 3: MibSPI2 → SBC (yellow dashed, y=88 → down to SBC at y=190) -->
+<path d="M710,88 L960,88 L960,190 L1020,190" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ay)"/>
+<text x="965" y="145" fill="var(--sps)" font-size="7" transform="rotate(90,965,145)">spiREG2 shared</text>
 
 <!-- Wire 4: N2HET2 → SPS ctrl (route ABOVE MibSPI3 row, along y=145) -->
 <path d="M570,166 L575,166 L575,145 L760,145" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
@@ -211,21 +214,26 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <!--  Columns: SPI1=445, SPI4=485, HET2=560, I2C=600                -->
 <!-- ================================================================ -->
 
-<!-- SPI1 → J9000 (exit right of MibSPI1, down col 445, into J9000) -->
-<path d="M480,81 L480,97 L445,97 L445,280" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
-<text x="448" y="238" fill="var(--spi)" font-size="7" font-weight="700" transform="rotate(-90,448,238)">SPI1 [ded.] DMA</text>
+<!-- SPI1 → J9000 (exit left of MibSPI1, go down outside peripheral grid) -->
+<path d="M480,85 L440,85 L440,280" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
 
-<!-- SPI4 → J9000 (exit bottom of MibSPI4, down col 485) -->
-<path d="M500,137 L485,137 L485,280" stroke="var(--spi)" stroke-width="2" fill="none" marker-end="url(#ag)"/>
-<text x="488" y="250" fill="var(--spi)" font-size="7" transform="rotate(-90,488,250)">SPI4</text>
+<!-- SPI4 → J9000 (exit left of MibSPI4, slight offset) -->
+<path d="M480,120 L455,120 L455,280" stroke="var(--spi)" stroke-width="2" fill="none" marker-end="url(#ag)"/>
 
-<!-- N2HET2 GPIO → J9000 (exit bottom, down col 560) -->
-<path d="M525,182 L560,182 L560,280" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
-<text x="563" y="248" fill="var(--dim)" font-size="6" transform="rotate(-90,563,248)">HET2 GPIO</text>
+<!-- Labels for SPI1/SPI4 — placed at the bottom, horizontal, next to arrows -->
+<text x="380" y="270" fill="var(--spi)" font-size="7" font-weight="700">SPI1 ↓</text>
+<text x="380" y="280" fill="var(--spi)" font-size="6">DMA CH0/1</text>
+<text x="458" y="275" fill="var(--spi)" font-size="7">SPI4 ↓</text>
 
-<!-- I2C PEX → J9000 (exit bottom of I2C1, down col 600) -->
-<path d="M665,137 L665,145 L600,145 L600,280" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ap)"/>
-<text x="603" y="248" fill="var(--dim)" font-size="6" transform="rotate(-90,603,248)">I2C PEX</text>
+<!-- N2HET2 GPIO → J9000 (route outside grid, col 640) -->
+<path d="M570,170 L640,170 L640,280" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
+
+<!-- I2C PEX → J9000 (route outside grid, col 660) -->
+<path d="M710,120 L720,120 L720,145 L660,145 L660,280" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ap)"/>
+
+<!-- Labels for GPIO/I2C — at bottom, horizontal -->
+<text x="642" y="275" fill="var(--dim)" font-size="6">GPIO</text>
+<text x="662" y="275" fill="var(--dim)" font-size="6">I2C</text>
 
 
 <!-- ================================================================ -->
