@@ -266,8 +266,8 @@ nav h1{font-size:.9rem;color:#fff;padding:10px 20px 10px 0;border-right:1px soli
   <!-- HET2 controls -->
   <rect x="30" y="140" width="110" height="40" rx="4" fill="rgba(210,153,34,.08)" stroke="var(--sps)" stroke-width=".5"/>
   <text x="85" y="157" text-anchor="middle" fill="var(--sps)" font-size="7" font-weight="600">N2HET2 GPIO</text>
-  <text x="85" y="169" text-anchor="middle" fill="var(--dim)" font-size="6.5">[D8] p1 CAN1_EN</text>
-  <text x="85" y="179" text-anchor="middle" fill="var(--dim)" font-size="6.5">[P4] p19 CAN1_STB</text>
+  <text x="85" y="169" text-anchor="middle" fill="var(--dim)" font-size="6.5">[N4] ch18 CAN1_EN</text>
+  <text x="85" y="179" text-anchor="middle" fill="var(--dim)" font-size="6.5">⚠TBV ch23 CAN1_STB</text>
 
   <!-- Transceiver -->
   <rect x="230" y="55" width="100" height="50" rx="6" fill="rgba(88,166,255,.06)" stroke="var(--can)"/>
@@ -351,8 +351,8 @@ nav h1{font-size:.9rem;color:#fff;padding:10px 20px 10px 0;border-right:1px soli
   <text x="95" y="40" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="700">TMS570 MCU</text>
   <rect x="30" y="50" width="130" height="30" rx="4" fill="rgba(248,81,73,.1)" stroke="var(--red)"/>
   <text x="95" y="69" text-anchor="middle" fill="var(--red)" font-size="9" font-weight="700">N2HET1</text>
-  <text x="95" y="88" text-anchor="middle" fill="var(--accent)" font-size="7">[V2] p30 = IL_HS_ENABLE (out)</text>
-  <text x="95" y="100" text-anchor="middle" fill="var(--accent)" font-size="7">[A13] p29 = IL_STATE (in)</text>
+  <text x="95" y="88" text-anchor="middle" fill="var(--accent)" font-size="7">[B11] ch30 = IL_HS_ENABLE (out)</text>
+  <text x="95" y="100" text-anchor="middle" fill="var(--accent)" font-size="7">[A3] ch29 = IL_STATE (in)</text>
   <rect x="30" y="110" width="130" height="30" rx="4" fill="rgba(139,148,158,.08)" stroke="var(--pwr)" stroke-width=".5"/>
   <text x="95" y="129" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="600">ADC1</text>
   <text x="95" y="148" text-anchor="middle" fill="var(--dim)" font-size="6.5">ch2=IL_HS_VS ch3=IL_LS_VS</text>
@@ -368,9 +368,9 @@ nav h1{font-size:.9rem;color:#fff;padding:10px 20px 10px 0;border-right:1px soli
 
   <!-- Wires -->
   <line x1="170" y1="65" x2="400" y2="94" stroke="var(--red)" stroke-width="3"/>
-  <text x="270" y="60" fill="var(--red)" font-size="8" font-weight="600">IL_HS_ENABLE [V2] →</text>
+  <text x="270" y="60" fill="var(--red)" font-size="8" font-weight="600">IL_HS_ENABLE [B11] →</text>
   <line x1="170" y1="72" x2="475" y2="94" stroke="var(--red)" stroke-width="3"/>
-  <text x="330" y="95" fill="var(--red)" font-size="8" font-weight="600">← IL_STATE [A13]</text>
+  <text x="330" y="95" fill="var(--red)" font-size="8" font-weight="600">← IL_STATE [A3]</text>
   <line x1="170" y1="125" x2="380" y2="110" stroke="var(--pwr)" stroke-width="1" stroke-dasharray="4,3"/>
   <text x="280" y="120" fill="var(--pwr)" font-size="7">ADC ch2-5 (V+I measurement)</text>
 

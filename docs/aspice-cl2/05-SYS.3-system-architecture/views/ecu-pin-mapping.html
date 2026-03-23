@@ -254,8 +254,8 @@
       <tr><th>Conn</th><th>Pin</th><th>Signal</th><th>XCVR</th><th>Ball</th><th>Mux</th><th>Register</th><th>Module</th></tr>
       <tr><td class="conn">J2021</td><td>4</td><td>CAN1_H</td><td>TJA1044</td><td><span class="ball">ded.</span></td><td>DCAN1TX</td><td><span class="reg">DC00</span></td><td class="mono">can.c</td></tr>
       <tr><td class="conn">J2021</td><td>3</td><td>CAN1_L</td><td>TJA1044</td><td><span class="ball">ded.</span></td><td>DCAN1RX</td><td><span class="reg">DC00</span></td><td class="mono">can.c</td></tr>
-      <tr><td></td><td></td><td>CAN1_EN</td><td></td><td><span class="ball">D8</span></td><td>N2HET2_01</td><td><span class="reg">B900</span></td><td class="mono">can_cfg.h</td></tr>
-      <tr><td></td><td></td><td>CAN1_STB</td><td></td><td><span class="ball">P4</span></td><td>N2HET2_19</td><td><span class="reg">B900</span></td><td class="mono">can_cfg.h</td></tr>
+      <tr><td></td><td></td><td>CAN1_EN</td><td></td><td><span class="ball">N4</span></td><td>N2HET2[18]</td><td><span class="reg">B900</span></td><td class="mono">can_cfg.h</td></tr>
+      <tr><td></td><td></td><td>CAN1_STB</td><td></td><td>⚠ TBV</td><td>N2HET2[23]</td><td><span class="reg">B900</span></td><td class="mono">can_cfg.h</td></tr>
       <tr><td class="conn">J2024</td><td>4</td><td>CAN2_H</td><td>TJA1042 ⚡</td><td><span class="ball">ded.</span></td><td>DCAN2TX</td><td><span class="reg">DE00</span></td><td class="mono">can.c</td></tr>
       <tr><td class="conn">J2024</td><td>3</td><td>CAN2_L</td><td>TJA1042 ⚡</td><td><span class="ball">ded.</span></td><td>DCAN2RX</td><td><span class="reg">DE00</span></td><td class="mono">can.c</td></tr>
       <tr><td></td><td></td><td>CAN2_EN/STB</td><td></td><td colspan="2">via I2C PEX port expander</td><td><span class="reg">D400</span></td><td class="mono">pex.c</td></tr>
@@ -268,8 +268,8 @@
     <div class="signal-group-title">Interlock Loop — TSR-13 <span class="asil asil-b">QM→FATAL</span></div>
     <table>
       <tr><th>Conn</th><th>Pin</th><th>Signal</th><th>Ball</th><th>Mux</th><th>Register</th><th>Module</th></tr>
-      <tr><td class="conn">J2033</td><td>1</td><td>INTERLOCK_H</td><td><span class="ball">V2</span></td><td>N2HET1_01 (HS_EN p30)</td><td><span class="reg">B800</span></td><td class="mono">interlock.c</td></tr>
-      <tr><td class="conn">J2033</td><td>2</td><td>INTERLOCK_L</td><td><span class="ball">A13</span></td><td>N2HET1_17 (STATE p29)</td><td><span class="reg">B800</span></td><td class="mono">interlock.c</td></tr>
+      <tr><td class="conn">J2033</td><td>1</td><td>INTERLOCK_H</td><td><span class="ball">B11</span></td><td>N2HET1[30] (IL_HS_ENABLE)</td><td><span class="reg">B800</span></td><td class="mono">interlock.c</td></tr>
+      <tr><td class="conn">J2033</td><td>2</td><td>INTERLOCK_L</td><td><span class="ball">A3</span></td><td>N2HET1[29] (IL_STATE)</td><td><span class="reg">B800</span></td><td class="mono">interlock.c</td></tr>
       <tr><td></td><td></td><td>IL_HS_VS / LS_VS</td><td></td><td>ADC ch2, ch3</td><td><span class="reg">C000</span></td><td class="mono">interlock.c</td></tr>
       <tr><td></td><td></td><td>IL_HS_CS / LS_CS</td><td></td><td>ADC ch4, ch5</td><td><span class="reg">C000</span></td><td class="mono">interlock.c</td></tr>
     </table>
@@ -280,9 +280,9 @@
     <div class="signal-group-title">IMD (Insulation Monitoring) — TSR-12</div>
     <table>
       <tr><th>Conn</th><th>Pin</th><th>Signal</th><th>Ball</th><th>Mux</th><th>Register</th><th>Module</th></tr>
-      <tr><td class="conn">J2034</td><td>3</td><td>IMD_OK</td><td><span class="ball">A13</span></td><td>N2HET1_17 (p27)</td><td><span class="reg">B800</span></td><td class="mono">bender_ir155.c</td></tr>
-      <tr><td class="conn">J2034</td><td>4</td><td>IMD_PWM</td><td><span class="ball">D7</span></td><td>N2HET2_02 (p27)</td><td><span class="reg">B900</span></td><td class="mono">bender_ir155.c</td></tr>
-      <tr><td></td><td></td><td>IR155_EN</td><td></td><td>N2HET1 (p25)</td><td><span class="reg">B800</span></td><td class="mono">bender_ir155.c</td></tr>
+      <tr><td class="conn">J2034</td><td>3</td><td>IMD_OK</td><td><span class="ball">A9</span></td><td>N2HET1[27]</td><td><span class="reg">B800</span></td><td class="mono">bender_ir155.c</td></tr>
+      <tr><td class="conn">J2034</td><td>4</td><td>IMD_PWM</td><td><span class="ball">D7</span></td><td>N2HET2[02]</td><td><span class="reg">B900</span></td><td class="mono">bender_ir155.c</td></tr>
+      <tr><td></td><td></td><td>IR155_EN</td><td><span class="ball">M3</span></td><td>N2HET1[25]</td><td><span class="reg">B800</span></td><td class="mono">bender_ir155.c</td></tr>
       <tr><td></td><td></td><td>iso165C (alt.)</td><td></td><td>CAN1 (0x37/0x23, LE)</td><td><span class="reg">DC00</span></td><td class="mono">bender_iso165c.c</td></tr>
     </table>
     <div class="note"><span class="gap-tag">GAP-04</span> IR155 PWM pin (hetREG2 p27) has unresolved TODO in source. iso165C variant verified.</div>

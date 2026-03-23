@@ -263,6 +263,136 @@ main():
         usleep(1000)  // 1ms tick approximation
 ```
 
+## 7a. State Machines (ASPICE SYS.3 BP.4)
+
+### 7a.1 SYS State Machine (System Initialization)
+
+```
+                    ┌──────────────┐
+    Power-on ──────►│UNINITIALIZED │
+                    └──────┬───────┘
+                           │ Hardware init complete
+                           ▼
+                    ┌──────────────┐
+                    │  INITIALIZED │
+                    └──────┬───────┘
+                           │ OS started, tasks created
+                           ▼
+                    ┌──────────────┐
+                    │   RUNNING    │──── Normal operation
+                    └──────┬───────┘
+                           │ Fatal system error
+                           ▼
+                    ┌──────────────┐
+                    │    ERROR     │──── System-level fault
+                    └──────────────┘
+```
+
+**Transitions**: SYS state machine is one-directional (no recovery from SYS ERROR).
+Managed by `SYS_Trigger()` in the Engine task.
+
+### 7a.2 BMS State Machine (Application-Level)
+
+```
+                         ┌───────────────┐
+    SYS == RUNNING ─────►│    STANDBY    │◄──────────────────────────────┐
+                         │               │                               │
+                         │ All contactors│                               │
+                         │ OPEN          │                               │
+                         └───────┬───────┘                               │
+                                 │                                       │
+                    CAN 0x210    │  State request                        │
+                    = NORMAL     │  received                             │
+                                 ▼                                       │
+                         ┌───────────────┐                               │
+                         │  PRECHARGE    │                               │
+                         │               │                               │
+                         │ 1. Close STR- │                               │
+                         │ 2. Close PRE  │                               │
+                         │ 3. Wait V_dc  │                               │
+                         │    ≈ V_pack   │                               │
+                         │ 4. Close STR+ │                               │
+                         │ 5. Open PRE   │                               │
+                         └──┬─────────┬──┘                               │
+                            │         │                                  │
+               Precharge    │         │ Precharge                        │
+               OK           │         │ FAIL/timeout                     │
+                            ▼         ▼                                  │
+                   ┌────────────┐  ┌──────────────┐   Fault cleared     │
+                   │   NORMAL   │  │    ERROR     │   AND               │
+                   │            │  │              │   CAN 0x210         │
+                   │ All 3 cont.│  │ All cont.   │   = STANDBY         │
+                   │ CLOSED     │  │ OPEN         ├──────────────────────┘
+                   │            │  │              │
+                   │ Full power │  │ Safe state   │
+                   │ operation  │  │ (latched)    │
+                   └─────┬──────┘  └──────────────┘
+                         │                 ▲
+                         │  ANY MSL fault  │
+                         │  (DIAG FATAL)   │
+                         └─────────────────┘
+```
+
+**States**:
+| State | Contactors | Entry Condition | Exit Condition |
+|---|---|---|---|
+| STANDBY | All OPEN | SYS == RUNNING, or ERROR recovery | CAN state request = NORMAL |
+| PRECHARGE | STR- + PRE closed | State request received | Voltage match or timeout |
+| NORMAL | All CLOSED | Precharge voltage OK | FATAL flag or STANDBY request |
+| ERROR | All OPEN | Any DIAG FATAL flag set | Fault cleared AND STANDBY request (SSR-022/023/024) |
+
+**ERROR exit requires BOTH conditions (AND logic)**:
+1. The originating fault condition has cleared (SSR-022)
+2. An explicit STANDBY request received via CAN 0x210 (SSR-023)
+
+### 7a.3 Fault Reaction Sequence
+
+```
+Time ──────────────────────────────────────────────────────────────►
+
+ t0: Fault occurs (e.g., cell voltage > 2800 mV)
+  │
+  ├─ t0+10ms: SOA_CheckCellVoltage() detects violation
+  │            DIAG_Handler(DIAG_ID_CELLVOLTAGE_OV_MSL, NOT_OK)
+  │            Threshold counter: 0 → 1
+  │
+  ├─ t0+20ms: SOA check again → counter: 1 → 2
+  │  ...
+  ├─ t0+500ms: Counter reaches 50 (threshold)
+  │
+  ├─ t0+700ms: 200ms debounce delay elapses
+  │             FATAL flag SET
+  │             DIAG_ErrorOvervoltage() callback executed
+  │
+  ├─ t0+710ms: BMS_Trigger() reads FATAL flag
+  │             BMS state → ERROR
+  │             CONT_OpenAll() called
+  │
+  ├─ t0+711ms: SPS SPI command sent (spiREG2)
+  │             Contactor coils de-energized
+  │
+  ├─ t0+750ms: Contactor mechanical open (spring return)
+  │
+  └─ t0+750ms: SAFE STATE REACHED
+               (Total FTTI: 750 ms for TSR-01)
+```
+
+### 7a.4 Task Scheduling Timing
+
+| Task | Period | WCET (est.) | CPU Load (est.) | Priority | Key Functions |
+|---|---|---|---|---|---|
+| Engine | Event | <1 ms | <1% | Highest | SYS state machine |
+| 1ms Task | 1 ms | <0.5 ms | ~50% | High | Contactor timing, fast loops |
+| AFE Task | Async | ~3 ms | ~15% | Medium | SPI1 DMA to LTC6813 |
+| 10ms Task | 10 ms | ~2 ms | ~20% | Medium | CAN TX/RX, SPS_Ctrl, SBC_Trigger, SOA |
+| 100ms Task | 100 ms | ~5 ms | ~5% | Low | BMS state machine, DIAG evaluation |
+| Algorithm | 100 ms | ~3 ms | ~3% | Lowest | SOC, SOE, SOH estimation |
+
+**Total estimated CPU load: ~94%** (conservative worst-case). Margin: ~6%.
+
+**POSIX SIL variant**: All tasks execute sequentially in a cooperative loop (`usleep(1000)` between
+iterations). No preemption, no priority inversion, deterministic ordering.
+
 ## 8. Data Flow
 
 ### 8.1 Measurement Path
