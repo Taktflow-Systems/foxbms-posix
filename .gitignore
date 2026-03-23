@@ -3,3 +3,23 @@ src/foxbms-vecu
 __pycache__/
 *.o
 *.pyc
+
+# Hardware schematics — only track PDFs and BOMs
+hardware/schematics/*.zip
+hardware/schematics/**/Sources/
+hardware/schematics/**/Fabrication/
+hardware/schematics/**/step-model/
+hardware/schematics/**/pnp-data/
+hardware/schematics/**/*.SchDoc
+hardware/schematics/**/*.PcbDoc
+hardware/schematics/**/*.PrjPcb
+hardware/schematics/**/*.step
+hardware/schematics/**/*.REP
+hardware/schematics/**/*.html
+hardware/schematics/**/*.Harness
+hardware/schematics/**/*.PcbLib
+hardware/schematics/**/*.IntLib
+hardware/schematics/**/*.BomDoc
+hardware/schematics/**/*.PCBDwf
+hardware/schematics/**/*.PrjPcbVariants
+hardware/schematics/**/odb-data/
