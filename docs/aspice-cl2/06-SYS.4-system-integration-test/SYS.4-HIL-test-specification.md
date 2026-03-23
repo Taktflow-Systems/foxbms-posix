@@ -11,6 +11,7 @@
 | 1.0 | 2026-03-23 | An Dao | Phase 3 audit panel (10/10 approved) | Initial release — 42 HIL test cases |
 | 2.0 | 2026-03-23 | An Dao | Pending review | Expanded: +38 tests (SYS.3 architecture, ASIL D OV/AFE depth, endurance, EMC) |
 | 3.0 | 2026-03-23 | An Dao | Pending review | Full ASIL D: +33 tests (UV depth, SSR reaction chain, contactor safety, DIAG coverage, comm safety, system monitoring) |
+| 3.1 | 2026-03-23 | An Dao | Pending review | +12 timing tests: FTTI breakdown, end-to-end latency, contactor mechanical, task jitter |
 
 ## 1. Purpose
 
@@ -1642,6 +1643,184 @@ Tests the core ASIL D reaction: FATAL → ERROR → CONT_OpenAll → safe state.
 | **Pass criteria** | SOC after restart matches pre-cycle value ±5% |
 | **Runs** | 5 |
 | **Note** | If FRAM write fails silently (GAP-05), SOC recalculates from voltage — may differ more than 5% |
+
+### Category 21: Timing Tests (SYS.4-specific — injection-based measurements)
+
+These tests measure internal timing at intermediate probe points. This level of
+detail is only possible in SYS.4 (system integration) — SYS.5 (black box) can
+only measure input-to-output. These tests PROVE the FTTI budgets in FOX-SAF-TSR-DA-001.
+
+---
+
+#### HIL-SIT-300: FTTI Breakdown — TSR-01 OV Phase-by-Phase
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01 |
+| **ASIL** | D |
+| **Objective** | Measure each phase of the 750ms FTTI independently |
+| **Equipment** | Logic analyzer on PP-14 (SPI1), digital monitor on PP-09 (SPS output), CAN timestamps |
+| **Preconditions** | BMS in NORMAL, stable 5s |
+| **Stimulus** | Set all cells to 2850 mV; capture simultaneously: SPI1 traffic, CAN messages, SPS output |
+| **Measurements** | t1: last valid cell voltage CAN TX before fault. t2: first DIAG counter increment (CAN debug). t3: FATAL flag set (CAN 0x220 state change). t4: SPS output goes LOW (PP-09 edge). t5: contactor feedback changes (PP-08). |
+| **Pass criteria** | t1→t2 < 20ms (ADC+SPI+SOA). t2→t3 = threshold×period + delay (500ms+200ms). t3→t4 < 10ms (SPS command). t4→t5 < 50ms (mechanical). Total < 750ms. |
+| **Statistical** | 10 runs; report per-phase mean/min/max/σ |
+
+---
+
+#### HIL-SIT-301: FTTI Breakdown — TSR-10 AFE Loss Phase-by-Phase
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-10 |
+| **ASIL** | D |
+| **Objective** | Measure each phase of the 200ms FTTI for AFE communication loss |
+| **Equipment** | Logic analyzer on PP-14, PP-09 |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Open daisy chain relay (PP-04); capture SPI1 error, CAN state change, SPS edge |
+| **Measurements** | t1: relay opens. t2: first SPI error (logic analyzer). t3: DIAG counter reaches 5. t4: FATAL set. t5: SPS LOW. |
+| **Pass criteria** | t1→t3 = 5×10ms = 50ms. t3→t4 = 100ms delay. t4→t5 < 10ms. Total < 200ms. |
+| **Statistical** | 10 runs |
+
+---
+
+#### HIL-SIT-302: FTTI Breakdown — TSR-04 Overcurrent
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04 |
+| **ASIL** | B |
+| **Objective** | Measure overcurrent FTTI: IVT CAN injection → contactor open |
+| **Preconditions** | BMS in NORMAL, IVT 500 mA |
+| **Stimulus** | Step IVT 0x521 to 3000 mA; timestamp CAN TX and PP-09 edge |
+| **Measurements** | t1: IVT frame sent. t2: DIAG counter reaches 10 (100ms). t3: FATAL + 100ms delay. t4: SPS LOW. |
+| **Pass criteria** | Total < 250ms |
+| **Statistical** | 10 runs |
+
+---
+
+#### HIL-SIT-303: End-to-End Latency — Cell Emulator Change → CAN TX Update
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §8.1 Measurement Path |
+| **Objective** | Measure total latency from cell voltage change to CAN message reflecting new value |
+| **Preconditions** | BMS in NORMAL, all cells 3600 mV |
+| **Stimulus** | Step cell 5 from 3600 → 3700 mV; record timestamp of emulator change AND timestamp of first CAN 0x240-0x245 frame showing 3700 mV |
+| **Pass criteria** | Latency < 200ms (includes ADC conversion + isoSPI + DMA + database + CAN TX cycle) |
+| **Statistical** | 10 runs; report mean/min/max/σ |
+
+---
+
+#### HIL-SIT-304: End-to-End Latency — IVT Current Change → CAN TX Update
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §8.1 |
+| **Objective** | Measure latency from IVT CAN RX to BMS CAN TX reflecting new current |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Step IVT 0x521 from 500 → 1500 mA; measure time until CAN 0x235/0x236 shows 1500 mA |
+| **Pass criteria** | Latency < 200ms (CAN RX + database write + CAN TX cycle) |
+| **Statistical** | 10 runs |
+
+---
+
+#### HIL-SIT-305: Contactor Mechanical Delay — SPS Command to Feedback Change
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.2.4, §11.5.5 |
+| **Objective** | Measure actual contactor mechanical opening/closing time |
+| **Equipment** | Digital monitor on PP-09 (SPS output) and PP-08 (contactor feedback) |
+| **Preconditions** | BMS transitioning STANDBY → PRECHARGE → NORMAL |
+| **Stimulus** | Monitor SPS CH0 output edge (command) and feedback change (mechanical response) |
+| **Measurements** | t_close = time from SPS HIGH to feedback CLOSED. t_open = time from SPS LOW to feedback OPEN. |
+| **Pass criteria** | t_close < 100ms. t_open < 50ms. Document actual values for FTTI budget verification. |
+| **Statistical** | 5 close + 5 open measurements |
+
+---
+
+#### HIL-SIT-306: Contactor Feedback Path Latency — PEX I2C Polling
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.2.4, §11.9 |
+| **Objective** | Measure time from physical contactor state change to software detection via I2C PEX |
+| **Equipment** | PP-08 (physical feedback), CAN debug (DIAG counter) |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Force feedback relay mismatch on PP-08; measure time until DIAG_ID_CONTACTOR_FEEDBACK first increments |
+| **Pass criteria** | Detection within one 10ms task cycle (~10ms). I2C PEX polling adds < 5ms. |
+| **Statistical** | 10 runs |
+
+---
+
+#### HIL-SIT-307: Task Jitter — 10ms Task Period Measurement
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §7a.4 |
+| **Objective** | Measure actual 10ms task period variation over 60s (6000 cycles) |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Capture CAN 0x231 timestamps over 60s (transmitted from 10ms task context) |
+| **Measurements** | Calculate inter-message intervals for 600 messages (100ms nominal) |
+| **Pass criteria** | Mean = 100ms ±0.5ms. Max jitter < 5ms. No missed cycles. σ < 1ms. |
+| **Runs** | 1 (60s capture) |
+
+---
+
+#### HIL-SIT-308: Task Jitter — 100ms Task Period (BMS State Machine)
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §7a.4 |
+| **Objective** | Measure 100ms BMS task period via CAN 0x220 (BmsState) timestamps |
+| **Preconditions** | BMS in NORMAL, 60s capture |
+| **Measurements** | 600 messages over 60s, calculate period statistics |
+| **Pass criteria** | Mean = 100ms ±1ms. Max jitter < 10ms. |
+| **Runs** | 1 |
+
+---
+
+#### HIL-SIT-309: Precharge Duration — Full Sequence Timing
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §7a.2 PRECHARGE state |
+| **Objective** | Measure complete precharge sequence timing |
+| **Equipment** | PP-09 (all 3 SPS outputs), CAN timestamps |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Send NORMAL request; capture all SPS output transitions |
+| **Measurements** | t1: STR- close command. t2: PRE close command. t3: voltage match detected. t4: STR+ close command. t5: PRE open command. t6: BMS state = NORMAL. |
+| **Pass criteria** | t1→t6 < 2s. Document each phase duration for precharge optimization. |
+| **Statistical** | 10 runs; report per-phase statistics |
+
+---
+
+#### HIL-SIT-310: isoSPI Round-Trip — SPI1 Command to Response
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.4, TSR-10 |
+| **Objective** | Measure SPI1 transaction time for AFE read (RDCV command + response) |
+| **Equipment** | Logic analyzer on PP-14 (SPI1 CLK, SIMO, SOMI) |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Capture one complete RDCV transaction on logic analyzer |
+| **Measurements** | t_cmd: CS LOW to last CLK of command. t_wait: command end to response start. t_resp: response first bit to CS HIGH. t_total = t_cmd + t_wait + t_resp. |
+| **Pass criteria** | t_total < 3ms (matches FTTI budget for AFE phase). Cable delay < 10µs (confirms <2m cable length adequate). |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-311: CAN Message Latency — Database Update to TX Frame
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §8.3 Command Path |
+| **Objective** | Measure internal latency from state change to CAN TX reporting |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Trigger ERROR (inject OV fault); measure time from PP-09 edge (contactor open) to CAN 0x220 state=ERROR |
+| **Pass criteria** | CAN TX reflects ERROR within 200ms of state change (max 2 CAN TX cycles) |
+| **Statistical** | 5 runs |
 
 ---
 
