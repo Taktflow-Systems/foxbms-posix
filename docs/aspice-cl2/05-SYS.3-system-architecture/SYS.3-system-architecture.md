@@ -262,6 +262,44 @@ connector-pin-signal level, as required for SYS.4 HIL test probe mapping and nee
 bed adapter design. All data sourced from foxBMS hardware schematics v1.2.2 (master),
 v1.1.3 (slave 18-cell), and v1.0.3 (interface).
 
+**Source Schematics** (in `hardware/schematics/` — not duplicated here to avoid 42 MB bloat):
+
+| File | Path | Board | Version |
+|------|------|-------|---------|
+| Master schematics | `hardware/schematics/master/Assembly production/pdf/foxbms2-master-schematics-v1.2.3-0.PDF` | TMS570LC4357 | v1.2.3 |
+| Slave schematics | `hardware/schematics/slave-18/Assembly automotive/pdf/schematics.PDF` | LTC6813-1 (18-cell) | v1.1.3 |
+| Interface schematics | `hardware/schematics/interface/Assembly default/pdf/schematics.PDF` | LTC6820 | v1.0.3 |
+| Master placement | `hardware/schematics/master/Assembly production/pdf/foxbms2-master-placement-plan-v1.2.3-0.PDF` | Connector locations | v1.2.3 |
+| Master dimensions | `hardware/schematics/master/Assembly production/pdf/foxbms2-master-dimensions-mechanical-v1.2.3-0.PDF` | Board outline | v1.2.3 |
+
+**Pinout CSVs** (in foxBMS upstream repo `D:/workspace_ccstheia/foxbms-2/docs/hardware/`):
+
+| CSV | Connector | Pins |
+|-----|-----------|------|
+| `master/.../ti-tms570lc4357-v1.2.2_can1.csv` | J2021 CAN1 | 4 |
+| `master/.../ti-tms570lc4357-v1.2.2_can2.csv` | J2024 CAN2 | 4 |
+| `master/.../ti-tms570lc4357-v1.2.2_sps.csv` | J200x SPS | 4 each |
+| `master/.../ti-tms570lc4357-v1.2.2_interlock.csv` | J2033 | 2 |
+| `master/.../ti-tms570lc4357-v1.2.2_interface.csv` | J9000 | 40 |
+| `master/.../ti-tms570lc4357-v1.2.2_extension.csv` | J9002 | 120 |
+| `master/.../ti-tms570lc4357-v1.2.2_supply_ext.csv` | J2009 | 8 |
+| `master/.../ti-tms570lc4357-v1.2.2_isomon.csv` | J2034 | 4 |
+| `slaves/.../18-ltc-ltc6813-1-v1.1.3_cell_voltage-sense-connector.csv` | Cell voltage | 24 |
+| `slaves/.../18-ltc-ltc6813-1-v1.1.3_temperature-sensor-connector.csv` | Temperature | 16 |
+| `interfaces/.../ltc-ltc6820-v1.0.3_master_connector.csv` | Interface master | 40 |
+| `interfaces/.../ltc-ltc6820-v1.0.3_isospi_connectors.csv` | isoSPI | 2 |
+
+**HalCoGen Pin Mux** (MCU ball assignments):
+- Source: `D:/workspace_ccstheia/foxbms-2/conf/hcg/source/HL_pinmux.c`
+- Header: `D:/workspace_ccstheia/foxbms-2/conf/hcg/include/HL_pinmux.h`
+
+**Visual Diagrams** (self-contained HTML):
+
+| File | Description |
+|------|-------------|
+| [SYS.3-ecu-pin-mapping.html](SYS.3-ecu-pin-mapping.html) | Color-coded ECU pin mapping tables (dark theme, ASIL badges, gap markers) |
+| [SYS.3-wiring-diagram.html](SYS.3-wiring-diagram.html) | SVG wiring diagram with connectors, MCU balls, colored signal paths |
+
 ### 11.1 System Board Topology
 
 ```
