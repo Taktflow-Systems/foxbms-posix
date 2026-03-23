@@ -8,15 +8,20 @@
 
 | Rev | Date | Author | Reviewer | Description |
 |---|---|---|---|---|
-| 1.0 | 2026-03-23 | An Dao | Pending: Phase 3 audit panel | Initial release — 50 HIL test cases |
+| 1.0 | 2026-03-23 | An Dao | Phase 3 audit panel (10/10 approved) | Initial release — 42 HIL test cases |
+| 2.0 | 2026-03-23 | An Dao | Pending review | Expanded: +38 tests (SYS.3 architecture, ASIL D depth, endurance, EMC) |
 
 ## 1. Purpose
 
 This document specifies the System Integration Test (SIT) cases for the foxBMS 2 BMS,
 executed on a Hardware-in-the-Loop (HIL) bench with a custom Python test framework.
-Every test case traces to a TSR (FOX-SAF-TSC-001), a signal path (SYS.3 §11.5), and a
-fault injection point (SYS.3 §11.6). This satisfies ASPICE SYS.4 and ISO 26262 Part 4
-§8 (system integration and testing).
+Test cases trace to both:
+- **TSRs** (FOX-SAF-TSC-001) for safety function verification
+- **SYS.3** (SYS.3-001) for architecture verification (interfaces, data flows, timing, state machines)
+
+This satisfies ASPICE SYS.4 BP.1-BP.5 and ISO 26262 Part 4 §8. ASIL D paths have
+extended coverage with MOL/RSL/MSL levels, boundary tests, state-specific tests, and
+statistical timing measurements.
 
 ## 2. References
 
@@ -714,6 +719,516 @@ Before every test session:
 | **Preconditions** | BMS in NORMAL, IVT reporting 500 mA |
 | **Stimulus** | None — verify current-on-open-string check is inactive during NORMAL |
 | **Pass criteria** | No DIAG_ID_CURRENT_ON_OPEN_STRING triggered (expected: check only runs during STANDBY/OPEN) |
+| **Runs** | 3 |
+
+### Category 8: SYS.3 Architecture Verification
+
+These tests verify that the system architecture works as documented in SYS.3-001.
+They test interfaces, data flows, timing, and state machines — not safety functions.
+
+---
+
+#### HIL-SIT-080: CAN1 TX Message Verification (All 12 Messages)
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §9.1 Transmit Messages |
+| **Objective** | Verify all 12 TX CAN messages appear on CAN1 with correct IDs and cycle times |
+| **Preconditions** | BMS in NORMAL, nominal conditions, 30s capture |
+| **Stimulus** | None (observe steady-state) |
+| **Pass criteria** | All 12 IDs (0x220, 0x221, 0x231-0x236, 0x240-0x245, 0x250, 0x260, 0x301) present; cycle time 100ms ±10ms (1000ms for 0x301) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-081: CAN1 RX State Request Processing
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §9.2 Receive Messages |
+| **Objective** | Verify CAN 0x210 state request is received and processed |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Send 0x210 with NORMAL request, then STANDBY request |
+| **Pass criteria** | BMS transitions STANDBY → PRECHARGE → NORMAL → STANDBY in response |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-082: CAN2 Isolation Verification
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.7 Galvanic Isolation |
+| **Objective** | Verify CAN2 (J2024) is galvanically isolated from CAN1 (J2021) |
+| **Preconditions** | BMS powered off |
+| **Stimulus** | Measure resistance between CAN1 H/L and CAN2 H/L |
+| **Pass criteria** | Isolation resistance > 1 MΩ (transformer-coupled TJA1042) |
+| **Runs** | 1 |
+
+---
+
+#### HIL-SIT-083: CAN Bus Termination Verification
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.6 PP-18/PP-19 |
+| **Objective** | Verify 120Ω termination on CAN1 and CAN2 |
+| **Preconditions** | BMS powered off |
+| **Stimulus** | Measure resistance between CAN_H and CAN_L on each connector |
+| **Pass criteria** | CAN1: 120Ω ±5%; CAN2: 120Ω ±5% |
+| **Runs** | 1 |
+
+---
+
+#### HIL-SIT-084: Data Flow — Cell Voltage End-to-End
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §8.1 Measurement Path, §11.5.1 |
+| **Objective** | Verify cell voltage flows from emulator → LTC6813 → isoSPI → SPI1 → database → CAN TX |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set cell 5 to 3700 mV (unique value), wait 2s |
+| **Pass criteria** | CAN 0x240-0x245: cell 5 voltage = 3700 mV ±3 mV |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-085: Data Flow — Temperature End-to-End
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §8.1 Measurement Path |
+| **Objective** | Verify temperature flows from NTC → LTC6813 MUX → CAN TX |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set NTC 0 to 15 kΩ (≈20°C), NTC 3 to 5 kΩ (≈40°C) |
+| **Pass criteria** | CAN 0x260: sensor 0 ≈ 20°C ±2°C, sensor 3 ≈ 40°C ±2°C |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-086: Data Flow — IVT Current End-to-End
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §8.1 Measurement Path, §11.5.2 |
+| **Objective** | Verify IVT current flows from CAN RX → database → CAN TX |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Inject IVT 0x521 with 1500 mA current |
+| **Pass criteria** | CAN 0x235/0x236: string/pack current = 1500 mA ±50 mA |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-087: BMS State Machine — Full Cycle
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §7a.2 BMS State Machine |
+| **Objective** | Verify complete state machine cycle: STANDBY → PRECHARGE → NORMAL → ERROR → recovery → STANDBY |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | 1. Request NORMAL (→PRECHARGE→NORMAL) 2. Inject OV fault (→ERROR) 3. Clear fault + request STANDBY (→STANDBY) |
+| **Pass criteria** | All transitions occur in correct sequence; no unexpected states |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-088: BMS State Machine — Invalid Transition Rejection
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §7a.2, SSR-051 |
+| **Objective** | Verify BMS rejects invalid state requests |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Send CAN 0x210 with invalid state value (e.g., 0xFF) |
+| **Pass criteria** | BMS remains in STANDBY; no state change; no crash |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-089: Task Timing — 10ms Task Period
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §7a.4 Task Scheduling |
+| **Objective** | Verify 10ms task executes at correct period |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Monitor CAN TX message timestamps over 10s |
+| **Pass criteria** | Message interval = 100ms ±5ms (10ms task updates CAN at 100ms cycle) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-090: SPI1 AFE Communication — Continuous Operation
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.2.8 J9000, §11.1.1 SPI1 |
+| **Objective** | Verify SPI1 → LTC6813 communication runs continuously without errors |
+| **Preconditions** | BMS in NORMAL, 5 min soak |
+| **Stimulus** | None (observe) |
+| **Pass criteria** | No DIAG_ID_AFE_SPI or AFE_COMMUNICATION_INTEGRITY events in 5 min; cell voltages update every cycle |
+| **Runs** | 1 (5 min duration) |
+
+---
+
+#### HIL-SIT-091: Interlock Loop — Closed State Verification
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.2.5 J2033 |
+| **Objective** | Verify interlock loop reads as CLOSED when physically closed |
+| **Preconditions** | BMS in STANDBY, interlock relay CLOSED |
+| **Stimulus** | None (verify steady state) |
+| **Pass criteria** | No DIAG_ID_INTERLOCK_FEEDBACK events; BMS remains in STANDBY |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-092: Contactor Sequencing — Precharge Timing
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §7a.2 PRECHARGE state |
+| **Objective** | Verify precharge contactor sequence and timing |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Request NORMAL; monitor SPS outputs with timestamps |
+| **Pass criteria** | Sequence: STR- first → PRE second → wait → STR+ third → PRE open; total < 2s |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-093: SPS Output — Contactor De-energize on Power Loss
+
+| Field | Value |
+|-------|-------|
+| **SYS.3 Ref** | §11.7, GAP-11 (SPS UVLO) |
+| **Objective** | Verify contactors open when supply power is removed |
+| **Preconditions** | BMS in NORMAL, all contactors CLOSED |
+| **Stimulus** | Remove 12V supply from J2009 |
+| **Pass criteria** | All SPS outputs go LOW within 50ms; contactor feedback shows OPEN |
+| **Runs** | 3 |
+
+---
+
+### Category 9: ASIL D Depth — TSR-01 Cell Overvoltage (Extended)
+
+ASIL D requires thorough testing. These tests extend TSR-01 coverage beyond the basic
+threshold test with boundary values, state-specific behavior, and edge cases.
+
+---
+
+#### HIL-SIT-100: TSR-01 OV — MOL Threshold (Warning Only)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01 (MOL level) |
+| **Objective** | Verify MOL overvoltage triggers warning but NOT contactor open |
+| **Preconditions** | BMS in NORMAL, all cells 3600 mV |
+| **Stimulus** | Set all cells to MOL threshold (e.g., 2700 mV or configured value) |
+| **Pass criteria** | DIAG warning fires; BMS stays in NORMAL; no contactor action |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-101: TSR-01 OV — RSL Threshold (Current Limiting)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01 (RSL level) |
+| **Objective** | Verify RSL overvoltage triggers current limiting but NOT contactor open |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set all cells to RSL threshold |
+| **Pass criteria** | DIAG RSL fires; current limit reduced in CAN TX; BMS stays in NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-102: TSR-01 OV — MSL During PRECHARGE State
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01 |
+| **Objective** | Verify OV detection works during PRECHARGE (not just NORMAL) |
+| **Preconditions** | BMS transitioning to PRECHARGE |
+| **Stimulus** | Set all cells to 2850 mV during precharge sequence |
+| **Pass criteria** | Precharge aborts; BMS → ERROR; all contactors OPEN |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-103: TSR-01 OV — MSL During STANDBY State
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01 |
+| **Objective** | Verify OV detection works during STANDBY |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Set all cells to 2850 mV |
+| **Pass criteria** | DIAG FATAL fires; BMS → ERROR (already in safe state, contactors already open) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-104: TSR-01 OV — Gradual Ramp (1 mV/s)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01 |
+| **Objective** | Verify OV detection with slow voltage rise (realistic charging scenario) |
+| **Preconditions** | BMS in NORMAL, all cells 2750 mV |
+| **Stimulus** | Ramp all cells at 1 mV/s from 2750 → 2850 mV |
+| **Pass criteria** | ERROR triggers between 2798-2803 mV (threshold ±ADC TME); reaction time ≤ 750ms from crossing |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-105: TSR-01 OV — Threshold Counter Reset (Intermittent)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01, SSR-033 |
+| **Objective** | Verify DIAG counter decrements when fault clears before threshold |
+| **Preconditions** | BMS in NORMAL, all cells 3600 mV |
+| **Stimulus** | Set all cells to 2820 mV for 200ms, then back to 3600 mV; repeat 3 times |
+| **Pass criteria** | BMS does NOT enter ERROR (counter resets between bursts) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-106: TSR-01 OV — Single Cell vs All Cells (GAP-03 Deep Dive)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01, GAP-03 |
+| **ASIL** | D |
+| **Objective** | Quantify the plausibility rejection at different spread values |
+| **Preconditions** | BMS in NORMAL, 17 cells at 2500 mV |
+| **Stimulus** | Step cell 0 through: 2600, 2700, 2750, 2800, 2850, 2900 mV. Record which triggers ERROR. |
+| **Pass criteria** | ERROR should trigger when cell 0 is within 300 mV of average (spread ≤ 300 mV). Above 300 mV spread: WARNING only (GAP-03 confirmed). |
+| **Runs** | 5 per step |
+
+---
+
+#### HIL-SIT-107: TSR-01 OV — Plausibility Cross-Check (AFE vs IVT)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01, FM-01 |
+| **Objective** | Verify pack voltage plausibility catches AFE/IVT disagreement |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set cells to 2850 mV (sum = 51300 mV) but IVT V1 (0x522) reports 46800 mV (mismatch > 2V) |
+| **Pass criteria** | DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE triggers |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-108: TSR-01 OV — With Active Cell Balancing
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-01 |
+| **Objective** | Verify OV detection accuracy is not degraded during cell balancing |
+| **Preconditions** | BMS in NORMAL, balancing active on cells 2,5,8 |
+| **Stimulus** | Set all cells to 2850 mV |
+| **Pass criteria** | ERROR within 750ms FTTI (balancing MUTE/UNMUTE does not delay detection) |
+| **Runs** | 5 |
+
+---
+
+### Category 10: ASIL D Depth — TSR-10 AFE Communication (Extended)
+
+---
+
+#### HIL-SIT-110: TSR-10 — PEC Error Detection (Single Corruption)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-10 |
+| **Objective** | Verify AFE PEC error is detected and counted |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Break isoSPI chain momentarily (relay toggle, 50ms) then reconnect |
+| **Pass criteria** | DIAG_ID_AFE_COMMUNICATION_INTEGRITY counter increments; if < 5 events, BMS stays NORMAL (threshold not reached) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-111: TSR-10 — Sustained AFE Loss → FTTI Measurement
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-10 |
+| **ASIL** | D (support) |
+| **Objective** | Measure exact reaction time from AFE loss to contactor open |
+| **Preconditions** | BMS in NORMAL, stable 5s |
+| **Stimulus** | Open daisy chain relay (PP-04) and hold open |
+| **Pass criteria** | ERROR within 200ms FTTI; measure exact timing over 10 runs |
+| **Statistical** | 10 runs; report mean/min/max/σ; FAIL if ANY run > 200ms |
+
+---
+
+#### HIL-SIT-112: TSR-10 — AFE Recovery After Transient Error
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-10 |
+| **Objective** | Verify AFE communication recovers after brief interruption |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Open daisy chain relay for 30ms (< 5 events), then close |
+| **Pass criteria** | Cell voltage data resumes within 500ms; no ERROR transition |
+| **Runs** | 5 |
+
+---
+
+### Category 11: ASIL D Depth — Overcurrent (Extended)
+
+---
+
+#### HIL-SIT-120: TSR-04 OC — Threshold Boundary (ASIL B)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04 |
+| **Objective** | Verify exact overcurrent detection threshold |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Ramp IVT 0x521 from 2000 → 3000 mA in 100 mA steps, 200ms per step |
+| **Pass criteria** | ERROR triggers at 2400 mA (BS_MAX_DISCHARGE_CURRENT_MSL ±measurement error) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-121: TSR-04 OC — During PRECHARGE
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04 |
+| **Objective** | Verify overcurrent protection during precharge (limited current expected) |
+| **Preconditions** | BMS in PRECHARGE |
+| **Stimulus** | IVT 0x521 reports 3000 mA during precharge |
+| **Pass criteria** | Precharge aborts; ERROR within 250ms |
+| **Runs** | 3 |
+
+---
+
+### Category 12: Temperature (Extended)
+
+---
+
+#### HIL-SIT-130: TSR-06 OT — Charge vs Discharge Threshold Difference
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-06 |
+| **Objective** | Verify different OT thresholds for charge (45°C) vs discharge (55°C) |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Test 1: Set NTCs to 50°C with discharge current → no ERROR (below 55°C) Test 2: Set NTCs to 50°C with charge current → ERROR (above 45°C) |
+| **Pass criteria** | Discharge at 50°C: NORMAL maintained; Charge at 50°C: ERROR |
+| **Runs** | 5 each |
+
+---
+
+#### HIL-SIT-131: TSR-06 OT — Thermal Inertia Justification
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-06 |
+| **Objective** | Verify 6050ms FTTI is adequate by demonstrating temperature cannot change dangerously in that time |
+| **Preconditions** | BMS in NORMAL, NTCs at 54°C (1°C below discharge MSL) |
+| **Stimulus** | Step NTCs to 60°C; measure time to ERROR |
+| **Pass criteria** | ERROR within 6050ms; during the FTTI window, cell temperature rise from internal heating is < 0.5°C (measured via NTC response) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-132: TSR-07 UT — Cold Soak + Charge Attempt
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-07 |
+| **Objective** | Verify BMS prevents charging at -25°C |
+| **Preconditions** | BMS in NORMAL, NTCs at -25°C equivalent resistance |
+| **Stimulus** | IVT reports charge current (negative value) |
+| **Pass criteria** | ERROR within 6050ms; contactors OPEN |
+| **Runs** | 3 |
+
+---
+
+### Category 13: Endurance and Soak Tests
+
+---
+
+#### HIL-SIT-140: 1-Hour Soak — No Spurious Faults
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Verify BMS runs for 1 hour without false errors under nominal conditions |
+| **Preconditions** | BMS in NORMAL, all sensors nominal |
+| **Stimulus** | None (continuous monitoring) |
+| **Pass criteria** | No DIAG errors; no state transitions; all CAN messages continuous |
+| **Runs** | 1 (1 hour) |
+
+---
+
+#### HIL-SIT-141: Power Cycle Stress — 50 Cycles
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Verify BMS starts up correctly after repeated power cycles |
+| **Preconditions** | Automated power cycle via relay on J2009 CLAMP15 |
+| **Stimulus** | 50 power cycles: ON 30s → OFF 5s → ON |
+| **Pass criteria** | All 50 cycles: BMS reaches STANDBY within 5s; no stuck states |
+| **Runs** | 1 (50 cycles) |
+
+---
+
+#### HIL-SIT-142: SOC Persistence — Power Cycle Recovery
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Verify SOC value is preserved across power cycle (FRAM persistence) |
+| **Preconditions** | BMS in NORMAL, SOC stabilized at ~50% |
+| **Stimulus** | Power cycle; read SOC after restart |
+| **Pass criteria** | SOC after restart = SOC before shutdown ±5% (FRAM read OK) |
+| **Runs** | 3 |
+| **Gotcha** | GAP-05: FRAM write may fail silently; SOC may recalculate from voltage |
+
+---
+
+### Category 14: EMC and Robustness
+
+---
+
+#### HIL-SIT-150: CAN Error Frame Injection
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Verify BMS handles CAN error frames gracefully |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Inject 100 error frames on CAN1 over 1s |
+| **Pass criteria** | BMS stays NORMAL; IVT data recovery within 200ms after burst; no crash |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-151: CAN Bus Load — 80% Saturation
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Verify BMS functions at high CAN bus load |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Inject additional CAN traffic to bring bus to 80% load |
+| **Pass criteria** | BMS messages still transmitted; IVT messages still received; FTTI not degraded |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-152: Supply Brown-Out — Voltage Dip
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Verify BMS behavior during brief supply voltage dip |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Dip J2009 supply from 12V to 8V for 500ms, then back to 12V |
+| **Pass criteria** | Either: BMS recovers and returns to NORMAL, or BMS enters ERROR (clean shutdown). No undefined behavior. |
 | **Runs** | 3 |
 
 ---
