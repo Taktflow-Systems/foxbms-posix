@@ -119,15 +119,9 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <rect x="620" y="195" width="90" height="32" rx="5" fill="rgba(139,148,158,.08)" stroke="var(--pwr)" stroke-width=".5"/>
 <text x="665" y="215" text-anchor="middle" fill="var(--pwr)" font-size="9" font-weight="600">GIO</text>
 
-<!-- On-board devices -->
-<rect x="750" y="65" width="80" height="32" rx="5" fill="rgba(210,153,34,.06)" stroke="var(--sps)" stroke-dasharray="4,2"/>
-<text x="790" y="85" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">SBC FS8x</text>
-
-<rect x="750" y="105" width="80" height="32" rx="5" fill="rgba(139,148,158,.05)" stroke="var(--pwr)" stroke-dasharray="4,2"/>
-<text x="790" y="125" text-anchor="middle" fill="var(--pwr)" font-size="8" font-weight="600">FRAM</text>
-
-<rect x="750" y="150" width="80" height="32" rx="5" fill="rgba(210,153,34,.06)" stroke="var(--sps)" stroke-dasharray="4,2"/>
-<text x="790" y="170" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">SPS IC</text>
+<!-- On-board devices — moved further right to avoid wire crossing -->
+<rect x="760" y="150" width="75" height="28" rx="5" fill="rgba(139,148,158,.05)" stroke="var(--pwr)" stroke-dasharray="4,2"/>
+<text x="797" y="168" text-anchor="middle" fill="var(--pwr)" font-size="8" font-weight="600">FRAM</text>
 
 <!-- ASIL D critical path highlight bar -->
 <rect x="340" y="245" width="500" height="20" rx="4" fill="rgba(248,81,73,.06)" stroke="var(--red)" stroke-width=".5"/>
@@ -153,10 +147,10 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <text x="1140" y="115" text-anchor="middle" fill="var(--dim)" font-size="7">Feedback via I2C PEX (not direct GPIO)</text>
 <text x="1140" y="132" text-anchor="middle" fill="var(--red)" font-size="7.5" font-weight="600">CH2: NO FEEDBACK (GAP-02)</text>
 
-<!-- SBC external -->
-<rect x="1020" y="165" width="240" height="45" rx="8" fill="var(--card)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
-<text x="1140" y="183" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">SBC FS8x (on-board)</text>
-<text x="1140" y="200" text-anchor="middle" fill="var(--dim)" font-size="7.5">Watchdog | spiREG2 shared | CONSTRAINT-001</text>
+<!-- SBC external — positioned below SPS with gap -->
+<rect x="1020" y="170" width="240" height="48" rx="8" fill="var(--card)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="1140" y="190" text-anchor="middle" fill="var(--sps)" font-size="10" font-weight="700">SBC FS8x (on-board)</text>
+<text x="1140" y="205" text-anchor="middle" fill="var(--dim)" font-size="7.5">Watchdog | spiREG2 shared | CONSTRAINT-001</text>
 
 
 <!-- ================================================================ -->
@@ -184,25 +178,27 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 
 
 <!-- ================================================================ -->
-<!--  WIRES: MCU → Right connectors (90° bends)                      -->
+<!--  WIRES: MCU → Right connectors                                   -->
+<!--  Each wire gets its own vertical channel to avoid crossing:       -->
+<!--  ch1=870  ch2=900  ch3=940  ch4=970                              -->
 <!-- ================================================================ -->
 
-<!-- MibSPI2 → SPS IC → J200x (yellow, 90° bends) -->
-<path d="M710,81 L740,81 L740,166 L750,166" stroke="var(--sps)" stroke-width="1.5" fill="none"/>
-<path d="M830,166 L900,166 L900,100 L1020,100" stroke="var(--sps)" stroke-width="2.5" fill="none" marker-end="url(#ay)"/>
-<text x="940" y="92" fill="var(--sps)" font-size="7" font-weight="600">[D1] SPI2 → SPS_OUT</text>
+<!-- Wire 1: MibSPI2 → J200x SPS_OUT (yellow solid, channel 870) -->
+<!--   MibSPI2 right edge → down to SPS IC row → right along y=81 → up at ch1 → across to J200x -->
+<path d="M710,81 L870,81 L870,95 L1020,95" stroke="var(--sps)" stroke-width="2.5" fill="none" marker-end="url(#ay)"/>
+<text x="880" y="88" fill="var(--sps)" font-size="7" font-weight="600">[D1] SPI2 → SPS_OUT</text>
 
-<!-- I2C1 → PEX → J200x feedback (purple, 90° bend) -->
-<path d="M710,121 L920,121 L920,115 L1020,115" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ap)"/>
-<text x="940" y="130" fill="var(--i2c)" font-size="7">[B2/C3] I2C→PEX FB</text>
+<!-- Wire 2: I2C1 → PEX → J200x feedback (purple dashed, channel 900) -->
+<path d="M710,121 L900,121 L900,110 L1020,110" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#ap)"/>
+<text x="910" y="125" fill="var(--i2c)" font-size="7">[B2/C3] I2C→PEX FB</text>
 
-<!-- MibSPI2 → SBC (yellow dashed) -->
-<path d="M710,81 L740,81 L740,75 L750,75" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
-<path d="M830,81 L950,81 L950,183 L1020,183" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ay)"/>
-<text x="960" y="155" fill="var(--sps)" font-size="7">spiREG2 shared</text>
+<!-- Wire 3: MibSPI2 → SBC (yellow dashed, channel 940) -->
+<path d="M710,85 L940,85 L940,183 L1020,183" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ay)"/>
+<text x="950" y="150" fill="var(--sps)" font-size="7">spiREG2 shared</text>
 
-<!-- N2HET2 → SPS control (yellow thin, 90° bend) -->
-<path d="M570,166 L600,166 L600,170 L750,170" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+<!-- Wire 4: N2HET2 → SPS IC control (yellow thin dashed, stays inside MCU box) -->
+<path d="M570,170 L620,170 L620,160 L760,160" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+<text x="680" y="155" fill="var(--dim)" font-size="6">HET2 → SPS ctrl</text>
 
 
 <!-- ================================================================ -->
@@ -313,15 +309,18 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <!--  EXTERNAL TEST EQUIPMENT (dashed, bottom left)                   -->
 <!-- ================================================================ -->
 
-<rect x="30" y="700" width="170" height="35" rx="6" fill="rgba(248,81,73,.03)" stroke="var(--red)" stroke-width="1" stroke-dasharray="5,3"/>
-<text x="115" y="718" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="600">CELL EMULATOR (PP-01)</text>
-<text x="115" y="730" text-anchor="middle" fill="var(--dim)" font-size="7">19 ch | ≤0.5mV | TSR-01/02/03</text>
-<path d="M200,718 L280,718 L280,740 L310,740" stroke="var(--red)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+<!-- External test equipment — stacked cleanly with separate wire paths -->
+<rect x="30" y="710" width="170" height="32" rx="6" fill="rgba(248,81,73,.03)" stroke="var(--red)" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="115" y="726" text-anchor="middle" fill="var(--red)" font-size="8" font-weight="600">CELL EMULATOR (PP-01)</text>
+<text x="115" y="738" text-anchor="middle" fill="var(--dim)" font-size="7">19 ch | ≤0.5mV | TSR-01/02/03</text>
+<!-- Wire: emulator → cell connector (90° bend, goes right then down) -->
+<path d="M200,726 L260,726 L260,750 L310,750" stroke="var(--red)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ar)"/>
 
-<rect x="30" y="745" width="170" height="32" rx="6" fill="rgba(210,153,34,.03)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
-<text x="115" y="762" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">NTC RESISTOR BANK (PP-02)</text>
-<text x="115" y="773" text-anchor="middle" fill="var(--dim)" font-size="7">8× switched | TSR-06/07</text>
-<path d="M200,762 L240,762 L240,740 L650,740 L650,695" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>
+<rect x="30" y="755" width="170" height="32" rx="6" fill="rgba(210,153,34,.03)" stroke="var(--sps)" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="115" y="771" text-anchor="middle" fill="var(--sps)" font-size="8" font-weight="600">NTC RESISTOR BANK (PP-02)</text>
+<text x="115" y="783" text-anchor="middle" fill="var(--dim)" font-size="7">8× switched | TSR-06/07</text>
+<!-- Wire: NTC bank → temp connector (90° bend, goes right then up) -->
+<path d="M200,771 L270,771 L270,750 L650,750 L650,695" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
 
 <!-- Cross-check footer -->
 <text x="590" y="812" text-anchor="middle" fill="var(--dim)" font-size="7.5">Verified: hw-datasheet-oracle ✓ | data-flow-checker ✓ | lessons-librarian ✓ (8 gotchas) | 11 gaps | HalCoGen HL_pinmux.c signal routing</text>
