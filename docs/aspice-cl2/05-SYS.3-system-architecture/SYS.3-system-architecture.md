@@ -262,113 +262,135 @@ connector-pin-signal level, as required for SYS.4 HIL test probe mapping and nee
 bed adapter design. All data sourced from foxBMS hardware schematics v1.2.2 (master),
 v1.1.3 (slave 18-cell), and v1.0.3 (interface).
 
-### 11.1 System Board Topology with ECU Pin Mapping
+### 11.1 System Board Topology
+
+```
+                    ┌──────────────────────────┐
+                    │      MASTER BOARD        │
+  J2009 ── Supply ──┤   TMS570LC4357 MCU       │
+  J2021 ── CAN1 ────┤                          │
+  J2024 ── CAN2 ────┤   SPI1 ──► J9000 ──────────► INTERFACE BOARD (LTC6820)
+  J2033 ── Intlck ──┤   SPI2 ──► SPS IC ──► J200x      │
+  J2034 ── IMD ─────┤   SPI3 ──► FRAM               isoSPI (transformer)
+  J200x ── SPS×8 ───┤   I2C1 ──► PEX (feedback)        │
+  J3008 ── Debug ───┤   SBC  ──► FS8x (watchdog)       ▼
+                    └──────────────────────────┘  SLAVE BOARD (LTC6813)
+                                                  ├── Cell voltage (24-pin)
+                                                  ├── Temperature (16-pin)
+                                                  └── Daisy chain (2+2 pin)
+```
+
+### 11.1.1 ECU I/O Pin Mapping (Safety-Critical Signals)
 
 All MCU ball assignments from HalCoGen `HL_pinmux.c` (foxBMS v1.10.0).
-Format: `Connector.Pin → [MCU Ball] Mux Function → Register (Address) → SW Module`
+Register addresses are the last 4 hex digits of the full `0xFFF7xxxx` base.
 
-```
- CONNECTOR           BOARD TRACE    MCU BALL   PIN MUX FUNCTION        REGISTER          SW MODULE
- ─────────           ───────────    ────────   ────────────────        ────────          ─────────
+**CAN Interfaces:**
 
- ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
- │                              MASTER BOARD  (TMS570LC4357)                                       │
- │                                                                                                 │
- │  J2009.1 ── CLAMP15 ──────── [dedicated]  Supply logic ──────────  SBC supervision   sbc.c      │
- │  J2009.2 ── CLAMP30 ──────── [dedicated]  12V main supply ──────  Power domain       —          │
- │                                                                                                 │
- │  J2021.4 ── CAN1_H ──┐                                                                         │
- │  J2021.3 ── CAN1_L ──┤ TJA1044 ── [ded.] DCAN1TX/RX ──────────  canREG1 (DC00)     can.c      │
- │                       │           [D8]  N2HET2_01 ── CAN1_EN     hetREG2            can_cfg.h   │
- │                       │           [P4]  N2HET2_19 ── CAN1_STB    hetREG2            can_cfg.h   │
- │                                                                                                 │
- │  J2024.4 ── CAN2_H ──┐                                                                         │
- │  J2024.3 ── CAN2_L ──┤ TJA1042 ── [ded.] DCAN2TX/RX ──────────  canREG2 (DE00)     can.c      │
- │               (isolated)         CAN2 EN/STB via PEX I2C ──────  i2cREG1            pex.c      │
- │                                                                                                 │
- │  J2033.1 ── INTLCK_H ─────── [V2]  N2HET1_01 ── IL_HS_EN(p30)  hetREG1 (B800)     interlock.c │
- │  J2033.2 ── INTLCK_L ─────── [A13] N2HET1_17 ── IL_STATE(p29)   hetREG1            interlock.c │
- │                               [ADC ch2-5] ── IL voltage/current  adcREG1 (C000)     interlock.c │
- │                                                                                                 │
- │  J2034.3 ── IMD_OK ──────── [A13] N2HET1_17 ── IR155_OHKS(p27)  hetREG1            bender.c    │
- │  J2034.4 ── IMD_PWM ─────── [D7]  N2HET2_02 ── IR155_PWM(p27)   hetREG2            bender.c    │
- │                               OR iso165C via CAN1 (0x37/0x23)    canREG1             iso165c.c   │
- │                                                                                                 │
- │  J200x.3 ── SPS_OUT_X ──── SPS IC ── [D1] MIBSPI2SIMO ─────── spiREG2 (F600)      sps.c       │
- │  J200x.1 ── SPS_FB_X ──── PEX1 ──── [B2] I2C1_SDA ────────── i2cREG1 (D400)      sps_cfg.c   │
- │              (feedback)              [C3] I2C1_SCL              i2cREG1              pex.c       │
- │                       SPS SW CS:     [D8] N2HET2_01 pin 1       hetREG2              spi_cfg.h   │
- │                       SPS RESET:     [T5] N2HET2_20 pin 16      hetREG2              sps_cfg.h   │
- │                       SPS FB_EN:     [---] N2HET2 pin 9         hetREG2              sps_cfg.h   │
- │                                                                                                 │
- │  SBC (on-board) ──── [D1] MIBSPI2SIMO ─────────────────────── spiREG2 (F600)      sbc.c       │
- │                      [D2] MIBSPI2SOMI                           (shared w/ SPS)     CONSTRAINT-001│
- │                      [E2] MIBSPI2CLK                                                            │
- │                      SBC_RSTB: J9002.80    SBC_FS0B: J9002.79                       sbc.c       │
- │                                                                                                 │
- │  FRAM (on-board) ── [V9]  MIBSPI3CLK ──────────────────────── spiREG3 (F800)      fram.c      │
- │                     [W8]  MIBSPI3SIMO                                                           │
- │                     [V8]  MIBSPI3SOMI                                                           │
- │                     [V10] MIBSPI3NCS_0                                                          │
- │                                                                                                 │
- │  ┌──── J9000 (40-pin Samtec) ── to Interface Board ────────────────────────────────┐            │
- │  │ Pin 1  MCU_SPI1.SOMI0 ── [ded.]  MIBSPI1SOMI_0 ────── spiREG1 (F400)  afe.c   │            │
- │  │ Pin 3  MCU_SPI1.SIMO0 ── [ded.]  MIBSPI1SIMO_0 ──────                  DMA CH0 │            │
- │  │ Pin 5  MCU_SPI1.CLK ──── [ded.]  MIBSPI1CLK ──────────                  DMA CH1 │            │
- │  │ Pin 6  MCU_SPI1.CS1 ──── [F3]   MIBSPI1NCS_1 ──────── isoSPI ch1      afe.c   │            │
- │  │ Pin 7  MCU_SPI1.CS2 ──── [G3]   MIBSPI1NCS_2 ──────── isoSPI ch2      afe.c   │            │
- │  │ Pin 14 MCU_SPI4.CS0 ──── [U1]   MIBSPI4NCS_0 ──────── isoSPI ch3              │            │
- │  │ Pin 15 MCU_SPI4.CS1 ──── [B12]  MIBSPI4NCS_1 ──────── isoSPI ch4              │            │
- │  │ Pin 20 IF_INT0 ────────── [C1]   GIOA_2 ───────────── gioPORTA          afe.c   │            │
- │  │ Pin 21 IF_INT1 ────────── [E1]   GIOA_3 ───────────── gioPORTA          afe.c   │            │
- │  │ Pin 22 IF_INT2 ────────── [A6]   GIOA_4 ───────────── gioPORTA                  │            │
- │  │ Pin 23 IF_INT3 ────────── [H3]   GIOA_6 ───────────── gioPORTA                  │            │
- │  │ Pin 24-31 IF_GPIO.0-7 ── via I2C PEX port expander ── i2cREG1          pex.c   │            │
- │  └──────────────────────────────────────────────────────────────────────────────────┘            │
- └─────────────────────────────────────┬───────────────────────────────────────────────────────────┘
-                                       │ J9000
- ┌─────────────────────────────────────┴───────────────────────────────────────────────────────────┐
- │                           INTERFACE BOARD (LTC6820 × 4 channels)                                │
- │                                                                                                 │
- │  SPI1.CS1 [F3] ── LTC6820 ch1 ── transformer ──┐                                               │
- │  SPI1.CS2 [G3] ── LTC6820 ch2 ── transformer ──┤── isoSPI differential (IN+/IN-)               │
- │  SPI4.CS0 [U1] ── LTC6820 ch3 ── transformer ──┤   max 100m cable (practical: <2m)             │
- │  SPI4.CS1 [B12] ─ LTC6820 ch4 ── transformer ──┤   1 Mbps data rate                            │
- │                                                 │   2s watchdog timeout on LTC6813              │
- │  IF_GPIO.0 ── PEX IO1_0 ── ch1 ENABLE          │                                               │
- │  IF_GPIO.1 ── PEX IO1_1 ── ch1 MASTER          │                                               │
- │  IF_GPIO.2 ── PEX IO1_2 ── ch2 ENABLE          │                                               │
- │  IF_GPIO.3 ── PEX IO1_3 ── ch2 MASTER          │                                               │
- └─────────────────────────────────────┬───────────────────────────────────────────────────────────┘
-                                       │ isoSPI (transformer-coupled, galvanic isolation)
- ┌─────────────────────────────────────┴───────────────────────────────────────────────────────────┐
- │                     SLAVE BOARD (18-cell LTC6813-1, AEC-Q100 Grade 1)                           │
- │                                                                                                 │
- │  Cell connector (24-pin)                  LTC6813 ADC                                           │
- │  ├─ Pin 1  VBAT-    ──── C0 neg ref ──── 16-bit, ±2.2mV (7kHz, 25°C)                          │
- │  ├─ Pin 2  CELL_0+  ──── C0+ ────────── ±3.3mV over -40/+125°C                                │
- │  ├─ Pin 3  CELL_2+  ──── C2+ ──────────  PEC-15 CRC (HD=6)                                    │
- │  ├─ ...    (even cells on row 1)          0.1 mV/LSB resolution                                │
- │  ├─ Pin 14 CELL_1+  ──── C1+ ──────────  conversion: 815µs (7kHz, 18 cells)                   │
- │  ├─ ...    (odd cells on row 2)                                                                │
- │  └─ Pin 22 CELL_17+ ──── C17+ ──────── → isoSPI TX → Interface → SPI1 → spiREG1 → afe.c      │
- │                                                                                                 │
- │  Temp connector (16-pin)                  LTC6813 GPIO/MUX                                      │
- │  ├─ Pin 1-4  T-SENSOR_0-3 ── GPIO1-4 ── MUX group 0 (ADAX)                                    │
- │  ├─ Pin 5-8  T-SENSOR_4-7 ── GPIO5+1-3  MUX group 1                                           │
- │  └─ Pin 9-16 FUSED_VBAT- ── NTC return   scan time: ~4ms total                                │
- │               NTC 10kΩ nominal            → isoSPI → SPI1 → spiREG1 → afe.c                   │
- │                                                                                                 │
- │  Daisy In  (2-pin) ── IN+/IN-  ── from prev slave or interface board                           │
- │  Daisy Out (2-pin) ── OUT+/OUT- ── to next slave                                               │
- └─────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+| Connector | Pin | Signal | Transceiver | MCU Ball | Mux Function | Register | DMA | SW Module |
+|-----------|-----|--------|-------------|----------|-------------|----------|-----|-----------|
+| J2021 | 4 | CAN1_H | TJA1044 | dedicated | DCAN1TX | canREG1 (DC00) | — | can.c |
+| J2021 | 3 | CAN1_L | TJA1044 | dedicated | DCAN1RX | canREG1 | — | can.c |
+| — | — | CAN1_EN | — | D8 | N2HET2_01 | hetREG2 (B900) | — | can_cfg.h |
+| — | — | CAN1_STB | — | P4 | N2HET2_19 | hetREG2 | — | can_cfg.h |
+| J2024 | 4 | CAN2_H | TJA1042 (iso) | dedicated | DCAN2TX | canREG2 (DE00) | — | can.c |
+| J2024 | 3 | CAN2_L | TJA1042 (iso) | dedicated | DCAN2RX | canREG2 | — | can.c |
+| — | — | CAN2_EN | — | PEX | I2C port exp. | i2cREG1 (D400) | — | pex.c |
 
-**Legend:**
-- `[X00]` = TMS570LC4357 BGA ball designation (from HalCoGen `HL_pinmux.c`)
-- `[ded.]` = dedicated pin (no mux alternatives, hardwired to function)
-- `(F400)` = last 4 hex digits of register base address (full: `0xFFF7F400`)
-- `CONSTRAINT-001` = safety constraint: SPS must execute before SBC on shared spiREG2
+**SPI1 → AFE (Cell Voltage + Temperature, ASIL D):**
+
+| Connector | Pin | Signal | MCU Ball | Mux Function | Register | DMA | SW Module |
+|-----------|-----|--------|----------|-------------|----------|-----|-----------|
+| J9000 | 1 | SPI1_SOMI0 | dedicated | MIBSPI1SOMI_0 | spiREG1 (F400) | CH1 (RX) | afe.c |
+| J9000 | 3 | SPI1_SIMO0 | dedicated | MIBSPI1SIMO_0 | spiREG1 | CH0 (TX) | afe.c |
+| J9000 | 5 | SPI1_CLK | dedicated | MIBSPI1CLK | spiREG1 | — | afe.c |
+| J9000 | 6 | SPI1_CS1 | F3 | MIBSPI1NCS_1 | spiREG1 | — | afe.c (isoSPI ch1) |
+| J9000 | 7 | SPI1_CS2 | G3 | MIBSPI1NCS_2 | spiREG1 | — | afe.c (isoSPI ch2) |
+| J9000 | 14 | SPI4_CS0 | U1 | MIBSPI4NCS_0 | spiREG4 (FA00) | — | afe.c (isoSPI ch3) |
+| J9000 | 15 | SPI4_CS1 | B12 | MIBSPI4NCS_1 | spiREG4 | — | afe.c (isoSPI ch4) |
+| J9000 | 20 | IF_INT0 | C1 | GIOA_2 | gioREG (BC00) | — | afe.c |
+| J9000 | 21 | IF_INT1 | E1 | GIOA_3 | gioREG | — | afe.c |
+| J9000 | 22 | IF_INT2 | A6 | GIOA_4 | gioREG | — | — |
+| J9000 | 23 | IF_INT3 | H3 | GIOA_6 | gioREG | — | — |
+| J9000 | 24-31 | IF_GPIO.0-7 | — | via I2C PEX | i2cREG1 (D400) | — | pex.c (LTC6820 en/mst) |
+
+**SPI2 → SPS + SBC (Contactor Control + Watchdog, shared bus — CONSTRAINT-001):**
+
+| Connector | Pin | Signal | MCU Ball | Mux Function | Register | DMA | SW Module |
+|-----------|-----|--------|----------|-------------|----------|-----|-----------|
+| J200x | 3 | SPS_OUT_X | D1 | MIBSPI2SIMO | spiREG2 (F600) | CH2 (TX) | sps.c |
+| J200x | — | (SPS SOMI) | D2 | MIBSPI2SOMI | spiREG2 | CH3 (RX) | sps.c |
+| — | — | (SPS CLK) | E2 | MIBSPI2CLK | spiREG2 | — | sps.c |
+| — | — | SPS_CS (SW) | D8 | N2HET2_01 pin 1 | hetREG2 (B900) | — | spi_cfg.h |
+| — | — | SPS_RESET | T5 | N2HET2_20 pin 16 | hetREG2 | — | sps_cfg.h |
+| — | — | SPS_FB_EN | — | N2HET2 pin 9 | hetREG2 | — | sps_cfg.h |
+| on-board | — | SBC_SIMO | D1 | MIBSPI2SIMO | spiREG2 (F600) | — | sbc.c (shared!) |
+| on-board | — | SBC_SOMI | D2 | MIBSPI2SOMI | spiREG2 | — | sbc.c |
+| J9002 | 80 | SBC_RSTB | — | — | — | — | sbc.c |
+| J9002 | 79 | SBC_FS0B | — | — | — | — | sbc.c |
+
+**SPI3 → FRAM (Diagnostic Data Persistence):**
+
+| Connector | Pin | Signal | MCU Ball | Mux Function | Register | DMA | SW Module |
+|-----------|-----|--------|----------|-------------|----------|-----|-----------|
+| on-board | — | FRAM_CLK | V9 | MIBSPI3CLK | spiREG3 (F800) | — | fram.c |
+| on-board | — | FRAM_SIMO | W8 | MIBSPI3SIMO | spiREG3 | — | fram.c |
+| on-board | — | FRAM_SOMI | V8 | MIBSPI3SOMI | spiREG3 | — | fram.c |
+| on-board | — | FRAM_CS | V10 | MIBSPI3NCS_0 | spiREG3 | — | fram.c |
+
+**Interlock (Safety Loop):**
+
+| Connector | Pin | Signal | MCU Ball | Mux Function | Register | DMA | SW Module |
+|-----------|-----|--------|----------|-------------|----------|-----|-----------|
+| J2033 | 1 | INTERLOCK_H | V2 | N2HET1_01 (IL_HS_EN, p30) | hetREG1 (B800) | — | interlock.c |
+| J2033 | 2 | INTERLOCK_L | A13 | N2HET1_17 (IL_STATE, p29) | hetREG1 | — | interlock.c |
+| — | — | IL_HS_VS | — | ADC ch2 | adcREG1 (C000) | — | interlock.c |
+| — | — | IL_LS_VS | — | ADC ch3 | adcREG1 | — | interlock.c |
+| — | — | IL_HS_CS | — | ADC ch4 | adcREG1 | — | interlock.c |
+| — | — | IL_LS_CS | — | ADC ch5 | adcREG1 | — | interlock.c |
+
+**IMD (Insulation Monitoring):**
+
+| Connector | Pin | Signal | MCU Ball | Mux Function | Register | DMA | SW Module |
+|-----------|-----|--------|----------|-------------|----------|-----|-----------|
+| J2034 | 3 | IMD_OK | A13 | N2HET1_17 (p27) | hetREG1 (B800) | — | bender_ir155.c |
+| J2034 | 4 | IMD_PWM | D7 | N2HET2_02 (p27) | hetREG2 (B900) | — | bender_ir155.c |
+| — | — | IR155_EN | — | N2HET1 (p25) | hetREG1 | — | bender_ir155.c |
+| — | — | iso165C RX | — | via CAN1 (0x37) | canREG1 | — | bender_iso165c.c |
+
+**Contactor Feedback (via I2C Port Expander):**
+
+| Connector | Pin | Signal | MCU Ball | Path | Register | SW Module |
+|-----------|-----|--------|----------|------|----------|-----------|
+| J200x | 1 | SPS_FB_0 (String+) | B2/C3 | I2C → PEX1 pin 0 | i2cREG1 (D400) | sps_cfg.c |
+| J200x | 1 | SPS_FB_1 (String-) | B2/C3 | I2C → PEX1 pin 1 | i2cREG1 | sps_cfg.c |
+| J200x | 1 | SPS_FB_2 (Precharge) | B2/C3 | I2C → PEX1 pin 2 | i2cREG1 | sps_cfg.c (NO_FB!) |
+
+### 11.1.2 Slave Board I/O (LTC6813-1, AEC-Q100 Grade 1)
+
+| Connector | Pin(s) | Signal | LTC6813 Channel | ADC Spec |
+|-----------|--------|--------|-----------------|----------|
+| Cell voltage | 1 | VBAT- | C0 neg ref | 16-bit, 0.1 mV/LSB |
+| Cell voltage | 2,14 | CELL_0+, CELL_1+ | C0+, C1+ | ±2.2 mV TME (7kHz, 25°C) |
+| Cell voltage | 3-10, 15-22 | CELL_2+ to CELL_17+ | C2+ to C17+ | ±3.3 mV over -40/+125°C |
+| Cell voltage | 11 | VBAT+ | C17+ ref | conversion: 815 µs (18 cells) |
+| Temperature | 1-4 | T-SENSOR_0-3 | GPIO1-4 (MUX grp 0) | 10kΩ NTC, ADAX cmd |
+| Temperature | 5-8 | T-SENSOR_4-7 | GPIO5+1-3 (MUX grp 1) | scan time: ~4 ms |
+| Temperature | 9-16 | FUSED_VBAT- | NTC return | all share common return |
+| Daisy In | 1-2 | IN+/IN- | isoSPI input | from prev slave / interface |
+| Daisy Out | 1-2 | OUT+/OUT- | isoSPI output | to next slave |
+
+**NOTE**: Cell connector uses interleaved pinout — even cells on row 1 (pins 2-11),
+odd cells on row 2 (pins 14-22). Cell emulator wiring must match.
+
+### 11.1.3 Interface Board I/O (LTC6820 × 4 channels)
+
+| MCU Ball | SPI CS | LTC6820 Channel | GPIO Enable | GPIO Master | isoSPI Spec |
+|----------|--------|-----------------|-------------|-------------|-------------|
+| F3 | MIBSPI1NCS_1 | ch1 | IF_GPIO.0 (PEX IO1_0) | IF_GPIO.1 (PEX IO1_1) | 1 Mbps, 100m max |
+| G3 | MIBSPI1NCS_2 | ch2 | IF_GPIO.2 (PEX IO1_2) | IF_GPIO.3 (PEX IO1_3) | practical: <2m |
+| U1 | MIBSPI4NCS_0 | ch3 | IF_GPIO.4 (PEX IO1_4) | IF_GPIO.5 (PEX IO1_5) | PEC-15, HD=6 |
+| B12 | MIBSPI4NCS_1 | ch4 | IF_GPIO.6 (PEX IO1_6) | IF_GPIO.7 (PEX IO1_7) | 2s watchdog |
 
 ### 11.2 Master Board Connectors (v1.2.2)
 
