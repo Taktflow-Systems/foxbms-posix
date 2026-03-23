@@ -35,6 +35,10 @@ SW-01, HW-02, HW-03, EMC-02, HIL-02, SW-03).
 | SYS.3-001 Rev 1.1 | System Architecture (with HW interface sections 11-12) |
 | ISO-HSI-001 | Hardware-Software Interface Specification |
 
+**Interactive views:**
+- [TSR Analysis Table](../views/tsr-analysis.html) — 15 TSRs with HARA→SG→TSR→SSR chains, FTTI budgets, probe points
+- [Gap Register](../views/gap-register.html) — Diagnostic coverage gaps with acceptance rationale
+
 ---
 
 ## 3. TSR Deep Analysis

@@ -58,6 +58,8 @@ ID_PATTERNS = [
     ("FM",       r"FM-0*(\d+)"),
     # Fault injection test IDs from CSV matrix (2,005 tests)
     ("FI",       r"FI-(?:VOLT|CURR|TEMP|TIMING|PLAUS|RECOV|STATE|COMBO|IMBAL|SENSOR)-0*(\d+)"),
+    # System integration test catalog IDs (1,262 tests from test_catalog_runner.py)
+    ("SIT",      r"(?:SIG|SM|DIAG|THR|DFA|B2B|E2E|HW|END|SSR)-(?:TX|RX|CYC|DLC|END|TRANS|REJECT|PERSIST|ENTRY|EXIT|TIME|CSEQ|STARTUP|RECOVERY|POS|NEG|THR|RST|FTTI|BND|CC|CASCADE|SI|SOAK|CYCLE|LOAD|BROWNOUT|EMC|DRIFT|EXACT|BELOW|ABOVE|HYST|CELL|SENSOR|ALL|SPI\d?|CAN\d?|I2C|GPIO|IMD|FRAM|VOLT|TEMP|CURR|STALE|FRESH)?-?[A-Z0-9_]*-?\d+"),
 ]
 
 # Composite regex that matches any requirement ID in text.
@@ -77,24 +79,25 @@ ALL_ID_RE = re.compile(
     r"|QT-\d+"
     r"|FM-\d+"
     r"|FI-(?:VOLT|CURR|TEMP|TIMING|PLAUS|RECOV|STATE|COMBO|IMBAL|SENSOR)-\d+"
+    r"|(?:SIG|SM|DIAG|THR|DFA|B2B|E2E|HW|END|SSR)-[A-Z0-9_]+-\d+"
     r")\b"
 )
 
 # Source code tag patterns
 SAFETY_REQ_RE = re.compile(r"@(?:safety_req|satisfies)\s+((?:SSR|SW-REQ|SYS-REQ|STKH-REQ|FSR|TSR)-\d+)")
-VERIFIES_RE = re.compile(r"@verifies\s+((?:SW-REQ|SYS-REQ|SSR|STKH-REQ|UT|IT|QT)-\d+)")
+VERIFIES_RE = re.compile(r"@verifies\s+((?:SW-REQ|SYS-REQ|SSR|STKH-REQ|TSR|FSR|FM|UT|IT|QT)-\d+)")
 
 # Level hierarchy (top to bottom in the V-model)
 LEVEL_ORDER = [
     "STKH-REQ", "SYS-REQ", "SG", "HZ", "FSR", "TSR",
-    "SW-REQ", "SSR", "FM", "UT", "IT", "QT",
+    "SW-REQ", "SSR", "FM", "UT", "IT", "QT", "SIT",
 ]
 
 # Leaf requirement levels (must have test coverage)
 LEAF_LEVELS = {"SW-REQ", "SSR"}
 
 # Test levels
-TEST_LEVELS = {"UT", "IT", "QT", "FI"}
+TEST_LEVELS = {"UT", "IT", "QT", "FI", "SIT"}
 
 # ASIL values
 ASIL_ORDER = {"QM": 0, "A": 1, "B": 2, "C": 3, "D": 4}
@@ -577,6 +580,47 @@ def parse_source_files(graph, src_dir):
             graph.code_tags.append((rel_path, "@verifies", rid))
 
 
+def parse_test_catalogs(graph, src_dir):
+    """Scan Python test catalog files for 'verifies' fields in test dicts.
+
+    Test catalog modules (test_can_signals.py, test_state_machine.py, etc.)
+    define test cases as list[dict] with 'id' and 'verifies' fields. This
+    function imports each module, calls get_tests(), and registers the
+    bidirectional test→requirement links in the traceability graph.
+    """
+    catalog_modules = [
+        "test_can_signals",
+        "test_state_machine",
+        "test_diag_verification",
+        "test_thresholds",
+        "test_safety_validation",
+    ]
+
+    # Add src_dir to path so imports work
+    src_str = str(src_dir)
+    if src_str not in sys.path:
+        sys.path.insert(0, src_str)
+
+    for mod_name in catalog_modules:
+        try:
+            mod = __import__(mod_name)
+            tests = mod.get_tests()
+            for t in tests:
+                test_id = t.get("id", "")
+                verifies = t.get("verifies", [])
+                source_file = f"{mod_name}.py"
+                # Register the test as a SIT-level node
+                graph.get_or_create(test_id, level="SIT", source_file=source_file)
+                # Register each verifies link
+                for req_id in verifies:
+                    nrid = normalize_id(req_id)
+                    graph.add_verification(test_id, nrid, source_file=source_file)
+                    graph.code_tags.append((source_file, "verifies", nrid))
+            print(f"  {mod_name}: {len(tests)} test cases loaded")
+        except (ImportError, AttributeError) as e:
+            print(f"  WARNING: Could not load {mod_name}: {e}", file=sys.stderr)
+
+
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
@@ -964,6 +1008,10 @@ def main():
     # --- Scan source files ---
     print("Scanning source code...")
     parse_source_files(graph, SRC_DIR)
+
+    # --- Scan test catalogs (SIT-level tests) ---
+    print("Scanning test catalogs...")
+    parse_test_catalogs(graph, SRC_DIR)
 
     # --- Parse fault injection CSV ---
     print("Parsing fault injection CSV...")

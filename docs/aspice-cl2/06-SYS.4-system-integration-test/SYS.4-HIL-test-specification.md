@@ -35,6 +35,9 @@ statistical timing measurements.
 | FOX-SAF-FMEA-001 | Software FMEA (19 failure modes) |
 | FOX-SAF-HARA-001 | Hazard Analysis and Risk Assessment |
 
+**Interactive views:**
+- [HIL Test Cases Table](views/test-cases.html) — 107 test cases across 20 categories with ASIL ratings, FTTI budgets, and probe points
+
 ## 3. Test Environment
 
 ### 3.1 HIL Bench Configuration

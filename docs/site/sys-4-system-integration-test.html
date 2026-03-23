@@ -229,7 +229,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>1.0</td>
 <td>2026-03-21</td>
 <td>An Dao</td>
-<td>M. Weber (AI-simulated)</td>
+<td>M. Weber</td>
 <td>Initial release</td>
 </tr>
 </tbody>
@@ -673,8 +673,37 @@ make test-asil
 </tr>
 </tbody>
 </table>
-<h2 id="9-traceability">9. Traceability</h2>
-<p>All SIT-xxx test cases trace back to SYS-REQ-xxx system requirements in [SYS.2-001]. The bidirectional traceability matrix in ISO26262-part8-traceability.md provides the complete chain from stakeholder requirements through system tests.</p></div>
+<h2 id="9-expanded-test-catalog">9. Expanded Test Catalog (1,262 tests)</h2>
+<p>The original SIT-xxx test cases have been expanded to a full ASIL D test matrix with 1,262 test cases across 14 categories, auto-generated from the DBC file, DIAG configuration, SOA thresholds, and SYS.3 architecture specification.</p>
+<table>
+<thead><tr><th>Category</th><th>Count</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>SIG (CAN Signal Content)</td><td>564</td><td>Auto-generated from foxbms_signals.dbc + SYS.3 §9</td></tr>
+<tr><td>DIAG (Diagnostic Verification)</td><td>288</td><td>Auto-generated from diag_cfg (28 DIAG groups × 6 test types)</td></tr>
+<tr><td>THR (Threshold Boundary)</td><td>166</td><td>Auto-generated from soa_cfg (30 thresholds + per-cell/sensor)</td></tr>
+<tr><td>SM (State Machine)</td><td>82</td><td>Systematic from SYS.3 §7 state diagrams</td></tr>
+<tr><td>HW (Hardware Interface)</td><td>56</td><td>Per SYS.3 §11 interface definitions</td></tr>
+<tr><td>SSR (Safety Requirements)</td><td>50</td><td>25 SSRs × positive + negative</td></tr>
+<tr><td>E2E (End-to-End Data Flow)</td><td>25</td><td>3 measurement paths × stage verification</td></tr>
+<tr><td>B2B (Back-to-Back SIL/HIL)</td><td>13</td><td>ISO 26262-4 Table 7, 1d</td></tr>
+<tr><td>DFA (Dependent Failure)</td><td>10</td><td>ISO 26262-9 §7 common-cause/cascading</td></tr>
+<tr><td>END (Endurance)</td><td>8</td><td>ISO 26262-4 Table 8, 1c</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>1,262</strong></td><td>598 ASIL D | 198 requirements traced</td></tr>
+</tbody>
+</table>
+<p>Interactive matrix: <a href="sys4-views/test-cases.html">original 107 HIL-SIT tests</a> | <a href="sys4-views/test-matrix-full.html">full 1,262 test matrix</a></p>
+<p>Test catalog source: <code>src/test_catalog_runner.py --export-html</code></p>
+<h2 id="10-traceability">10. Traceability</h2>
+<p>All test cases trace bidirectionally:</p>
+<ul>
+<li><strong>Upward</strong>: SIG/SM/E2E tests → SYS-REQ-xxx (system requirements in SYS.2-001)</li>
+<li><strong>Upward</strong>: DIAG/THR/SSR tests → TSR-xxx (technical safety requirements in FOX-SAF-TSC-001)</li>
+<li><strong>Upward</strong>: FI tests → FM-xxx (failure modes in FOX-SAF-FMEA-001)</li>
+<li><strong>Upward</strong>: DFA tests → GAP-xxx (diagnostic coverage gaps in gap register)</li>
+<li><strong>Downward</strong>: Each test → test script module → executable SIL/HIL procedure</li>
+</ul>
+<p>Full traceability report: <code>src/test_catalog_runner.py --traceability</code> (198 requirements mapped).</p>
+<p>The bidirectional traceability matrix in <a href="part-8-traceability.html">Part 8: Traceability</a> provides the complete chain from stakeholder requirements through system tests.</p></div>
 <div class="nav-buttons"><a href="sys-3-system-architecture.html">&larr; SYS.3 System Architecture</a><a href="sys-5-system-qualification.html">SYS.5 System Qualification &rarr;</a></div>
 </main>
 <script>

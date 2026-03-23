@@ -16,6 +16,7 @@ Usage:
 
 import json
 import re
+import sys
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -44,16 +45,18 @@ ID_PATTERNS = [
     ("UT",       r"UT-0*(\d+)"),
     ("IT",       r"IT-0*(\d+)"),
     ("QT",       r"QT-0*(\d+)"),
+    ("SIT",      r"(?:SIG|SM|DIAG|THR|DFA|B2B|E2E|HW|END|SSR)-[A-Z0-9_]+-\d+"),
 ]
 
 ALL_ID_RE = re.compile(
     r"(STKH-REQ-\d+[A-Za-z]?|SYS-REQ-\d+[A-Za-z]?|SW-REQ-\d+[A-Za-z]?|"
     r"SSR-\d+|SG-\d+|HZ-\d+|FSR-\d+|TSR-\d+|FM-\d+|"
     r"FI-(?:VOLT|CURR|TEMP|TIMING|PLAUS|RECOV|STATE|COMBO|IMBAL|SENSOR)-\d+|"
+    r"(?:SIG|SM|DIAG|THR|DFA|B2B|E2E|HW|END|SSR)-[A-Z0-9_]+-\d+|"
     r"UT-\d+|IT-\d+|QT-\d+)"
 )
 
-LEVEL_ORDER = ["STKH-REQ", "SYS-REQ", "SG", "HZ", "FSR", "TSR", "SW-REQ", "SSR", "FM", "FI", "UT", "IT", "QT"]
+LEVEL_ORDER = ["STKH-REQ", "SYS-REQ", "SG", "HZ", "FSR", "TSR", "SW-REQ", "SSR", "FM", "FI", "SIT", "UT", "IT", "QT"]
 
 LEVEL_COLORS = {
     "STKH-REQ": "#9b59b6",
@@ -69,6 +72,7 @@ LEVEL_COLORS = {
     "UT": "#1abc9c",
     "IT": "#1abc9c",
     "QT": "#1abc9c",
+    "SIT": "#8b5cf6",
 }
 
 LEVEL_LABELS = {
@@ -85,10 +89,18 @@ LEVEL_LABELS = {
     "UT": "Unit Tests",
     "IT": "Integration Tests",
     "QT": "Qualification Tests",
+    "SIT": "System Integration (1262)",
 }
 
 
 def classify_id(req_id):
+    # SIT test IDs start with SIG-, SM-, DIAG-, THR-, DFA-, B2B-, E2E-, HW-, END-
+    sit_prefixes = ("SIG-", "SM-", "DIAG-", "THR-", "DFA-", "B2B-", "E2E-", "HW-", "END-")
+    if any(req_id.startswith(p) for p in sit_prefixes):
+        return "SIT"
+    # Also SSR-POS-xxx / SSR-NEG-xxx are SIT tests, not SSR requirements
+    if req_id.startswith("SSR-POS-") or req_id.startswith("SSR-NEG-"):
+        return "SIT"
     for prefix, _ in ID_PATTERNS:
         if req_id.startswith(prefix + "-"):
             return prefix
@@ -97,6 +109,11 @@ def classify_id(req_id):
 
 def normalize_id(req_id):
     for prefix, pattern in ID_PATTERNS:
+        if prefix == "SIT":
+            # SIT test IDs (SIG-TX-0220-001 etc.) don't follow PREFIX-NNN — return as-is
+            if re.match(pattern, req_id):
+                return req_id
+            continue
         m = re.match(pattern.replace(r"0*(\d+)", r"0*(\d+[A-Za-z]?)"), req_id)
         if m:
             num = m.group(1)
@@ -170,6 +187,37 @@ def scan_docs():
                 if nid in nodes:
                     nodes[nid]["tested_by"].add(str(src_file.name))
 
+    # Load SIT test catalog modules and register bidirectional links
+    catalog_modules = [
+        "test_can_signals", "test_state_machine", "test_diag_verification",
+        "test_thresholds", "test_safety_validation",
+    ]
+    src_str = str(SRC_DIR)
+    if src_str not in sys.path:
+        sys.path.insert(0, src_str)
+    for mod_name in catalog_modules:
+        try:
+            mod = __import__(mod_name)
+            tests = mod.get_tests()
+            for t in tests:
+                test_id = t.get("id", "")
+                verifies = t.get("verifies", [])
+                # Register the SIT test node
+                if test_id not in nodes:
+                    nodes[test_id] = {"level": "SIT", "file": f"{mod_name}.py",
+                                      "up": set(), "down": set(), "tested_by": set()}
+                # Link SIT test → requirement (test traces UP to requirement)
+                for req_id in verifies:
+                    nrid = normalize_id(req_id)
+                    if nrid not in nodes:
+                        nodes[nrid] = {"level": classify_id(nrid), "file": "",
+                                       "up": set(), "down": set(), "tested_by": set()}
+                    nodes[test_id]["up"].add(nrid)
+                    nodes[nrid]["down"].add(test_id)
+            print(f"  {mod_name}: {len(tests)} SIT tests loaded")
+        except (ImportError, AttributeError) as e:
+            print(f"  WARNING: {mod_name}: {e}", file=sys.stderr)
+
     return nodes
 
 
@@ -181,7 +229,10 @@ def build_html(nodes):
     for nid, data in sorted(nodes.items()):
         by_level[data["level"]].append(nid)
 
-    # Compute stats
+    # Compute stats — separate requirements from verification evidence
+    test_levels = {"UT", "IT", "QT", "FI", "SIT"}
+    req_count = sum(1 for d in nodes.values() if d["level"] not in test_levels)
+    test_count = sum(1 for d in nodes.values() if d["level"] in test_levels)
     total = len(nodes)
     orphans = [nid for nid, d in nodes.items() if not d["up"] and not d["down"]]
     fully_traced = [nid for nid, d in nodes.items() if d["up"] or d["down"]]
@@ -329,7 +380,7 @@ body {{ font-family: var(--font); background: var(--bg); color: var(--text); }}
     <h1>Traceability Explorer</h1>
     <input type="text" id="search" placeholder="Search requirement ID...">
     <a href="index.html">Back to Docs</a>
-    <span style="color:var(--text2);font-size:12px;margin-left:auto">{total} requirements | {len(orphans)} orphans | {len(edges)} links</span>
+    <span style="color:var(--text2);font-size:12px;margin-left:auto">{req_count} requirements | {test_count} verification items | {len(orphans)} orphans | {len(edges)} links</span>
 </div>
 
 <div class="dashboard" id="dashboard">
@@ -524,7 +575,9 @@ def _build_level_html(level, ids, nodes):
 def main():
     print("Scanning documents...")
     nodes = scan_docs()
-    print(f"Found {len(nodes)} requirement IDs")
+    req_only = sum(1 for d in nodes.values() if d["level"] not in {"UT", "IT", "QT", "FI", "SIT"})
+    test_only = len(nodes) - req_only
+    print(f"Found {req_only} requirements + {test_only} verification items = {len(nodes)} total")
 
     # Group by level for HTML
     by_level = defaultdict(list)

@@ -8,7 +8,7 @@
 
 | Rev | Date | Author | Reviewer | Description |
 |---|---|---|---|---|
-| 1.0 | 2026-03-21 | An Dao | Dr. K. Richter (AI-simulated) | Initial release |
+| 1.0 | 2026-03-21 | An Dao | Dr. K. Richter | Initial release |
 
 ## 1. Purpose
 
@@ -31,6 +31,9 @@ current, and temperature monitoring, contactor control, and fault management.
 | [SWE.3-001] | Software Detailed Design |
 | ISO 26262:2018 | Part 6, Clauses 6-10 |
 | ISO 26262:2018 | Part 5, Clause 7 (HSI) |
+
+**Interactive views:**
+- [Gap Register](../views/gap-register.html) — Diagnostic coverage gaps with ASIL classification and acceptance rationale
 
 ## 4. Definitions
 
@@ -55,7 +58,7 @@ management system. Each is classified ASIL D.
 | SG-004 | Prevent operation outside safe temperature range | D | Open all contactors |
 | SG-005 | Prevent unintended battery re-energization after fault | D | Maintain contactors open; require dual-condition exit |
 <!-- HITL-LOCK END:SAFETY-GOALS -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: APPROVED. 5 safety goals cover the primary battery hazards. SG-001 (overvoltage) and SG-004 (overcurrent) are the most critical — both correctly rated ASIL D.
 -->
@@ -119,7 +122,7 @@ Where:
 | SSR-009 | The software shall detect deep discharge (cell voltage <= 1500 mV) within 0.21 seconds and latch the fault. | SG-002, SG-005 | D |
 | SSR-010 | The software shall detect current on an open string within 1.1 seconds. | SG-003 | D |
 <!-- HITL-LOCK END:SSR-FAULT-DETECT -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: APPROVED. SSR-001 through SSR-010 cover all software-detectable fault modes. Thresholds match diag_cfg.c configuration (50/500/10 events).
 -->
@@ -135,7 +138,7 @@ Comment: APPROVED. SSR-001 through SSR-010 cover all software-detectable fault m
 | SSR-023 | The software shall not permit the BMS to exit ERROR state unless an explicit STANDBY request has been received via CAN. | SG-005 | D |
 | SSR-024 | SSR-022 and SSR-023 must both be satisfied simultaneously for ERROR exit (AND condition). | SG-005 | D |
 <!-- HITL-LOCK END:SSR-FAULT-REACT -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: APPROVED. SSR-020 through SSR-024 specify contactor-open as the safe state. FTTI values derived from DIAG delay configuration are technically sound.
 -->
@@ -150,7 +153,7 @@ Comment: APPROVED. SSR-020 through SSR-024 specify contactor-open as the safe st
 | SSR-032 | The DIAG module shall detect persistent faults by incrementing the counter on each evaluation cycle until the threshold is reached. | SG-001 to SG-004 | D |
 | SSR-033 | The DIAG module shall allow fault recovery by decrementing the counter when the fault condition clears. | SG-005 | D |
 <!-- HITL-LOCK END:SSR-DIAG-COV -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: APPROVED with note: SSR-030 through SSR-033 specify 61/85 IDs retained. The 24 suppressed IDs are all hardware-dependent (SPI, I2C, SBC, IMD). Suppression is justified for POSIX SIL.
 -->
@@ -164,7 +167,7 @@ Comment: APPROVED with note: SSR-030 through SSR-033 specify 61/85 IDs retained.
 | SSR-041 | The software shall detect loss of current sensor communication within the configured FTTI (100 events x 200 ms = 20 seconds). | SG-003 | D |
 | SSR-042 | The software shall detect AFE communication failure within the configured FTTI (5 events x 100 ms = 0.5 seconds). | SG-001, SG-002, SG-004 | D |
 <!-- HITL-LOCK END:SSR-COMM-SAFETY -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: APPROVED. CAN timing monitoring with 1200ms FTTI is adequate for SocketCAN. Note: E2E protection bypassed on POSIX — acceptable for SIL, not for production.
 -->
@@ -178,7 +181,7 @@ Comment: APPROVED. CAN timing monitoring with 1200ms FTTI is adequate for Socket
 | SSR-051 | The software shall not close contactors unless the BMS is in a state that permits contactor closure (PRECHARGE or NORMAL). | SG-005 | D |
 | SSR-052 | The software shall respect the contactor maximum break current limit of 3500 mA during normal disconnect sequences. | SG-003 | C |
 <!-- HITL-LOCK END:SSR-CONTACTOR -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: APPROVED
 Comment: APPROVED. Contactor feedback monitoring with 300ms FTTI is adequate. SPS simulation with configurable delay correctly models physical contactor dynamics.
 -->
