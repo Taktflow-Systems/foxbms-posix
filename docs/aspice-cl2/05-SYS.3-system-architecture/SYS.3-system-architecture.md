@@ -2,7 +2,7 @@
 
 | Document ID | Rev | Date | Classification |
 |---|---|---|---|
-| SYS.3-001 | 1.0 | 2026-03-21 | Confidential |
+| SYS.3-001 | 1.2 | 2026-03-23 | Confidential |
 
 ## Revision History
 
@@ -10,6 +10,7 @@
 |---|---|---|---|---|
 | 1.0 | 2026-03-21 | An Dao | M. Weber (AI-simulated) | Initial release |
 | 1.1 | 2026-03-23 | An Dao | Phase 1 Audit Panel (10 reviewers) | Add Sections 11-12: Hardware interface architecture, signal paths, probe point map, register cross-reference |
+| 1.2 | 2026-03-23 | An Dao | ASPICE Researcher + Fault Finder agents | Fix ball assignments (E-02/E-05), ADC accuracy, plausibility threshold. Add ⚠TBV markers for unverified pins. |
 
 ## 1. Purpose
 
@@ -329,8 +330,8 @@ Register addresses are the last 4 hex digits of the full `0xFFF7xxxx` base.
 |-----------|-----|--------|-------------|----------|-------------|----------|-----|-----------|
 | J2021 | 4 | CAN1_H | TJA1044 | dedicated | DCAN1TX | canREG1 (DC00) | — | can.c |
 | J2021 | 3 | CAN1_L | TJA1044 | dedicated | DCAN1RX | canREG1 | — | can.c |
-| — | — | CAN1_EN | — | D8 | N2HET2_01 | hetREG2 (B900) | — | can_cfg.h |
-| — | — | CAN1_STB | — | P4 | N2HET2_19 | hetREG2 | — | can_cfg.h |
+| — | — | CAN1_EN | — | N4 | N2HET2[18] | hetREG2 (B900) | — | can_cfg.h |
+| — | — | CAN1_STB | ⚠ TBV | N2HET2[23] (DOUT bit, no pinmux entry) | hetREG2 | — | can_cfg.h |
 | J2024 | 4 | CAN2_H | TJA1042 (iso) | dedicated | DCAN2TX | canREG2 (DE00) | — | can.c |
 | J2024 | 3 | CAN2_L | TJA1042 (iso) | dedicated | DCAN2RX | canREG2 | — | can.c |
 | — | — | CAN2_EN | — | PEX | I2C port exp. | i2cREG1 (D400) | — | pex.c |
@@ -359,9 +360,9 @@ Register addresses are the last 4 hex digits of the full `0xFFF7xxxx` base.
 | J200x | 3 | SPS_OUT_X | D1 | MIBSPI2SIMO | spiREG2 (F600) | CH2 (TX) | sps.c |
 | J200x | — | (SPS SOMI) | D2 | MIBSPI2SOMI | spiREG2 | CH3 (RX) | sps.c |
 | — | — | (SPS CLK) | E2 | MIBSPI2CLK | spiREG2 | — | sps.c |
-| — | — | SPS_CS (SW) | D8 | N2HET2_01 pin 1 | hetREG2 (B900) | — | spi_cfg.h |
-| — | — | SPS_RESET | T5 | N2HET2_20 pin 16 | hetREG2 | — | sps_cfg.h |
-| — | — | SPS_FB_EN | — | N2HET2 pin 9 | hetREG2 | — | sps_cfg.h |
+| — | — | SPS_CS (SW) | D8 | N2HET2[01] | hetREG2 (B900) | — | spi_cfg.h |
+| — | — | SPS_RESET | T5 | N2HET2[20] | hetREG2 | — | sps_cfg.h |
+| — | — | SPS_FB_EN | ⚠ TBV | N2HET2[09] | hetREG2 | — | sps_cfg.h |
 | on-board | — | SBC_SIMO | D1 | MIBSPI2SIMO | spiREG2 (F600) | — | sbc.c (shared!) |
 | on-board | — | SBC_SOMI | D2 | MIBSPI2SOMI | spiREG2 | — | sbc.c |
 | J9002 | 80 | SBC_RSTB | — | — | — | — | sbc.c |
@@ -380,8 +381,8 @@ Register addresses are the last 4 hex digits of the full `0xFFF7xxxx` base.
 
 | Connector | Pin | Signal | MCU Ball | Mux Function | Register | DMA | SW Module |
 |-----------|-----|--------|----------|-------------|----------|-----|-----------|
-| J2033 | 1 | INTERLOCK_H | V2 | N2HET1_01 (IL_HS_EN, p30) | hetREG1 (B800) | — | interlock.c |
-| J2033 | 2 | INTERLOCK_L | A13 | N2HET1_17 (IL_STATE, p29) | hetREG1 | — | interlock.c |
+| J2033 | 1 | INTERLOCK_H | B11 | N2HET1[30] (IL_HS_ENABLE) | hetREG1 (B800) | — | interlock.c |
+| J2033 | 2 | INTERLOCK_L | A3 | N2HET1[29] (IL_STATE) | hetREG1 | — | interlock.c |
 | — | — | IL_HS_VS | — | ADC ch2 | adcREG1 (C000) | — | interlock.c |
 | — | — | IL_LS_VS | — | ADC ch3 | adcREG1 | — | interlock.c |
 | — | — | IL_HS_CS | — | ADC ch4 | adcREG1 | — | interlock.c |
@@ -391,9 +392,9 @@ Register addresses are the last 4 hex digits of the full `0xFFF7xxxx` base.
 
 | Connector | Pin | Signal | MCU Ball | Mux Function | Register | DMA | SW Module |
 |-----------|-----|--------|----------|-------------|----------|-----|-----------|
-| J2034 | 3 | IMD_OK | A13 | N2HET1_17 (p27) | hetREG1 (B800) | — | bender_ir155.c |
-| J2034 | 4 | IMD_PWM | D7 | N2HET2_02 (p27) | hetREG2 (B900) | — | bender_ir155.c |
-| — | — | IR155_EN | — | N2HET1 (p25) | hetREG1 | — | bender_ir155.c |
+| J2034 | 3 | IMD_OK | A9 | N2HET1[27] | hetREG1 (B800) | — | bender_ir155.c |
+| J2034 | 4 | IMD_PWM | D7 | N2HET2[02] | hetREG2 (B900) | — | bender_ir155.c |
+| — | — | IR155_EN | M3 | N2HET1[25] | hetREG1 | — | bender_ir155.c |
 | — | — | iso165C RX | — | via CAN1 (0x37) | canREG1 | — | bender_iso165c.c |
 
 **Contactor Feedback (via I2C Port Expander):**
@@ -506,8 +507,8 @@ current-on-open-string (TSR-15) or precharge timeout.
 
 | Pin | Signal | MCU Peripheral | Register |
 |-----|--------|----------------|----------|
-| 1 | INTERLOCK_HIGH | N2HET1 | hetREG1 (0xFFF7B800) |
-| 2 | INTERLOCK_LOW | N2HET1 | hetREG1 (0xFFF7B800) |
+| 1 | INTERLOCK_HIGH | N2HET1[30] ball B11 | hetREG1 (0xFFF7B800) |
+| 2 | INTERLOCK_LOW | N2HET1[29] ball A3 | hetREG1 (0xFFF7B800) |
 
 **Function**: Physical safety loop. Current flows through INTERLOCK_HIGH, through external loop
 (connectors, service disconnect), returns via INTERLOCK_LOW. Loop open = fault.
@@ -698,7 +699,7 @@ is classified as an observation point (O), fault injection point (F), or both (O
 Cell terminal (O/F)
   → Kelvin sense wire → Slave cell connector pin CELL_x+ (O/F)
   → PCB trace → RC filter → LTC6813 ADC input C0-C17
-  → LTC6813 internal ADC (16-bit, ±1.5mV) (O: via RDCV command)
+  → LTC6813 internal ADC (16-bit, ±2.2mV @25°C) (O: via RDCV command)
   → isoSPI TX (differential, transformer-coupled) (O/F: break daisy chain)
   → Interface board LTC6820 → SPI1 SOMI0
   → J9000 pin 1 → Master board SPI1 (O: logic analyzer on J9000)
@@ -946,7 +947,7 @@ Full HIL signal path analysis: `docs/lessons-learned/embedded/foxbms-hil-signal-
 | 1 | L-009 | Cell/IVT validity | `invalidFlag` uses inverted logic: **1 = VALID**, 0 = invalid | Plant/emulator MUST send `invalidFlag=1` for valid data, or BMS rejects all measurements |
 | 2 | L-010 | Cell voltage CAN | Only 8 cells per CAN mux group (0x270). Need **5 mux groups** (0-4) for all 18 cells | Cell emulator must cycle through mux groups 0-4 in plant model; single group = 10 cells missing |
 | 3 | L-015 | BMS state (0x220) | BMS state signal on CAN flickers due to multiplexing timing | Test harness must read state via `BMS_GetState()` API or internal database, never by sniffing CAN 0x220 |
-| 4 | L-018/L-027 | Cell voltage plausibility | Single-cell OV is rejected as outlier if spread > 0.4V across module | OV fault injection must set **ALL 18 cells** to overvoltage simultaneously, not just one cell |
+| 4 | L-018/L-027 | Cell voltage plausibility | Single-cell OV is rejected as outlier if spread > 300 mV (`PL_CELL_VOLTAGE_SPREAD_TOLERANCE_mV`, WARNING severity only) | OV fault injection must set **ALL 18 cells** to overvoltage simultaneously, not just one cell |
 | 5 | L-019 | IVT current (0x521) | Current flowing before contactors close is physically impossible | Plant model must gate IVT current signal on contactor feedback state (0x7F0); send 0 mA until contactors confirmed closed |
 | 6 | L-011 | IVT Voltage 3 (0x524) | Missing V3 signal triggers DIAG timeout (TSR-09) | Plant model must send 0x524 every cycle alongside 0x521-0x523; omission = spurious timeout fault |
 | 7 | L-017 | OT fault trigger | Temperature alone may not trigger OT fault — requires **both** current > 0 AND temperature > threshold | OT test must apply load current simultaneously with elevated temperature |
@@ -992,21 +993,24 @@ software-hardware traceability for HIL test verification.
 | SPI3 | spiREG3 | 0xFFF7F800 | On-board | SPI → FRAM (diagnostic data persistence) |
 | MibSPI4 | spiREG4 | 0xFFF7FA00 | J9000 pins 11-19 | SPI → isoSPI ch3/4 |
 | SPI5 | spiREG5 | 0xFFF7FC00 | J9002 pins 6-18 | SPI → spare |
-| N2HET1 | hetREG1 | 0xFFF7B800 | J2033 (interlock), J2034 (IMD) | IL_STATE pin 29, IL_HS_EN pin 30, IR155 pins 25/27 |
-| N2HET2 | hetREG2 | 0xFFF7B900 | J200x, J2021, J2034 | SPS CS pin 1, SPS reset pin 16, SPS FB_EN pin 9, CAN1 EN pin 18, IR155 PWM pin 27 |
+| N2HET1 | hetREG1 | 0xFFF7B800 | J2033 (interlock), J2034 (IMD) | [B11] ch30 IL_HS_EN, [A3] ch29 IL_STATE, [M3] ch25 IR155_EN, [A9] ch27 IR155_OK |
+| N2HET2 | hetREG2 | 0xFFF7B900 | J200x, J2021, J2034 | [D8] ch01 SPS_CS, [T5] ch20 SPS_RST, ch09 SPS_FB_EN, [N4] ch18 CAN1_EN, [D7] ch02 IR155_PWM |
 | PEX1 | I2C port expander | via i2cREG1 | J200x pin 1 (feedback) | Contactor feedback: ch0=String+, ch1=String-, ch2=Precharge |
-
-**Bus sharing note**: spiREG2 is shared between the SPS IC (contactor control) and the
-NXP FS8x SBC (watchdog/power supervision). Both use software chip selects on separate
-hetREG2 pins. A hardware fault on the SPI2 bus disables BOTH contactor actuation AND
-watchdog servicing — this is a defense-in-depth feature: the SBC watchdog timeout will
-reset the MCU if SPI communication fails, which forces contactors to their fail-safe
-(open) state via hardware default.
 | I2C1 | i2cREG1 | 0xFFF7D400 | J9002 pins 19-20 | I2C → peripherals |
 | ADC1 | adcREG1 | 0xFFF7C000 | J9002 pins 58-61 | Analog inputs |
 | ADC2 | adcREG2 | 0xFFF7C200 | J9002 pins 62-65 | Analog inputs |
 | RTI | rtiREG1 | 0xFFFFFC00 | Internal | Timers, watchdog |
 | ESM | esmREG | 0xFFFFF500 | Internal | Error signaling |
+
+**Bus sharing note (CONSTRAINT-001):** spiREG2 is shared between SPS IC and NXP FS8x SBC.
+Both use software chip selects on separate hetREG2 pins ([D8] ch01 for SPS, SBC CS TBV).
+SPS_Ctrl() must execute before SBC_Trigger() in the 10ms task. A hardware fault on SPI2
+disables both contactor actuation and watchdog — SBC timeout resets MCU → fail-safe open.
+
+**⚠ TBV markers:** Items marked `⚠ TBV` (To Be Verified) have HET channel assignments from
+`can_cfg.h`/`sps_cfg.h` but their physical ball assignments could not be confirmed from
+HalCoGen `HL_pinmux.c` (channel index beyond configured range or not in signal routing table).
+These require schematic cross-reference for final verification.
 
 ---
 *End of Document*
