@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="stylesheet" href="shared.css"><title>Overview</title></head><body>
+<h2>HIL Verification Strategy — Executive Summary</h2>
+<p class="desc">foxBMS v1.10.0 | TMS570LC4357 + LTC6813-1 | ASPICE SYS.3 → SYS.4 | ISO 26262 Part 4</p>
+
+<div class="stats">
+  <div class="stat"><div class="num">15</div><div class="label">TSRs Analyzed</div></div>
+  <div class="stat"><div class="num">19</div><div class="label">Probe Points</div></div>
+  <div class="stat"><div class="num">42</div><div class="label">HIL Test Cases</div></div>
+  <div class="stat"><div class="num">11</div><div class="label">Gaps Found</div></div>
+  <div class="stat"><div class="num">19</div><div class="label">FMEA Modes</div></div>
+  <div class="stat"><div class="num">3×10</div><div class="label">Audit Reviews</div></div>
+</div>
+
+<div class="two-col">
+<div class="sg">
+  <div class="sg-title">Phase 1: SYS.3 Hardware Architecture <span class="badge b-ok">COMPLETE</span><div class="line"></div></div>
+  <ul style="font-size:.8rem;color:var(--dim);padding-left:18px">
+    <li>17 connectors documented with pin-signal-register-module mapping</li>
+    <li>MCU ball assignments from HalCoGen HL_pinmux.c</li>
+    <li>Galvanic isolation boundary identified</li>
+    <li>Signal paths for all 15 TSRs with O/F probe classification</li>
+    <li>8 known gotchas from lessons learned</li>
+    <li>10-person audit: 6 Approved, 4 Conditional → all fixed</li>
+  </ul>
+</div>
+<div class="sg">
+  <div class="sg-title">Phase 2: TSR Deep Analysis <span class="badge b-ok">COMPLETE</span><div class="line"></div></div>
+  <ul style="font-size:.8rem;color:var(--dim);padding-left:18px">
+    <li>Full HARA → SG → FSR → TSR → SSR → probe chains for all 15 TSRs</li>
+    <li>FTTI budget breakdowns with source for every component</li>
+    <li>ASIL D electrical analysis: LTC6813 ADC ±2.2mV, PEC-15 HD=6</li>
+    <li>Dependent failure analysis: J9000, spiREG2, power supply</li>
+    <li>11 diagnostic coverage gaps — all accepted with rationale</li>
+    <li>10-person audit: 7 Approved, 3 Conditional → all resolved</li>
+  </ul>
+</div>
+<div class="sg">
+  <div class="sg-title">Phase 3: SYS.4 Test Specification <span class="badge b-ok">COMPLETE</span><div class="line"></div></div>
+  <ul style="font-size:.8rem;color:var(--dim);padding-left:18px">
+    <li>42 test cases across 7 categories, 217 total runs</li>
+    <li>14/15 TSRs fully covered (TSR-12 partial — HIL limitation)</li>
+    <li>Negative tests proving known gaps exist (GAP-03, GAP-02, GAP-06)</li>
+    <li>Python HIL framework with pytest + python-can</li>
+    <li>10-person audit: 10/10 Approved, 0 blocking</li>
+  </ul>
+</div>
+<div class="sg">
+  <div class="sg-title">Key Finding <span class="badge b-gap">GAP-03 ASIL D</span><div class="line"></div></div>
+  <p style="font-size:.8rem;color:var(--dim)">foxBMS plausibility spread check (<code>PL_CELL_VOLTAGE_SPREAD_TOLERANCE_mV = 300</code>) with <strong>WARNING severity</strong> (not FATAL) suppresses genuine single-cell overvoltage detection on the ASIL D safety path. Accepted as residual risk (&lt;10&#x207b;&#x2077;/hr). Three customer recommendations documented.</p>
+  <div class="warn"><strong>CONSTRAINT-001:</strong> SPS and SBC share spiREG2. SPS_Ctrl() must execute before SBC_Trigger() in 10ms task. Latent SPI_Lock bypass (GAP-08).</div>
+</div>
+</div>
+
+<div class="sg">
+  <div class="sg-title">Source Data Traceability<div class="line"></div></div>
+  <table>
+    <tr><th>Source</th><th>What</th><th>Location</th></tr>
+    <tr><td>foxBMS v1.10.0</td><td>Application SW (drivers, DIAG, SOA, BMS)</td><td class="mono">D:/workspace_ccstheia/foxbms-2/src/app/</td></tr>
+    <tr><td>HalCoGen</td><td>MCU ball → pin mux assignments</td><td class="mono">conf/hcg/source/HL_pinmux.c</td></tr>
+    <tr><td>Schematic PDFs (3)</td><td>Board-level connector/trace drawings</td><td class="mono">hardware/schematics/master|slave-18|interface/</td></tr>
+    <tr><td>Pinout CSVs (12)</td><td>Connector pin-signal tables</td><td class="mono">docs/hardware/master|slaves|interfaces/</td></tr>
+    <tr><td>LTC6813-1 datasheet</td><td>ADC specs, PEC, isoSPI, open wire</td><td>Analog Devices Rev B</td></tr>
+    <tr><td>TMS570LC4357 TRM</td><td>Register addresses, peripheral config</td><td>TI spnu563a</td></tr>
+    <tr><td>FreeRTOS</td><td>Task architecture (replaced by POSIX coop loop in SIL)</td><td class="mono">ftask_cfg.c</td></tr>
+  </table>
+</div>
+</body></html>

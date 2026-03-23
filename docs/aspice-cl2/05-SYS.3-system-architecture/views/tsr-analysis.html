@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="stylesheet" href="shared.css"><title>TSR Analysis</title></head><body>
+<h2>TSR Analysis — Safety Chain Traceability</h2>
+<p class="desc">15 Technical Safety Requirements | Full HARA → SG → TSR → SSR → Probe chain | FTTI budgets verified against diag_cfg.c</p>
+
+<table>
+  <tr><th>TSR</th><th>Function</th><th>ASIL</th><th>Hazard</th><th>Safety Goal</th><th>DIAG ID</th><th>Threshold</th><th>FTTI</th><th>Probe Points</th><th>Gaps</th></tr>
+  <tr><td><strong>TSR-01</strong></td><td>Cell OV</td><td><span class="badge b-d">D</span></td><td>HZ-01 (thermal runaway)</td><td>SG-01</td><td class="mono">CELLVOLTAGE_OV_MSL</td><td>50 × 10ms</td><td><strong>750ms</strong></td><td>PP-01,06,08,09</td><td><span class="badge b-gap">GAP-03</span></td></tr>
+  <tr><td><strong>TSR-02</strong></td><td>Cell UV</td><td><span class="badge b-c">C</span></td><td>HZ-02 (copper dendrites)</td><td>SG-02</td><td class="mono">CELLVOLTAGE_UV_MSL</td><td>50 × 10ms</td><td><strong>750ms</strong></td><td>PP-01,06,09</td><td></td></tr>
+  <tr><td><strong>TSR-03</strong></td><td>Deep discharge</td><td><span class="badge b-qm">QM</span></td><td>HZ-03 (gas venting)</td><td>SG-03</td><td class="mono">DEEP_DISCHARGE</td><td>1 × 10ms</td><td><strong>160ms</strong></td><td>PP-01,06</td><td></td></tr>
+  <tr><td><strong>TSR-04</strong></td><td>OC discharge</td><td><span class="badge b-b">B</span></td><td>HZ-04 (I²R heating)</td><td>SG-04</td><td class="mono">OVERCURRENT_DISCH_MSL</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-06,09</td><td></td></tr>
+  <tr><td><strong>TSR-05</strong></td><td>OC charge</td><td><span class="badge b-c">C</span></td><td>HZ-05 (Li plating)</td><td>SG-05</td><td class="mono">OVERCURRENT_CHG_MSL</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-06,09</td><td></td></tr>
+  <tr><td><strong>TSR-06</strong></td><td>Overtemp</td><td><span class="badge b-c">C</span></td><td>HZ-06 (SEI decomp)</td><td>SG-06</td><td class="mono">TEMP_OT_*_MSL</td><td>500 × 10ms</td><td><strong>6050ms</strong></td><td>PP-02,03,06</td><td><span class="badge b-gap">GAP-01</span></td></tr>
+  <tr><td><strong>TSR-07</strong></td><td>Undertemp</td><td><span class="badge b-b">B</span></td><td>HZ-07 (cold Li plating)</td><td>SG-07</td><td class="mono">TEMP_UT_*_MSL</td><td>500 × 10ms</td><td><strong>6050ms</strong></td><td>PP-02,03,06</td><td><span class="badge b-gap">GAP-01</span></td></tr>
+  <tr><td><strong>TSR-08</strong></td><td>Contactor FB</td><td><span class="badge b-b">B</span></td><td>HZ-08 (weld)</td><td>SG-08</td><td class="mono">STRING_*_CONTACTOR_FB</td><td>20 × 10ms</td><td><strong>350ms</strong></td><td>PP-08,09</td><td><span class="badge b-gap">GAP-02,08</span></td></tr>
+  <tr><td><strong>TSR-09</strong></td><td>IVT comms</td><td><span class="badge b-b">B</span></td><td>HZ-09 (sensor loss)</td><td>SG-09</td><td class="mono">CURRENT_SENSOR_RESP</td><td>100 × 10ms</td><td><strong>1250ms</strong></td><td>PP-06</td><td></td></tr>
+  <tr><td><strong>TSR-10</strong></td><td>AFE comms</td><td><span class="badge b-d">D sup</span></td><td>(supports TSR-01/02/06/07)</td><td>—</td><td class="mono">AFE_SPI / COMM_INTEGRITY</td><td>5 × 10ms</td><td><strong>200ms</strong></td><td>PP-04,05,14</td><td><span class="badge b-gap">GAP-09,10</span></td></tr>
+  <tr><td><strong>TSR-11</strong></td><td>CAN comms</td><td><span class="badge b-qm">—</span></td><td>(vehicle comms)</td><td>—</td><td class="mono">CAN_TIMING</td><td>100 × 10ms</td><td><strong>1250ms</strong></td><td>PP-07</td><td><span class="badge b-gap">GAP-07</span></td></tr>
+  <tr><td><strong>TSR-12</strong></td><td>System mon</td><td><span class="badge b-d">D</span></td><td>(platform integrity)</td><td>—</td><td class="mono">SYSTEM_MON / FLASH_CRC</td><td>1 × 1ms</td><td><strong>~51ms</strong></td><td>PP-11,12,15</td><td><span class="badge b-gap">GAP-04,05</span></td></tr>
+  <tr><td><strong>TSR-13</strong></td><td>Interlock</td><td><span class="badge b-qm">QM→F</span></td><td>HZ-10 (HV exposure)</td><td>SG-10</td><td class="mono">INTERLOCK_FEEDBACK</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-10</td><td></td></tr>
+  <tr><td><strong>TSR-14</strong></td><td>SBC reset</td><td><span class="badge b-qm">—</span></td><td>(MCU supervision)</td><td>—</td><td class="mono">SBC_RSTB_ERROR</td><td>1 × 10ms</td><td><strong>160ms</strong></td><td>PP-16,17</td><td></td></tr>
+  <tr><td><strong>TSR-15</strong></td><td>Current open str</td><td><span class="badge b-b">B</span></td><td>HZ-08 (weld indirect)</td><td>SG-08</td><td class="mono">CURRENT_ON_OPEN_STRING</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-06,09</td><td><span class="badge b-gap">GAP-06</span></td></tr>
+</table>
+
+<div class="sg" style="border-color:var(--safety)">
+<div class="sg-title" style="color:var(--safety)">TSR-01 Example: Full Traceability Chain <span class="badge b-d">ASIL D</span><div class="line"></div></div>
+<div class="chain"><span class="hz">HZ-01</span> Cell OV → thermal runaway (S3/E4/C3 = <span class="hz">ASIL D</span>)
+  → <span class="sg-c">SG-01</span> Prevent OV above 2800mV by interrupting charge current
+    → FSR-01 → <span class="tsr">TSR-01</span> AFE voltage monitoring, threshold 50, delay 200ms
+      → <span class="ssr">SSR-001</span> Detect OV within FTTI
+      → <span class="ssr">SSR-020</span> Transition to ERROR on FATAL
+      → <span class="ssr">SSR-021</span> Open all contactors within 100ms
+        → <span class="pp">PP-01</span> Cell emulator | <span class="pp">PP-06</span> CAN | <span class="pp">PP-09</span> SPS | <span class="pp">PP-08</span> Feedback</div>
+</div>
+</body></html>

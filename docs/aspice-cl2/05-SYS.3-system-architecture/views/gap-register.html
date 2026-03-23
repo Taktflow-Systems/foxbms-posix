@@ -1,0 +1,19 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="stylesheet" href="shared.css"><title>Gap Register</title></head><body>
+<h2>Diagnostic Coverage Gap Register</h2>
+<p class="desc">11 gaps identified across 3 verification phases | All accepted with rationale | Ranked by safety significance</p>
+
+<table>
+  <tr><th>#</th><th>Gap</th><th>TSR</th><th>ASIL</th><th>Severity</th><th>Mitigation</th><th>Status</th></tr>
+  <tr style="background:rgba(239,68,68,.05)"><td><span class="badge b-gap">GAP-03</span></td><td>Plausibility (300mV, WARNING) suppresses single-cell OV</td><td>TSR-01</td><td><span class="badge b-d">D</span></td><td><strong>HIGH</strong></td><td>Upstream foxBMS code. Residual risk &lt;10&#x207b;&#x2077;/hr. 3 customer recommendations documented.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-08</span></td><td>SPS bypasses SPI_Lock on shared spiREG2</td><td>TSR-08/14</td><td><span class="badge b-b">B</span></td><td>MEDIUM</td><td>Sequential task execution (CONSTRAINT-001). Latent defect.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-01</span></td><td>No independent temperature measurement path</td><td>TSR-06/07</td><td><span class="badge b-c">C</span></td><td>MEDIUM</td><td>AFE comms loss detected 200ms. Thermal τ >> 200ms.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-09</span></td><td>No SPI/DMA hardware reset on stuck DMA</td><td>TSR-01/10</td><td><span class="badge b-d">D sup</span></td><td>LOW-MED</td><td>DIAG FATAL after 5 events. SBC watchdog resets MCU.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-05</span></td><td>FRAM write failures silent — SOC/flags can be lost</td><td>TSR-12</td><td>—</td><td>MEDIUM</td><td>FRAM not in safety path. SOC recalculated from voltage.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-10</span></td><td>PEC failure: no retry, 250ms stale data window</td><td>TSR-01/10</td><td><span class="badge b-d">D sup</span></td><td>LOW</td><td>Cell invalidated + MRC 250ms timestamp check.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-02</span></td><td>Precharge contactor no feedback during NORMAL</td><td>TSR-08/15</td><td><span class="badge b-b">B</span></td><td>LOW</td><td>Precharge resistor limits to ~500mA. Welding unlikely.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-11</span></td><td>Power supply loss dependent failure</td><td>All</td><td><span class="badge b-d">D</span></td><td>RESOLVED</td><td>SPS IC UVLO forces outputs LOW → contactors open.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-06</span></td><td>TSR-15 only detects during STANDBY/OPEN</td><td>TSR-15</td><td><span class="badge b-b">B</span></td><td>LOW</td><td>Inherent limitation. Precharge resistor passive protection.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-04</span></td><td>IR155 IMD PWM pin unverified (TODO in source)</td><td>TSR-12</td><td><span class="badge b-qm">A</span></td><td>LOW</td><td>iso165C (CAN-based) variant verified. IR155 HW-specific.</td><td>Open</td></tr>
+  <tr><td><span class="badge b-gap">GAP-07</span></td><td>CAN2 no default RX/TX callbacks</td><td>TSR-11</td><td>—</td><td>INFO</td><td>Application-specific. Integrator configures.</td><td>Noted</td></tr>
+</table>
+</body></html>

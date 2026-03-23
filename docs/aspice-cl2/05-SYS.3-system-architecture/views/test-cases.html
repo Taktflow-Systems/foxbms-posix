@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="stylesheet" href="shared.css"><title>Test Cases</title></head><body>
+<h2>SYS.4 HIL Test Cases</h2>
+<p class="desc">42 test cases | 217 total runs | 7 categories | pytest + python-can framework</p>
+
+<div class="stats">
+  <div class="stat"><div class="num">5</div><div class="label">Normal Ops</div></div>
+  <div class="stat"><div class="num">15</div><div class="label">Safety (per TSR)</div></div>
+  <div class="stat"><div class="num">8</div><div class="label">Fault Electrical</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">Fault Comms</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Multi-Fault</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Recovery</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Gap Negative</div></div>
+</div>
+
+<table>
+  <tr><th>Test ID</th><th>Category</th><th>TSR/FM/GAP</th><th>ASIL</th><th>Objective</th><th>FTTI</th><th>Runs</th><th>Probe</th></tr>
+  <tr><td>HIL-SIT-001</td><td>Normal</td><td>—</td><td></td><td>Startup sequence → STANDBY</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-002</td><td>Normal</td><td>TSR-08</td><td><span class="badge b-b">B</span></td><td>Precharge → NORMAL sequence</td><td></td><td>5</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-003</td><td>Normal</td><td>TSR-11</td><td></td><td>CAN message content verification</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-004</td><td>Normal</td><td>TSR-08</td><td></td><td>Graceful shutdown NORMAL → STANDBY</td><td></td><td>3</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-005</td><td>Normal</td><td>TSR-01/02</td><td></td><td>18-cell voltage multiplexing verify</td><td></td><td>3</td><td>PP-01,06</td></tr>
+  <tr style="background:rgba(239,68,68,.03)"><td><strong>HIL-SIT-010</strong></td><td>Safety</td><td>TSR-01</td><td><span class="badge b-d">D</span></td><td>Cell OV → ERROR → contactors OPEN</td><td>≤750ms</td><td>10</td><td>PP-01,06,08,09</td></tr>
+  <tr><td>HIL-SIT-011</td><td>Safety</td><td>TSR-01</td><td><span class="badge b-d">D</span></td><td>OV threshold boundary (±2.2mV)</td><td>≤750ms</td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-012</td><td>Safety</td><td>TSR-02</td><td><span class="badge b-c">C</span></td><td>Cell UV → ERROR</td><td>≤750ms</td><td>10</td><td>PP-01,06,09</td></tr>
+  <tr><td>HIL-SIT-013</td><td>Safety</td><td>TSR-03</td><td><span class="badge b-qm">QM</span></td><td>Deep discharge (threshold=1)</td><td>≤160ms</td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-014</td><td>Safety</td><td>TSR-04</td><td><span class="badge b-b">B</span></td><td>Overcurrent discharge</td><td>≤250ms</td><td>10</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-015</td><td>Safety</td><td>TSR-05</td><td><span class="badge b-c">C</span></td><td>Overcurrent charge</td><td>≤250ms</td><td>10</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-016</td><td>Safety</td><td>TSR-06</td><td><span class="badge b-c">C</span></td><td>Overtemperature discharge</td><td>≤6050ms</td><td>10</td><td>PP-02,06,09</td></tr>
+  <tr><td>HIL-SIT-017</td><td>Safety</td><td>TSR-07</td><td><span class="badge b-b">B</span></td><td>Undertemperature charge</td><td>≤6050ms</td><td>10</td><td>PP-02,06,09</td></tr>
+  <tr><td>HIL-SIT-018</td><td>Safety</td><td>TSR-08</td><td><span class="badge b-b">B</span></td><td>Contactor welding detection</td><td>≤350ms</td><td>5</td><td>PP-08,09</td></tr>
+  <tr><td>HIL-SIT-019</td><td>Safety</td><td>TSR-09</td><td><span class="badge b-b">B</span></td><td>IVT communication loss</td><td>≤1250ms</td><td>10</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-020</td><td>Safety</td><td>TSR-10</td><td><span class="badge b-d">D</span></td><td>AFE/isoSPI communication loss</td><td>≤200ms</td><td>10</td><td>PP-04</td></tr>
+  <tr><td>HIL-SIT-021</td><td>Safety</td><td>TSR-11</td><td></td><td>Vehicle CAN loss</td><td>≤1250ms</td><td>5</td><td>PP-07</td></tr>
+  <tr><td>HIL-SIT-023</td><td>Safety</td><td>TSR-13</td><td><span class="badge b-qm">QM</span></td><td>Interlock loop break</td><td>≤250ms</td><td>10</td><td>PP-10</td></tr>
+  <tr><td>HIL-SIT-024</td><td>Safety</td><td>TSR-15</td><td><span class="badge b-b">B</span></td><td>Current on open string</td><td>≤250ms</td><td>10</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-030</td><td>Fault-E</td><td>FM-01</td><td><span class="badge b-d">D</span></td><td>AFE offset → IVT plausibility catch</td><td></td><td>3</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-031</td><td>Fault-E</td><td>FM-02</td><td><span class="badge b-d">D</span></td><td>OV detected + contactor welded</td><td>≤350ms</td><td>5</td><td>PP-01,08,09</td></tr>
+  <tr><td>HIL-SIT-032</td><td>Fault-E</td><td>FM-03</td><td></td><td>UV noise rejection (threshold filter)</td><td></td><td>5</td><td>PP-01</td></tr>
+  <tr><td>HIL-SIT-033</td><td>Fault-E</td><td>FM-04</td><td></td><td>NTC open circuit detection</td><td></td><td>3</td><td>PP-02</td></tr>
+  <tr><td>HIL-SIT-034</td><td>Fault-E</td><td>FM-07</td><td></td><td>IVT offset → current on open string</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-035</td><td>Fault-E</td><td>FM-12</td><td></td><td>String+ contactor welding</td><td>≤350ms</td><td>5</td><td>PP-08</td></tr>
+  <tr><td>HIL-SIT-036</td><td>Fault-E</td><td>FM-13</td><td></td><td>String- stuck open</td><td></td><td>3</td><td>PP-08</td></tr>
+  <tr><td>HIL-SIT-037</td><td>Fault-E</td><td>FM-18</td><td></td><td>Interlock noise rejection</td><td></td><td>5</td><td>PP-10</td></tr>
+  <tr><td>HIL-SIT-040</td><td>Fault-C</td><td>TSR-09</td><td></td><td>IVT V3 (0x524) missing → timeout</td><td>≤160ms</td><td>5</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-041</td><td>Fault-C</td><td>TSR-09</td><td></td><td>IVT all messages lost</td><td>≤1250ms</td><td>5</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-042</td><td>Fault-C</td><td>TSR-10</td><td><span class="badge b-d">D</span></td><td>isoSPI chain break (relay)</td><td>≤200ms</td><td>5</td><td>PP-04</td></tr>
+  <tr><td>HIL-SIT-043</td><td>Fault-C</td><td>TSR-11</td><td></td><td>CAN bus-off recovery</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-044</td><td>Fault-C</td><td>L-009</td><td></td><td>invalidFlag=0 → data rejected</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-050</td><td>Multi</td><td>TSR-01+04</td><td><span class="badge b-d">D</span></td><td>Simultaneous OV + overcurrent</td><td>≤250ms</td><td>5</td><td>PP-01,06,09</td></tr>
+  <tr><td>HIL-SIT-051</td><td>Multi</td><td>TSR-01+10</td><td><span class="badge b-d">D</span></td><td>OV + isoSPI break (dual failure)</td><td>≤200ms</td><td>3</td><td>PP-01,04</td></tr>
+  <tr><td>HIL-SIT-052</td><td>Multi</td><td>TSR-13+08</td><td></td><td>Interlock break during precharge</td><td>≤250ms</td><td>3</td><td>PP-09,10</td></tr>
+  <tr><td>HIL-SIT-060</td><td>Recovery</td><td>SSR-022/23</td><td><span class="badge b-d">D</span></td><td>ERROR exit: fault clear + request (AND)</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-061</td><td>Recovery</td><td>SSR-024</td><td></td><td>ERROR: fault clear only → stays ERROR</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-062</td><td>Recovery</td><td>SSR-022</td><td></td><td>ERROR: request only → stays ERROR</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr style="background:rgba(239,68,68,.04)"><td><strong>HIL-SIT-070</strong></td><td>Gap-Neg</td><td><span class="badge b-gap">GAP-03</span></td><td><span class="badge b-d">D</span></td><td>PROVE: single-cell OV suppressed by plausibility</td><td></td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-071</td><td>Gap-Neg</td><td><span class="badge b-gap">GAP-02</span></td><td></td><td>PROVE: precharge has no feedback</td><td></td><td>3</td><td>PP-08</td></tr>
+  <tr><td>HIL-SIT-072</td><td>Gap-Neg</td><td><span class="badge b-gap">GAP-06</span></td><td></td><td>PROVE: TSR-15 inactive during NORMAL</td><td></td><td>3</td><td>PP-06</td></tr>
+</table>
+</body></html>
