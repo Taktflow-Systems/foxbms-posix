@@ -221,14 +221,15 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <!--  Columns: SPI1=520, SPI4=560, GPIO=650, I2C=690             -->
 <!-- ════════════════════════════════════════════════════════════ -->
 
-<!-- SPI1 → J9000 (exit left of MibSPI1, down col 520) -->
-<path d="M570,95 L520,95 L520,370" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
-<text x="500" y="350" fill="var(--spi)" font-size="8" font-weight="700">SPI1 ↓</text>
-<text x="500" y="362" fill="var(--spi)" font-size="7">DMA CH0/1</text>
+<!-- SPI1 → J9000 (exit left, down col 500) -->
+<path d="M570,95 L500,95 L500,370" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
+<text x="478" y="345" fill="var(--spi)" font-size="8" font-weight="700">SPI1 ↓</text>
+<text x="478" y="357" fill="var(--spi)" font-size="7">DMA CH0/1</text>
 
-<!-- SPI4 → J9000 (col 560) -->
-<path d="M570,155 L560,155 L560,370" stroke="var(--spi)" stroke-width="2" fill="none" marker-end="url(#ag)"/>
-<text x="545" y="355" fill="var(--spi)" font-size="7">SPI4 ↓</text>
+<!-- SPI4 → J9000 (exit RIGHT, down col 720 — clearly separated from SPI1) -->
+<path d="M690,155 L720,155 L720,370" stroke="var(--spi)" stroke-width="2.5" fill="none" marker-end="url(#ag)"/>
+<text x="728" y="345" fill="var(--spi)" font-size="8" font-weight="700">SPI4 ↓</text>
+<text x="728" y="357" fill="var(--spi)" font-size="7">[U1] [B12]</text>
 
 <!-- N2HET2 GPIO → J9000 (col 700) -->
 <path d="M690,225 L700,225 L700,370" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
