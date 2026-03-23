@@ -86,7 +86,7 @@ Tests are executed automatically. Each test criterion produces a PASS/FAIL verdi
 |---|---|---|---|
 | SIT-004 | BMS transitions from IDLE to STANDBY upon receiving STANDBY request from plant model | SYS-REQ-011 | BMS state CAN message shows STANDBY state |
 | SIT-005 | BMS transitions from STANDBY to PRECHARGE and closes precharge contactor | SYS-REQ-011, SYS-REQ-012 | Precharge contactor state = CLOSED in CAN output |
-| SIT-006 | BMS completes precharge and transitions to NORMAL | SYS-REQ-011 | BMS state CAN message shows NORMAL within 15 seconds |
+| SIT-006 | BMS completes precharge and transitions to NORMAL when \|V_string - V_bus\| converges (per SYS-REQ-092) | SYS-REQ-092, SYS-REQ-076 | BMS state == NORMAL within 15 s; IVT Voltage 3 (0x524) within ±5% of string voltage at transition |
 | SIT-007 | String contactors (positive and negative) are closed when BMS is in NORMAL state | SYS-REQ-012 | Contactor state messages show all three contactors closed |
 
 ### 6.3 CAN Message Flow End-to-End
@@ -105,7 +105,7 @@ Tests are executed automatically. Each test criterion produces a PASS/FAIL verdi
 |---|---|---|---|
 | SIT-013 | Plant model receives contactor close command and updates feedback | SYS-REQ-012 | Contactor feedback CAN message reflects closed state |
 | SIT-014 | vECU reads contactor feedback and proceeds with state transition | SYS-REQ-012 | BMS does not stall in PRECHARGE due to missing feedback |
-| SIT-015 | Contactor delay simulation matches configured delay (10 cycles) | SYS-REQ-012 | Contactor state transitions after expected delay |
+| SIT-015 | Contactor delay simulation matches configured delay (10 × 10 ms = 100 ms) | SYS-REQ-012, SYS-REQ-059 | Contactor feedback transitions within 100 ms ± 20 ms of command |
 
 ### 6.5 Diagnostic Integration
 
@@ -123,7 +123,53 @@ Tests are executed automatically. Each test criterion produces a PASS/FAIL verdi
 | SIT-020 | vECU exits after --timeout N seconds | SYS-REQ-061 | Process terminates within N+2 seconds |
 | SIT-021 | Plant model and vECU can be restarted without stale CAN state | SYS-REQ-001 | Second run produces same results as first |
 
-## 7. ASIL Fault Injection Tests (test_asil.py)
+### 6.7 Negative Tests (Robustness)
+
+| Test ID | Description | Traces To | Pass Criteria |
+|---|---|---|---|
+| SIT-022 | IVT CAN frame loss: stop 0x521 injection for 300 ms | SYS-REQ-05A | BMS transitions to ERROR within 1200 ms (CAN timing FTTI) |
+| SIT-023 | Contactor feedback timeout: command close but suppress feedback | SYS-REQ-059 | BMS transitions to ERROR within 300 ms (contactor feedback FTTI) |
+| SIT-024 | CAN bus-off recovery: flood vcan0 with error frames, then clear | SYS-REQ-05A | BMS detects communication loss; recovers after bus-off clears |
+| SIT-025 | Invalid CAN data: send 0x270 with invalid_flag=0 (data invalid) | SYS-REQ-071 | BMS discards frame; no crash; cell voltages unchanged |
+| SIT-026 | Out-of-range cell voltage: inject 0 mV via CAN 0x270 | SYS-REQ-021 | SOA flags undervoltage; BMS transitions to ERROR |
+
+### 6.8 FTTI Timing Verification
+
+| Test ID | Description | Traces To | Pass Criteria |
+|---|---|---|---|
+| SIT-027 | Overvoltage FTTI: inject OV at t=0, measure time to contactor open | SYS-REQ-056 | Contactors open within 700 ms (measured: ~585 ms) |
+| SIT-028 | Overcurrent FTTI: inject OC at t=0, measure time to contactor open | SYS-REQ-057 | Contactors open within 200 ms (measured: ~116 ms) |
+| SIT-029 | Overtemperature FTTI: inject OT at t=0, measure time to contactor open | SYS-REQ-058 | Contactors open within 6000 ms (measured: ~5510 ms) |
+| SIT-030 | Contactor feedback FTTI: suppress feedback at t=0, measure time to ERROR | SYS-REQ-059 | ERROR within 300 ms |
+| SIT-031 | CAN timeout FTTI: stop all IVT frames at t=0, measure time to ERROR | SYS-REQ-05A | ERROR within 1200 ms |
+
+## 7. SIL Probe Override Protocol (CAN 0x7E0)
+
+The SIL probe override system allows test scripts to inject faults directly into the foxBMS internal database, bypassing the CAN RX path. This implements SWE.5 (white-box) fault injection per ISO 26262 Part 5.
+
+### 7.1 CAN 0x7E0 Message Format
+
+| Byte | Field | Values |
+|---|---|---|
+| 0 | Command | 0x01 = Set override, 0x02 = Clear override, 0x03 = Clear all |
+| 1 | Target domain | 0x01 = Cell voltage, 0x02 = Cell temperature, 0x03 = Pack current, 0x04 = Contactor feedback, 0x05 = Interlock |
+| 2 | Target index | Cell/sensor index (0-17 for voltage, 0-7 for temperature, 0 for current) |
+| 3 | Method | 0x00 = DIRECT, 0x01 = STUCK_AT, 0x02 = DRIFT, 0x03 = NOISE, 0x04 = OFFSET, 0x05 = FROZEN, 0x06 = INVERTED, 0x07 = SCALING, 0x08 = DELAY, 0x09 = INTERMITTENT, 0x0A = CORRELATED |
+| 4-7 | Value | 32-bit signed big-endian (mV for voltage, mA for current, 0.01°C for temperature) |
+
+### 7.2 CAN 0x7F0-0x7FF SIL Probe Readback
+
+| CAN ID | Content |
+|---|---|
+| 0x7F0 | BMS state (byte 0), SYS state (byte 1), contactor bitmap (byte 2), connected_strings (byte 3) |
+| 0x7F1 | DIAG: last fault ID (bytes 0-1), fault count (byte 2), active fault bitmap (bytes 4-7) |
+| 0x7F2 | DIAG counter for monitored ID: counter value (bytes 0-3), threshold (bytes 4-7) |
+| 0x7F3 | SOC (bytes 0-3 as 0.01% units), SOE (bytes 4-7) |
+| 0x7F4 | Min cell voltage (bytes 0-1), max cell voltage (bytes 2-3), delta (bytes 4-5) |
+| 0x7F5 | Min temperature (bytes 0-1), max temperature (bytes 2-3) |
+| 0x7F6 | Pack current (bytes 0-3), pack voltage (bytes 4-7) |
+
+## 8. ASIL Fault Injection Tests (test_asil.py)
 
 The test_asil.py script exercises 50 safety-critical fault injection criteria using the SIL probe override system (CAN 0x7E0). These tests verify that the integrated system correctly detects and responds to injected faults.
 

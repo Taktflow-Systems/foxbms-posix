@@ -55,7 +55,7 @@ The primary test vehicle is **test_smoke.py**, which serves as the end-to-end ac
 
 | Test ID | Description | Traces To | Pass Criteria |
 |---|---|---|---|
-| SQT-005 | BMS reaches NORMAL state within 15 seconds of vECU start | STKH-REQ-006 | BMS state = NORMAL observed in CAN within 15s |
+| SQT-005 | BMS reaches NORMAL state within 15 seconds of vECU start | STKH-REQ-006 | BMS state = NORMAL observed in CAN within 15 s (baseline: 6.3 s on reference workstation) |
 | SQT-006 | BMS transitions through all expected states: UNINIT -> INIT -> IDLE -> STANDBY -> PRECHARGE -> NORMAL | STKH-REQ-005 | All intermediate states observed in sequence |
 | SQT-007 | At least 15 distinct CAN message IDs transmitted during a 20-second run | STKH-REQ-007 | >= 15 unique CAN IDs on vcan0 |
 | SQT-008 | connected_strings = 1 when BMS is in NORMAL state | STKH-REQ-005 | CAN message confirms connected_strings > 0 |
@@ -64,8 +64,8 @@ The primary test vehicle is **test_smoke.py**, which serves as the end-to-end ac
 
 | Test ID | Description | Traces To | Pass Criteria |
 |---|---|---|---|
-| SQT-009 | SOC is non-zero and reported on CAN 0x235 | STKH-REQ-008 | SOC value > 0% in CAN message |
-| SQT-010 | SOC decreases over a 20-second discharge run | STKH-REQ-008 | SOC at t=20s < SOC at t=5s |
+| SQT-009 | SOC is non-zero and reported on CAN 0x235 | STKH-REQ-008 | SOC value >= 1% in CAN message (plant starts at 80% SOC) |
+| SQT-010 | SOC decreases over a 20-second discharge run | STKH-REQ-008 | SOC at t=20s < SOC at t=5s by at least 0.05% (1A discharge at 3Ah capacity) |
 | SQT-011 | Cell voltages are within valid range (1500 mV - 4200 mV) | STKH-REQ-005 | All 18 cell voltages within range |
 | SQT-012 | Cell temperatures are within valid range (0 - 60 degC) | STKH-REQ-005 | All temperature readings within range |
 
