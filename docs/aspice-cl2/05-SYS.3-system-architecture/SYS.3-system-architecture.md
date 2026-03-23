@@ -42,6 +42,101 @@ contactors (string+, string-, precharge). External interfaces are:
 - Current sensor (Isabellenhuette IVT) via CAN
 - Interlock circuit for physical safety loop
 
+## 4a. System Element Decomposition (ASPICE SYS.3 BP.1)
+
+The BMS system is decomposed into the following elements per ASPICE SYS.3 BP.1.
+Each element has a unique ID for traceability to system requirements (§4b).
+
+### Hardware Elements
+
+| ID | Element | Type | Board | Description | ASIL |
+|---|---|---|---|---|---|
+| SE-001 | Master ECU | HW | TMS570LC4357 | Main MCU: ARM Cortex-R4F lockstep, FreeRTOS, all safety logic | D |
+| SE-002 | Slave Board | HW | LTC6813-1 | Cell voltage + temperature measurement, 18-cell AFE | D |
+| SE-003 | Interface Board | HW | LTC6820 ×4 | SPI-to-isoSPI bridge, galvanic isolation | D |
+| SE-004 | Current Sensor | HW | IVT-S (Isabellenhuette) | Shunt-based current measurement via CAN | B |
+| SE-005 | Insulation Monitor | HW | Bender IR155/iso165C | HV insulation monitoring (PWM or CAN) | A |
+| SE-006 | SPS IC | HW | on Master board | 8-ch MOSFET driver for contactor coils, UVLO fail-safe | B |
+| SE-007 | SBC | HW | NXP FS8x, on Master | Watchdog, power supervision, ASIL D qualified | D |
+| SE-008 | Contactors ×3 | HW | external | String+, String-, Precharge. Spring-return (fail-safe open) | B |
+| SE-009 | Interlock Loop | HW | external | Physical safety loop through HV connectors | QM (FATAL) |
+| SE-010 | CAN Transceivers | HW | TJA1044/TJA1042 | CAN1 (non-isolated), CAN2 (isolated) | B |
+| SE-011 | FRAM | HW | on Master board | Persistent storage for SOC, fault flags, calibration | — |
+
+### Software Elements
+
+| ID | Element | Type | Runs On | Description | ASIL |
+|---|---|---|---|---|---|
+| SE-020 | BMS Application | SW | SE-001 | State machine, SOA checks, algorithms (SOC/SOE) | D |
+| SE-021 | Engine Layer | SW | SE-001 | Database, DIAG handler, SYS state machine | D |
+| SE-022 | Driver Layer | SW | SE-001 | CAN, SPI, I2C, SBC, SPS, contactor, IMD, interlock drivers | D |
+| SE-023 | HAL (TMS570) | SW | SE-001 | HalCoGen-generated register access, DMA, interrupt config | D |
+| SE-024 | HAL (POSIX) | SW | host PC | RAM-mapped stubs, SocketCAN, cooperative loop (SIL variant) | — |
+| SE-025 | AFE Driver | SW | SE-001 | LTC6813-1 communication: SPI transactions, PEC check, DECAN | D |
+| SE-026 | Plant Model | SW | host PC | CAN-based cell/IVT/contactor simulation (SIL only) | — |
+
+### Element Boundary Diagram
+
+```
+External:  Vehicle Controller ←─ CAN2 ─→ ┌──────────────────────────────────────┐
+           IVT (SE-004) ←────── CAN1 ──→ │                                      │
+                                          │  MASTER ECU (SE-001)                 │
+                                          │  ┌─────────────────────────────────┐ │
+                                          │  │ SE-020 BMS Application          │ │
+                                          │  │ SE-021 Engine (DB, DIAG, SYS)   │ │
+                                          │  │ SE-022 Drivers                   │ │
+                                          │  │ SE-023 HAL (HalCoGen)           │ │
+                                          │  └─────────────────────────────────┘ │
+                                          │  SE-006 SPS ──→ SE-008 Contactors   │
+                                          │  SE-007 SBC (watchdog)              │
+                                          │  SE-010 CAN transceivers            │
+                                          │  SE-011 FRAM                        │
+                                          └──────────┬─────────────────────────┘
+                                                     │ J9000 (SPI1/4)
+                                          ┌──────────┴─────────────────────────┐
+                                          │  SE-003 Interface Board (LTC6820)  │
+                                          └──────────┬─────────────────────────┘
+                                                     │ isoSPI (isolated)
+                                          ┌──────────┴─────────────────────────┐
+                                          │  SE-002 Slave Board (LTC6813)      │
+                                          │  ← Cell voltage (24-pin)           │
+                                          │  ← Temperature (16-pin)            │
+                                          └────────────────────────────────────┘
+           SE-009 Interlock Loop ←── J2033
+           SE-005 IMD ←───────────── J2034
+```
+
+## 4b. Requirements Allocation (ASPICE SYS.3 BP.2)
+
+Each system requirement is allocated to one or more system elements. Full allocation
+matrix is maintained in the traceability tool. Summary by element:
+
+| Element | Allocated Requirements | Coverage |
+|---|---|---|
+| SE-001 (Master ECU) | SYS-REQ-001 to SYS-REQ-086 (all) | Platform for all SW elements |
+| SE-002 (Slave Board) | SYS-REQ-020 to SYS-REQ-043 (voltage, temperature) | Cell measurement |
+| SE-003 (Interface) | SYS-REQ-005 (SPI/isoSPI communication) | Data transport |
+| SE-004 (IVT) | SYS-REQ-010 to SYS-REQ-012 (current, SOC) | Current measurement |
+| SE-006 (SPS) | SYS-REQ-006 (contactor control) | Actuation |
+| SE-007 (SBC) | SYS-REQ-050 (system monitoring) | MCU supervision |
+| SE-008 (Contactors) | SYS-REQ-006, SYS-REQ-054 (safe state) | Physical disconnection |
+| SE-009 (Interlock) | SYS-REQ-050 (connector integrity) | HV safety loop |
+| SE-020 (BMS App) | SYS-REQ-020 to SYS-REQ-073 (SOA, state machine) | Safety logic |
+| SE-021 (Engine) | SYS-REQ-050 to SYS-REQ-060 (DIAG, database) | Diagnostic services |
+| SE-022 (Drivers) | SYS-REQ-005, SYS-REQ-060 to SYS-REQ-063 | HW abstraction |
+| SE-025 (AFE Driver) | SYS-REQ-005, SYS-REQ-020 to SYS-REQ-043 | AFE communication |
+
+## 4c. Architecture Alternatives Analysis (ASPICE SYS.3 BP.5)
+
+| Decision | Alternatives Considered | Selected | Rationale |
+|---|---|---|---|
+| MCU | TI TMS570LC4357 vs Infineon Aurix TC3xx vs Renesas RH850 | TMS570LC4357 | foxBMS reference platform. ARM Cortex-R4F lockstep provides ASIL D hardware safety. Mature HalCoGen tool support. |
+| AFE | ADI LTC6813-1 vs TI BQ79616 vs Maxim MAX17853 | LTC6813-1 | foxBMS reference AFE. 18-cell support matches configuration. isoSPI provides galvanic isolation without separate isolator ICs. AEC-Q100 Grade 1. |
+| RTOS | FreeRTOS vs AUTOSAR OS vs SafeRTOS | FreeRTOS | foxBMS reference RTOS. Open source, well-documented, adequate for the task architecture. SafeRTOS available as drop-in replacement for ASIL D certification. |
+| Architecture style | Layered (foxBMS) vs AUTOSAR Classic vs Model-based | Layered | foxBMS uses a proven 4-layer architecture (App/Engine/Driver/HAL). Simpler than AUTOSAR for a single-function ECU. Well-suited for the BMS domain. |
+| SIL variant | POSIX cooperative loop vs pthreads vs QEMU emulation | POSIX cooperative loop | Single-threaded preserves deterministic task ordering. SocketCAN provides real CAN integration. Avoids race conditions from threading. |
+| Contactor drive | Direct GPIO vs SPS IC (integrated driver) | SPS IC | foxBMS reference design. Integrated current sensing for feedback. MOSFET driver handles inductive kickback. UVLO provides hardware fail-safe. |
+
 ## 5. System Block Diagram
 
 ```
