@@ -1826,93 +1826,283 @@ only measure input-to-output. These tests PROVE the FTTI budgets in FOX-SAF-TSR-
 
 ## 5. Test Summary Matrix
 
-| Test ID | Category | TSR/FM/GAP | ASIL | FTTI (ms) | Runs | Probe Points |
-|---------|----------|-----------|------|-----------|------|-------------|
-| HIL-SIT-001 | Normal | — | — | — | 3 | PP-06 |
-| HIL-SIT-002 | Normal | TSR-08 | B | — | 5 | PP-06,09 |
-| HIL-SIT-003 | Normal | TSR-11 | — | — | 3 | PP-06 |
-| HIL-SIT-004 | Normal | TSR-08 | B | — | 3 | PP-06,09 |
-| HIL-SIT-005 | Normal | TSR-01/02 | D | — | 3 | PP-01,06 |
-| HIL-SIT-010 | Safety | TSR-01 | D | 750 | 10 | PP-01,06,08,09 |
-| HIL-SIT-011 | Safety | TSR-01 | D | 750 | 5 | PP-01,06 |
-| HIL-SIT-012 | Safety | TSR-02 | C | 750 | 10 | PP-01,06,09 |
-| HIL-SIT-013 | Safety | TSR-03 | QM | 160 | 5 | PP-01,06 |
-| HIL-SIT-014 | Safety | TSR-04 | B | 250 | 10 | PP-06,09 |
-| HIL-SIT-015 | Safety | TSR-05 | C | 250 | 10 | PP-06,09 |
-| HIL-SIT-016 | Safety | TSR-06 | C | 6050 | 10 | PP-02,06,09 |
-| HIL-SIT-017 | Safety | TSR-07 | B | 6050 | 10 | PP-02,06,09 |
-| HIL-SIT-018 | Safety | TSR-08 | B | 350 | 5 | PP-08,09 |
-| HIL-SIT-019 | Safety | TSR-09 | B | 1250 | 10 | PP-06 |
-| HIL-SIT-020 | Safety | TSR-10 | D | 200 | 10 | PP-04 |
-| HIL-SIT-021 | Safety | TSR-11 | — | 1250 | 5 | PP-07 |
-| HIL-SIT-022 | Safety | TSR-12 | D | 51 | 1 | PP-15 |
-| HIL-SIT-023 | Safety | TSR-13 | QM | 250 | 10 | PP-10 |
-| HIL-SIT-024 | Safety | TSR-15 | B | 250 | 10 | PP-06,09 |
-| HIL-SIT-030 | Fault-E | FM-01 | D | — | 3 | PP-01,06 |
-| HIL-SIT-031 | Fault-E | FM-02 | D | 350 | 5 | PP-01,08,09 |
-| HIL-SIT-032 | Fault-E | FM-03 | C | — | 5 | PP-01 |
-| HIL-SIT-033 | Fault-E | FM-04 | C | — | 3 | PP-02 |
-| HIL-SIT-034 | Fault-E | FM-07 | B | — | 3 | PP-06 |
-| HIL-SIT-035 | Fault-E | FM-12 | B | 350 | 5 | PP-08 |
-| HIL-SIT-036 | Fault-E | FM-13 | B | — | 3 | PP-08 |
-| HIL-SIT-037 | Fault-E | FM-18 | QM | — | 5 | PP-10 |
-| HIL-SIT-040 | Fault-C | TSR-09 | B | 160 | 5 | PP-06 |
-| HIL-SIT-041 | Fault-C | TSR-09 | B | 1250 | 5 | PP-06 |
-| HIL-SIT-042 | Fault-C | TSR-10 | D | 200 | 5 | PP-04 |
-| HIL-SIT-043 | Fault-C | TSR-11 | — | — | 3 | PP-06 |
-| HIL-SIT-044 | Fault-C | L-009 | — | — | 3 | PP-06 |
-| HIL-SIT-050 | Multi | TSR-01+04 | D | 250 | 5 | PP-01,06,09 |
-| HIL-SIT-051 | Multi | TSR-01+10 | D | 200 | 3 | PP-01,04 |
-| HIL-SIT-052 | Multi | TSR-13+08 | B | 250 | 3 | PP-09,10 |
-| HIL-SIT-060 | Recovery | SSR-022/23/24 | D | — | 3 | PP-06 |
-| HIL-SIT-061 | Recovery | SSR-024 | D | — | 3 | PP-06 |
-| HIL-SIT-062 | Recovery | SSR-022 | D | — | 3 | PP-06 |
-| HIL-SIT-070 | Gap-Neg | GAP-03 | D | — | 5 | PP-01,06 |
-| HIL-SIT-071 | Gap-Neg | GAP-02 | B | — | 3 | PP-08 |
-| HIL-SIT-072 | Gap-Neg | GAP-06 | B | — | 3 | PP-06 |
+**DUT Timing** column: T = timing measurement required on DUT (FTTI-bound), F = functional re-verification only
 
-**Total: 42 test cases, 217 runs**
+| Test ID | Category | Ref | ASIL | FTTI | Runs | DUT |
+|---------|----------|-----|------|------|------|-----|
+| **Cat 1: Normal Ops** | | | | | | |
+| 001 | Normal | — | — | — | 3 | F |
+| 002 | Normal | TSR-08 | B | — | 5 | F |
+| 003 | Normal | TSR-11 | — | — | 3 | F |
+| 004 | Normal | TSR-08 | B | — | 3 | F |
+| 005 | Normal | TSR-01/02 | D | — | 3 | F |
+| **Cat 2: Safety (TSR)** | | | | | | |
+| 010 | Safety | TSR-01 | D | 750 | 10 | **T** |
+| 011 | Safety | TSR-01 | D | 750 | 5 | **T** |
+| 012 | Safety | TSR-02 | C | 750 | 10 | **T** |
+| 013 | Safety | TSR-03 | QM | 160 | 5 | **T** |
+| 014 | Safety | TSR-04 | B | 250 | 10 | **T** |
+| 015 | Safety | TSR-05 | C | 250 | 10 | **T** |
+| 016 | Safety | TSR-06 | C | 6050 | 10 | **T** |
+| 017 | Safety | TSR-07 | B | 6050 | 10 | **T** |
+| 018 | Safety | TSR-08 | B | 350 | 5 | **T** |
+| 019 | Safety | TSR-09 | B | 1250 | 10 | **T** |
+| 020 | Safety | TSR-10 | D | 200 | 10 | **T** |
+| 021 | Safety | TSR-11 | — | 1250 | 5 | **T** |
+| 022 | Safety | TSR-12 | D | 51 | 1 | F |
+| 023 | Safety | TSR-13 | QM | 250 | 10 | **T** |
+| 024 | Safety | TSR-15 | B | 250 | 10 | **T** |
+| **Cat 3: Fault Electrical** | | | | | | |
+| 030 | Fault-E | FM-01 | D | — | 3 | F |
+| 031 | Fault-E | FM-02 | D | 350 | 5 | **T** |
+| 032 | Fault-E | FM-03 | C | — | 5 | F |
+| 033 | Fault-E | FM-04 | C | — | 3 | F |
+| 034 | Fault-E | FM-07 | B | — | 3 | F |
+| 035 | Fault-E | FM-12 | B | 350 | 5 | **T** |
+| 036 | Fault-E | FM-13 | B | — | 3 | F |
+| 037 | Fault-E | FM-18 | QM | — | 5 | F |
+| **Cat 4: Fault Comms** | | | | | | |
+| 040 | Fault-C | TSR-09 | B | 160 | 5 | **T** |
+| 041 | Fault-C | TSR-09 | B | 1250 | 5 | **T** |
+| 042 | Fault-C | TSR-10 | D | 200 | 5 | **T** |
+| 043 | Fault-C | TSR-11 | — | — | 3 | F |
+| 044 | Fault-C | L-009 | — | — | 3 | F |
+| **Cat 5: Multi-Fault** | | | | | | |
+| 050 | Multi | TSR-01+04 | D | 250 | 5 | **T** |
+| 051 | Multi | TSR-01+10 | D | 200 | 3 | **T** |
+| 052 | Multi | TSR-13+08 | B | 250 | 3 | **T** |
+| **Cat 6: Recovery** | | | | | | |
+| 060 | Recovery | SSR-022/23 | D | — | 3 | F |
+| 061 | Recovery | SSR-024 | D | — | 3 | F |
+| 062 | Recovery | SSR-022 | D | — | 3 | F |
+| **Cat 7: Gap Negative** | | | | | | |
+| 070 | Gap-Neg | GAP-03 | D | — | 5 | F |
+| 071 | Gap-Neg | GAP-02 | B | — | 3 | F |
+| 072 | Gap-Neg | GAP-06 | B | — | 3 | F |
+| **Cat 8: SYS.3 Architecture** | | | | | | |
+| 080 | SYS.3 | §9.1 | — | — | 3 | F |
+| 081 | SYS.3 | §9.2 | — | — | 3 | F |
+| 082 | SYS.3 | §11.7 | — | — | 1 | F |
+| 083 | SYS.3 | §11.6 | — | — | 1 | F |
+| 084 | SYS.3 | §8.1 | — | — | 3 | F |
+| 085 | SYS.3 | §8.1 | — | — | 3 | F |
+| 086 | SYS.3 | §8.1 | — | — | 3 | F |
+| 087 | SYS.3 | §7a.2 | — | — | 5 | F |
+| 088 | SYS.3 | §7a.2 | — | — | 3 | F |
+| 089 | SYS.3 | §7a.4 | — | — | 3 | **T** |
+| 090 | SYS.3 | §11.2.8 | — | — | 1 | F |
+| 091 | SYS.3 | §11.2.5 | — | — | 3 | F |
+| 092 | SYS.3 | §7a.2 | — | — | 5 | **T** |
+| 093 | SYS.3 | §11.7 | — | — | 3 | **T** |
+| **Cat 9: ASIL D OV** | | | | | | |
+| 100 | ASIL-D | TSR-01 MOL | D | — | 5 | F |
+| 101 | ASIL-D | TSR-01 RSL | D | — | 5 | F |
+| 102 | ASIL-D | TSR-01 | D | 750 | 5 | **T** |
+| 103 | ASIL-D | TSR-01 | D | 750 | 3 | **T** |
+| 104 | ASIL-D | TSR-01 | D | 750 | 5 | **T** |
+| 105 | ASIL-D | TSR-01 | D | — | 5 | F |
+| 106 | ASIL-D | GAP-03 | D | — | 30 | F |
+| 107 | ASIL-D | FM-01 | D | — | 3 | F |
+| 108 | ASIL-D | TSR-01 | D | 750 | 5 | **T** |
+| **Cat 10: ASIL D AFE** | | | | | | |
+| 110 | ASIL-D | TSR-10 | D | — | 5 | F |
+| 111 | ASIL-D | TSR-10 | D | 200 | 10 | **T** |
+| 112 | ASIL-D | TSR-10 | D | — | 5 | F |
+| **Cat 11-12: OC + Temp Extended** | | | | | | |
+| 120 | Extended | TSR-04 | B | 250 | 5 | **T** |
+| 121 | Extended | TSR-04 | B | 250 | 3 | **T** |
+| 130 | Extended | TSR-06 | C | 6050 | 10 | **T** |
+| 131 | Extended | TSR-06 | C | 6050 | 3 | **T** |
+| 132 | Extended | TSR-07 | B | 6050 | 3 | **T** |
+| **Cat 13: Endurance** | | | | | | |
+| 140 | Endurance | — | — | — | 1 | F |
+| 141 | Endurance | — | — | — | 1 | F |
+| 142 | Endurance | GAP-05 | — | — | 3 | F |
+| **Cat 14: EMC** | | | | | | |
+| 150 | EMC | — | — | — | 3 | F |
+| 151 | EMC | — | — | — | 3 | F |
+| 152 | EMC | — | — | — | 3 | **T** |
+| **Cat 15: ASIL D UV** | | | | | | |
+| 200 | ASIL-D | TSR-02 MOL | D | — | 5 | F |
+| 201 | ASIL-D | TSR-02 RSL | D | — | 5 | F |
+| 202 | ASIL-D | TSR-02 | D | 750 | 5 | **T** |
+| 203 | ASIL-D | TSR-02 | D | 750 | 3 | **T** |
+| 204 | ASIL-D | TSR-02 | D | 750 | 5 | **T** |
+| 205 | ASIL-D | TSR-02 | D | — | 5 | F |
+| 206 | ASIL-D | TSR-02 GAP | D | — | 5 | F |
+| **Cat 16: SSR Reaction** | | | | | | |
+| 210 | ASIL-D | SSR-020 | D | 100 | 25 | **T** |
+| 211 | ASIL-D | SSR-021 | D | 100 | 10 | **T** |
+| 212 | ASIL-D | SSR-022 | D | — | 5 | F |
+| 213 | ASIL-D | SSR-023 | D | — | 3 | F |
+| 214 | ASIL-D | SSR-024 | D | — | 5 | F |
+| 215 | ASIL-D | SSR-020 | D | 250 | 5 | **T** |
+| 216 | ASIL-D | SSR-020/024 | D | — | 3 | F |
+| **Cat 17: Contactor** | | | | | | |
+| 220 | ASIL-D | SSR-050 | D | 350 | 15 | **T** |
+| 221 | ASIL-D | SSR-051 | D | — | 5 | F |
+| 222 | ASIL-D | SSR-051 | D | — | 3 | F |
+| **Cat 18: DIAG Coverage** | | | | | | |
+| 230 | ASIL-D | SSR-030 | D | — | 1 | F |
+| 231 | ASIL-D | SSR-031 | D | — | 5 | F |
+| 232 | ASIL-D | SSR-032 | D | 750 | 5 | **T** |
+| 233 | ASIL-D | SSR-033 | D | — | 3 | F |
+| **Cat 19: Comm Safety** | | | | | | |
+| 240 | ASIL-D | SSR-040 | D | 1250 | 10 | **T** |
+| 241 | ASIL-D | SSR-041 | D | 160-1250 | 9 | **T** |
+| 242 | ASIL-D | SSR-042 | D | 200 | 10 | **T** |
+| 243 | ASIL-D | SSR-040 | D | — | 5 | F |
+| **Cat 20: System Monitoring** | | | | | | |
+| 250 | ASIL-D | TSR-12 | D | — | 1 | F |
+| 251 | ASIL-D | TSR-12/14 | D | — | 1 | F |
+| 252 | ASIL-D | GAP-05 | D | — | 5 | F |
+| **Cat 21: Timing (DUT-specific)** | | | | | | |
+| 300 | Timing | TSR-01 | D | 750 | 10 | **T** |
+| 301 | Timing | TSR-10 | D | 200 | 10 | **T** |
+| 302 | Timing | TSR-04 | B | 250 | 10 | **T** |
+| 303 | Timing | §8.1 | — | — | 10 | **T** |
+| 304 | Timing | §8.1 | — | — | 10 | **T** |
+| 305 | Timing | §11.2.4 | B | — | 10 | **T** |
+| 306 | Timing | §11.2.4 | B | — | 10 | **T** |
+| 307 | Timing | §7a.4 | — | — | 1 | **T** |
+| 308 | Timing | §7a.4 | — | — | 1 | **T** |
+| 309 | Timing | §7a.2 | — | — | 10 | **T** |
+| 310 | Timing | TSR-10 | D | — | 5 | **T** |
+| 311 | Timing | §8.3 | — | — | 5 | **T** |
+
+**Summary:**
+
+| Metric | Value |
+|--------|-------|
+| **Total test cases** | 119 |
+| **Total categories** | 21 |
+| **DUT timing required (T)** | 52 tests |
+| **Functional only (F)** | 67 tests |
+| **ASIL D tests** | 74 tests |
+| **Total runs (estimated)** | ~500+ |
+| **Estimated execution time** | ~6 hours (automated) + 2 hours (endurance/soak) |
 
 ---
 
-## 6. Traceability Coverage
+## 6. Traceability Matrices
 
-### 6.1 TSR Coverage
+### 6.1 TSR → Test Case Matrix
 
-| TSR | Test Cases | Coverage |
-|-----|-----------|----------|
-| TSR-01 | HIL-SIT-010, 011, 030, 050, 051, 070 | Full |
-| TSR-02 | HIL-SIT-012 | Full |
-| TSR-03 | HIL-SIT-013 | Full |
-| TSR-04 | HIL-SIT-014, 050 | Full |
-| TSR-05 | HIL-SIT-015 | Full |
-| TSR-06 | HIL-SIT-016, 033 | Full |
-| TSR-07 | HIL-SIT-017 | Full |
-| TSR-08 | HIL-SIT-002, 004, 018, 031, 035, 036, 071 | Full |
-| TSR-09 | HIL-SIT-019, 040, 041, 044 | Full |
-| TSR-10 | HIL-SIT-020, 042, 051 | Full |
-| TSR-11 | HIL-SIT-003, 021, 043 | Full |
-| TSR-12 | HIL-SIT-022 | Partial (HIL limitation) |
-| TSR-13 | HIL-SIT-023, 037, 052 | Full |
-| TSR-14 | — | Not testable (SBC internal, HIL limitation) |
-| TSR-15 | HIL-SIT-024, 034, 072 | Full |
+| TSR | ASIL | Basic Tests | ASIL D Depth | Timing | Total | Coverage |
+|-----|------|------------|-------------|--------|-------|----------|
+| TSR-01 (OV) | D | 010, 011, 030, 050, 051, 070 | 100-108 | 300 | 16 | Full + ASIL D |
+| TSR-02 (UV) | C | 012 | 200-206 | — | 8 | Full + ASIL D |
+| TSR-03 (Deep) | QM | 013 | — | — | 1 | Full |
+| TSR-04 (OC disch) | B | 014, 050 | 120, 121 | 302 | 5 | Full + Extended |
+| TSR-05 (OC charge) | C | 015 | — | — | 1 | Full |
+| TSR-06 (OT) | C | 016, 033 | 130, 131 | — | 4 | Full + Extended |
+| TSR-07 (UT) | B | 017 | 132 | — | 2 | Full + Extended |
+| TSR-08 (Cont FB) | B | 002, 004, 018, 031, 035, 036, 071 | 220 | 305, 306 | 10 | Full + ASIL D |
+| TSR-09 (IVT) | B | 019, 040, 041, 044 | 241 | — | 5 | Full + ASIL D |
+| TSR-10 (AFE) | D | 020, 042, 051 | 110-112, 242 | 301, 310 | 9 | Full + ASIL D |
+| TSR-11 (CAN) | — | 003, 021, 043 | 240, 243 | — | 5 | Full + ASIL D |
+| TSR-12 (SysMon) | D | 022 | 250, 251, 252 | — | 4 | Partial (HIL limit) |
+| TSR-13 (Intlck) | QM | 023, 037, 052 | — | — | 3 | Full |
+| TSR-14 (SBC) | — | — | 251 | — | 1 | Partial (SBC internal) |
+| TSR-15 (OpenStr) | B | 024, 034, 072 | — | — | 3 | Full |
 
-**Coverage: 14/15 TSRs fully covered, 1 partial (TSR-12 HIL limitation), 1 not testable (TSR-14)**
+**TSR Coverage: 15/15 covered. 13 fully tested, 2 partial (TSR-12/14 — HIL limitation).**
 
-### 6.2 FMEA Coverage
+### 6.2 SSR → Test Case Matrix
 
-| FMEA | Test Cases |
-|------|-----------|
-| FM-01 (OV undetected) | HIL-SIT-030 |
-| FM-02 (OV + weld) | HIL-SIT-031 |
-| FM-03 (UV false pos) | HIL-SIT-032 |
-| FM-04 (NTC open) | HIL-SIT-033 |
-| FM-07 (IVT offset) | HIL-SIT-034 |
-| FM-12 (weld string+) | HIL-SIT-035 |
-| FM-13 (stuck open) | HIL-SIT-036 |
-| FM-18 (interlock noise) | HIL-SIT-037 |
+| SSR | Description | ASIL | Test Cases | Coverage |
+|-----|-------------|------|-----------|----------|
+| SSR-001 | Detect OV within FTTI | D | 010, 011, 100-108, 300 | Full |
+| SSR-002 | Detect UV within FTTI | D | 012, 200-206 | Full |
+| SSR-003 | Detect OC discharge | D | 014, 120, 121, 302 | Full |
+| SSR-004 | Detect OC charge | D | 015 | Full |
+| SSR-005 | Detect OT discharge | D | 016, 130, 131 | Full |
+| SSR-006 | Detect UT discharge | D | 017, 132 | Full |
+| SSR-007 | Detect OT charge | D | 016, 130 | Full |
+| SSR-008 | Detect UT charge | D | 017 | Full |
+| SSR-009 | Detect deep discharge | D | 013 | Full |
+| SSR-010 | Detect current on open string | D | 024, 034, 072 | Full |
+| SSR-020 | FATAL → ERROR transition | D | 210, 215, 216 | Full |
+| SSR-021 | Open contactors in ERROR | D | 211 | Full |
+| SSR-022 | ERROR exit requires fault clear | D | 060, 062, 212 | Full |
+| SSR-023 | ERROR exit requires CAN request | D | 060, 061, 213 | Full |
+| SSR-024 | ERROR exit AND logic | D | 060, 214, 216 | Full |
+| SSR-030 | DIAG threshold counters | D | 230 | Full |
+| SSR-031 | Noise rejection (no false FATAL) | D | 032, 037, 105, 205, 231 | Full |
+| SSR-032 | Persistent fault detection | D | 232 | Full |
+| SSR-033 | Counter decrement on recovery | D | 105, 205, 233 | Full |
+| SSR-040 | CAN loss detection | D | 021, 240, 243 | Full |
+| SSR-041 | IVT loss detection | D | 019, 040, 041, 241 | Full |
+| SSR-042 | AFE loss detection | D | 020, 042, 111, 242 | Full |
+| SSR-050 | Contactor feedback monitoring | D | 018, 035, 220 | Full |
+| SSR-051 | Contactor close only valid states | D | 221, 222 | Full |
+| SSR-052 | Max break current limit | C | — | Not tested (no current load in SIL) |
 
-**8/19 FMEAs directly tested. Remaining 11 are covered indirectly by TSR tests or are not HIL-injectable (FM-05/06 NTC short/common-cause, FM-08/09/10/11 comms via TSR tests, FM-14/15/16/17/19 system-level).**
+**SSR Coverage: 24/25 covered. SSR-052 not testable without physical current load.**
+
+### 6.3 FMEA → Test Case Matrix
+
+| FMEA | Failure Mode | Test Cases | Coverage |
+|------|-------------|-----------|----------|
+| FM-01 | OV undetected (AFE offset) | 030, 107 | Full |
+| FM-02 | OV detected + contactor welded | 031, 035 | Full |
+| FM-03 | UV false positive (noise) | 032, 231 | Full |
+| FM-04 | NTC open circuit | 033 | Full |
+| FM-05 | NTC short circuit | — | Indirect (033 covers sensor fault path) |
+| FM-06 | All NTCs fail low (common-cause) | — | Not HIL-injectable |
+| FM-07 | IVT current offset | 034 | Full |
+| FM-08 | IVT total loss | 041 | Full |
+| FM-09 | AFE SPI loss | 042, 111 | Full |
+| FM-10 | AFE data corruption (PEC) | 110 | Full |
+| FM-11 | CAN bus loss | 043, 240 | Full |
+| FM-12 | Contactor welding (string+) | 035, 220 | Full |
+| FM-13 | Contactor stuck open | 036 | Full |
+| FM-14 | Current on open string | 024, 034 | Full |
+| FM-15 | SBC watchdog failure | 251 | Partial (observe only) |
+| FM-16 | Flash corruption | 250 | Partial (config check only) |
+| FM-17 | Task overrun | 307, 308 | Partial (jitter measurement) |
+| FM-18 | Interlock false open | 037 | Full |
+| FM-19 | Pack voltage plausibility | 107 | Full |
+
+**FMEA Coverage: 14/19 fully tested, 3 partial, 2 not injectable.**
+
+### 6.4 SYS.3 Architecture → Test Case Matrix
+
+| SYS.3 Section | What is Verified | Test Cases |
+|---------------|-----------------|-----------|
+| §7 Task Architecture | Task periods, jitter | 089, 307, 308 |
+| §7a.2 BMS State Machine | All transitions, guards, AND-logic | 087, 088, 210-216 |
+| §7a.2 Precharge Sequence | Timing, contactor order | 002, 092, 309 |
+| §8.1 Measurement Path | Cell voltage end-to-end | 084, 303 |
+| §8.1 Measurement Path | Temperature end-to-end | 085 |
+| §8.1 Measurement Path | IVT current end-to-end | 086, 304 |
+| §8.3 Command Path | State request → contactor action | 081, 311 |
+| §9.1 CAN TX Messages | All 12 messages at correct cycle | 080 |
+| §9.2 CAN RX Messages | State request processing | 081 |
+| §11.2.4 SPS/Contactors | Mechanical delay, sequencing | 305, 306 |
+| §11.2.5 Interlock | Closed state verification | 091 |
+| §11.2.8 J9000 SPI1 | AFE continuous operation | 090, 310 |
+| §11.6 Probe Points | CAN termination | 083 |
+| §11.7 Isolation | CAN2 galvanic isolation | 082 |
+| §11.7 GAP-11 | SPS fail-safe on power loss | 093 |
+
+**SYS.3 Coverage: 15 architectural aspects verified by 28 test cases.**
+
+### 6.5 GAP → Test Case Matrix
+
+| GAP | Description | Test Cases | Verified |
+|-----|-------------|-----------|----------|
+| GAP-01 | No independent temp path | — | Not testable (architecture gap) |
+| GAP-02 | Precharge no feedback | 071, 220 | Confirmed (negative test) |
+| GAP-03 | Plausibility suppresses OV | 070, 106 | Confirmed (negative test + sweep) |
+| GAP-04 | IR155 PWM pin unverified | — | Open |
+| GAP-05 | FRAM write silent failure | 142, 252 | Confirmed (persistence test) |
+| GAP-06 | TSR-15 inactive during NORMAL | 072 | Confirmed (negative test) |
+| GAP-07 | CAN2 no callbacks | — | Noted (integrator responsibility) |
+| GAP-08 | SPS bypasses SPI_Lock | — | Structural (no runtime test) |
+| GAP-09 | No DMA reset | — | Covered by 111 (AFE loss → FATAL) |
+| GAP-10 | No PEC retry | 110 | Covered (PEC error counter) |
+| GAP-11 | Power supply loss | 093, 152 | Verified (SPS UVLO fail-safe) |
 
 ---
 
