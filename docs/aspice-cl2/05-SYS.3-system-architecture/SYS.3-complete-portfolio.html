@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>foxBMS 2 — HIL Verification Strategy (Complete)</title>
+<style>
+:root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#d1d5db;--dim:#6b7280;--accent:#7c3aed;
+--can:#3b82f6;--spi:#10b981;--sps:#f59e0b;--safety:#ef4444;--i2c:#a855f7;--iso:#06b6d4;--pwr:#6b7280}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
+
+/* Nav */
+nav{position:sticky;top:0;z-index:100;background:#111827;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:0}
+nav .logo{font-weight:700;color:#fff;font-size:1rem;padding:10px 16px 10px 0;border-right:1px solid var(--border);white-space:nowrap}
+nav .tabs{display:flex;gap:0;overflow-x:auto}
+nav .tab{padding:12px 18px;cursor:pointer;color:var(--dim);font-size:.82rem;font-weight:500;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+nav .tab:hover{color:var(--text);background:rgba(255,255,255,.03)}
+nav .tab.active{color:#fff;border-bottom-color:var(--accent)}
+nav .zoom{margin-left:auto;display:flex;gap:6px;padding:0 8px}
+nav .zoom button{background:var(--card);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:.75rem}
+nav .zoom button:hover{background:rgba(255,255,255,.08)}
+nav .zoom span{color:var(--dim);font-size:.75rem;padding:4px 0;min-width:36px;text-align:center}
+
+/* Pages */
+.page{display:none;padding:20px 24px;max-width:1400px;margin:0 auto}
+.page.active{display:block}
+.page h2{color:#fff;font-size:1.15rem;margin-bottom:4px}
+.page .desc{color:var(--dim);font-size:.78rem;margin-bottom:16px}
+
+/* SVG container */
+.svg-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:#111827;text-align:center}
+.svg-wrap svg{transition:transform .2s}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:.8rem;margin-bottom:16px}
+th{text-align:left;padding:7px 10px;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.mono{font-family:'Cascadia Code','Fira Code',monospace;font-size:.75rem}
+
+/* Badges */
+.badge{display:inline-block;padding:1px 7px;border-radius:3px;font-size:.68rem;font-weight:700}
+.b-d{background:rgba(239,68,68,.2);color:#fca5a5}
+.b-c{background:rgba(245,158,11,.2);color:#fcd34d}
+.b-b{background:rgba(59,130,246,.2);color:#93c5fd}
+.b-qm{background:rgba(107,114,128,.2);color:#9ca3af}
+.b-ball{background:rgba(124,58,237,.2);color:#c4b5fd;font-family:monospace}
+.b-reg{background:rgba(16,185,129,.15);color:#6ee7b7;font-family:monospace}
+.b-gap{background:rgba(239,68,68,.2);color:#fca5a5}
+.b-ok{background:rgba(16,185,129,.2);color:#6ee7b7}
+.b-warn{background:rgba(245,158,11,.2);color:#fcd34d}
+.b-dma{background:rgba(245,158,11,.15);color:#fcd34d;font-family:monospace}
+
+/* Signal group cards */
+.sg{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px}
+.sg-title{font-size:.82rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sg-title .line{flex:1;height:1px;background:var(--border)}
+.note{background:rgba(59,130,246,.06);border-left:3px solid var(--can);padding:8px 12px;font-size:.75rem;color:#93c5fd;margin-top:8px;border-radius:0 4px 4px 0}
+.warn{background:rgba(239,68,68,.06);border-left:3px solid var(--safety);padding:8px 12px;font-size:.75rem;color:#fca5a5;margin-top:8px;border-radius:0 4px 4px 0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+/* Stats bar */
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;min-width:120px}
+.stat .num{font-size:1.5rem;font-weight:700;color:#fff}
+.stat .label{font-size:.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+
+/* Chain */
+.chain{font-family:monospace;font-size:.75rem;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:8px 0;white-space:pre-wrap;line-height:1.7}
+.chain .hz{color:#fca5a5}.chain .sg-c{color:#c4b5fd}.chain .tsr{color:#6ee7b7}.chain .ssr{color:#93c5fd}.chain .pp{color:#fcd34d}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">foxBMS 2 HIL Strategy</div>
+  <div class="tabs">
+    <div class="tab active" onclick="showPage('overview')">Overview</div>
+    <div class="tab" onclick="showPage('wiring')">Wiring Diagram</div>
+    <div class="tab" onclick="showPage('pins')">ECU Pin Mapping</div>
+    <div class="tab" onclick="showPage('tsr')">TSR Analysis</div>
+    <div class="tab" onclick="showPage('gaps')">Gap Register</div>
+    <div class="tab" onclick="showPage('tests')">Test Cases</div>
+  </div>
+  <div class="zoom" id="zoomControls" style="display:none">
+    <button onclick="zoom(-0.1)">−</button>
+    <span id="zoomLevel">100%</span>
+    <button onclick="zoom(0.1)">+</button>
+    <button onclick="zoomReset()">Fit</button>
+  </div>
+</nav>
+
+<!-- ==================== PAGE 1: OVERVIEW ==================== -->
+<div class="page active" id="page-overview">
+<h2>HIL Verification Strategy — Executive Summary</h2>
+<p class="desc">foxBMS v1.10.0 | TMS570LC4357 + LTC6813-1 | ASPICE SYS.3 → SYS.4 | ISO 26262 Part 4</p>
+
+<div class="stats">
+  <div class="stat"><div class="num">15</div><div class="label">TSRs Analyzed</div></div>
+  <div class="stat"><div class="num">19</div><div class="label">Probe Points</div></div>
+  <div class="stat"><div class="num">42</div><div class="label">HIL Test Cases</div></div>
+  <div class="stat"><div class="num">11</div><div class="label">Gaps Found</div></div>
+  <div class="stat"><div class="num">19</div><div class="label">FMEA Modes</div></div>
+  <div class="stat"><div class="num">3×10</div><div class="label">Audit Reviews</div></div>
+</div>
+
+<div class="two-col">
+<div class="sg">
+  <div class="sg-title">Phase 1: SYS.3 Hardware Architecture <span class="badge b-ok">COMPLETE</span><div class="line"></div></div>
+  <ul style="font-size:.8rem;color:var(--dim);padding-left:18px">
+    <li>17 connectors documented with pin-signal-register-module mapping</li>
+    <li>MCU ball assignments from HalCoGen HL_pinmux.c</li>
+    <li>Galvanic isolation boundary identified</li>
+    <li>Signal paths for all 15 TSRs with O/F probe classification</li>
+    <li>8 known gotchas from lessons learned</li>
+    <li>10-person audit: 6 Approved, 4 Conditional → all fixed</li>
+  </ul>
+</div>
+<div class="sg">
+  <div class="sg-title">Phase 2: TSR Deep Analysis <span class="badge b-ok">COMPLETE</span><div class="line"></div></div>
+  <ul style="font-size:.8rem;color:var(--dim);padding-left:18px">
+    <li>Full HARA → SG → FSR → TSR → SSR → probe chains for all 15 TSRs</li>
+    <li>FTTI budget breakdowns with source for every component</li>
+    <li>ASIL D electrical analysis: LTC6813 ADC ±2.2mV, PEC-15 HD=6</li>
+    <li>Dependent failure analysis: J9000, spiREG2, power supply</li>
+    <li>11 diagnostic coverage gaps — all accepted with rationale</li>
+    <li>10-person audit: 7 Approved, 3 Conditional → all resolved</li>
+  </ul>
+</div>
+<div class="sg">
+  <div class="sg-title">Phase 3: SYS.4 Test Specification <span class="badge b-ok">COMPLETE</span><div class="line"></div></div>
+  <ul style="font-size:.8rem;color:var(--dim);padding-left:18px">
+    <li>42 test cases across 7 categories, 217 total runs</li>
+    <li>14/15 TSRs fully covered (TSR-12 partial — HIL limitation)</li>
+    <li>Negative tests proving known gaps exist (GAP-03, GAP-02, GAP-06)</li>
+    <li>Python HIL framework with pytest + python-can</li>
+    <li>10-person audit: 10/10 Approved, 0 blocking</li>
+  </ul>
+</div>
+<div class="sg">
+  <div class="sg-title">Key Finding <span class="badge b-gap">GAP-03 ASIL D</span><div class="line"></div></div>
+  <p style="font-size:.8rem;color:var(--dim)">foxBMS plausibility spread check (<code>PL_CELL_VOLTAGE_SPREAD_TOLERANCE_mV = 300</code>) with <strong>WARNING severity</strong> (not FATAL) suppresses genuine single-cell overvoltage detection on the ASIL D safety path. A cell with an internal defect exceeding 300 mV above module average is silently invalidated. Accepted as residual risk (&lt;10⁻⁷/hr). Three customer recommendations documented.</p>
+  <div class="warn"><strong>CONSTRAINT-001:</strong> SPS and SBC share spiREG2. SPS_Ctrl() must execute before SBC_Trigger() in 10ms task. Latent SPI_Lock bypass (GAP-08).</div>
+</div>
+</div>
+
+<div class="sg">
+  <div class="sg-title">Source Data Traceability<div class="line"></div></div>
+  <table>
+    <tr><th>Source</th><th>What</th><th>Location</th></tr>
+    <tr><td>foxBMS v1.10.0</td><td>Application SW (drivers, DIAG, SOA, BMS)</td><td class="mono">D:/workspace_ccstheia/foxbms-2/src/app/</td></tr>
+    <tr><td>HalCoGen</td><td>MCU ball → pin mux assignments</td><td class="mono">conf/hcg/source/HL_pinmux.c</td></tr>
+    <tr><td>Schematic PDFs (3)</td><td>Board-level connector/trace drawings</td><td class="mono">hardware/schematics/master|slave-18|interface/</td></tr>
+    <tr><td>Pinout CSVs (12)</td><td>Connector pin-signal tables</td><td class="mono">docs/hardware/master|slaves|interfaces/</td></tr>
+    <tr><td>LTC6813-1 datasheet</td><td>ADC specs, PEC, isoSPI, open wire</td><td>Analog Devices Rev B</td></tr>
+    <tr><td>TMS570LC4357 TRM</td><td>Register addresses, peripheral config</td><td>TI spnu563a</td></tr>
+    <tr><td>FreeRTOS</td><td>Task architecture (replaced by POSIX coop loop in SIL)</td><td class="mono">ftask_cfg.c</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ==================== PAGE 2: WIRING DIAGRAM ==================== -->
+<div class="page" id="page-wiring">
+<h2>System Wiring Diagram</h2>
+<p class="desc">Complete signal paths: Connector → MCU Ball → Register → Driver Module | Color-coded by bus type | Zoom with +/− or scroll</p>
+<div class="svg-wrap" id="svgWrap" style="max-height:80vh">
+<!-- The full SVG from the wiring diagram file will be referenced here -->
+<svg id="mainSvg" width="1400" height="1750" viewBox="0 0 1400 1750" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,system-ui,sans-serif">
+<defs><filter id="g"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+
+<!-- MCU -->
+<rect x="420" y="150" width="500" height="330" rx="10" fill="#0f172a" stroke="#7c3aed" stroke-width="2.5"/>
+<text x="670" y="178" text-anchor="middle" fill="#c4b5fd" font-size="15" font-weight="700">TMS570LC4357 MCU</text>
+<text x="670" y="194" text-anchor="middle" fill="#6b7280" font-size="9">ARM Cortex-R4F | Lockstep | 300 MHz | BGA 337</text>
+
+<!-- MCU peripherals -->
+<rect x="440" y="210" width="90" height="28" rx="4" fill="rgba(59,130,246,.12)" stroke="#3b82f6"/><text x="485" y="228" text-anchor="middle" fill="#93c5fd" font-size="9" font-weight="700">DCAN1</text>
+<rect x="440" y="248" width="90" height="28" rx="4" fill="rgba(59,130,246,.12)" stroke="#3b82f6"/><text x="485" y="266" text-anchor="middle" fill="#93c5fd" font-size="9" font-weight="700">DCAN2</text>
+<rect x="440" y="290" width="90" height="28" rx="4" fill="rgba(239,68,68,.12)" stroke="#ef4444"/><text x="485" y="308" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="700">N2HET1</text>
+<rect x="440" y="332" width="90" height="28" rx="4" fill="rgba(107,114,128,.12)" stroke="#6b7280"/><text x="485" y="350" text-anchor="middle" fill="#9ca3af" font-size="9" font-weight="700">ADC1</text>
+
+<rect x="550" y="210" width="90" height="28" rx="4" fill="rgba(16,185,129,.12)" stroke="#10b981"/><text x="595" y="228" text-anchor="middle" fill="#6ee7b7" font-size="9" font-weight="700">MibSPI1</text>
+<rect x="550" y="248" width="90" height="28" rx="4" fill="rgba(16,185,129,.12)" stroke="#10b981"/><text x="595" y="266" text-anchor="middle" fill="#6ee7b7" font-size="9" font-weight="700">MibSPI4</text>
+<rect x="550" y="290" width="90" height="28" rx="4" fill="rgba(245,158,11,.12)" stroke="#f59e0b"/><text x="595" y="308" text-anchor="middle" fill="#fcd34d" font-size="9" font-weight="700">N2HET2</text>
+<rect x="550" y="332" width="90" height="28" rx="4" fill="rgba(6,182,212,.12)" stroke="#06b6d4"/><text x="595" y="350" text-anchor="middle" fill="#67e8f9" font-size="9" font-weight="700">DMA 0-3</text>
+
+<rect x="660" y="210" width="90" height="28" rx="4" fill="rgba(245,158,11,.12)" stroke="#f59e0b"/><text x="705" y="228" text-anchor="middle" fill="#fcd34d" font-size="9" font-weight="700">MibSPI2</text>
+<rect x="660" y="248" width="90" height="28" rx="4" fill="rgba(168,85,247,.12)" stroke="#a855f7"/><text x="705" y="266" text-anchor="middle" fill="#c4b5fd" font-size="9" font-weight="700">I2C1</text>
+<rect x="660" y="290" width="90" height="28" rx="4" fill="rgba(16,185,129,.08)" stroke="#4b5563"/><text x="705" y="308" text-anchor="middle" fill="#9ca3af" font-size="9" font-weight="700">MibSPI3</text>
+<rect x="660" y="332" width="90" height="28" rx="4" fill="rgba(107,114,128,.08)" stroke="#4b5563"/><text x="705" y="350" text-anchor="middle" fill="#9ca3af" font-size="9" font-weight="700">GIO A/B</text>
+
+<!-- Register addresses under peripherals -->
+<text x="485" y="242" text-anchor="middle" fill="#374151" font-size="6.5">0xDC00</text>
+<text x="485" y="280" text-anchor="middle" fill="#374151" font-size="6.5">0xDE00</text>
+<text x="485" y="322" text-anchor="middle" fill="#374151" font-size="6.5">0xB800</text>
+<text x="485" y="364" text-anchor="middle" fill="#374151" font-size="6.5">0xC000</text>
+<text x="595" y="242" text-anchor="middle" fill="#374151" font-size="6.5">0xF400</text>
+<text x="595" y="280" text-anchor="middle" fill="#374151" font-size="6.5">0xFA00</text>
+<text x="595" y="322" text-anchor="middle" fill="#374151" font-size="6.5">0xB900</text>
+<text x="705" y="242" text-anchor="middle" fill="#374151" font-size="6.5">0xF600</text>
+<text x="705" y="280" text-anchor="middle" fill="#374151" font-size="6.5">0xD400</text>
+
+<!-- ===== LEFT: CAN + INTERLOCK ===== -->
+<!-- J2021 CAN1 -->
+<rect x="40" y="180" width="160" height="55" rx="8" fill="#111827" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="120" y="200" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="700">J2021 — CAN1</text>
+<text x="120" y="215" text-anchor="middle" fill="#4b5563" font-size="7.5">4-pin | TJA1044 | NOT isolated | 120Ω</text>
+<rect x="95" y="220" width="30" height="12" rx="2" fill="#1e3a5f"/><text x="110" y="230" text-anchor="middle" fill="#60a5fa" font-size="7">3 L</text>
+<rect x="128" y="220" width="30" height="12" rx="2" fill="#1e3a5f"/><text x="143" y="230" text-anchor="middle" fill="#60a5fa" font-size="7">4 H</text>
+
+<!-- CAN1 wire + info box -->
+<path d="M200,224 C310,224 370,224 440,224" stroke="#3b82f6" stroke-width="3" fill="none" filter="url(#g)"/>
+<rect x="230" y="195" width="155" height="52" rx="5" fill="rgba(59,130,246,.08)" stroke="rgba(59,130,246,.3)" stroke-width=".5"/>
+<text x="238" y="207" fill="#93c5fd" font-size="7.5" font-weight="600">IVT: RX 0x521-0x527 (current, V1-3, temp)</text>
+<text x="238" y="218" fill="#93c5fd" font-size="7">DIAG: CURRENT_SENSOR_RESPONDING</text>
+<text x="238" y="229" fill="#93c5fd" font-size="7">FTTI: 1250ms | Threshold: 100×10ms</text>
+<text x="238" y="240" fill="#fcd34d" font-size="7">⚠ L-009 invalidFlag=1 means VALID</text>
+<text x="238" y="244" fill="#fcd34d" font-size="6">⚠ L-011 must send 0x524 (V3) every cycle</text>
+
+<!-- J2024 CAN2 -->
+<rect x="40" y="260" width="160" height="45" rx="8" fill="#111827" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="120" y="278" text-anchor="middle" fill="#93c5fd" font-size="10" font-weight="700">J2024 — CAN2 ⚡</text>
+<text x="120" y="292" text-anchor="middle" fill="#4b5563" font-size="7.5">4-pin | TJA1042 | ISOLATED | 120Ω</text>
+<path d="M200,280 C300,280 370,262 440,262" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-dasharray="8,4"/>
+<rect x="230" y="265" width="155" height="28" rx="5" fill="rgba(59,130,246,.06)" stroke="rgba(59,130,246,.2)" stroke-width=".5"/>
+<text x="238" y="277" fill="#93c5fd" font-size="7">Vehicle: TX 0x220-0x260 | RX 0x210</text>
+<text x="238" y="288" fill="#93c5fd" font-size="7">DIAG: CAN_TIMING | FTTI: 1250ms</text>
+
+<!-- J2033 Interlock -->
+<rect x="40" y="330" width="160" height="50" rx="8" fill="#111827" stroke="#ef4444" stroke-width="1.5"/>
+<text x="120" y="348" text-anchor="middle" fill="#fca5a5" font-size="10" font-weight="700">J2033 — INTERLOCK</text>
+<text x="120" y="362" text-anchor="middle" fill="#4b5563" font-size="7.5">2-pin | Safety Loop | TSR-13</text>
+<rect x="60" y="366" width="40" height="12" rx="2" fill="#3b1111"/><text x="80" y="376" text-anchor="middle" fill="#fca5a5" font-size="7">1 IL_H</text>
+<rect x="108" y="366" width="40" height="12" rx="2" fill="#3b1111"/><text x="128" y="376" text-anchor="middle" fill="#fca5a5" font-size="7">2 IL_L</text>
+
+<path d="M200,370 C300,370 380,304 440,304" stroke="#ef4444" stroke-width="3" fill="none" filter="url(#g)"/>
+<rect x="230" y="330" width="155" height="38" rx="5" fill="rgba(239,68,68,.06)" stroke="rgba(239,68,68,.2)" stroke-width=".5"/>
+<text x="238" y="342" fill="#fca5a5" font-size="7" font-weight="600">[V2] HET1 p30 HS_EN | [A13] p29 STATE</text>
+<text x="238" y="353" fill="#fca5a5" font-size="7">DIAG: INTERLOCK_FEEDBACK | FTTI: 250ms</text>
+<text x="238" y="364" fill="#fca5a5" font-size="7">ADC ch2-5: voltage + current measurement</text>
+
+<!-- J2009 Supply -->
+<rect x="40" y="405" width="160" height="40" rx="8" fill="#111827" stroke="#6b7280" stroke-width="1"/>
+<text x="120" y="422" text-anchor="middle" fill="#9ca3af" font-size="10" font-weight="700">J2009 — SUPPLY</text>
+<text x="120" y="436" text-anchor="middle" fill="#4b5563" font-size="7.5">8-pin | CLAMP 15/30/30C/31 | 12V</text>
+<path d="M200,420 C320,420 380,370 440,350" stroke="#6b7280" stroke-width="1.5" fill="none"/>
+
+
+<!-- ===== RIGHT: SPS + SBC ===== -->
+<!-- J200x SPS -->
+<rect x="1100" y="175" width="240" height="85" rx="8" fill="#111827" stroke="#f59e0b" stroke-width="1.5"/>
+<text x="1220" y="195" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">J200x — SPS ×8 CONTACTORS</text>
+<text x="1220" y="210" text-anchor="middle" fill="#4b5563" font-size="7.5">4-pin each | CH0=Str+ CH1=Str- CH2=Pre</text>
+<rect x="1110" y="218" width="50" height="14" rx="2" fill="#3b2a11"/><text x="1135" y="229" text-anchor="middle" fill="#fcd34d" font-size="7" font-weight="600">1 FB</text>
+<rect x="1170" y="218" width="50" height="14" rx="2" fill="#3b2a11"/><text x="1195" y="229" text-anchor="middle" fill="#fcd34d" font-size="7" font-weight="600">3 OUT</text>
+<rect x="1230" y="218" width="50" height="14" rx="2" fill="#1e293b"/><text x="1255" y="229" text-anchor="middle" fill="#6b7280" font-size="7">4 GND</text>
+<text x="1220" y="250" text-anchor="middle" fill="#ef4444" font-size="7.5" font-weight="600">CH2: NO FEEDBACK (GAP-02)</text>
+
+<!-- SPS wire + info box -->
+<path d="M1100,225 C1000,225 900,224 750,224" stroke="#f59e0b" stroke-width="3" fill="none" filter="url(#g)"/>
+<rect x="880" y="190" width="175" height="52" rx="5" fill="rgba(245,158,11,.06)" stroke="rgba(245,158,11,.2)" stroke-width=".5"/>
+<text x="888" y="202" fill="#fcd34d" font-size="7" font-weight="600">[D1] MIBSPI2SIMO → spiREG2 | DMA CH2/3</text>
+<text x="888" y="213" fill="#fcd34d" font-size="7">DIAG: STRING_*_CONTACTOR_FEEDBACK</text>
+<text x="888" y="224" fill="#fcd34d" font-size="7">FTTI: 350ms | Threshold: 20×10ms</text>
+<text x="888" y="235" fill="#ef4444" font-size="7" font-weight="600">⚠ CONSTRAINT-001: SPS before SBC</text>
+<text x="888" y="241" fill="#ef4444" font-size="6">⚠ GAP-08: SPS bypasses SPI_Lock</text>
+
+<!-- Feedback wire (I2C PEX) -->
+<path d="M1110,225 C1020,250 900,262 750,262" stroke="#a855f7" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+<text x="920" y="260" fill="#c4b5fd" font-size="7">FB → [B2/C3] I2C → PEX1 pins 0-2</text>
+
+<!-- SBC -->
+<rect x="1100" y="285" width="240" height="50" rx="8" fill="#111827" stroke="#f59e0b" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="1220" y="305" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">SBC — FS8x (on-board)</text>
+<text x="1220" y="320" text-anchor="middle" fill="#4b5563" font-size="7.5">Watchdog | RSTB: J9002.80 | FS0B: J9002.79</text>
+<path d="M1100,305 C1000,305 900,240 750,230" stroke="#f59e0b" stroke-width="2" fill="none" stroke-dasharray="6,3"/>
+
+<!-- HET2 controls -->
+<rect x="1100" y="355" width="240" height="35" rx="6" fill="rgba(245,158,11,.03)" stroke="#374151"/>
+<text x="1220" y="370" text-anchor="middle" fill="#fcd34d" font-size="7.5" font-weight="600">N2HET2 GPIOs: [D8] SPS_CS | [T5] RST | [P4] CAN_STB</text>
+<text x="1220" y="382" text-anchor="middle" fill="#6b7280" font-size="7">pin1=CS | pin9=FB_EN | pin16=RST | pin18=CAN1_EN | pin19=STB</text>
+<path d="M1100,370 C950,370 800,310 640,304" stroke="#f59e0b" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+
+
+<!-- ===== BOTTOM: MCU → J9000 → INTERFACE → SLAVE ===== -->
+
+<!-- Internal MCU wires going down -->
+<line x1="595" y1="242" x2="530" y2="480" stroke="#10b981" stroke-width="2.5" filter="url(#g)"/>
+<line x1="595" y1="280" x2="620" y2="480" stroke="#10b981" stroke-width="2"/>
+<line x1="595" y1="322" x2="700" y2="480" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+<line x1="705" y1="280" x2="770" y2="480" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+<!-- J9000 -->
+<rect x="380" y="490" width="620" height="90" rx="8" fill="#111827" stroke="#10b981" stroke-width="2"/>
+<text x="690" y="510" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="700">J9000 — INTERFACE CONNECTOR (40-pin Samtec)</text>
+<!-- SPI1 pins -->
+<rect x="395" y="520" width="40" height="18" rx="3" fill="#0d3320"/><text x="415" y="533" text-anchor="middle" fill="#6ee7b7" font-size="7">1 SOMI</text>
+<rect x="440" y="520" width="40" height="18" rx="3" fill="#0d3320"/><text x="460" y="533" text-anchor="middle" fill="#6ee7b7" font-size="7">3 SIMO</text>
+<rect x="485" y="520" width="38" height="18" rx="3" fill="#0d3320"/><text x="504" y="533" text-anchor="middle" fill="#6ee7b7" font-size="7">5 CLK</text>
+<rect x="528" y="520" width="38" height="18" rx="3" fill="#0d3320"/><text x="547" y="533" text-anchor="middle" fill="#6ee7b7" font-size="7">6 CS1</text>
+<rect x="571" y="520" width="38" height="18" rx="3" fill="#0d3320"/><text x="590" y="533" text-anchor="middle" fill="#6ee7b7" font-size="7">7 CS2</text>
+<!-- SPI4 -->
+<rect x="618" y="520" width="42" height="18" rx="3" fill="#0d3320"/><text x="639" y="533" text-anchor="middle" fill="#6ee7b7" font-size="7">14 CS0</text>
+<rect x="665" y="520" width="42" height="18" rx="3" fill="#0d3320"/><text x="686" y="533" text-anchor="middle" fill="#6ee7b7" font-size="7">15 CS1</text>
+<!-- GPIO -->
+<rect x="716" y="520" width="40" height="18" rx="3" fill="rgba(245,158,11,.1)"/><text x="736" y="533" text-anchor="middle" fill="#fcd34d" font-size="6.5">20 INT0</text>
+<rect x="760" y="520" width="40" height="18" rx="3" fill="rgba(245,158,11,.1)"/><text x="780" y="533" text-anchor="middle" fill="#fcd34d" font-size="6.5">21 INT1</text>
+<rect x="805" y="520" width="55" height="18" rx="3" fill="rgba(168,85,247,.08)"/><text x="832" y="533" text-anchor="middle" fill="#c4b5fd" font-size="6.5">24-31 GPIO</text>
+<!-- Power -->
+<rect x="866" y="520" width="55" height="18" rx="3" fill="#1e293b"/><text x="893" y="533" text-anchor="middle" fill="#6b7280" font-size="7">3.3V 5V</text>
+<!-- Ball labels -->
+<text x="415" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">ded.</text>
+<text x="460" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">ded.</text>
+<text x="504" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">ded.</text>
+<text x="547" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">[F3]</text>
+<text x="590" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">[G3]</text>
+<text x="639" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">[U1]</text>
+<text x="686" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">[B12]</text>
+<text x="736" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">[C1]</text>
+<text x="780" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">[E1]</text>
+<text x="832" y="552" text-anchor="middle" fill="#7c3aed" font-size="6">PEX I2C</text>
+<!-- DMA label -->
+<text x="450" y="562" fill="#fcd34d" font-size="6.5">DMA CH0 TX / CH1 RX</text>
+
+<!-- SPI1/4 info box -->
+<rect x="380" y="568" width="250" height="42" rx="5" fill="rgba(16,185,129,.06)" stroke="rgba(16,185,129,.2)" stroke-width=".5"/>
+<text x="388" y="580" fill="#6ee7b7" font-size="7" font-weight="600">ASIL D path: Cell voltage + Temperature</text>
+<text x="388" y="591" fill="#6ee7b7" font-size="7">DIAG: AFE_SPI (200ms) | AFE_COMM_INTEGRITY | AFE_MUX | AFE_CONFIG</text>
+<text x="388" y="602" fill="#fcd34d" font-size="7">⚠ L-010 need 5 mux groups | ⚠ GAP-09 no DMA reset | ⚠ GAP-10 no PEC retry</text>
+
+
+<!-- Wires: J9000 → Interface Board -->
+<line x1="460" y1="580" x2="460" y2="660" stroke="#06b6d4" stroke-width="3" filter="url(#g)"/>
+<line x1="570" y1="580" x2="570" y2="660" stroke="#06b6d4" stroke-width="2.5"/>
+<line x1="650" y1="580" x2="680" y2="660" stroke="#06b6d4" stroke-width="2"/>
+<line x1="690" y1="580" x2="790" y2="660" stroke="#06b6d4" stroke-width="2"/>
+
+<!-- Interface Board -->
+<rect x="380" y="660" width="620" height="70" rx="8" fill="#111827" stroke="#06b6d4" stroke-width="2"/>
+<text x="690" y="680" text-anchor="middle" fill="#67e8f9" font-size="11" font-weight="700">INTERFACE BOARD — LTC6820 ×4</text>
+<text x="690" y="694" text-anchor="middle" fill="#6b7280" font-size="8">SPI-to-isoSPI Bridge | Transformer Isolation | 1 Mbps</text>
+<rect x="400" y="700" width="110" height="20" rx="4" fill="rgba(6,182,212,.06)" stroke="#06b6d4" stroke-width=".5"/><text x="455" y="714" text-anchor="middle" fill="#67e8f9" font-size="8">ch1 [F3]</text>
+<rect x="520" y="700" width="110" height="20" rx="4" fill="rgba(6,182,212,.06)" stroke="#06b6d4" stroke-width=".5"/><text x="575" y="714" text-anchor="middle" fill="#67e8f9" font-size="8">ch2 [G3]</text>
+<rect x="640" y="700" width="110" height="20" rx="4" fill="rgba(6,182,212,.06)" stroke="#06b6d4" stroke-width=".5"/><text x="695" y="714" text-anchor="middle" fill="#67e8f9" font-size="8">ch3 [U1]</text>
+<rect x="760" y="700" width="110" height="20" rx="4" fill="rgba(6,182,212,.06)" stroke="#06b6d4" stroke-width=".5"/><text x="815" y="714" text-anchor="middle" fill="#67e8f9" font-size="8">ch4 [B12]</text>
+
+<!-- isoSPI wires + Isolation boundary -->
+<line x1="455" y1="730" x2="455" y2="830" stroke="#06b6d4" stroke-width="3" stroke-dasharray="10,5" filter="url(#g)"/>
+<line x1="575" y1="730" x2="575" y2="830" stroke="#06b6d4" stroke-width="2.5" stroke-dasharray="10,5"/>
+<line x1="695" y1="730" x2="695" y2="830" stroke="#06b6d4" stroke-width="2" stroke-dasharray="10,5"/>
+<line x1="815" y1="730" x2="815" y2="830" stroke="#06b6d4" stroke-width="2" stroke-dasharray="10,5"/>
+
+<!-- Isolation boundary -->
+<line x1="100" y1="790" x2="1350" y2="790" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="12,6"/>
+<rect x="510" y="777" width="360" height="24" rx="6" fill="#111827" stroke="#ef4444" stroke-width="1.5"/>
+<text x="690" y="793" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700">⚡ GALVANIC ISOLATION BOUNDARY ⚡</text>
+
+<!-- isoSPI info box -->
+<rect x="850" y="740" width="180" height="38" rx="5" fill="rgba(6,182,212,.06)" stroke="rgba(6,182,212,.2)" stroke-width=".5"/>
+<text x="858" y="752" fill="#67e8f9" font-size="7" font-weight="600">isoSPI: differential, PEC-15, HD=6</text>
+<text x="858" y="763" fill="#67e8f9" font-size="7">Max 100m (practical &lt;2m) | 1 Mbps</text>
+<text x="858" y="774" fill="#67e8f9" font-size="7">LTC6813 watchdog: 2s timeout</text>
+
+
+<!-- SLAVE BOARD -->
+<rect x="260" y="840" width="880" height="400" rx="10" fill="#111827" stroke="#ef4444" stroke-width="2"/>
+<text x="700" y="865" text-anchor="middle" fill="#fca5a5" font-size="13" font-weight="700">SLAVE BOARD — 18-cell LTC6813-1</text>
+<text x="700" y="880" text-anchor="middle" fill="#6b7280" font-size="8">AEC-Q100 Grade 1 | 16-bit ADC ±2.2mV (7kHz) | PEC-15 HD=6 | 0.1 mV/LSB</text>
+
+<!-- LTC6813 IC -->
+<rect x="540" y="888" width="200" height="35" rx="6" fill="#0f172a" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="640" y="910" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="700">LTC6813-1</text>
+
+<!-- Connect isoSPI to LTC6813 -->
+<path d="M455,830 L560,888" stroke="#06b6d4" stroke-width="2.5" fill="none"/>
+<path d="M575,830 L600,888" stroke="#06b6d4" stroke-width="2" fill="none"/>
+
+<!-- Daisy chain -->
+<rect x="280" y="890" width="90" height="24" rx="4" fill="rgba(6,182,212,.06)" stroke="#06b6d4"/><text x="325" y="906" text-anchor="middle" fill="#67e8f9" font-size="8">Daisy In</text>
+<rect x="390" y="890" width="90" height="24" rx="4" fill="rgba(6,182,212,.06)" stroke="#06b6d4"/><text x="435" y="906" text-anchor="middle" fill="#67e8f9" font-size="8">Daisy Out</text>
+
+<!-- Cell Voltage Connector -->
+<rect x="280" y="935" width="390" height="170" rx="6" fill="rgba(239,68,68,.03)" stroke="#ef4444" stroke-width="1"/>
+<text x="475" y="955" text-anchor="middle" fill="#fca5a5" font-size="11" font-weight="700">CELL VOLTAGE (24-pin) <tspan fill="#ef4444" font-size="9">ASIL D</tspan></text>
+
+<text x="290" y="975" fill="#6b7280" font-size="7.5">Row 1 (even): 1=BAT- 2=C0+ 3=C2+ 4=C4+ … 10=C16+ 11=BAT+</text>
+<text x="290" y="990" fill="#6b7280" font-size="7.5">Row 2 (odd):  13=C0- 14=C1+ 15=C3+ 16=C5+ … 22=C17+</text>
+<!-- Pin boxes (simplified) -->
+<rect x="290" y="998" width="360" height="14" rx="2" fill="rgba(239,68,68,.06)"/>
+<text x="300" y="1009" fill="#fca5a5" font-size="6.5">|BAT-|C0+|C2+|C4+|C6+|C8+|C10+|C12+|C14+|C16+|BAT+|   |C0-|C1+|C3+|C5+|C7+|C9+|C11+|C13+|C15+|C17+|</text>
+
+<!-- Signal chain inside cell area -->
+<rect x="290" y="1020" width="370" height="75" rx="4" fill="rgba(16,185,129,.04)" stroke="rgba(16,185,129,.15)"/>
+<text x="300" y="1034" fill="#6ee7b7" font-size="8" font-weight="600">Complete Signal Chain:</text>
+<text x="300" y="1047" fill="#6ee7b7" font-size="7">Cell → RC filter → LTC6813 ADC (815µs) → isoSPI → LTC6820</text>
+<text x="300" y="1059" fill="#6ee7b7" font-size="7">→ SPI1 [ded.] DMA CH0/1 → spiREG1 → afe.c → DATA_BLOCK_CELL_VOLTAGE</text>
+<text x="300" y="1071" fill="#6ee7b7" font-size="7">→ SOA_CheckCellVoltage() → DIAG_ID_CELLVOLTAGE_OV/UV_MSL (50×10ms)</text>
+<text x="300" y="1083" fill="#6ee7b7" font-size="7">→ FATAL → BMS_ERROR → CONT_OpenAll() → spiREG2 → SPS → contactor OPEN</text>
+<text x="558" y="1034" fill="#fff" font-size="8" font-weight="700">FTTI: 750ms</text>
+
+<text x="475" y="1102" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="600">⚠ GAP-03: Plausibility (300mV, WARNING) suppresses single-cell OV</text>
+<text x="475" y="1100" text-anchor="middle" fill="#fcd34d" font-size="7">⚠ L-018: inject ALL 18 cells for OV test | ⚠ L-019: gate current on FB</text>
+
+<!-- Wire: LTC6813 → Cell connector -->
+<path d="M580,923 L475,935" stroke="#ef4444" stroke-width="2" fill="none"/>
+
+<!-- Temperature Connector -->
+<rect x="690" y="935" width="330" height="170" rx="6" fill="rgba(245,158,11,.03)" stroke="#f59e0b" stroke-width="1"/>
+<text x="855" y="955" text-anchor="middle" fill="#fcd34d" font-size="11" font-weight="700">TEMPERATURE (16-pin) <tspan fill="#f59e0b" font-size="9">ASIL C</tspan></text>
+
+<text x="700" y="975" fill="#6b7280" font-size="7.5">NTC sensors (10kΩ): Pins 1-8 = T-SENSOR_0 to T-SENSOR_7</text>
+<text x="700" y="990" fill="#6b7280" font-size="7.5">Return: Pins 9-16 = FUSED_VBAT- (all share common)</text>
+<rect x="700" y="998" width="310" height="14" rx="2" fill="rgba(245,158,11,.06)"/>
+<text x="710" y="1009" fill="#fcd34d" font-size="6.5">| T0 | T1 | T2 | T3 | T4 | T5 | T6 | T7 | VBAT- × 8 return |</text>
+
+<rect x="700" y="1020" width="310" height="75" rx="4" fill="rgba(245,158,11,.04)" stroke="rgba(245,158,11,.15)"/>
+<text x="710" y="1034" fill="#fcd34d" font-size="8" font-weight="600">Complete Signal Chain:</text>
+<text x="710" y="1047" fill="#fcd34d" font-size="7">NTC → MUX grp0: GPIO1-5 (T0-4) | grp1: GPIO1-3 (T5-7)</text>
+<text x="710" y="1059" fill="#fcd34d" font-size="7">→ ADAX cmd → LTC6813 ADC → isoSPI → SPI1 → spiREG1 → afe.c</text>
+<text x="710" y="1071" fill="#fcd34d" font-size="7">→ SOA_CheckTemperatures() → DIAG_ID_TEMP_OT/UT_MSL (500×10ms)</text>
+<text x="710" y="1083" fill="#fcd34d" font-size="7">→ FATAL → BMS_ERROR → contactors OPEN</text>
+<text x="908" y="1034" fill="#fff" font-size="8" font-weight="700">FTTI: 6050ms</text>
+
+<text x="855" y="1102" text-anchor="middle" fill="#ef4444" font-size="8" font-weight="600">⚠ GAP-01: No independent temperature path</text>
+<text x="855" y="1100" text-anchor="middle" fill="#fcd34d" font-size="7">⚠ L-017: OT requires current AND temp | Scan: ~4ms</text>
+
+<!-- Wire: LTC6813 → Temp connector -->
+<path d="M700,923 L855,935" stroke="#f59e0b" stroke-width="2" fill="none"/>
+
+<!-- ADC specs bar -->
+<rect x="280" y="1120" width="850" height="32" rx="4" fill="rgba(255,255,255,.015)" stroke="#374151"/>
+<text x="700" y="1138" text-anchor="middle" fill="#6b7280" font-size="7.5">ADC: 16-bit 0.1mV/LSB ±2.2mV@25°C ±3.3mV full | PEC-15 0x4599 HD=6 &lt;3×10⁻⁵ | OWD: 100µA -400mV | Balance: 200mA MUTE/UNMUTE | Self-test: CVST/AXST/STATST</text>
+
+
+<!-- External test equipment (dashed) -->
+<rect x="40" y="980" width="180" height="45" rx="6" fill="rgba(239,68,68,.03)" stroke="#ef4444" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="130" y="1000" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">CELL EMULATOR (PP-01)</text>
+<text x="130" y="1015" text-anchor="middle" fill="#6b7280" font-size="7">19 ch | 0-5V | ≤0.5mV | TSR-01/02/03</text>
+<path d="M220,1002 L280,1002" stroke="#ef4444" stroke-width="1.5" fill="none" stroke-dasharray="6,3"/>
+
+<rect x="40" y="1040" width="180" height="40" rx="6" fill="rgba(245,158,11,.03)" stroke="#f59e0b" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="130" y="1058" text-anchor="middle" fill="#fcd34d" font-size="9" font-weight="600">NTC RESISTOR BANK (PP-02)</text>
+<text x="130" y="1071" text-anchor="middle" fill="#6b7280" font-size="7">8× switched 1k-100kΩ | TSR-06/07</text>
+<path d="M220,1055 L690,975" stroke="#f59e0b" stroke-width="1.5" fill="none" stroke-dasharray="6,3"/>
+
+<rect x="40" y="1095" width="180" height="35" rx="6" fill="rgba(59,130,246,.03)" stroke="#3b82f6" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="130" y="1110" text-anchor="middle" fill="#93c5fd" font-size="9" font-weight="600">PCAN USB Pro FD (PP-06/07)</text>
+<text x="130" y="1123" text-anchor="middle" fill="#6b7280" font-size="7">Dual CAN | python-can | cantools DBC</text>
+
+<rect x="40" y="1145" width="180" height="35" rx="6" fill="rgba(239,68,68,.03)" stroke="#ef4444" stroke-width="1" stroke-dasharray="5,3"/>
+<text x="130" y="1160" text-anchor="middle" fill="#fca5a5" font-size="9" font-weight="600">USB RELAY BOARD (PP-04/08/10)</text>
+<text x="130" y="1173" text-anchor="middle" fill="#6b7280" font-size="7">8+ relays | Interlock/Daisy/FB inject</text>
+
+<!-- Cross-check bar -->
+<rect x="260" y="1260" width="880" height="28" rx="6" fill="rgba(255,255,255,.015)" stroke="#374151"/>
+<text x="700" y="1278" text-anchor="middle" fill="#4b5563" font-size="8">Verified: hw-datasheet-oracle ✓ | data-flow-checker ✓ | lessons-librarian ✓ (8 gotchas) | 11 gaps in FOX-SAF-TSR-DA-001 | foxBMS v1.10.0 HalCoGen HL_pinmux.c</text>
+
+</svg>
+</div>
+</div>
+
+<!-- ==================== PAGE 3: PIN MAPPING ==================== -->
+<div class="page" id="page-pins">
+<h2>ECU I/O Pin Mapping</h2>
+<p class="desc">All MCU ball assignments from HalCoGen HL_pinmux.c | foxBMS v1.10.0 | Register addresses: 0xFFF7xxxx</p>
+
+<div class="sg" style="border-color:var(--can)">
+  <div class="sg-title" style="color:var(--can)">CAN Interfaces<div class="line"></div></div>
+  <table>
+    <tr><th>Connector</th><th>Pin</th><th>Signal</th><th>Transceiver</th><th>MCU Ball</th><th>Mux</th><th>Register</th><th>Module</th><th>TSR</th></tr>
+    <tr><td>J2021</td><td>4/3</td><td>CAN1_H/L</td><td>TJA1044</td><td><span class="badge b-ball">ded.</span></td><td>DCAN1TX/RX</td><td><span class="badge b-reg">DC00</span></td><td class="mono">can.c</td><td><span class="badge b-b">TSR-04/05/09</span></td></tr>
+    <tr><td>—</td><td>—</td><td>CAN1_EN</td><td>—</td><td><span class="badge b-ball">D8</span></td><td>N2HET2_01</td><td><span class="badge b-reg">B900</span></td><td class="mono">can_cfg.h</td><td></td></tr>
+    <tr><td>—</td><td>—</td><td>CAN1_STB</td><td>—</td><td><span class="badge b-ball">P4</span></td><td>N2HET2_19</td><td><span class="badge b-reg">B900</span></td><td class="mono">can_cfg.h</td><td></td></tr>
+    <tr><td>J2024</td><td>4/3</td><td>CAN2_H/L ⚡</td><td>TJA1042 (iso)</td><td><span class="badge b-ball">ded.</span></td><td>DCAN2TX/RX</td><td><span class="badge b-reg">DE00</span></td><td class="mono">can.c</td><td><span class="badge b-b">TSR-11</span></td></tr>
+    <tr><td>—</td><td>—</td><td>CAN2_EN/STB</td><td>—</td><td>—</td><td>I2C PEX</td><td><span class="badge b-reg">D400</span></td><td class="mono">pex.c</td><td></td></tr>
+  </table>
+</div>
+
+<div class="sg" style="border-color:var(--spi)">
+  <div class="sg-title" style="color:var(--spi)">SPI1 → AFE (Cell Voltage + Temperature) <span class="badge b-d">ASIL D</span><div class="line"></div></div>
+  <table>
+    <tr><th>Conn</th><th>Pin</th><th>Signal</th><th>Ball</th><th>Mux</th><th>Register</th><th>DMA</th><th>isoSPI Ch</th><th>Module</th></tr>
+    <tr><td>J9000</td><td>1</td><td>SPI1_SOMI0</td><td><span class="badge b-ball">ded.</span></td><td>MIBSPI1SOMI_0</td><td><span class="badge b-reg">F400</span></td><td><span class="badge b-dma">CH1 RX</span></td><td></td><td class="mono">afe.c</td></tr>
+    <tr><td>J9000</td><td>3</td><td>SPI1_SIMO0</td><td><span class="badge b-ball">ded.</span></td><td>MIBSPI1SIMO_0</td><td><span class="badge b-reg">F400</span></td><td><span class="badge b-dma">CH0 TX</span></td><td></td><td class="mono">afe.c</td></tr>
+    <tr><td>J9000</td><td>5</td><td>SPI1_CLK</td><td><span class="badge b-ball">ded.</span></td><td>MIBSPI1CLK</td><td><span class="badge b-reg">F400</span></td><td></td><td></td><td class="mono">afe.c</td></tr>
+    <tr><td>J9000</td><td>6</td><td>SPI1_CS1</td><td><span class="badge b-ball">F3</span></td><td>MIBSPI1NCS_1</td><td><span class="badge b-reg">F400</span></td><td></td><td>ch1</td><td class="mono">afe.c</td></tr>
+    <tr><td>J9000</td><td>7</td><td>SPI1_CS2</td><td><span class="badge b-ball">G3</span></td><td>MIBSPI1NCS_2</td><td><span class="badge b-reg">F400</span></td><td></td><td>ch2</td><td class="mono">afe.c</td></tr>
+    <tr><td>J9000</td><td>14</td><td>SPI4_CS0</td><td><span class="badge b-ball">U1</span></td><td>MIBSPI4NCS_0</td><td><span class="badge b-reg">FA00</span></td><td></td><td>ch3</td><td class="mono">afe.c</td></tr>
+    <tr><td>J9000</td><td>15</td><td>SPI4_CS1</td><td><span class="badge b-ball">B12</span></td><td>MIBSPI4NCS_1</td><td><span class="badge b-reg">FA00</span></td><td></td><td>ch4</td><td class="mono">afe.c</td></tr>
+  </table>
+</div>
+
+<div class="sg" style="border-color:var(--sps)">
+  <div class="sg-title" style="color:var(--sps)">SPI2 → SPS + SBC (Shared Bus) <span class="badge b-b">ASIL B</span> <span class="badge b-gap">CONSTRAINT-001</span><div class="line"></div></div>
+  <table>
+    <tr><th>Conn</th><th>Pin</th><th>Signal</th><th>Ball</th><th>Mux</th><th>Register</th><th>DMA</th><th>Module</th></tr>
+    <tr><td>J200x</td><td>3</td><td>SPS_OUT_X</td><td><span class="badge b-ball">D1</span></td><td>MIBSPI2SIMO</td><td><span class="badge b-reg">F600</span></td><td><span class="badge b-dma">CH2 TX</span></td><td class="mono">sps.c</td></tr>
+    <tr><td>—</td><td>—</td><td>SPS_SOMI</td><td><span class="badge b-ball">D2</span></td><td>MIBSPI2SOMI</td><td><span class="badge b-reg">F600</span></td><td><span class="badge b-dma">CH3 RX</span></td><td class="mono">sps.c</td></tr>
+    <tr><td>—</td><td>—</td><td>SPS_CS (SW)</td><td><span class="badge b-ball">D8</span></td><td>N2HET2_01 pin 1</td><td><span class="badge b-reg">B900</span></td><td></td><td class="mono">spi_cfg.h</td></tr>
+    <tr><td>—</td><td>—</td><td>SPS_RESET</td><td><span class="badge b-ball">T5</span></td><td>N2HET2_20 pin 16</td><td><span class="badge b-reg">B900</span></td><td></td><td class="mono">sps_cfg.h</td></tr>
+    <tr><td>on-board</td><td>—</td><td>SBC (FS8x)</td><td><span class="badge b-ball">D1</span></td><td>MIBSPI2SIMO (shared!)</td><td><span class="badge b-reg">F600</span></td><td></td><td class="mono">sbc.c</td></tr>
+    <tr><td>J9002</td><td>80</td><td>SBC_RSTB</td><td>—</td><td>—</td><td>—</td><td></td><td class="mono">sbc.c</td></tr>
+  </table>
+  <div class="warn"><strong>CONSTRAINT-001:</strong> SPS and SBC share spiREG2. SPS_Ctrl() must execute before SBC_Trigger() in ftask_cfg.c. <span class="badge b-gap">GAP-08</span> SPS bypasses SPI_Lock.</div>
+</div>
+
+<div class="two-col">
+<div class="sg" style="border-color:var(--safety)">
+  <div class="sg-title" style="color:var(--safety)">Interlock <span class="badge b-qm">QM→FATAL</span><div class="line"></div></div>
+  <table>
+    <tr><th>Conn</th><th>Pin</th><th>Signal</th><th>Ball</th><th>Mux</th><th>Register</th></tr>
+    <tr><td>J2033</td><td>1</td><td>IL_H</td><td><span class="badge b-ball">V2</span></td><td>N2HET1_01 p30</td><td><span class="badge b-reg">B800</span></td></tr>
+    <tr><td>J2033</td><td>2</td><td>IL_L</td><td><span class="badge b-ball">A13</span></td><td>N2HET1_17 p29</td><td><span class="badge b-reg">B800</span></td></tr>
+    <tr><td>—</td><td>—</td><td>IL ADC</td><td>—</td><td>ch2-5</td><td><span class="badge b-reg">C000</span></td></tr>
+  </table>
+</div>
+<div class="sg" style="border-color:var(--i2c)">
+  <div class="sg-title" style="color:var(--i2c)">Contactor Feedback (I2C PEX) <span class="badge b-b">ASIL B</span><div class="line"></div></div>
+  <table>
+    <tr><th>Conn</th><th>Pin</th><th>Signal</th><th>PEX Pin</th><th>Note</th></tr>
+    <tr><td>J200x</td><td>1</td><td>FB_0 String+</td><td>PEX1 p0</td><td></td></tr>
+    <tr><td>J200x</td><td>1</td><td>FB_1 String-</td><td>PEX1 p1</td><td></td></tr>
+    <tr><td>J200x</td><td>1</td><td>FB_2 Precharge</td><td>PEX1 p2</td><td><span class="badge b-gap">NO_FB!</span></td></tr>
+  </table>
+</div>
+</div>
+</div>
+
+<!-- ==================== PAGE 4: TSR ANALYSIS ==================== -->
+<div class="page" id="page-tsr">
+<h2>TSR Analysis — Safety Chain Traceability</h2>
+<p class="desc">15 Technical Safety Requirements | Full HARA → SG → TSR → SSR → Probe chain | FTTI budgets verified against diag_cfg.c</p>
+
+<table>
+  <tr><th>TSR</th><th>Function</th><th>ASIL</th><th>Hazard</th><th>Safety Goal</th><th>DIAG ID</th><th>Threshold</th><th>FTTI</th><th>Probe Points</th><th>Gaps</th></tr>
+  <tr><td><strong>TSR-01</strong></td><td>Cell OV</td><td><span class="badge b-d">D</span></td><td>HZ-01 (thermal runaway)</td><td>SG-01</td><td class="mono">CELLVOLTAGE_OV_MSL</td><td>50 × 10ms</td><td><strong>750ms</strong></td><td>PP-01,06,08,09</td><td><span class="badge b-gap">GAP-03</span></td></tr>
+  <tr><td><strong>TSR-02</strong></td><td>Cell UV</td><td><span class="badge b-c">C</span></td><td>HZ-02 (copper dendrites)</td><td>SG-02</td><td class="mono">CELLVOLTAGE_UV_MSL</td><td>50 × 10ms</td><td><strong>750ms</strong></td><td>PP-01,06,09</td><td></td></tr>
+  <tr><td><strong>TSR-03</strong></td><td>Deep discharge</td><td><span class="badge b-qm">QM</span></td><td>HZ-03 (gas venting)</td><td>SG-03</td><td class="mono">DEEP_DISCHARGE</td><td>1 × 10ms</td><td><strong>160ms</strong></td><td>PP-01,06</td><td></td></tr>
+  <tr><td><strong>TSR-04</strong></td><td>OC discharge</td><td><span class="badge b-b">B</span></td><td>HZ-04 (I²R heating)</td><td>SG-04</td><td class="mono">OVERCURRENT_DISCH_MSL</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-06,09</td><td></td></tr>
+  <tr><td><strong>TSR-05</strong></td><td>OC charge</td><td><span class="badge b-c">C</span></td><td>HZ-05 (Li plating)</td><td>SG-05</td><td class="mono">OVERCURRENT_CHG_MSL</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-06,09</td><td></td></tr>
+  <tr><td><strong>TSR-06</strong></td><td>Overtemp</td><td><span class="badge b-c">C</span></td><td>HZ-06 (SEI decomp)</td><td>SG-06</td><td class="mono">TEMP_OT_*_MSL</td><td>500 × 10ms</td><td><strong>6050ms</strong></td><td>PP-02,03,06</td><td><span class="badge b-gap">GAP-01</span></td></tr>
+  <tr><td><strong>TSR-07</strong></td><td>Undertemp</td><td><span class="badge b-b">B</span></td><td>HZ-07 (cold Li plating)</td><td>SG-07</td><td class="mono">TEMP_UT_*_MSL</td><td>500 × 10ms</td><td><strong>6050ms</strong></td><td>PP-02,03,06</td><td><span class="badge b-gap">GAP-01</span></td></tr>
+  <tr><td><strong>TSR-08</strong></td><td>Contactor FB</td><td><span class="badge b-b">B</span></td><td>HZ-08 (weld)</td><td>SG-08</td><td class="mono">STRING_*_CONTACTOR_FB</td><td>20 × 10ms</td><td><strong>350ms</strong></td><td>PP-08,09</td><td><span class="badge b-gap">GAP-02,08</span></td></tr>
+  <tr><td><strong>TSR-09</strong></td><td>IVT comms</td><td><span class="badge b-b">B</span></td><td>HZ-09 (sensor loss)</td><td>SG-09</td><td class="mono">CURRENT_SENSOR_RESP</td><td>100 × 10ms</td><td><strong>1250ms</strong></td><td>PP-06</td><td></td></tr>
+  <tr><td><strong>TSR-10</strong></td><td>AFE comms</td><td><span class="badge b-d">D sup</span></td><td>(supports TSR-01/02/06/07)</td><td>—</td><td class="mono">AFE_SPI / COMM_INTEGRITY</td><td>5 × 10ms</td><td><strong>200ms</strong></td><td>PP-04,05,14</td><td><span class="badge b-gap">GAP-09,10</span></td></tr>
+  <tr><td><strong>TSR-11</strong></td><td>CAN comms</td><td><span class="badge b-qm">—</span></td><td>(vehicle comms)</td><td>—</td><td class="mono">CAN_TIMING</td><td>100 × 10ms</td><td><strong>1250ms</strong></td><td>PP-07</td><td><span class="badge b-gap">GAP-07</span></td></tr>
+  <tr><td><strong>TSR-12</strong></td><td>System mon</td><td><span class="badge b-d">D</span></td><td>(platform integrity)</td><td>—</td><td class="mono">SYSTEM_MON / FLASH_CRC</td><td>1 × 1ms</td><td><strong>~51ms</strong></td><td>PP-11,12,15</td><td><span class="badge b-gap">GAP-04,05</span></td></tr>
+  <tr><td><strong>TSR-13</strong></td><td>Interlock</td><td><span class="badge b-qm">QM→F</span></td><td>HZ-10 (HV exposure)</td><td>SG-10</td><td class="mono">INTERLOCK_FEEDBACK</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-10</td><td></td></tr>
+  <tr><td><strong>TSR-14</strong></td><td>SBC reset</td><td><span class="badge b-qm">—</span></td><td>(MCU supervision)</td><td>—</td><td class="mono">SBC_RSTB_ERROR</td><td>1 × 10ms</td><td><strong>160ms</strong></td><td>PP-16,17</td><td></td></tr>
+  <tr><td><strong>TSR-15</strong></td><td>Current open str</td><td><span class="badge b-b">B</span></td><td>HZ-08 (weld indirect)</td><td>SG-08</td><td class="mono">CURRENT_ON_OPEN_STRING</td><td>10 × 10ms</td><td><strong>250ms</strong></td><td>PP-06,09</td><td><span class="badge b-gap">GAP-06</span></td></tr>
+</table>
+
+<div class="sg" style="border-color:var(--safety)">
+<div class="sg-title" style="color:var(--safety)">TSR-01 Example: Full Traceability Chain <span class="badge b-d">ASIL D</span><div class="line"></div></div>
+<div class="chain"><span class="hz">HZ-01</span> Cell OV → thermal runaway (S3/E4/C3 = <span class="hz">ASIL D</span>)
+  → <span class="sg-c">SG-01</span> Prevent OV above 2800mV by interrupting charge current
+    → FSR-01 → <span class="tsr">TSR-01</span> AFE voltage monitoring, threshold 50, delay 200ms
+      → <span class="ssr">SSR-001</span> Detect OV within FTTI
+      → <span class="ssr">SSR-020</span> Transition to ERROR on FATAL
+      → <span class="ssr">SSR-021</span> Open all contactors within 100ms
+        → <span class="pp">PP-01</span> Cell emulator | <span class="pp">PP-06</span> CAN | <span class="pp">PP-09</span> SPS | <span class="pp">PP-08</span> Feedback</div>
+</div>
+</div>
+
+<!-- ==================== PAGE 5: GAP REGISTER ==================== -->
+<div class="page" id="page-gaps">
+<h2>Diagnostic Coverage Gap Register</h2>
+<p class="desc">11 gaps identified across 3 verification phases | All accepted with rationale | Ranked by safety significance</p>
+
+<table>
+  <tr><th>#</th><th>Gap</th><th>TSR</th><th>ASIL</th><th>Severity</th><th>Mitigation</th><th>Status</th></tr>
+  <tr style="background:rgba(239,68,68,.05)"><td><span class="badge b-gap">GAP-03</span></td><td>Plausibility (300mV, WARNING) suppresses single-cell OV</td><td>TSR-01</td><td><span class="badge b-d">D</span></td><td><strong>HIGH</strong></td><td>Upstream foxBMS code. Residual risk &lt;10⁻⁷/hr. 3 customer recommendations documented.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-08</span></td><td>SPS bypasses SPI_Lock on shared spiREG2</td><td>TSR-08/14</td><td><span class="badge b-b">B</span></td><td>MEDIUM</td><td>Sequential task execution (CONSTRAINT-001). Latent defect.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-01</span></td><td>No independent temperature measurement path</td><td>TSR-06/07</td><td><span class="badge b-c">C</span></td><td>MEDIUM</td><td>AFE comms loss detected 200ms. Thermal τ >> 200ms.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-09</span></td><td>No SPI/DMA hardware reset on stuck DMA</td><td>TSR-01/10</td><td><span class="badge b-d">D sup</span></td><td>LOW-MED</td><td>DIAG FATAL after 5 events. SBC watchdog resets MCU.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-05</span></td><td>FRAM write failures silent — SOC/flags can be lost</td><td>TSR-12</td><td>—</td><td>MEDIUM</td><td>FRAM not in safety path. SOC recalculated from voltage.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-10</span></td><td>PEC failure: no retry, 250ms stale data window</td><td>TSR-01/10</td><td><span class="badge b-d">D sup</span></td><td>LOW</td><td>Cell invalidated + MRC 250ms timestamp check.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-02</span></td><td>Precharge contactor no feedback during NORMAL</td><td>TSR-08/15</td><td><span class="badge b-b">B</span></td><td>LOW</td><td>Precharge resistor limits to ~500mA. Welding unlikely.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-11</span></td><td>Power supply loss dependent failure</td><td>All</td><td><span class="badge b-d">D</span></td><td>RESOLVED</td><td>SPS IC UVLO forces outputs LOW → contactors open.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-06</span></td><td>TSR-15 only detects during STANDBY/OPEN</td><td>TSR-15</td><td><span class="badge b-b">B</span></td><td>LOW</td><td>Inherent limitation. Precharge resistor passive protection.</td><td>Accepted</td></tr>
+  <tr><td><span class="badge b-gap">GAP-04</span></td><td>IR155 IMD PWM pin unverified (TODO in source)</td><td>TSR-12</td><td><span class="badge b-qm">A</span></td><td>LOW</td><td>iso165C (CAN-based) variant verified. IR155 HW-specific.</td><td>Open</td></tr>
+  <tr><td><span class="badge b-gap">GAP-07</span></td><td>CAN2 no default RX/TX callbacks</td><td>TSR-11</td><td>—</td><td>INFO</td><td>Application-specific. Integrator configures.</td><td>Noted</td></tr>
+</table>
+</div>
+
+<!-- ==================== PAGE 6: TEST CASES ==================== -->
+<div class="page" id="page-tests">
+<h2>SYS.4 HIL Test Cases</h2>
+<p class="desc">42 test cases | 217 total runs | 7 categories | pytest + python-can framework</p>
+
+<div class="stats">
+  <div class="stat"><div class="num">5</div><div class="label">Normal Ops</div></div>
+  <div class="stat"><div class="num">15</div><div class="label">Safety (per TSR)</div></div>
+  <div class="stat"><div class="num">8</div><div class="label">Fault Electrical</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">Fault Comms</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Multi-Fault</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Recovery</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Gap Negative</div></div>
+</div>
+
+<table>
+  <tr><th>Test ID</th><th>Category</th><th>TSR/FM/GAP</th><th>ASIL</th><th>Objective</th><th>FTTI</th><th>Runs</th><th>Probe</th></tr>
+  <tr><td>HIL-SIT-001</td><td>Normal</td><td>—</td><td></td><td>Startup sequence → STANDBY</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-002</td><td>Normal</td><td>TSR-08</td><td><span class="badge b-b">B</span></td><td>Precharge → NORMAL sequence</td><td></td><td>5</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-003</td><td>Normal</td><td>TSR-11</td><td></td><td>CAN message content verification</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-004</td><td>Normal</td><td>TSR-08</td><td></td><td>Graceful shutdown NORMAL → STANDBY</td><td></td><td>3</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-005</td><td>Normal</td><td>TSR-01/02</td><td></td><td>18-cell voltage multiplexing verify</td><td></td><td>3</td><td>PP-01,06</td></tr>
+  <tr style="background:rgba(239,68,68,.03)"><td><strong>HIL-SIT-010</strong></td><td>Safety</td><td>TSR-01</td><td><span class="badge b-d">D</span></td><td>Cell OV → ERROR → contactors OPEN</td><td>≤750ms</td><td>10</td><td>PP-01,06,08,09</td></tr>
+  <tr><td>HIL-SIT-011</td><td>Safety</td><td>TSR-01</td><td><span class="badge b-d">D</span></td><td>OV threshold boundary (±2.2mV)</td><td>≤750ms</td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-012</td><td>Safety</td><td>TSR-02</td><td><span class="badge b-c">C</span></td><td>Cell UV → ERROR</td><td>≤750ms</td><td>10</td><td>PP-01,06,09</td></tr>
+  <tr><td>HIL-SIT-013</td><td>Safety</td><td>TSR-03</td><td><span class="badge b-qm">QM</span></td><td>Deep discharge (threshold=1)</td><td>≤160ms</td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-014</td><td>Safety</td><td>TSR-04</td><td><span class="badge b-b">B</span></td><td>Overcurrent discharge</td><td>≤250ms</td><td>10</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-015</td><td>Safety</td><td>TSR-05</td><td><span class="badge b-c">C</span></td><td>Overcurrent charge</td><td>≤250ms</td><td>10</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-016</td><td>Safety</td><td>TSR-06</td><td><span class="badge b-c">C</span></td><td>Overtemperature discharge</td><td>≤6050ms</td><td>10</td><td>PP-02,06,09</td></tr>
+  <tr><td>HIL-SIT-017</td><td>Safety</td><td>TSR-07</td><td><span class="badge b-b">B</span></td><td>Undertemperature charge</td><td>≤6050ms</td><td>10</td><td>PP-02,06,09</td></tr>
+  <tr><td>HIL-SIT-018</td><td>Safety</td><td>TSR-08</td><td><span class="badge b-b">B</span></td><td>Contactor welding detection</td><td>≤350ms</td><td>5</td><td>PP-08,09</td></tr>
+  <tr><td>HIL-SIT-019</td><td>Safety</td><td>TSR-09</td><td><span class="badge b-b">B</span></td><td>IVT communication loss</td><td>≤1250ms</td><td>10</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-020</td><td>Safety</td><td>TSR-10</td><td><span class="badge b-d">D</span></td><td>AFE/isoSPI communication loss</td><td>≤200ms</td><td>10</td><td>PP-04</td></tr>
+  <tr><td>HIL-SIT-021</td><td>Safety</td><td>TSR-11</td><td></td><td>Vehicle CAN loss</td><td>≤1250ms</td><td>5</td><td>PP-07</td></tr>
+  <tr><td>HIL-SIT-023</td><td>Safety</td><td>TSR-13</td><td><span class="badge b-qm">QM</span></td><td>Interlock loop break</td><td>≤250ms</td><td>10</td><td>PP-10</td></tr>
+  <tr><td>HIL-SIT-024</td><td>Safety</td><td>TSR-15</td><td><span class="badge b-b">B</span></td><td>Current on open string</td><td>≤250ms</td><td>10</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-030</td><td>Fault-E</td><td>FM-01</td><td><span class="badge b-d">D</span></td><td>AFE offset → IVT plausibility catch</td><td></td><td>3</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-031</td><td>Fault-E</td><td>FM-02</td><td><span class="badge b-d">D</span></td><td>OV detected + contactor welded</td><td>≤350ms</td><td>5</td><td>PP-01,08,09</td></tr>
+  <tr><td>HIL-SIT-032</td><td>Fault-E</td><td>FM-03</td><td></td><td>UV noise rejection (threshold filter)</td><td></td><td>5</td><td>PP-01</td></tr>
+  <tr><td>HIL-SIT-033</td><td>Fault-E</td><td>FM-04</td><td></td><td>NTC open circuit detection</td><td></td><td>3</td><td>PP-02</td></tr>
+  <tr><td>HIL-SIT-034</td><td>Fault-E</td><td>FM-07</td><td></td><td>IVT offset → current on open string</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-035</td><td>Fault-E</td><td>FM-12</td><td></td><td>String+ contactor welding</td><td>≤350ms</td><td>5</td><td>PP-08</td></tr>
+  <tr><td>HIL-SIT-036</td><td>Fault-E</td><td>FM-13</td><td></td><td>String- stuck open</td><td></td><td>3</td><td>PP-08</td></tr>
+  <tr><td>HIL-SIT-037</td><td>Fault-E</td><td>FM-18</td><td></td><td>Interlock noise rejection</td><td></td><td>5</td><td>PP-10</td></tr>
+  <tr><td>HIL-SIT-040</td><td>Fault-C</td><td>TSR-09</td><td></td><td>IVT V3 (0x524) missing → timeout</td><td>≤160ms</td><td>5</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-041</td><td>Fault-C</td><td>TSR-09</td><td></td><td>IVT all messages lost</td><td>≤1250ms</td><td>5</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-042</td><td>Fault-C</td><td>TSR-10</td><td><span class="badge b-d">D</span></td><td>isoSPI chain break (relay)</td><td>≤200ms</td><td>5</td><td>PP-04</td></tr>
+  <tr><td>HIL-SIT-043</td><td>Fault-C</td><td>TSR-11</td><td></td><td>CAN bus-off recovery</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-044</td><td>Fault-C</td><td>L-009</td><td></td><td>invalidFlag=0 → data rejected</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-050</td><td>Multi</td><td>TSR-01+04</td><td><span class="badge b-d">D</span></td><td>Simultaneous OV + overcurrent</td><td>≤250ms</td><td>5</td><td>PP-01,06,09</td></tr>
+  <tr><td>HIL-SIT-051</td><td>Multi</td><td>TSR-01+10</td><td><span class="badge b-d">D</span></td><td>OV + isoSPI break (dual failure)</td><td>≤200ms</td><td>3</td><td>PP-01,04</td></tr>
+  <tr><td>HIL-SIT-052</td><td>Multi</td><td>TSR-13+08</td><td></td><td>Interlock break during precharge</td><td>≤250ms</td><td>3</td><td>PP-09,10</td></tr>
+  <tr><td>HIL-SIT-060</td><td>Recovery</td><td>SSR-022/23</td><td><span class="badge b-d">D</span></td><td>ERROR exit: fault clear + request (AND)</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-061</td><td>Recovery</td><td>SSR-024</td><td></td><td>ERROR: fault clear only → stays ERROR</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-062</td><td>Recovery</td><td>SSR-022</td><td></td><td>ERROR: request only → stays ERROR</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr style="background:rgba(239,68,68,.04)"><td><strong>HIL-SIT-070</strong></td><td>Gap-Neg</td><td><span class="badge b-gap">GAP-03</span></td><td><span class="badge b-d">D</span></td><td>PROVE: single-cell OV suppressed by plausibility</td><td></td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-071</td><td>Gap-Neg</td><td><span class="badge b-gap">GAP-02</span></td><td></td><td>PROVE: precharge has no feedback</td><td></td><td>3</td><td>PP-08</td></tr>
+  <tr><td>HIL-SIT-072</td><td>Gap-Neg</td><td><span class="badge b-gap">GAP-06</span></td><td></td><td>PROVE: TSR-15 inactive during NORMAL</td><td></td><td>3</td><td>PP-06</td></tr>
+</table>
+</div>
+
+<script>
+let currentZoom = 1;
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.target.classList.add('active');
+  document.getElementById('zoomControls').style.display = id === 'wiring' ? 'flex' : 'none';
+}
+function zoom(delta) {
+  currentZoom = Math.max(0.3, Math.min(2, currentZoom + delta));
+  document.getElementById('mainSvg').style.transform = 'scale(' + currentZoom + ')';
+  document.getElementById('mainSvg').style.transformOrigin = 'top left';
+  document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+}
+function zoomReset() { currentZoom = 1; zoom(0); }
+</script>
+</body>
+</html>
