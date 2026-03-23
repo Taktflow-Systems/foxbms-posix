@@ -9,6 +9,7 @@
 | Rev | Date | Author | Reviewer | Description |
 |---|---|---|---|---|
 | 1.0 | 2026-03-21 | An Dao | M. Weber (AI-simulated) | Initial release |
+| 1.1 | 2026-03-23 | An Dao | Phase 1 Audit Panel (10 reviewers) | Add Sections 11-12: Hardware interface architecture, signal paths, probe point map, register cross-reference |
 
 ## 1. Purpose
 
@@ -253,6 +254,661 @@ The safety concept follows a defense-in-depth approach:
 4. **Layer 4 -- Contactors**: Physical disconnection of the battery string.
 
 This architecture is preserved in the POSIX port for all software-checkable paths.
+
+## 11. Hardware Interface Architecture
+
+This section documents the physical hardware interfaces of the foxBMS 2 system at
+connector-pin-signal level, as required for SYS.4 HIL test probe mapping and needle
+bed adapter design. All data sourced from foxBMS hardware schematics v1.2.2 (master),
+v1.1.3 (slave 18-cell), and v1.0.3 (interface).
+
+### 11.1 System Board Topology
+
+```
+                        ┌────────────────────────────────┐
+                        │        MASTER BOARD            │
+                        │     (TMS570LC4357 MCU)         │
+                        │                                │
+  J2009 ──── Supply ────┤  CLAMP15/30/30C/31             │
+  J2021 ──── CAN1  ────┤  canREG1 (IVT, external)       │
+  J2024 ──── CAN2  ────┤  canREG2 (vehicle, isolated)   │
+  J2033 ──── Intlck ───┤  hetREG1 (INTERLOCK_H/L)       │
+  J2034 ──── IMD   ────┤  PWM + OK/NOK signal           │
+  J2013 ──── RS485 ────┤  Y/Z + A/B (differential)      │
+  J3008 ──── Debug ────┤  JTAG + ETM trace               │
+  J2001 ──── Ether ────┤  Dual-port Ethernet             │
+  J200x ──── SPS×8 ────┤  spiREG2 → SPS IC → contactors │
+                        │                                │
+                        │  J9000 (40-pin Samtec)          │
+                        │  ├── SPI1 (spiREG1) → AFE      │
+                        │  ├── SPI4 (spiREG4) → spare    │
+                        │  ├── GPIO IF_INT0-3            │
+                        │  ├── GPIO IF_GPIO.0-7          │
+                        │  └── Power (3.3V, 5V, 12V)    │
+                        │                                │
+                        │  J9002 (120-pin Samtec)         │
+                        │  ├── SPI2 (spiREG2) → SPS      │
+                        │  ├── SPI5 → spare              │
+                        │  ├── I2C1, LIN1/2, SCI3       │
+                        │  ├── FlexRay1/2, CAN3/4       │
+                        │  ├── ADC channels              │
+                        │  └── SBC signals               │
+                        └───────────┬────────────────────┘
+                                    │ J9000
+                        ┌───────────┴────────────────────┐
+                        │      INTERFACE BOARD           │
+                        │        (LTC6820)               │
+                        │                                │
+                        │  SPI1.CS1 → LTC6820 ch1 ──┐   │
+                        │  SPI1.CS2 → LTC6820 ch2 ──┤   │
+                        │  SPI4.CS0 → LTC6820 ch3 ──┤   │
+                        │  SPI4.CS1 → LTC6820 ch4 ──┤   │
+                        │                           │   │
+                        │  IF_GPIO.0/1 = ch1 en/mst │   │
+                        │  IF_GPIO.2/3 = ch2 en/mst │   │
+                        │  IF_GPIO.4/5 = ch3 en/mst │   │
+                        │  IF_GPIO.6/7 = ch4 en/mst │   │
+                        └───────────┬────────────────────┘
+                                    │ isoSPI (transformer-coupled)
+                                    │ 2-wire differential (IN+/IN-)
+                        ┌───────────┴────────────────────┐
+                        │       SLAVE BOARD              │
+                        │   (18-cell LTC6813-1)          │
+                        │                                │
+  Cell connector ───────┤  24-pin: VBAT-, CELL_0+ to     │
+  (24-pin)              │         CELL_17+, VBAT+        │
+                        │                                │
+  Temp connector ───────┤  16-pin: T-SENSOR_0 to 7       │
+  (16-pin)              │         + FUSED_VBAT- return   │
+                        │                                │
+  Analog connector ─────┤  18-pin: ANALOG-IN_0 to 15     │
+  (18-pin)              │         + 3.0V VREF2 + GND     │
+                        │                                │
+  Digital connector ────┤  9-pin: DIGITAL-IO_0 to 6      │
+  (9-pin)               │        + 5V VREG + GND         │
+                        │                                │
+  Daisy out ────────────┤  2-pin: OUT+/OUT- (to next)    │
+  Daisy in  ────────────┤  2-pin: IN+/IN- (from prev)   │
+                        └────────────────────────────────┘
+```
+
+### 11.2 Master Board Connectors (v1.2.2)
+
+#### 11.2.1 Supply Connector — J2009 (8-pin Micro-Fit)
+
+| Pin | Signal | Description | HIL Relevance |
+|-----|--------|-------------|---------------|
+| 1 | CLAMP15/IGNITION | Ignition signal (wake) | Simulate ignition on/off |
+| 2 | CLAMP30/SUPPLY+ | Battery supply + | Power supply to BMS |
+| 3 | CLAMP30C/CONTACTOR_SUPPLY | Contactor coil supply | Measure contactor power |
+| 4 | CLAMP31/SUPPLY- | Battery supply - (GND) | System ground reference |
+| 5 | CLAMP31/SUPPLY- | Ground (duplicate) | |
+| 6 | CLAMP30/SUPPLY+ | Supply + (duplicate) | |
+| 7 | CLAMP30C/CONTACTOR_SUPPLY | Contactor supply (duplicate) | |
+| 8 | CLAMP31/SUPPLY- | Ground (duplicate) | |
+
+**Electrical**: Automotive 12V supply. CLAMP15 is logic-level ignition signal.
+
+#### 11.2.2 CAN1 Connector — J2021 (4-pin Micro-Fit)
+
+| Pin | Signal | MCU Peripheral | Register Base |
+|-----|--------|----------------|---------------|
+| 1 | GND | — | — |
+| 2 | — (NC) | — | — |
+| 3 | CAN_LOW | DCAN1 | canREG1 (0xFFF7DC00) |
+| 4 | CAN_HIGH | DCAN1 | canREG1 (0xFFF7DC00) |
+
+**Function**: IVT current sensor (RX: 0x521-0x527), external communication.
+**Not isolated** — direct connection to TMS570 DCAN1 via CAN transceiver.
+
+#### 11.2.3 CAN2 Connector — J2024 (4-pin Micro-Fit)
+
+| Pin | Signal | MCU Peripheral | Register Base |
+|-----|--------|----------------|---------------|
+| 1 | GND | — | — |
+| 2 | — (NC) | — | — |
+| 3 | CAN_LOW | DCAN2 | canREG2 (0xFFF7DE00) |
+| 4 | CAN_HIGH | DCAN2 | canREG2 (0xFFF7DE00) |
+
+**Function**: Vehicle controller interface (state request RX: 0x210, BMS status TX: 0x220-0x260).
+**Galvanically isolated** — transformer-coupled CAN transceiver for HV isolation.
+
+#### 11.2.4 SPS Connectors — J2000, J2002-J2004, J2006-J2008, J2010 (4-pin Micro-Fit each, ×8)
+
+| Pin | Signal | Direction | Description |
+|-----|--------|-----------|-------------|
+| 1 | SPS_FEEDBACK_X | Input | Contactor auxiliary contact feedback |
+| 2 | FEEDBACK_SUPPLY | Output | Supply voltage for feedback circuit |
+| 3 | SPS_OUT_X | Output | SPS switched output to contactor coil |
+| 4 | GND | — | Ground reference |
+
+**MCU Peripheral**: spiREG2 (0xFFF7F600) → SPS IC, with software CS on hetREG2 pin 1.
+**NOTE**: J9002 schematic labels these pins as "MCU_SPI3" but the foxBMS software drives
+`spiREG2` for SPS. This is a naming convention difference between the board schematic
+and the TMS570 peripheral numbering. Verified via `spi_cfg.c` line 306.
+**Contactor assignment** (foxBMS default):
+- J2000: SPS channel 0 = String+ contactor
+- J2002: SPS channel 1 = String- contactor
+- J2003: SPS channel 2 = Precharge contactor
+- J2004–J2010: Channels 3-7 (spare)
+
+**Safety-critical**: Pin 1 feedback used by DIAG_ID_STRING_*_CONTACTOR_FEEDBACK (TSR-08).
+**Feedback path**: SPS_FEEDBACK_X → PEX_PORT_EXPANDER1 (I2C port expander), NOT direct GPIO.
+  - Channel 0 (J2000, String+) → PEX1 pin 0
+  - Channel 1 (J2002, String-) → PEX1 pin 1
+  - Channel 2 (J2003, Precharge) → PEX1 pin 2 (but `CONT_HAS_NO_FEEDBACK` — not monitored)
+  - SPS feedback enable: hetREG2 pin 9 (MOSFET gate for current-sense circuit)
+  - SPS reset: hetREG2 pin 16
+
+**Design note**: Precharge contactor has no feedback monitoring (`CONT_HAS_NO_FEEDBACK`).
+This is a known foxBMS design choice — precharge welding is detected indirectly via
+current-on-open-string (TSR-15) or precharge timeout.
+
+#### 11.2.5 Interlock Connector — J2033 (2-pin Micro-Fit)
+
+| Pin | Signal | MCU Peripheral | Register |
+|-----|--------|----------------|----------|
+| 1 | INTERLOCK_HIGH | N2HET1 | hetREG1 (0xFFF7B800) |
+| 2 | INTERLOCK_LOW | N2HET1 | hetREG1 (0xFFF7B800) |
+
+**Function**: Physical safety loop. Current flows through INTERLOCK_HIGH, through external loop
+(connectors, service disconnect), returns via INTERLOCK_LOW. Loop open = fault.
+**MCU pins**: Feedback (IL_STATE) = hetREG1 pin 29 (input), HS enable = hetREG1 pin 30 (output).
+**ADC channels**: IL_HS_VS (ch2), IL_LS_VS (ch3), IL_HS_CS (ch4), IL_LS_CS (ch5).
+**DIAG ID**: DIAG_ID_INTERLOCK_FEEDBACK (TSR-13, FTTI 250 ms).
+
+#### 11.2.6 Insulation Monitoring — J2034 (4-pin Micro-Fit)
+
+| Pin | Signal | Direction | Description |
+|-----|--------|-----------|-------------|
+| 1 | VSUP- | — | Supply ground |
+| 2 | VSUP+ | — | Supply voltage |
+| 3 | OK/NOK Signal | Input | IMD status (digital) |
+| 4 | PWM | Input | IMD measurement (PWM-encoded resistance) |
+
+**Function**: Bender-type insulation monitoring device. Two variants supported:
+  - **IR155 (PWM-based)**: OK/NOK on hetREG1 pin 27, PWM on hetREG2 pin 27, supply enable hetREG1 pin 25.
+  - **iso165C (CAN-based)**: Communicates on CAN1 (canREG1), RX IDs 0x37 (info) and 0x23 (response), little-endian.
+**DIAG ID**: Part of system monitoring suite (TSR-12).
+**OPEN ITEM**: IR155 PWM pin assignment has an unresolved `TODO` comment in `bender_ir155_cfg.h`
+line 155 (`hetREG2` pin 27) — developer was uncertain. Needs schematic verification before HIL.
+
+#### 11.2.7 RS485 Connector — J2013 (6-pin Micro-Fit)
+
+| Pin | Signal | Description |
+|-----|--------|-------------|
+| 1 | Y | RS485 differential pair 1+ |
+| 2 | A | RS485 differential pair 2+ |
+| 3 | GND | Ground |
+| 4 | Z | RS485 differential pair 1- |
+| 5 | B | RS485 differential pair 2- |
+| 6 | GND | Ground |
+
+**Function**: Secondary communication channel. Not used in default foxBMS configuration.
+
+#### 11.2.8 Interface Board Connector — J9000 (40-pin Samtec)
+
+| Pin | Signal | Function | isoSPI Usage |
+|-----|--------|----------|-------------|
+| 1 | MCU_SPI1.SOMI0 | SPI1 data in | isoSPI ch1/2 MISO |
+| 2 | MCU_SPI1.SOMI1 | SPI1 data in (alt) | — |
+| 3 | MCU_SPI1.SIMO0 | SPI1 data out | isoSPI ch1/2 MOSI |
+| 4 | MCU_SPI1.SIMO1 | SPI1 data out (alt) | — |
+| 5 | MCU_SPI1.CLK | SPI1 clock | isoSPI ch1/2 SCK |
+| 6 | MCU_SPI1.CS1 | SPI1 chip select 1 | isoSPI channel 1 |
+| 7 | MCU_SPI1.CS2 | SPI1 chip select 2 | isoSPI channel 2 |
+| 8-10 | MCU_SPI1.CS3-5 | SPI1 chip selects | Spare |
+| 11 | MCU_SPI4.SOMI | SPI4 data in | isoSPI ch3/4 MISO |
+| 12 | MCU_SPI4.SIMO | SPI4 data out | isoSPI ch3/4 MOSI |
+| 13 | MCU_SPI4.CLK | SPI4 clock | isoSPI ch3/4 SCK |
+| 14 | MCU_SPI4.CS0 | SPI4 chip select 0 | isoSPI channel 3 |
+| 15 | MCU_SPI4.CS1 | SPI4 chip select 1 | isoSPI channel 4 |
+| 16-19 | MCU_SPI4.CS2-5 | SPI4 chip selects | Spare |
+| 20-23 | IF_INT0-3 | Interrupt pins | GIOA_2/3/4/6 |
+| 24-31 | IF_GPIO.0-7 | GPIO via port expander | LTC6820 enable/master |
+| 32-33 | GND | Ground | Ground |
+| 34-35 | MCU_3.3V | 3.3V supply | Logic power |
+| 36-37 | MCU_5.0V_LDO | 5.0V supply | Peripheral power |
+| 38 | VBB_12V | 12V from buck-boost | — |
+| 39-40 | VSUP | Main supply voltage | — |
+
+**MCU Registers**: spiREG1 (0xFFF7F400) for SPI1, spiREG4 (0xFFF7FA00) for SPI4.
+**Safety-critical**: This is the primary path for all cell voltage and temperature data (TSR-01, TSR-02, TSR-06, TSR-07, TSR-10).
+
+#### 11.2.9 Debug Connector — J3008 (38-pin Mictor)
+
+Standard ARM JTAG + ETM trace port. Pins: TDI, TDO, TMS, TCK, TRST, RTCK, TRACECLK, TRACECTL, ETMDATA0-15.
+**HIL Relevance**: JTAG access for gcov coverage extraction during HIL execution.
+
+#### 11.2.10 Ethernet Connector — J2001 (RJ45, 12-pin)
+
+Dual-port Ethernet (TX1/RX1, TX2/RX2) with LED indicators. Not used in default BMS configuration.
+
+### 11.3 Slave Board Connectors (18-cell LTC6813-1, v1.1.3)
+
+#### 11.3.1 Cell Voltage Sense Connector (24-pin)
+
+| Pin | Signal | LTC6813 Input | Description |
+|-----|--------|---------------|-------------|
+| 1 | VBAT- | C0 (negative ref) | Battery module negative terminal |
+| 2 | CELL_0+ | C0+ | Cell 0 positive terminal |
+| 3 | CELL_2+ | C2+ | Cell 2 positive terminal |
+| 4 | CELL_4+ | C4+ | Cell 4 positive terminal |
+| 5 | CELL_6+ | C6+ | Cell 6 positive terminal |
+| 6 | CELL_8+ | C8+ | Cell 8 positive terminal |
+| 7 | CELL_10+ | C10+ | Cell 10 positive terminal |
+| 8 | CELL_12+ | C12+ | Cell 12 positive terminal |
+| 9 | CELL_14+ | C14+ | Cell 14 positive terminal |
+| 10 | CELL_16+ | C16+ | Cell 16 positive terminal |
+| 11 | VBAT+ | C17+ (positive ref) | Battery module positive terminal |
+| 12 | NC | — | — |
+| 13 | CELL_0- | C0- (= VBAT-) | Cell 0 negative terminal |
+| 14 | CELL_1+ | C1+ | Cell 1 positive terminal |
+| 15 | CELL_3+ | C3+ | Cell 3 positive terminal |
+| 16 | CELL_5+ | C5+ | Cell 5 positive terminal |
+| 17 | CELL_7+ | C7+ | Cell 7 positive terminal |
+| 18 | CELL_9+ | C9+ | Cell 9 positive terminal |
+| 19 | CELL_11+ | C11+ | Cell 11 positive terminal |
+| 20 | CELL_13+ | C13+ | Cell 13 positive terminal |
+| 21 | CELL_15+ | C15+ | Cell 15 positive terminal |
+| 22 | CELL_17+ | C17+ | Cell 17 positive terminal |
+| 23-24 | NC | — | — |
+
+**Electrical ratings**: Cell voltage range 0–5V, module voltage 16–90V.
+**ADC**: LTC6813 internal 16-bit ADC, ~0.1 mV/LSB, total error ±2.2 mV (7kHz, 25°C).
+**Safety-critical**: Direct measurement path for TSR-01 (OV, ASIL D) and TSR-02 (UV, ASIL C).
+
+**NOTE**: Pins are NOT sequential — even-numbered cells on pins 2-11 (row 1), odd-numbered
+cells on pins 14-22 (row 2). Cell emulator wiring must account for this interleaved layout.
+
+#### 11.3.2 Temperature Sensor Connector (16-pin)
+
+| Pin | Signal | LTC6813 GPIO | Description |
+|-----|--------|--------------|-------------|
+| 1 | T-SENSOR_0 | GPIO1 (MUX) | NTC sensor 0, terminal 1 |
+| 2 | T-SENSOR_1 | GPIO2 (MUX) | NTC sensor 1, terminal 1 |
+| 3 | T-SENSOR_2 | GPIO3 (MUX) | NTC sensor 2, terminal 1 |
+| 4 | T-SENSOR_3 | GPIO4 (MUX) | NTC sensor 3, terminal 1 |
+| 5 | T-SENSOR_4 | GPIO5 (MUX) | NTC sensor 4, terminal 1 |
+| 6 | T-SENSOR_5 | GPIO1 (MUX) | NTC sensor 5, terminal 1 |
+| 7 | T-SENSOR_6 | GPIO2 (MUX) | NTC sensor 6, terminal 1 |
+| 8 | T-SENSOR_7 | GPIO3 (MUX) | NTC sensor 7, terminal 1 |
+| 9-16 | FUSED_VBAT- | — | NTC sensor return (all share VBAT-) |
+
+**Electrical**: NTC nominal 10 kΩ. Measured via LTC6813 GPIO/ADC multiplexer.
+**Safety-critical**: Measurement path for TSR-06 (OT, ASIL C) and TSR-07 (UT, ASIL B).
+
+#### 11.3.3 Daisy Chain Connectors (2-pin each)
+
+| Connector | Pin 1 | Pin 2 | Function |
+|-----------|-------|-------|----------|
+| Daisy Input | IN+ | IN- | isoSPI from previous slave (or interface board for first slave) |
+| Daisy Output | OUT+ | OUT- | isoSPI to next slave in chain |
+
+**Isolation**: Transformer-coupled differential signaling. Galvanic isolation between
+master-side (low-voltage) and slave-side (high-voltage battery domain).
+
+#### 11.3.4 Analog Inputs Connector (18-pin)
+
+Pins 1-16: ANALOG-IN_0 to ANALOG-IN_15 (0-5V range), Pin 17: +3.0V VREF2, Pin 18: FUSED_VBAT- (GND).
+Used for auxiliary measurements. Not in primary safety path.
+
+#### 11.3.5 Digital I/O Connector (9-pin)
+
+Pins 1-7: DIGITAL-IO_0 to DIGITAL-IO_6 (0-5V, bidirectional), Pin 8: +5V VREG, Pin 9: FUSED_VBAT-.
+Used for GPIO expansion. Not in primary safety path.
+
+### 11.4 Interface Board Connectors (LTC6820, v1.0.3)
+
+#### 11.4.1 Master Connector (40-pin, mates with J9000)
+
+The interface board connects to the master board via J9000. Key signal mapping:
+
+| Master J9000 Pin | Interface Signal | isoSPI Function |
+|------------------|-----------------|-----------------|
+| 1 (SPI1.SOMI0) | SPI1 MISO | Data from LTC6813 via LTC6820 ch1/2 |
+| 3 (SPI1.SIMO0) | SPI1 MOSI | Commands to LTC6813 via LTC6820 ch1/2 |
+| 5 (SPI1.CLK) | SPI1 SCK | Clock for ch1/2 |
+| 6 (SPI1.CS1) | SPI1 CS1 | Chip select for isoSPI channel 1 |
+| 7 (SPI1.CS2) | SPI1 CS2 | Chip select for isoSPI channel 2 |
+| 24 (IF_GPIO.0) | Port expander IO1_0 | LTC6820 ch1 ENABLE |
+| 25 (IF_GPIO.1) | Port expander IO1_1 | LTC6820 ch1 MASTER select |
+| 26 (IF_GPIO.2) | Port expander IO1_2 | LTC6820 ch2 ENABLE |
+| 27 (IF_GPIO.3) | Port expander IO1_3 | LTC6820 ch2 MASTER select |
+
+**NOTE**: GPIO pins 24-31 go through an I2C port expander on the interface board, not
+direct GPIO from TMS570. The port expander is accessed via I2C from the master.
+
+#### 11.4.2 isoSPI Connectors (2-pin each)
+
+| Pin | Signal | Description |
+|-----|--------|-------------|
+| 1 | isospi_p | isoSPI positive (differential) |
+| 2 | isospi_n | isoSPI negative (differential) |
+
+One connector per daisy chain direction. The LTC6820 converts SPI (single-ended, master domain)
+to isoSPI (differential, transformer-coupled, battery domain).
+
+### 11.5 Critical Signal Paths (TSR → Physical Path → Probe Points)
+
+Each signal path maps a TSR to the complete chain from sensor to actuator. Every node
+is classified as an observation point (O), fault injection point (F), or both (O/F).
+
+#### 11.5.1 TSR-01/02: Cell Voltage Path (ASIL D / ASIL C)
+
+```
+Cell terminal (O/F)
+  → Kelvin sense wire → Slave cell connector pin CELL_x+ (O/F)
+  → PCB trace → RC filter → LTC6813 ADC input C0-C17
+  → LTC6813 internal ADC (16-bit, ±1.5mV) (O: via RDCV command)
+  → isoSPI TX (differential, transformer-coupled) (O/F: break daisy chain)
+  → Interface board LTC6820 → SPI1 SOMI0
+  → J9000 pin 1 → Master board SPI1 (O: logic analyzer on J9000)
+  → TMS570 MibSPI1 (spiREG1, 0xFFF7F400)
+  → DMA transfer to RAM buffer
+  → afe_ltc6813.c: DECAN decode → DATA_BLOCK_CELL_VOLTAGE (O: database read)
+  → SOA_CheckCellVoltage() → compare vs BC_VOLTAGE_MAX_MSL (2800mV) / MIN (1500mV)
+  → DIAG_Handler(DIAG_ID_CELLVOLTAGE_*_MSL) → threshold counter (50/10ms)
+  → FATAL → BMS_STATEMACHINE_ERROR
+  → CONT_OpenAll() → SPS driver → spiREG2 (0xFFF7F600)
+  → J9002 → SPS IC → J200x pin 3 (SPS_OUT_X) → contactor coil de-energized (O/F)
+  → Contactor mechanical open (20-50ms)
+  → J200x pin 1 (SPS_FEEDBACK_X) → PEX_PORT_EXPANDER1 (I2C) → verification (O)
+```
+
+**FTTI**: 750 ms (OV/UV)
+**HIL probe points**: Cell connector (emulator), J9000 (logic analyzer), J200x (contactor state), CAN bus (0x240-0x245 cell voltages)
+
+#### 11.5.2 TSR-04/05: Current Path (ASIL B / ASIL C)
+
+```
+Battery string current path
+  → IVT shunt resistor (high-precision, in-line)
+  → IVT electronics: ADC → CAN frame encoding
+  → CAN bus → J2021 pin 4 (CAN_HIGH) / pin 3 (CAN_LOW) (O/F)
+  → CAN transceiver → TMS570 DCAN1 (canREG1, 0xFFF7DC00)
+  → CAN RX handler → can_cbs_rx_current-sensor.c
+  → DATA_BLOCK_CURRENT (O: database read)
+  → SOA_CheckCurrent() → compare vs BC_CURRENT_MAX_*_MSL
+  → DIAG_Handler(DIAG_ID_OVERCURRENT_*_MSL) → threshold counter (10/10ms)
+  → FATAL → BMS_STATEMACHINE_ERROR → contactor open chain (same as 11.5.1)
+```
+
+**FTTI**: 250 ms
+**HIL probe points**: J2021 (CAN injection), CAN bus monitoring, J200x (contactor state)
+**NOTE**: IVT messages: 0x521 (current), 0x522-0x524 (voltage V1-V3), 0x525 (temp), 0x526 (power), 0x527 (coulomb count)
+
+#### 11.5.3 TSR-06/07: Temperature Path (ASIL C / ASIL B)
+
+```
+NTC thermistor (10kΩ nominal)
+  → Slave temp connector pin T-SENSOR_x (O/F: substitute with precision resistor)
+  → PCB trace → LTC6813 GPIO/ADC multiplexer
+  → LTC6813 ADC conversion (MUX scan, ~2ms per channel)
+  → isoSPI → Interface → SPI1 → TMS570 (same physical path as cell voltage)
+  → afe_ltc6813.c: temperature DECAN → DATA_BLOCK_CELL_TEMPERATURE (O)
+  → SOA_CheckTemperatures() → compare vs OT/UT limits (45/55°C, -20°C)
+  → DIAG_Handler(DIAG_ID_TEMP_*_MSL) → threshold counter (500/10ms = 5000ms)
+  → FATAL → BMS_STATEMACHINE_ERROR → contactor open chain
+```
+
+**FTTI**: 6050 ms (justified by thermal inertia)
+**HIL probe points**: Temp connector (substitution resistor bank), CAN (0x260 mux temps)
+**NOTE**: Shares isoSPI path with cell voltage. AFE MUX failure detected by DIAG_ID_AFE_MUX (TSR-10).
+
+#### 11.5.4 TSR-03: Deep Discharge Path (QM)
+
+Same measurement path as TSR-02 (cell voltage), but with threshold=1 and 100ms delay.
+**FTTI**: 160 ms. Triggers on extreme undervoltage below recovery threshold.
+
+#### 11.5.5 TSR-08: Contactor Feedback Path (ASIL B)
+
+```
+Contactor auxiliary contact (normally-open or normally-closed)
+  → Wiring → J200x pin 1 (SPS_FEEDBACK_X) (O/F: open wire, short to GND/VCC)
+  → Feedback conditioning circuit → PEX_PORT_EXPANDER1 (I2C port expander)
+  → Contactor driver: compare feedback state vs SPS commanded state
+  → Mismatch → DIAG_Handler(DIAG_ID_STRING_*_CONTACTOR_FEEDBACK)
+  → Threshold counter (20/10ms = 200ms) + 100ms delay
+  → FATAL → BMS_STATEMACHINE_ERROR
+```
+
+**FTTI**: 350 ms
+**HIL probe points**: J200x pin 1 (relay to simulate feedback), J200x pin 3 (SPS output state)
+**Covers**: Welding detection (commanded open, feedback closed) AND stuck-open detection.
+
+#### 11.5.6 TSR-09: Current Sensor Communication Path (ASIL B)
+
+```
+IVT current sensor → CAN frame (periodic, ~10ms cycle)
+  → J2021 (CAN1) → TMS570 DCAN1
+  → CAN RX handler: message receive timestamp
+  → Timeout check: if no message received within expected period
+  → DIAG_Handler(DIAG_ID_CURRENT_SENSOR_RESPONDING) → counter (100/10ms)
+  → 200ms delay → FATAL → ERROR → contactors open
+```
+
+**FTTI**: 1250 ms (main current), 160 ms (voltage channels), 3050 ms (CC/EC)
+**HIL injection**: Stop transmitting IVT CAN frames to trigger timeout.
+
+#### 11.5.7 TSR-10: AFE Communication Path (ASIL D support)
+
+```
+TMS570 SPI1 → J9000 → Interface LTC6820 → isoSPI → Slave LTC6813
+  → SPI transaction: command TX + data RX with PEC-15 CRC
+  → PEC check in afe_ltc6813.c
+  → Failure → DIAG_Handler(DIAG_ID_AFE_SPI or AFE_COMMUNICATION_INTEGRITY)
+  → Threshold counter (5/10ms = 50ms) + 100ms delay
+  → FATAL → ERROR → contactors open
+```
+
+**FTTI**: 200 ms (SPI/CRC), 160 ms (config mismatch)
+**HIL injection**: Break isoSPI daisy chain (relay on daisy connector), corrupt SPI data.
+
+#### 11.5.8 TSR-11: CAN Communication Path
+
+```
+Vehicle controller → CAN bus → J2024 (CAN2, isolated) or J2021 (CAN1)
+  → TMS570 DCAN → CAN RX handler
+  → Message receive timeout monitoring
+  → DIAG_Handler(DIAG_ID_CAN_TIMING) → counter (100/10ms)
+  → 200ms delay → FATAL → ERROR → contactors open
+```
+
+**FTTI**: 1250 ms
+**HIL injection**: Stop sending expected CAN messages (disconnect CAN tool, or stop TX task).
+
+#### 11.5.9 TSR-12: System Monitoring (ASIL D)
+
+```
+TMS570 hardware self-test:
+  ├── CPU lockstep comparator → ESM (Error Signaling Module)
+  ├── RAM ECC → ESM
+  ├── Flash CRC → DIAG_ID_FLASHCHECKSUM
+  └── RTOS task timing → DIAG_ID_SYSTEM_MONITORING
+→ Any single event → FATAL (threshold=1, delay=0) → ERROR → contactors open
+```
+
+**FTTI**: ~51 ms
+**HIL limitation**: Hardware self-test faults cannot be injected without modifying MCU silicon.
+SIL-only test: POSIX stubs suppress these DIAGs. HIL tests verify the DIAG is configured but
+cannot trigger it via external stimulus.
+
+#### 11.5.10 TSR-13: Interlock Loop Path
+
+```
+Service disconnect / connector → external wiring loop
+  → J2033 pin 1 (INTERLOCK_HIGH) → current source
+  → Loop through external connectors, service disconnect switch
+  → J2033 pin 2 (INTERLOCK_LOW) → current return
+  → hetREG1 pin 29 → interlock.c: compare current/voltage against threshold
+  → DIAG_Handler(DIAG_ID_INTERLOCK_FEEDBACK) → counter (10/10ms)
+  → 100ms delay → FATAL → ERROR → contactors open
+```
+
+**FTTI**: 250 ms
+**HIL injection**: Relay on J2033 pins to open interlock loop.
+
+#### 11.5.11 TSR-14: SBC Reset Path
+
+```
+NXP FS8x SBC → SPI2 (spiREG2, 0xFFF7F600) ↔ TMS570
+  ├── Watchdog: MCU must service within window
+  ├── RSTB pin: SBC → MCU reset line (on J9002: SBC_MCU_RESET pin 80)
+  └── FS0B pin: SBC → safety output (on J9002: SBC_MCU_FS0B pin 79)
+→ RSTB assertion detected → DIAG_Handler(DIAG_ID_SBC_RSTB_ERROR)
+→ Threshold=1, delay=100ms → FATAL → ERROR → contactors open
+```
+
+**FTTI**: 160 ms
+**HIL limitation**: Cannot externally trigger SBC reset without access to SBC watchdog.
+Test via: deliberate watchdog miss (software fault injection) or SBC FS0B pin manipulation.
+
+#### 11.5.12 TSR-15: Current on Open String Path
+
+```
+All contactors commanded OPEN (SPS_OUT_X = 0)
+  → IVT measures string current → CAN → J2021 → DCAN1
+  → Current value > threshold (should be ~0A with contactors open)
+  → DIAG_Handler(DIAG_ID_CURRENT_ON_OPEN_STRING) → counter (10/10ms)
+  → 100ms delay → FATAL → ERROR
+```
+
+**FTTI**: 250 ms
+**HIL injection**: Apply current through string with contactors open (simulates welded contactor
+bypassing the feedback detection, or external fault path).
+
+### 11.6 Probe Point Map for Needle Bed / HIL Adapter
+
+This table maps every testable signal to its physical access point and the TSRs it covers.
+
+| ID | Connector | Pin(s) | Signal | Type | TSR Coverage | Probe Method |
+|----|-----------|--------|--------|------|-------------|--------------|
+| PP-01 | Slave Cell | 1-22 | CELL_0+ to CELL_17+, VBAT± | O/F | TSR-01,02,03 | Cell emulator channels |
+| PP-02 | Slave Temp | 1-8 | T-SENSOR_0 to 7 | O/F | TSR-06,07 | Precision resistor bank |
+| PP-03 | Slave Temp | 9-16 | FUSED_VBAT- (return) | O | TSR-06,07 | GND reference |
+| PP-04 | Slave Daisy In | 1-2 | IN+/IN- | F | TSR-10 | Relay (break chain) |
+| PP-05 | Slave Daisy Out | 1-2 | OUT+/OUT- | F | TSR-10 | Relay (break chain) |
+| PP-06 | J2021 CAN1 | 3-4 | CAN_H/CAN_L | O/F | TSR-04,05,09,15 | PCAN/python-can |
+| PP-07 | J2024 CAN2 | 3-4 | CAN_H/CAN_L | O/F | TSR-11 | PCAN/python-can |
+| PP-08 | J200x SPS | 1 | SPS_FEEDBACK_X | O/F | TSR-08 | Relay (simulate feedback) |
+| PP-09 | J200x SPS | 3 | SPS_OUT_X | O/F | TSR-01-15 | Current probe / digital |
+| PP-10 | J2033 | 1-2 | INTERLOCK_H/L | O/F | TSR-13 | Relay (break loop) |
+| PP-11 | J2034 | 3 | IMD OK/NOK | O/F | TSR-12 | Digital signal |
+| PP-12 | J2034 | 4 | IMD PWM | O/F | TSR-12 | PWM generator |
+| PP-13 | J2009 | 1 | CLAMP15 | F | — | Relay (ignition control) |
+| PP-14 | J9000 | 1,3,5 | SPI1 SOMI/SIMO/CLK | O | TSR-10 | Logic analyzer |
+| PP-15 | J3008 | 11,15,17,19 | JTAG TDO/TCK/TMS/TDI | O | — | JTAG debugger |
+| PP-16 | J9002 | 79 | SBC_MCU_FS0B | O/F | TSR-14 | Digital signal |
+| PP-17 | J9002 | 80 | SBC_MCU_RESET | O | TSR-14 | Digital monitor |
+| PP-18 | J2021 CAN1 | 3-4 | CAN1 bus termination | O | TSR-04,05,09 | Verify 120Ω between H/L |
+| PP-19 | J2024 CAN2 | 3-4 | CAN2 bus termination | O | TSR-11 | Verify 120Ω between H/L |
+
+**CAN termination note**: The foxBMS master board includes internal 120Ω termination resistors
+on both CAN1 and CAN2. The HIL bench CAN interface (PCAN, python-can adapter) typically also
+has internal termination. With both endpoints terminated, the bus has 60Ω differential
+impedance — this is correct for a two-node bus. If a third CAN node is added (e.g., CANoe
+for monitoring), its termination must be DISABLED to avoid triple-termination (40Ω, causing
+signal quality issues). Verify termination resistance with a multimeter before first test.
+
+### 11.7 Galvanic Isolation Boundaries
+
+```
+          LOW-VOLTAGE DOMAIN                    HIGH-VOLTAGE DOMAIN
+    (Master + Interface board)                (Slave + Battery cells)
+                                    │
+  TMS570 MCU ←→ SPI1 ←→ LTC6820   │    LTC6813 ←→ Cells (16-90V)
+                                 ──┤──  Transformer-coupled isoSPI
+  CAN2 transceiver               ──┤──  Isolated CAN (J2024)
+                                    │
+  CAN1 transceiver ←→ IVT          │    IVT shunt (in current path)
+     (NOT isolated on CAN1 side)    │
+                                    │
+  SPS IC ←→ Contactors             │    Contactor main contacts
+     (galvanic separation by        │    (high-voltage battery bus)
+      contactor coil/contact gap)   │
+```
+
+**Critical isolation point**: The isoSPI transformer on the interface board provides the
+primary galvanic isolation between the master (low-voltage) and slave (battery-voltage)
+domains. All cell voltage and temperature data crosses this boundary.
+
+**CAN1 is NOT isolated**: The IVT current sensor communicates on CAN1 (J2021), which is
+not galvanically isolated on the master board. The IVT itself provides isolation internally.
+
+### 11.8 Known Gotchas for HIL Test Design (from Lessons Learned)
+
+These are verified pitfalls discovered during SIL integration that directly affect HIL test
+harness design. Each references a lesson ID from the lesson registry at
+`foxbms-posix/docs/lessons-learned/embedded/foxbms-integration.md` (28 lessons total).
+Full HIL signal path analysis: `docs/lessons-learned/embedded/foxbms-hil-signal-path-analysis.md`.
+
+| # | Lesson | Signal Path | Gotcha | Required Action |
+|---|--------|-------------|--------|-----------------|
+| 1 | L-009 | Cell/IVT validity | `invalidFlag` uses inverted logic: **1 = VALID**, 0 = invalid | Plant/emulator MUST send `invalidFlag=1` for valid data, or BMS rejects all measurements |
+| 2 | L-010 | Cell voltage CAN | Only 8 cells per CAN mux group (0x270). Need **5 mux groups** (0-4) for all 18 cells | Cell emulator must cycle through mux groups 0-4 in plant model; single group = 10 cells missing |
+| 3 | L-015 | BMS state (0x220) | BMS state signal on CAN flickers due to multiplexing timing | Test harness must read state via `BMS_GetState()` API or internal database, never by sniffing CAN 0x220 |
+| 4 | L-018/L-027 | Cell voltage plausibility | Single-cell OV is rejected as outlier if spread > 0.4V across module | OV fault injection must set **ALL 18 cells** to overvoltage simultaneously, not just one cell |
+| 5 | L-019 | IVT current (0x521) | Current flowing before contactors close is physically impossible | Plant model must gate IVT current signal on contactor feedback state (0x7F0); send 0 mA until contactors confirmed closed |
+| 6 | L-011 | IVT Voltage 3 (0x524) | Missing V3 signal triggers DIAG timeout (TSR-09) | Plant model must send 0x524 every cycle alongside 0x521-0x523; omission = spurious timeout fault |
+| 7 | L-017 | OT fault trigger | Temperature alone may not trigger OT fault — requires **both** current > 0 AND temperature > threshold | OT test must apply load current simultaneously with elevated temperature |
+| 8 | L-014 | Test infrastructure | Stale foxbms-vecu processes ghost CAN frames at 100× normal rate | `killall -9 foxbms-vecu` before each HIL test run; verify CAN bus is clean before stimulus |
+
+**Impact on SYS.4 test design**: Gotchas 1-6 are **test-blocking** — if not addressed in the plant
+model or test harness, the affected test cases will produce false results (either false pass or
+false fail). Gotcha 4 is particularly dangerous because a single-cell OV test would appear to
+pass (no fault triggered) when in fact the plausibility check is silently rejecting the stimulus.
+
+### 11.9 Cross-Check Verification Status
+
+Agent cross-check performed 2026-03-23 against foxBMS v1.10.0 source code.
+
+| Signal Path | HW CSV | SW Register | DMA | Status | Notes |
+|-------------|--------|-------------|-----|--------|-------|
+| SPI1 → AFE (LTC6813) | J9000 pins 1-10 | spiREG1 | CH0/CH1 | VERIFIED | CS1 = LTC6820 ch1 |
+| SPI2 → SPS | J9002 + J200x | spiREG2 | CH2/CH3 | VERIFIED | SW CS via hetREG2 pin 1 (schematic labels as "SPI3") |
+| CAN1 → IVT | J2021 pins 3-4 | canREG1 | N/A (mailbox) | VERIFIED | IDs 0x521-0x527, 6-byte, big-endian |
+| CAN2 → Vehicle | J2024 pins 3-4 | canREG2 | N/A (mailbox) | VERIFIED | No default RX/TX callbacks (integrator-specific) |
+| Interlock | J2033 pins 1-2 | hetREG1 pins 29/30 | N/A | VERIFIED | ADC channels 2-5 for current/voltage |
+| SPS feedback | J200x pin 1 | PEX1 pins 0-2 (I2C) | N/A | VERIFIED | Via I2C port expander, not direct GPIO |
+| IMD (iso165C) | J2034 | canREG1, IDs 0x37/0x23 | N/A | VERIFIED | Little-endian (differs from all other foxBMS CAN) |
+| IMD (IR155) | J2034 | hetREG1 p25/27, hetREG2 p27 | N/A | **OPEN** | Unresolved TODO on PWM pin in source code |
+
+**Open items requiring resolution before Phase 3 (SYS.4 test cases):**
+1. IR155 PWM pin assignment — verify hetREG2 pin 27 against master board schematic
+2. Precharge contactor has no feedback monitoring — document as accepted gap in test coverage
+
+---
+
+## 12. Register-to-Connector Cross-Reference
+
+This table maps MCU peripheral register bases to their physical connectors, enabling
+software-hardware traceability for HIL test verification.
+
+| MCU Peripheral | Register Base | TMS570 Address | Physical Connector | Signal Type |
+|----------------|---------------|----------------|--------------------|-------------|
+| DCAN1 | canREG1 | 0xFFF7DC00 | J2021 (CAN1) | CAN H/L |
+| DCAN2 | canREG2 | 0xFFF7DE00 | J2024 (CAN2) | CAN H/L (isolated) |
+| MibSPI1 | spiREG1 | 0xFFF7F400 | J9000 pins 1-10 | SPI → AFE (LTC6813 via LTC6820) |
+| SPI2 | spiREG2 | 0xFFF7F600 | J9002 + J200x | SPI → SPS IC (SW CS via hetREG2 pin 1) |
+| SPI3 | spiREG3 | 0xFFF7F800 | On-board | SPI → FRAM (diagnostic data persistence) |
+| MibSPI4 | spiREG4 | 0xFFF7FA00 | J9000 pins 11-19 | SPI → isoSPI ch3/4 |
+| SPI5 | spiREG5 | 0xFFF7FC00 | J9002 pins 6-18 | SPI → spare |
+| N2HET1 | hetREG1 | 0xFFF7B800 | J2033 (interlock), J2034 (IMD) | IL_STATE pin 29, IL_HS_EN pin 30, IR155 pins 25/27 |
+| N2HET2 | hetREG2 | 0xFFF7B900 | J200x, J2021, J2034 | SPS CS pin 1, SPS reset pin 16, SPS FB_EN pin 9, CAN1 EN pin 18, IR155 PWM pin 27 |
+| PEX1 | I2C port expander | via i2cREG1 | J200x pin 1 (feedback) | Contactor feedback: ch0=String+, ch1=String-, ch2=Precharge |
+
+**Bus sharing note**: spiREG2 is shared between the SPS IC (contactor control) and the
+NXP FS8x SBC (watchdog/power supervision). Both use software chip selects on separate
+hetREG2 pins. A hardware fault on the SPI2 bus disables BOTH contactor actuation AND
+watchdog servicing — this is a defense-in-depth feature: the SBC watchdog timeout will
+reset the MCU if SPI communication fails, which forces contactors to their fail-safe
+(open) state via hardware default.
+| I2C1 | i2cREG1 | 0xFFF7D400 | J9002 pins 19-20 | I2C → peripherals |
+| ADC1 | adcREG1 | 0xFFF7C000 | J9002 pins 58-61 | Analog inputs |
+| ADC2 | adcREG2 | 0xFFF7C200 | J9002 pins 62-65 | Analog inputs |
+| RTI | rtiREG1 | 0xFFFFFC00 | Internal | Timers, watchdog |
+| ESM | esmREG | 0xFFFFF500 | Internal | Error signaling |
 
 ---
 *End of Document*
