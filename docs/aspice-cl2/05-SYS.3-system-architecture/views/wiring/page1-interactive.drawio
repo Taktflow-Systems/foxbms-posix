@@ -234,6 +234,34 @@
         <mxCell id="footer" parent="1" style="text;html=1;fontSize=7;fontColor=#6e7681;align=center;" value="&lt;font style=&quot;font-size: 11px; color: rgb(102, 255, 179);&quot;&gt;Verified: hw-datasheet-oracle ✓ | data-flow-checker ✓ | lessons-librarian ✓ (8 gotchas) | 11 gaps | HalCoGen HL_pinmux.c&lt;/font&gt;" vertex="1">
           <mxGeometry height="15" width="600" x="320" y="880" as="geometry" />
         </mxCell>
+
+        <!-- ═══ ASIL D CRITICAL PATH — thick red highlighted route ═══ -->
+        <!-- Cell Voltage → LTC6813 (upward) -->
+        <mxCell id="asild_1" edge="1" parent="1" source="cellv" target="ltc6813" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#ff4444;strokeWidth=5;opacity=40;endArrow=block;endFill=1;dashed=0;" >
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- LTC6813 → Interface Board (upward through isoSPI) -->
+        <mxCell id="asild_2" edge="1" parent="1" source="ltc6813" target="interface" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#ff4444;strokeWidth=5;opacity=40;endArrow=block;endFill=1;dashed=1;dashPattern=12 6;" >
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Interface Board → J9000 (upward) -->
+        <mxCell id="asild_3" edge="1" parent="1" source="interface" target="j9000" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#ff4444;strokeWidth=5;opacity=40;endArrow=block;endFill=1;" >
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- J9000 → MibSPI1 (upward into MCU) -->
+        <mxCell id="asild_4" edge="1" parent="1" source="j9000" target="spi1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#ff4444;strokeWidth=5;opacity=40;endArrow=block;endFill=1;" >
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- MibSPI2 → J200x SPS (rightward — contactor actuation) -->
+        <mxCell id="asild_5" edge="1" parent="1" source="spi2" target="j200x" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#ff4444;strokeWidth=5;opacity=40;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" >
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ASIL D path label -->
+        <mxCell id="asild_label" value="&lt;font color='#ff4444'&gt;&lt;b&gt;━━ ASIL D CRITICAL PATH (FTTI 750ms) ━━&lt;/b&gt;&lt;/font&gt;" style="text;html=1;fontSize=10;align=left;" parent="1" vertex="1">
+          <mxGeometry x="30" y="290" width="350" height="20" as="geometry"/>
+        </mxCell>
+
       </root>
     </mxGraphModel>
   </diagram>
