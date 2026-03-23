@@ -160,21 +160,24 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <!-- J2009 Supply → MCU (gray, top) -->
 <path d="M200,41 L270,41 L270,30 L330,30" stroke="var(--pwr)" stroke-width="1.5" fill="none" marker-end="url(#ac)"/>
 
-<!-- J2021 CAN1 → DCAN1 (blue, 90° bend) -->
-<path d="M200,108 L280,108 L280,81 L350,81" stroke="var(--can)" stroke-width="2.5" fill="none" marker-end="url(#ac)"/>
-<text x="240" y="100" fill="var(--can)" font-size="7" font-weight="600">CAN_H/L</text>
+<!-- Left wires use separate vertical columns to avoid crossing:     -->
+<!-- CAN1=250  CAN2=265  Interlock=280  IMD=295                      -->
 
-<!-- J2024 CAN2 → DCAN2 (blue dashed, 90° bend) -->
-<path d="M200,183 L260,183 L260,121 L350,121" stroke="var(--can)" stroke-width="2" fill="none" stroke-dasharray="8,4" marker-end="url(#ac)"/>
-<text x="240" y="175" fill="var(--can)" font-size="7">⚡ isolated</text>
+<!-- J2021 CAN1 → DCAN1 (blue solid, col 250) -->
+<path d="M200,108 L250,108 L250,81 L350,81" stroke="var(--can)" stroke-width="2.5" fill="none" marker-end="url(#ac)"/>
+<text x="215" y="80" fill="var(--can)" font-size="7" font-weight="600">CAN_H/L</text>
 
-<!-- J2033 Interlock → N2HET1 (red, 90° bend) -->
-<path d="M200,252 L290,252 L290,166 L350,166" stroke="var(--red)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
-<text x="240" y="244" fill="var(--red)" font-size="7" font-weight="600">[B11] [A3]</text>
+<!-- J2024 CAN2 → DCAN2 (blue dashed, col 265) -->
+<path d="M200,180 L265,180 L265,121 L350,121" stroke="var(--can)" stroke-width="2" fill="none" stroke-dasharray="8,4" marker-end="url(#ac)"/>
+<text x="215" y="155" fill="var(--can)" font-size="7">⚡ isolated</text>
 
-<!-- J2034 IMD → HET1/HET2 (gray, 90° bend to HET1) -->
-<path d="M200,316 L300,316 L300,210 L350,210" stroke="var(--pwr)" stroke-width="1.5" fill="none"/>
-<text x="240" y="308" fill="var(--pwr)" font-size="7">[A9] [M3]</text>
+<!-- J2033 Interlock → N2HET1 (red, col 280) -->
+<path d="M200,248 L280,248 L280,166 L350,166" stroke="var(--red)" stroke-width="2.5" fill="none" marker-end="url(#ar)"/>
+<text x="215" y="230" fill="var(--red)" font-size="7" font-weight="600">[B11] [A3]</text>
+
+<!-- J2034 IMD → ADC1 (gray, col 295) -->
+<path d="M200,305 L295,305 L295,211 L350,211" stroke="var(--pwr)" stroke-width="1.5" fill="none"/>
+<text x="215" y="298" fill="var(--pwr)" font-size="7">[A9] [M3]</text>
 
 
 <!-- ================================================================ -->
@@ -196,26 +199,33 @@ h2{color:#fff;font-size:1.05rem;margin-bottom:4px}
 <path d="M710,85 L940,85 L940,183 L1020,183" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#ay)"/>
 <text x="950" y="150" fill="var(--sps)" font-size="7">spiREG2 shared</text>
 
-<!-- Wire 4: N2HET2 → SPS IC control (yellow thin dashed, stays inside MCU box) -->
-<path d="M570,170 L620,170 L620,160 L760,160" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
-<text x="680" y="155" fill="var(--dim)" font-size="6">HET2 → SPS ctrl</text>
+<!-- Wire 4: N2HET2 → SPS ctrl (route ABOVE MibSPI3 row, along y=145) -->
+<path d="M570,166 L575,166 L575,145 L760,145" stroke="var(--sps)" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+<text x="680" y="140" fill="var(--dim)" font-size="6">HET2 → SPS ctrl [D8] CS [T5] RST</text>
 
 
 <!-- ================================================================ -->
-<!--  WIRES: MCU bottom → J9000 (green, vertical)                    -->
+<!--  WIRES: MCU peripherals → J9000 (green, routed out bottom)      -->
+<!--  Route: exit peripheral RIGHT edge → down along column → left   -->
+<!--  along y=238 clear channel → down to J9000                      -->
+<!--  Columns: SPI1=445, SPI4=485, HET2=560, I2C=600                -->
 <!-- ================================================================ -->
 
-<!-- SPI1 → J9000 -->
-<path d="M525,97 L525,240 L460,240 L460,280" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
-<text x="470" y="260" fill="var(--spi)" font-size="7" font-weight="700">SPI1 [ded.] DMA CH0/1</text>
+<!-- SPI1 → J9000 (exit right of MibSPI1, down col 445, into J9000) -->
+<path d="M480,81 L480,97 L445,97 L445,280" stroke="var(--spi)" stroke-width="3" fill="none" marker-end="url(#ag)"/>
+<text x="448" y="238" fill="var(--spi)" font-size="7" font-weight="700" transform="rotate(-90,448,238)">SPI1 [ded.] DMA</text>
 
-<!-- SPI4 → J9000 -->
-<path d="M525,137 L540,137 L540,240 L560,240 L560,280" stroke="var(--spi)" stroke-width="2" fill="none" marker-end="url(#ag)"/>
-<text x="555" y="268" fill="var(--spi)" font-size="7">SPI4</text>
+<!-- SPI4 → J9000 (exit bottom of MibSPI4, down col 485) -->
+<path d="M500,137 L485,137 L485,280" stroke="var(--spi)" stroke-width="2" fill="none" marker-end="url(#ag)"/>
+<text x="488" y="250" fill="var(--spi)" font-size="7" transform="rotate(-90,488,250)">SPI4</text>
 
-<!-- GPIO (HET2 + I2C PEX) → J9000 -->
-<path d="M525,182 L550,182 L550,240 L660,240 L660,280" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
-<path d="M665,137 L680,137 L680,240 L720,240 L720,280" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>
+<!-- N2HET2 GPIO → J9000 (exit bottom, down col 560) -->
+<path d="M525,182 L560,182 L560,280" stroke="var(--sps)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ay)"/>
+<text x="563" y="248" fill="var(--dim)" font-size="6" transform="rotate(-90,563,248)">HET2 GPIO</text>
+
+<!-- I2C PEX → J9000 (exit bottom of I2C1, down col 600) -->
+<path d="M665,137 L665,145 L600,145 L600,280" stroke="var(--i2c)" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ap)"/>
+<text x="603" y="248" fill="var(--dim)" font-size="6" transform="rotate(-90,603,248)">I2C PEX</text>
 
 
 <!-- ================================================================ -->
