@@ -1,22 +1,28 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><link rel="stylesheet" href="shared.css"><title>Test Cases</title></head><body>
 <h2>SYS.4 HIL Test Cases</h2>
-<p class="desc">80 test cases | 14 categories | TSR safety + SYS.3 architecture + ASIL D depth + endurance + EMC</p>
+<p class="desc">107 test cases | 20 categories | Full ASIL D coverage: TSR + SYS.3 + SSR + FMEA + endurance + EMC</p>
 
 <div class="stats">
   <div class="stat"><div class="num">5</div><div class="label">Normal Ops</div></div>
   <div class="stat"><div class="num">15</div><div class="label">Safety (TSR)</div></div>
-  <div class="stat"><div class="num">8</div><div class="label">Fault Electrical</div></div>
+  <div class="stat"><div class="num">8</div><div class="label">Fault Elec</div></div>
   <div class="stat"><div class="num">5</div><div class="label">Fault Comms</div></div>
   <div class="stat"><div class="num">3</div><div class="label">Multi-Fault</div></div>
   <div class="stat"><div class="num">3</div><div class="label">Recovery</div></div>
-  <div class="stat"><div class="num">3</div><div class="label">Gap Negative</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Gap Neg</div></div>
   <div class="stat"><div class="num">14</div><div class="label">SYS.3 Arch</div></div>
   <div class="stat"><div class="num">9</div><div class="label">ASIL D OV</div></div>
   <div class="stat"><div class="num">3</div><div class="label">ASIL D AFE</div></div>
-  <div class="stat"><div class="num">2</div><div class="label">OC Extended</div></div>
-  <div class="stat"><div class="num">3</div><div class="label">Temp Extended</div></div>
+  <div class="stat"><div class="num">2</div><div class="label">OC Ext</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Temp Ext</div></div>
   <div class="stat"><div class="num">3</div><div class="label">Endurance</div></div>
-  <div class="stat"><div class="num">3</div><div class="label">EMC/Robust</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">EMC</div></div>
+  <div class="stat"><div class="num">7</div><div class="label">ASIL D UV</div></div>
+  <div class="stat"><div class="num">7</div><div class="label">SSR React</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Contactor</div></div>
+  <div class="stat"><div class="num">4</div><div class="label">DIAG Cov</div></div>
+  <div class="stat"><div class="num">4</div><div class="label">Comm Safe</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">Sys Mon</div></div>
 </div>
 
 <table>
@@ -103,5 +109,39 @@
   <tr><td>HIL-SIT-150</td><td>EMC</td><td>—</td><td></td><td>CAN error frame injection (100 frames/s)</td><td></td><td>3</td><td>PP-06</td></tr>
   <tr><td>HIL-SIT-151</td><td>EMC</td><td>—</td><td></td><td>CAN bus load 80% saturation</td><td></td><td>3</td><td>PP-06</td></tr>
   <tr><td>HIL-SIT-152</td><td>EMC</td><td>—</td><td></td><td>Supply brown-out: 12V → 8V dip for 500ms</td><td></td><td>3</td><td>PP-06,13</td></tr>
+  <tr style="border-top:2px solid var(--border)"><td colspan="8" style="color:var(--safety);font-weight:700;padding:10px 0 4px">Category 15: ASIL D — TSR-02 Cell Undervoltage</td></tr>
+  <tr><td>HIL-SIT-200</td><td>ASIL-D</td><td>TSR-02 MOL</td><td><span class="badge b-d">D</span></td><td>UV MOL threshold: warning only</td><td></td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-201</td><td>ASIL-D</td><td>TSR-02 RSL</td><td><span class="badge b-d">D</span></td><td>UV RSL threshold: current limiting</td><td></td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-202</td><td>ASIL-D</td><td>TSR-02</td><td><span class="badge b-d">D</span></td><td>UV MSL during PRECHARGE</td><td>≤750ms</td><td>5</td><td>PP-01,06,09</td></tr>
+  <tr><td>HIL-SIT-203</td><td>ASIL-D</td><td>TSR-02</td><td><span class="badge b-d">D</span></td><td>UV MSL during STANDBY</td><td>≤750ms</td><td>3</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-204</td><td>ASIL-D</td><td>TSR-02</td><td><span class="badge b-d">D</span></td><td>UV gradual drain 1mV/s (realistic discharge)</td><td>≤750ms</td><td>5</td><td>PP-01,06,09</td></tr>
+  <tr><td>HIL-SIT-205</td><td>ASIL-D</td><td>TSR-02</td><td><span class="badge b-d">D</span></td><td>UV counter reset (intermittent)</td><td></td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-206</td><td>ASIL-D</td><td>TSR-02 GAP-03</td><td><span class="badge b-d">D</span></td><td>Single-cell UV plausibility rejection test</td><td></td><td>5</td><td>PP-01,06</td></tr>
+  <tr style="border-top:2px solid var(--border)"><td colspan="8" style="color:var(--safety);font-weight:700;padding:10px 0 4px">Category 16: ASIL D — SSR Fault Reaction Chain</td></tr>
+  <tr><td>HIL-SIT-210</td><td>ASIL-D</td><td>SSR-020</td><td><span class="badge b-d">D</span></td><td>FATAL flag → ERROR transition (5 sources × 5 runs)</td><td>≤100ms</td><td>25</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-211</td><td>ASIL-D</td><td>SSR-021</td><td><span class="badge b-d">D</span></td><td>Contactor open within 100ms of ERROR entry</td><td>≤100ms</td><td>10</td><td>PP-09</td></tr>
+  <tr><td>HIL-SIT-212</td><td>ASIL-D</td><td>SSR-022</td><td><span class="badge b-d">D</span></td><td>ERROR exit blocked while fault active</td><td></td><td>5</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-213</td><td>ASIL-D</td><td>SSR-023</td><td><span class="badge b-d">D</span></td><td>ERROR exit blocked without CAN request (60s wait)</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-214</td><td>ASIL-D</td><td>SSR-024</td><td><span class="badge b-d">D</span></td><td>ERROR exit AND logic (both conditions required)</td><td></td><td>5</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-215</td><td>ASIL-D</td><td>SSR-020</td><td><span class="badge b-d">D</span></td><td>Double fault (OV + OC simultaneously)</td><td>≤250ms</td><td>5</td><td>PP-01,06,09</td></tr>
+  <tr><td>HIL-SIT-216</td><td>ASIL-D</td><td>SSR-020/024</td><td><span class="badge b-d">D</span></td><td>New fault during recovery attempt re-latches ERROR</td><td></td><td>3</td><td>PP-06</td></tr>
+  <tr style="border-top:2px solid var(--border)"><td colspan="8" style="color:var(--safety);font-weight:700;padding:10px 0 4px">Category 17: ASIL D — Contactor Safety</td></tr>
+  <tr><td>HIL-SIT-220</td><td>ASIL-D</td><td>SSR-050</td><td><span class="badge b-d">D</span></td><td>Feedback mismatch all 3 contactors individually</td><td>≤350ms</td><td>15</td><td>PP-08,09</td></tr>
+  <tr><td>HIL-SIT-221</td><td>ASIL-D</td><td>SSR-051</td><td><span class="badge b-d">D</span></td><td>Contactor close rejected from ERROR state</td><td></td><td>5</td><td>PP-06,09</td></tr>
+  <tr><td>HIL-SIT-222</td><td>ASIL-D</td><td>SSR-051</td><td><span class="badge b-d">D</span></td><td>No spontaneous contactor close in STANDBY (60s)</td><td></td><td>3</td><td>PP-09</td></tr>
+  <tr style="border-top:2px solid var(--border)"><td colspan="8" style="color:var(--safety);font-weight:700;padding:10px 0 4px">Category 18: ASIL D — DIAG Coverage</td></tr>
+  <tr><td>HIL-SIT-230</td><td>ASIL-D</td><td>SSR-030</td><td><span class="badge b-d">D</span></td><td>Threshold counter config verification (all ASIL D IDs)</td><td></td><td>1</td><td>PP-15</td></tr>
+  <tr><td>HIL-SIT-231</td><td>ASIL-D</td><td>SSR-031</td><td><span class="badge b-d">D</span></td><td>Noise rejection: no false FATAL from ±5mV oscillation</td><td></td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-232</td><td>ASIL-D</td><td>SSR-032</td><td><span class="badge b-d">D</span></td><td>Persistent fault reaches threshold → FATAL</td><td>≤750ms</td><td>5</td><td>PP-01,06</td></tr>
+  <tr><td>HIL-SIT-233</td><td>ASIL-D</td><td>SSR-033</td><td><span class="badge b-d">D</span></td><td>Counter decrement on recovery (full reset verified)</td><td></td><td>3</td><td>PP-01,06</td></tr>
+  <tr style="border-top:2px solid var(--border)"><td colspan="8" style="color:var(--safety);font-weight:700;padding:10px 0 4px">Category 19: ASIL D — Communication Safety</td></tr>
+  <tr><td>HIL-SIT-240</td><td>ASIL-D</td><td>SSR-040</td><td><span class="badge b-d">D</span></td><td>CAN loss → ERROR timing accuracy</td><td>≤1250ms</td><td>10</td><td>PP-07</td></tr>
+  <tr><td>HIL-SIT-241</td><td>ASIL-D</td><td>SSR-041</td><td><span class="badge b-d">D</span></td><td>IVT per-channel timeout (3 channels × 3 runs)</td><td>≤160-1250ms</td><td>9</td><td>PP-06</td></tr>
+  <tr><td>HIL-SIT-242</td><td>ASIL-D</td><td>SSR-042</td><td><span class="badge b-d">D</span></td><td>AFE loss → ERROR timing accuracy</td><td>≤200ms</td><td>10</td><td>PP-04</td></tr>
+  <tr><td>HIL-SIT-243</td><td>ASIL-D</td><td>SSR-040</td><td><span class="badge b-d">D</span></td><td>CAN recovery after 500ms loss (below FTTI)</td><td></td><td>5</td><td>PP-07</td></tr>
+  <tr style="border-top:2px solid var(--border)"><td colspan="8" style="color:var(--safety);font-weight:700;padding:10px 0 4px">Category 20: ASIL D — System Monitoring</td></tr>
+  <tr><td>HIL-SIT-250</td><td>ASIL-D</td><td>TSR-12</td><td><span class="badge b-d">D</span></td><td>DIAG config presence (SYSTEM_MON, FLASH_CRC, ALERT)</td><td></td><td>1</td><td>PP-15</td></tr>
+  <tr><td>HIL-SIT-251</td><td>ASIL-D</td><td>TSR-12/14</td><td><span class="badge b-d">D</span></td><td>SBC watchdog service verification (10 min soak)</td><td></td><td>1</td><td>PP-16,17</td></tr>
+  <tr><td>HIL-SIT-252</td><td>ASIL-D</td><td>GAP-05</td><td><span class="badge b-d">D</span></td><td>FRAM read-back integrity across power cycle</td><td></td><td>5</td><td>PP-06</td></tr>
 </table>
 </body></html>

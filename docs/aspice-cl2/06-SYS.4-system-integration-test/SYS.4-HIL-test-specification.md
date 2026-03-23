@@ -9,7 +9,8 @@
 | Rev | Date | Author | Reviewer | Description |
 |---|---|---|---|---|
 | 1.0 | 2026-03-23 | An Dao | Phase 3 audit panel (10/10 approved) | Initial release — 42 HIL test cases |
-| 2.0 | 2026-03-23 | An Dao | Pending review | Expanded: +38 tests (SYS.3 architecture, ASIL D depth, endurance, EMC) |
+| 2.0 | 2026-03-23 | An Dao | Pending review | Expanded: +38 tests (SYS.3 architecture, ASIL D OV/AFE depth, endurance, EMC) |
+| 3.0 | 2026-03-23 | An Dao | Pending review | Full ASIL D: +33 tests (UV depth, SSR reaction chain, contactor safety, DIAG coverage, comm safety, system monitoring) |
 
 ## 1. Purpose
 
@@ -1230,6 +1231,417 @@ threshold test with boundary values, state-specific behavior, and edge cases.
 | **Stimulus** | Dip J2009 supply from 12V to 8V for 500ms, then back to 12V |
 | **Pass criteria** | Either: BMS recovers and returns to NORMAL, or BMS enters ERROR (clean shutdown). No undefined behavior. |
 | **Runs** | 3 |
+
+### Category 15: ASIL D Depth — TSR-02 Cell Undervoltage
+
+Mirror of TSR-01 depth for the undervoltage path (ASIL C rated but SSR-002 is ASIL D).
+
+---
+
+#### HIL-SIT-200: TSR-02 UV — MOL Threshold (Warning Only)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-02 (MOL) |
+| **Objective** | Verify MOL undervoltage triggers warning but NOT contactor open |
+| **Preconditions** | BMS in NORMAL, all cells 2000 mV |
+| **Stimulus** | Set all cells to MOL threshold (e.g., 1800 mV) |
+| **Pass criteria** | DIAG warning fires; BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-201: TSR-02 UV — RSL Threshold
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-02 (RSL) |
+| **Objective** | Verify RSL undervoltage triggers current limiting |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set all cells to RSL threshold |
+| **Pass criteria** | DIAG RSL fires; discharge current limit reduced; BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-202: TSR-02 UV — MSL During PRECHARGE
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-02 |
+| **Objective** | Verify UV detection during PRECHARGE state |
+| **Preconditions** | BMS transitioning to PRECHARGE |
+| **Stimulus** | Set all cells to 1450 mV during precharge |
+| **Pass criteria** | Precharge aborts; ERROR; contactors OPEN |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-203: TSR-02 UV — MSL During STANDBY
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-02 |
+| **Objective** | Verify UV detection during STANDBY |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Set all cells to 1450 mV |
+| **Pass criteria** | FATAL fires; ERROR (contactors already open) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-204: TSR-02 UV — Gradual Drain (1 mV/s)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-02 |
+| **Objective** | Verify UV detection with slow voltage drop (realistic discharge) |
+| **Preconditions** | BMS in NORMAL, all cells 1600 mV |
+| **Stimulus** | Ramp all cells down at 1 mV/s from 1600 → 1400 mV |
+| **Pass criteria** | ERROR triggers at 1500 mV ±3 mV; reaction ≤ 750ms from crossing |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-205: TSR-02 UV — Counter Reset (Intermittent)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-02, SSR-033 |
+| **Objective** | Verify counter decrements when UV fault clears before threshold |
+| **Preconditions** | BMS in NORMAL, all cells 1600 mV |
+| **Stimulus** | Set all cells to 1480 mV for 200ms, then back to 1600 mV; repeat 3× |
+| **Pass criteria** | BMS does NOT enter ERROR |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-206: TSR-02 UV — Single Cell (Plausibility Check)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-02, GAP-03 |
+| **Objective** | Test if single-cell UV is also affected by plausibility rejection |
+| **Preconditions** | BMS in NORMAL, 17 cells at 2500 mV |
+| **Stimulus** | Set cell 0 to 1450 mV (spread = 1050 mV >> 300 mV threshold) |
+| **Pass criteria** | Cell 0 is rejected as outlier (WARNING only). Verify plausibility applies to UV path too. |
+| **Runs** | 5 |
+
+---
+
+### Category 16: ASIL D Depth — SSR Fault Reaction Chain
+
+Tests the core ASIL D reaction: FATAL → ERROR → CONT_OpenAll → safe state.
+
+---
+
+#### HIL-SIT-210: SSR-020 — FATAL Flag → ERROR Transition
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-020 |
+| **ASIL** | D |
+| **Objective** | Verify ANY DIAG FATAL triggers ERROR transition |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Trigger 5 different FATAL sources sequentially (OV, UV, OC, OT, AFE loss) |
+| **Pass criteria** | Each triggers ERROR within one BMS task cycle (100ms) |
+| **Runs** | 5 per source (25 total) |
+
+---
+
+#### HIL-SIT-211: SSR-021 — Contactor Open Within 100ms of ERROR
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-021 |
+| **ASIL** | D |
+| **Objective** | Measure time from ERROR state entry to contactor de-energize |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Trigger OV fault; measure t_ERROR to t_SPS_output_LOW |
+| **Pass criteria** | SPS command issued within 100ms of ERROR entry; all 3 contactors commanded open |
+| **Statistical** | 10 runs; report mean/min/max/σ |
+
+---
+
+#### HIL-SIT-212: SSR-022 — ERROR Exit Requires Fault Clear
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-022 |
+| **ASIL** | D |
+| **Objective** | Verify ERROR cannot exit while fault condition persists |
+| **Preconditions** | BMS in ERROR (OV fault active, cells still at 2850 mV) |
+| **Stimulus** | Send CAN 0x210 STANDBY request (without clearing fault) |
+| **Pass criteria** | BMS remains in ERROR |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-213: SSR-023 — ERROR Exit Requires CAN Request
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-023 |
+| **ASIL** | D |
+| **Objective** | Verify ERROR cannot exit without explicit STANDBY request |
+| **Preconditions** | BMS in ERROR, fault cleared (cells back to 3600 mV) |
+| **Stimulus** | Wait 60s without sending any CAN request |
+| **Pass criteria** | BMS remains in ERROR for full 60s (no auto-recovery) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-214: SSR-024 — ERROR Exit AND Logic
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-024 |
+| **ASIL** | D |
+| **Objective** | Verify both conditions must be TRUE simultaneously for ERROR exit |
+| **Preconditions** | BMS in ERROR |
+| **Stimulus** | 1. Clear fault first, wait 5s, THEN send STANDBY request. 2. Send request first, THEN clear fault. Both must work. |
+| **Pass criteria** | ERROR exits ONLY when both conditions met in same evaluation cycle |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-215: SSR-020 — Double Fault (OV + OC Simultaneously)
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-020 |
+| **ASIL** | D |
+| **Objective** | Verify ERROR handling with two simultaneous FATAL flags |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set cells to 2850 mV AND IVT current to 3000 mA simultaneously |
+| **Pass criteria** | ERROR; BOTH DIAG IDs flagged; contactor open within fastest FTTI (250ms) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-216: SSR-020 — ERROR During Recovery Attempt
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-020, SSR-024 |
+| **ASIL** | D |
+| **Objective** | Verify new fault during ERROR recovery re-latches ERROR |
+| **Preconditions** | BMS in ERROR, fault cleared, about to send STANDBY request |
+| **Stimulus** | Inject new OC fault just before sending STANDBY request |
+| **Pass criteria** | ERROR persists; new DIAG ID flagged; recovery blocked |
+| **Runs** | 3 |
+
+---
+
+### Category 17: ASIL D Depth — Contactor Safety (SSR-050/051/052)
+
+---
+
+#### HIL-SIT-220: SSR-050 — Feedback Mismatch All 3 Contactors
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-050 |
+| **ASIL** | D |
+| **Objective** | Verify feedback mismatch detection on each contactor individually |
+| **Preconditions** | BMS in ERROR (contactors commanded OPEN) |
+| **Stimulus** | Force feedback relay: 1. String+ CLOSED 2. String- CLOSED 3. (Precharge — no feedback, GAP-02) |
+| **Pass criteria** | DIAG fires for String+ and String- within 350ms each; Precharge: no DIAG (confirms GAP-02) |
+| **Runs** | 5 per contactor |
+
+---
+
+#### HIL-SIT-221: SSR-051 — Contactor Close Only in Valid States
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-051 |
+| **ASIL** | D |
+| **Objective** | Verify contactors cannot close from ERROR state without proper recovery |
+| **Preconditions** | BMS in ERROR |
+| **Stimulus** | Send CAN 0x210 = NORMAL request (invalid from ERROR) |
+| **Pass criteria** | Contactors remain OPEN; BMS remains in ERROR |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-222: SSR-051 — Contactor Close Rejected During STANDBY Without Request
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-051 |
+| **ASIL** | D |
+| **Objective** | Verify contactors don't close spontaneously in STANDBY |
+| **Preconditions** | BMS in STANDBY, no CAN state requests sent |
+| **Stimulus** | Wait 60s, monitor SPS outputs |
+| **Pass criteria** | All SPS outputs remain LOW for 60s; no contactor actuation |
+| **Runs** | 3 |
+
+---
+
+### Category 18: ASIL D Depth — DIAG Coverage (SSR-030/031/032/033)
+
+---
+
+#### HIL-SIT-230: SSR-030 — Threshold Counter Configuration Verification
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-030 |
+| **ASIL** | D |
+| **Objective** | Verify DIAG threshold counters are configured correctly for all ASIL D IDs |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Read DIAG configuration via CAN debug or JTAG |
+| **Pass criteria** | OV threshold=50, OC threshold=10, OT threshold=500, AFE threshold=5. All match diag_cfg.c |
+| **Runs** | 1 |
+
+---
+
+#### HIL-SIT-231: SSR-031 — Noise Rejection (No False FATAL)
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-031 |
+| **ASIL** | D |
+| **Objective** | Verify threshold counting prevents false FATAL from measurement noise |
+| **Preconditions** | BMS in NORMAL, all cells 2790 mV (10 mV below OV threshold) |
+| **Stimulus** | Add ±5 mV noise to cell voltage (rapid oscillation above/below 2800 mV, 1 ms period) |
+| **Pass criteria** | BMS does NOT enter ERROR (noise is too fast for 50-event threshold at 10ms period) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-232: SSR-032 — Persistent Fault Reaches Threshold
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-032 |
+| **ASIL** | D |
+| **Objective** | Verify persistent fault IS detected (counter reaches threshold) |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set all cells to 2810 mV (sustained, above threshold) |
+| **Pass criteria** | ERROR within 750ms; counter reached 50 (verified via DIAG data) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-233: SSR-033 — Counter Decrement on Recovery
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-033 |
+| **ASIL** | D |
+| **Objective** | Verify counter decrements when fault clears |
+| **Preconditions** | BMS in NORMAL, trigger 30 OV events (below threshold of 50) |
+| **Stimulus** | Clear fault (cells to 3600 mV); wait 3s; re-trigger OV |
+| **Pass criteria** | On re-trigger, counter starts from 0 (not 30). Counter was fully decremented during clear period. |
+| **Runs** | 3 |
+
+---
+
+### Category 19: ASIL D Depth — Communication Safety (SSR-040/041/042)
+
+---
+
+#### HIL-SIT-240: SSR-040 — CAN Loss Detection Timing Accuracy
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-040 |
+| **ASIL** | D |
+| **Objective** | Measure exact time from CAN loss to ERROR |
+| **Preconditions** | BMS in NORMAL, vehicle CAN active |
+| **Stimulus** | Stop all CAN2 traffic; measure time to ERROR |
+| **Pass criteria** | ERROR within 1250ms FTTI |
+| **Statistical** | 10 runs; report mean/min/max/σ; FAIL if ANY > 1250ms |
+
+---
+
+#### HIL-SIT-241: SSR-041 — IVT Loss Detection per Channel
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-041 |
+| **ASIL** | D |
+| **Objective** | Verify each IVT channel timeout independently |
+| **Preconditions** | BMS in NORMAL, all IVT messages active |
+| **Stimulus** | Stop one IVT message at a time: 1. 0x521 only 2. 0x522 only 3. 0x524 only |
+| **Pass criteria** | Each triggers its specific DIAG_ID within its FTTI (current: 1250ms, V1-V3: 160ms) |
+| **Runs** | 3 per channel (9 total) |
+
+---
+
+#### HIL-SIT-242: SSR-042 — AFE Loss Detection Accuracy
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-042 |
+| **ASIL** | D |
+| **Objective** | Measure exact AFE loss to ERROR timing (200ms FTTI) |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Open daisy chain relay (PP-04) |
+| **Pass criteria** | ERROR within 200ms |
+| **Statistical** | 10 runs; report mean/min/max/σ; FAIL if ANY > 200ms |
+
+---
+
+#### HIL-SIT-243: SSR-040 — CAN Recovery After Brief Loss
+
+| Field | Value |
+|-------|-------|
+| **SSR** | SSR-040 |
+| **ASIL** | D |
+| **Objective** | Verify CAN timeout counter resets on message reception |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Stop CAN2 for 500ms (below 1250ms FTTI), then resume |
+| **Pass criteria** | BMS stays NORMAL; counter resets; no ERROR |
+| **Runs** | 5 |
+
+---
+
+### Category 20: ASIL D — System Monitoring Extended (TSR-12)
+
+---
+
+#### HIL-SIT-250: TSR-12 — DIAG Configuration Presence
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-12 |
+| **ASIL** | D |
+| **Objective** | Verify SYSTEM_MONITORING, FLASHCHECKSUM, ALERT_MODE are configured with threshold=1, delay=0 |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | Read DIAG table via debug interface |
+| **Pass criteria** | All 3 IDs present, threshold=1, delay=0, severity=FATAL |
+| **Runs** | 1 |
+
+---
+
+#### HIL-SIT-251: TSR-12 — SBC Watchdog Service Verification
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-12, TSR-14 |
+| **ASIL** | D |
+| **Objective** | Verify SBC watchdog is being serviced (no RSTB assertion during normal operation) |
+| **Preconditions** | BMS in NORMAL, 10 min observation |
+| **Stimulus** | None (observe) |
+| **Pass criteria** | No SBC_RSTB events; no MCU resets; BMS remains NORMAL for 10 min |
+| **Runs** | 1 (10 min) |
+
+---
+
+#### HIL-SIT-252: TSR-12 — FRAM Read-Back Integrity
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-12, GAP-05 |
+| **Objective** | Verify FRAM stores and retrieves SOC correctly |
+| **Preconditions** | BMS in NORMAL, SOC at known value |
+| **Stimulus** | 1. Record SOC. 2. Power cycle. 3. Read SOC after restart. |
+| **Pass criteria** | SOC after restart matches pre-cycle value ±5% |
+| **Runs** | 5 |
+| **Note** | If FRAM write fails silently (GAP-05), SOC recalculates from voltage — may differ more than 5% |
 
 ---
 
