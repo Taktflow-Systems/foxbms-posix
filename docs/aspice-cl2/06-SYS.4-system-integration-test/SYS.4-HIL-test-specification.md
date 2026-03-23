@@ -1644,6 +1644,263 @@ Tests the core ASIL D reaction: FATAL → ERROR → CONT_OpenAll → safe state.
 | **Runs** | 5 |
 | **Note** | If FRAM write fails silently (GAP-05), SOC recalculates from voltage — may differ more than 5% |
 
+### Category 22: TSR-04 Overcurrent Discharge — Extended (ASIL B → SG ASIL D)
+
+---
+
+#### HIL-SIT-400: TSR-04 OC Discharge — MOL Threshold
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04 (MOL) | **Objective** | Verify MOL overcurrent triggers warning, not contactor open |
+| **Preconditions** | BMS in NORMAL, IVT 500 mA |
+| **Stimulus** | Ramp IVT 0x521 to MOL discharge limit |
+| **Pass criteria** | Warning DIAG fires; BMS stays NORMAL; current limit advisory via CAN |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-401: TSR-04 OC Discharge — RSL Threshold
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04 (RSL) | **Objective** | Verify RSL triggers current limiting |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | IVT 0x521 at RSL discharge limit |
+| **Pass criteria** | DIAG RSL fires; discharge current limit reduced in CAN TX |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-402: TSR-04 OC Discharge — MSL During PRECHARGE
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04 | **Objective** | Verify OC detection during PRECHARGE |
+| **Preconditions** | BMS in PRECHARGE |
+| **Stimulus** | IVT 0x521 = 3000 mA during precharge |
+| **Pass criteria** | Precharge aborts; ERROR within 250ms |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-403: TSR-04 OC Discharge — MSL During STANDBY
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04 | **Objective** | Verify OC detection during STANDBY |
+| **Preconditions** | BMS in STANDBY |
+| **Stimulus** | IVT 0x521 = 3000 mA (should be 0 with contactors open) |
+| **Pass criteria** | FATAL fires; ERROR (also triggers TSR-15 current-on-open-string) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-404: TSR-04 OC Discharge — Counter Reset
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-04, SSR-033 | **Objective** | Verify counter decrements when OC clears |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | IVT = 2500 mA for 50ms (5 events, below threshold 10), then back to 500 mA |
+| **Pass criteria** | BMS stays NORMAL; counter resets |
+| **Runs** | 5 |
+
+---
+
+### Category 23: TSR-05 Overcurrent Charge — Extended (ASIL C → SG ASIL D)
+
+---
+
+#### HIL-SIT-410: TSR-05 OC Charge — MOL Threshold
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-05 (MOL) | **Objective** | Verify MOL overcurrent charge triggers warning only |
+| **Preconditions** | BMS in NORMAL, IVT -500 mA (charging) |
+| **Stimulus** | IVT 0x521 = MOL charge limit (negative direction) |
+| **Pass criteria** | Warning fires; BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-411: TSR-05 OC Charge — RSL Threshold
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-05 (RSL) | **Objective** | Verify RSL triggers charge current limiting |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | IVT 0x521 at RSL charge limit |
+| **Pass criteria** | DIAG RSL fires; charge current limit reduced |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-412: TSR-05 OC Charge — MSL Detection + FTTI
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-05 | **ASIL** | C |
+| **Objective** | Verify MSL charge overcurrent → ERROR within FTTI |
+| **Preconditions** | BMS in NORMAL, IVT charging |
+| **Stimulus** | IVT 0x521 = -3000 mA (exceeds charge limit) |
+| **Pass criteria** | ERROR within 250ms; contactors OPEN |
+| **Statistical** | 10 runs; FAIL if ANY > 250ms |
+
+---
+
+#### HIL-SIT-413: TSR-05 OC Charge — Boundary (Step Through Threshold)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-05 | **Objective** | Verify exact charge OC threshold |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Ramp IVT charge from -2000 → -3000 mA in 100 mA steps |
+| **Pass criteria** | ERROR triggers at -2400 mA (BS_MAX_CHARGE_CURRENT_MSL) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-414: TSR-05 OC Charge — During Regenerative Braking Simulation
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-05 | **Objective** | Simulate regenerative braking overcurrent (real automotive scenario) |
+| **Preconditions** | BMS in NORMAL, IVT at -1000 mA (normal regen) |
+| **Stimulus** | Spike IVT to -3500 mA for 200ms (emergency regen), then back to -1000 mA |
+| **Pass criteria** | ERROR triggers if spike exceeds threshold for 10 events (100ms); if < 10 events, BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+### Category 24: TSR-06 Overtemperature — Extended (ASIL C)
+
+---
+
+#### HIL-SIT-420: TSR-06 OT — MOL Threshold (Warning)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-06 (MOL) | **Objective** | Verify MOL OT triggers warning without contactor action |
+| **Preconditions** | BMS in NORMAL, IVT 500 mA discharge |
+| **Stimulus** | Set all NTCs to MOL discharge temp |
+| **Pass criteria** | Warning DIAG; BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-421: TSR-06 OT — RSL Threshold (Current Derating)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-06 (RSL) | **Objective** | Verify RSL OT triggers current derating |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set NTCs to RSL discharge temp |
+| **Pass criteria** | Current limit reduced; BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-422: TSR-06 OT — MSL During PRECHARGE
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-06 | **Objective** | Verify OT detection during PRECHARGE |
+| **Preconditions** | BMS in PRECHARGE |
+| **Stimulus** | Set NTCs to 60°C + IVT current flowing |
+| **Pass criteria** | Precharge aborts; ERROR within 6050ms |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-423: TSR-06 OT — Single Sensor vs All Sensors
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-06 | **Objective** | Verify OT triggers if ANY sensor exceeds threshold (not just average) |
+| **Preconditions** | BMS in NORMAL, 7 NTCs at 25°C, IVT 500 mA |
+| **Stimulus** | Set only NTC 3 to 60°C (above 55°C MSL) |
+| **Pass criteria** | ERROR triggers (per-sensor check, not average) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-424: TSR-06 OT — Counter Reset (Transient Hot Spot)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-06, SSR-033 | **Objective** | Verify counter resets after brief OT clears |
+| **Preconditions** | BMS in NORMAL |
+| **Stimulus** | Set NTCs to 58°C for 2s (200 events, below threshold 500), then back to 30°C |
+| **Pass criteria** | BMS stays NORMAL; counter resets |
+| **Runs** | 5 |
+
+---
+
+### Category 25: TSR-07 Undertemperature — Extended (ASIL B)
+
+---
+
+#### HIL-SIT-430: TSR-07 UT — MOL Threshold
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-07 (MOL) | **Objective** | Verify MOL UT triggers warning |
+| **Preconditions** | BMS in NORMAL, IVT -500 mA charge |
+| **Stimulus** | Set NTCs to MOL charge undertemp limit |
+| **Pass criteria** | Warning fires; BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-431: TSR-07 UT — RSL Threshold
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-07 (RSL) | **Objective** | Verify RSL UT triggers charge current limiting |
+| **Preconditions** | BMS in NORMAL, charging |
+| **Stimulus** | Set NTCs to RSL charge UT limit |
+| **Pass criteria** | Charge current limit reduced; BMS stays NORMAL |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-432: TSR-07 UT — MSL Charge Boundary
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-07 | **Objective** | Verify exact UT charge detection at -20°C boundary |
+| **Preconditions** | BMS in NORMAL, charging |
+| **Stimulus** | Ramp NTCs from -15°C → -25°C in 1°C steps |
+| **Pass criteria** | ERROR triggers at -20°C ±2°C (NTC measurement accuracy) |
+| **Runs** | 5 |
+
+---
+
+#### HIL-SIT-433: TSR-07 UT — Discharge at -25°C (Should NOT Trigger Different Threshold)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-07 | **Objective** | Verify UT discharge threshold (-20°C) also applies to discharge direction |
+| **Preconditions** | BMS in NORMAL, IVT 500 mA discharge |
+| **Stimulus** | Set NTCs to -25°C |
+| **Pass criteria** | ERROR triggers (UT discharge MSL at -20°C) |
+| **Runs** | 3 |
+
+---
+
+#### HIL-SIT-434: TSR-07 UT — Counter Reset (Cold Snap Recovery)
+
+| Field | Value |
+|-------|-------|
+| **TSR** | TSR-07, SSR-033 | **Objective** | Verify counter resets when temperature recovers |
+| **Preconditions** | BMS in NORMAL, charging |
+| **Stimulus** | Set NTCs to -22°C for 3s (300 events, below threshold 500), then back to 0°C |
+| **Pass criteria** | BMS stays NORMAL; counter resets |
+| **Runs** | 5 |
+
+---
+
 ### Category 21: Timing Tests (SYS.4-specific — injection-based measurements)
 
 These tests measure internal timing at intermediate probe points. This level of
@@ -1993,10 +2250,10 @@ only measure input-to-output. These tests PROVE the FTTI budgets in FOX-SAF-TSR-
 | TSR-01 (OV) | D | 010, 011, 030, 050, 051, 070 | 100-108 | 300 | 16 | Full + ASIL D |
 | TSR-02 (UV) | C | 012 | 200-206 | — | 8 | Full + ASIL D |
 | TSR-03 (Deep) | QM | 013 | — | — | 1 | Full |
-| TSR-04 (OC disch) | B | 014, 050 | 120, 121 | 302 | 5 | Full + Extended |
-| TSR-05 (OC charge) | C | 015 | — | — | 1 | Full |
-| TSR-06 (OT) | C | 016, 033 | 130, 131 | — | 4 | Full + Extended |
-| TSR-07 (UT) | B | 017 | 132 | — | 2 | Full + Extended |
+| TSR-04 (OC disch) | B | 014, 050 | 120, 121, 400-404 | 302 | 10 | Full + ASIL D |
+| TSR-05 (OC charge) | C | 015 | 410-414 | — | 6 | Full + Extended |
+| TSR-06 (OT) | C | 016, 033 | 130, 131, 420-424 | — | 9 | Full + Extended |
+| TSR-07 (UT) | B | 017 | 132, 430-434 | — | 7 | Full + Extended |
 | TSR-08 (Cont FB) | B | 002, 004, 018, 031, 035, 036, 071 | 220 | 305, 306 | 10 | Full + ASIL D |
 | TSR-09 (IVT) | B | 019, 040, 041, 044 | 241 | — | 5 | Full + ASIL D |
 | TSR-10 (AFE) | D | 020, 042, 051 | 110-112, 242 | 301, 310 | 9 | Full + ASIL D |
@@ -2014,12 +2271,12 @@ only measure input-to-output. These tests PROVE the FTTI budgets in FOX-SAF-TSR-
 |-----|-------------|------|-----------|----------|
 | SSR-001 | Detect OV within FTTI | D | 010, 011, 100-108, 300 | Full |
 | SSR-002 | Detect UV within FTTI | D | 012, 200-206 | Full |
-| SSR-003 | Detect OC discharge | D | 014, 120, 121, 302 | Full |
-| SSR-004 | Detect OC charge | D | 015 | Full |
-| SSR-005 | Detect OT discharge | D | 016, 130, 131 | Full |
-| SSR-006 | Detect UT discharge | D | 017, 132 | Full |
-| SSR-007 | Detect OT charge | D | 016, 130 | Full |
-| SSR-008 | Detect UT charge | D | 017 | Full |
+| SSR-003 | Detect OC discharge | D | 014, 120, 121, 302, 400-404 | Full + ASIL D |
+| SSR-004 | Detect OC charge | D | 015, 410-414 | Full + Extended |
+| SSR-005 | Detect OT discharge | D | 016, 130, 131, 420-424 | Full + Extended |
+| SSR-006 | Detect UT discharge | D | 017, 132, 430-434 | Full + Extended |
+| SSR-007 | Detect OT charge | D | 016, 130, 420-424 | Full + Extended |
+| SSR-008 | Detect UT charge | D | 017, 430-434 | Full + Extended |
 | SSR-009 | Detect deep discharge | D | 013 | Full |
 | SSR-010 | Detect current on open string | D | 024, 034, 072 | Full |
 | SSR-020 | FATAL → ERROR transition | D | 210, 215, 216 | Full |
