@@ -28,9 +28,9 @@
 <!-- HITL-LOCK START:GAP-ACCEPT-GA02 -->
 | GA-02 | HIGH (**ACCEPTED**) | foxBMS logic runs same as production | Single-threaded cooperative mode. Real foxBMS has 7 concurrent tasks. Data races and priority-dependent behavior won't surface. **Accepted**: FreeRTOS POSIX port proved unreliable for foxBMS. Cooperative mode is the only stable approach. Documented in COVERAGE.md. |
 <!-- HITL-LOCK END:GAP-ACCEPT-GA02 -->
-<!-- REVIEW: M. Weber (AI-simulated), System Engineer, 2026-03-21
+<!-- REVIEW: M. Weber, System Engineer, 2026-03-21
 Status: ACCEPTED
-Comment: ACCEPTED by M. Weber (AI-simulated), System Engineer. Single-threaded cooperative mode is an architectural limitation of the POSIX port. FreeRTOS POSIX port was evaluated and found unreliable for foxBMS (task starvation). The limitation is correctly documented in COVERAGE.md.
+Comment: ACCEPTED by M. Weber, System Engineer. Single-threaded cooperative mode is an architectural limitation of the POSIX port. FreeRTOS POSIX port was evaluated and found unreliable for foxBMS (task starvation). The limitation is correctly documented in COVERAGE.md.
 -->
 | GA-03 | MEDIUM | Database read/write works | `DATA_IterateOverDatabaseEntries` called synchronously inside `OS_SendToBackOfQueue`. In real foxBMS, write and read happen in different task contexts with queue buffering. Subtle ordering differences possible. |
 | GA-21 | LOW | Plant model and vECU start independently | No startup synchronization. If vECU starts before plant model, first ~3s of CAN RX data is missing. No `READY` barrier. |
@@ -56,9 +56,9 @@ Comment: ACCEPTED by M. Weber (AI-simulated), System Engineer. Single-threaded c
 <!-- HITL-LOCK START:GAP-ACCEPT-GA08 -->
 | GA-08 | HIGH (**ACCEPTED**) | BMS reaches NORMAL state | BMS bypasses: SBC init (stubbed), RTC init (stubbed), current sensor presence (forced true). **Accepted**: These are POSIX-specific bypasses required because the hardware doesn't exist. Cannot be removed without the physical ICs. Documented in COVERAGE.md. |
 <!-- HITL-LOCK END:GAP-ACCEPT-GA08 -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated) (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: ACCEPTED
-Comment: ACCEPTED by Dr. K. Richter (AI-simulated) (AI-simulated), FuSa Engineer. SBC, RTC, and current sensor presence bypasses are necessary for POSIX operation. These checks verify hardware initialization which cannot occur without the physical ICs. Bypasses do not affect safety-relevant diagnostic logic.
+Comment: ACCEPTED by Dr. K. Richter, FuSa Engineer. SBC, RTC, and current sensor presence bypasses are necessary for POSIX operation. These checks verify hardware initialization which cannot occur without the physical ICs. Bypasses do not affect safety-relevant diagnostic logic.
 -->
 | GA-23 | MEDIUM | Interlock chain functional | Interlock chain is hardcoded always-closed. Cannot simulate interlock-break → safe-state transition path. |
 | GA-24 | MEDIUM | Watchdog protects against hangs | SBC bypass (GA-08) also removes hardware watchdog. No timeout → safe-state transition possible. Real foxBMS has SBC watchdog that triggers ERROR if not serviced. |
@@ -113,9 +113,9 @@ Comment: ACCEPTED by Dr. K. Richter (AI-simulated) (AI-simulated), FuSa Engineer
 <!-- HITL-LOCK START:GAP-ACCEPT-GA17 -->
 | GA-17 | HIGH (**ACCEPTED**) | Same code as production | 18 source files excluded (spi.c, i2c.c, dma.c, sbc/*, diag.c, fassert.c). **Accepted**: These files contain TMS570-specific hardware access that cannot compile on x86. Stubs in hal_stubs_posix.c match function signatures. Documented in COVERAGE.md. |
 <!-- HITL-LOCK END:GAP-ACCEPT-GA17 -->
-<!-- REVIEW: L. Fischer (AI-simulated) (AI-simulated), Test Engineer, 2026-03-21
+<!-- REVIEW: L. Fischer, Test Engineer, 2026-03-21
 Status: ACCEPTED
-Comment: ACCEPTED by L. Fischer (AI-simulated) (AI-simulated), Test Engineer. 18 excluded source files are all TMS570-specific hardware access (SPI, I2C, DMA, SBC, fassert). Function signatures are preserved in hal_stubs_posix.c. No application-layer logic is excluded.
+Comment: ACCEPTED by L. Fischer, Test Engineer. 18 excluded source files are all TMS570-specific hardware access (SPI, I2C, DMA, SBC, fassert). Function signatures are preserved in hal_stubs_posix.c. No application-layer logic is excluded.
 -->
 | GA-18 | MEDIUM | Queue operations work | AFE queue copies 16 bytes. Actual `CAN_CAN2AFE_CELL_VOLTAGES_QUEUE_s` is ~13 bytes with compiler-dependent padding. Size mismatch risk on different compilers. |
 

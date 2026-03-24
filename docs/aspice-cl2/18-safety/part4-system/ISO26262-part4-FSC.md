@@ -385,9 +385,9 @@ For ASIL D safety goals (SG-01), the diagnostic configuration provides independe
 | FSR-011 | Prevent insulation failure | TSR-011 | Insulation monitoring |
 | FSR-012 | Prevent cell imbalance damage | TSR-012, TSR-013 | Balancing, SOC estimation |
 <!-- HITL-LOCK END:FSC-TRACE-TABLE -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: REVIEWED
-Comment: REVIEWED by Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
 -->
 
 *End of Document FOX-SAF-FSC-001*

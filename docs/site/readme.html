@@ -171,7 +171,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" >Index</a>
+<a href="foxbms-index.html" >foxBMS Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -194,74 +194,170 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </nav>
 <main>
 <div class="breadcrumb"><a href="index.html">Home</a> / Project Overview / README</div>
-<div class="content"><h1 id="foxbms-posix-port">foxBMS POSIX Port</h1>
-<p>foxBMS 2 v1.10.0 Battery Management System running as a native Linux x86-64 process via SocketCAN. No TMS570 hardware required.</p>
-<h2 id="status-phase-5-complete-98">Status: Phase 5 Complete (98%)</h2>
+<div class="content"><h1 id="foxbms-posix-vecu-virtual-battery-management-system">foxBMS POSIX vECU — Virtual Battery Management System</h1>
+<h2 id="what-is-this">What Is This?</h2>
+<p>This project takes <strong>foxBMS 2</strong> — a production-grade, open-source Battery Management System (BMS) written in C — and runs it entirely on a standard Linux PC instead of the original embedded hardware (TMS570 microcontroller).</p>
+<p><strong>In plain terms:</strong> a real BMS that normally runs on a tiny chip inside an electric vehicle battery pack now runs as a desktop application, talking to a simulated battery over virtual CAN bus. You can inject faults, watch the BMS react in real time, and verify every safety requirement — all without touching any hardware.</p>
+<h3 id="why-does-this-matter">Why Does This Matter?</h3>
 <table>
 <thead>
 <tr>
-<th>Phase</th>
-<th>Status</th>
-<th>Criteria</th>
+<th>If you are…</th>
+<th>This project shows…</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Phase 1: BMS NORMAL</td>
-<td><strong>COMPLETE</strong> ✓</td>
-<td>10/10</td>
+<td><strong>An interviewer</strong></td>
+<td>End-to-end embedded systems competence: C firmware, CAN protocols, ISO 26262 safety analysis, ASPICE process discipline, Docker deployment, and a live web dashboard — all in one repo</td>
 </tr>
 <tr>
-<td>Phase 2: Realistic Simulation</td>
-<td><strong>COMPLETE</strong> ✓</td>
-<td>8/8</td>
+<td><strong>A beginner</strong></td>
+<td>How a real automotive BMS works from the inside: state machines, fault detection, contactor control, and how the industry tests safety-critical software</td>
 </tr>
 <tr>
-<td>Phase 2.5: SIL Probes</td>
-<td><strong>COMPLETE</strong> ✓</td>
-<td>76/76</td>
-</tr>
-<tr>
-<td>Phase 3: Fault Injection</td>
-<td><strong>COMPLETE</strong> ✓</td>
-<td>10/11</td>
-</tr>
-<tr>
-<td>Phase 4: Integration</td>
-<td><strong>COMPLETE</strong> ✓</td>
-<td>3/3</td>
-</tr>
-<tr>
-<td>Phase 5: Web Demo &amp; Portfolio</td>
-<td><strong>COMPLETE</strong> ✓</td>
-<td>6/7</td>
-</tr>
-<tr>
-<td><strong>Overall</strong></td>
-<td><strong>98%</strong></td>
-<td><strong>113/115</strong></td>
+<td><strong>An engineer</strong></td>
+<td>A reusable pattern for SIL (Software-in-the-Loop) testing of any embedded C project — stub the hardware, simulate the plant, test at full speed</td>
 </tr>
 </tbody>
 </table>
 <h3 id="live-demo">Live Demo</h3>
+<p>Try it right now — no setup needed:</p>
 <ul>
-<li><strong>SIL Demo</strong>: <a href="https://sil.taktflow-systems.com/bms/">sil.taktflow-systems.com/bms/</a> — live BMS with fault injection</li>
-<li><strong>Documentation</strong>: <a href="https://sil.taktflow-systems.com/bms-docs/">sil.taktflow-systems.com/bms-docs/</a> — 60-page portfolio</li>
-<li><strong>Demo Guide</strong>: <a href="https://sil.taktflow-systems.com/bms-docs/sil-demo-guide.html">SIL Demo Guide</a></li>
+<li><strong>Dashboard</strong>: <a href="https://sil.taktflow-systems.com/bms/">sil.taktflow-systems.com/bms/</a> — live BMS with fault injection controls</li>
+<li><strong>Documentation</strong>: <a href="https://sil.taktflow-systems.com/bms-docs/">sil.taktflow-systems.com/bms-docs/</a> — full 60-page portfolio</li>
+<li><strong>Demo Guide</strong>: <a href="https://sil.taktflow-systems.com/bms-docs/sil-demo-guide.html">SIL Demo Guide</a> — step-by-step walkthrough</li>
 </ul>
-<h3 id="key-capabilities">Key Capabilities</h3>
+<hr />
+<h2 id="how-it-works">How It Works</h2>
+<pre><code>┌──────────────────┐       virtual CAN bus       ┌──────────────────────┐
+│  Plant Model     │ ◄──────── vcan1 ────────► │  foxBMS vECU          │
+│  (Python)        │                             │  (C binary on Linux)  │
+│                  │  sends:                     │  processes:           │
+│  Simulates a     │  • 18 cell voltages         │  • BMS state machine  │
+│  battery pack    │  • pack current (0 A)       │  • fault detection    │
+│  with 18 cells   │  • pack voltage (66.6 V)    │  • contactor control  │
+│                  │  • cell temperatures (25°C)  │  • precharge sequence │
+│                  │  • state requests            │  • 15+ CAN TX msgs   │
+└──────────────────┘                             └──────────────────────┘
+         │                                                │
+         └──────────── both run on your laptop ───────────┘
+</code></pre>
+<p><strong>Key idea:</strong> The BMS firmware doesn't know it's running on a PC. It processes CAN frames exactly like it would on real hardware. The only difference is that hardware registers are replaced with POSIX stubs (80+ functions), and the CAN bus is a Linux virtual interface instead of physical wires.</p>
+<hr />
+<h2 id="what-the-bms-does">What the BMS Does</h2>
+<p>The BMS follows a strict state machine — the same one used in real battery packs:</p>
+<pre><code>UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR
+</code></pre>
 <ul>
-<li>Full BMS state machine: UNINIT → INIT → IDLE → STANDBY → PRECHARGE → NORMAL → ERROR</li>
-<li>Real <code>diag.c</code> with threshold counters — faults propagate to ERROR, contactors open</li>
-<li><strong>SWE.6 (Black-box)</strong>: Plant model injects faults via CAN → BMS reacts through normal path</li>
-<li><strong>SWE.5 (White-box)</strong>: 11 ISO 26262-5 fault methods with DB override injection</li>
-<li>2,005 ASIL-D test cases, 29/31 PASS (100% runnable)</li>
-<li>Detection times: OV 585ms, OC 116ms, OT 5510ms</li>
-<li>Web dashboard: 18-cell battery pack, contactor schematic, event log, CAN monitor</li>
-<li>Docker build + compose, CI pipeline</li>
-<li>60-page ASPICE CL2 documentation portfolio</li>
-<li>Bidirectional requirement traceability (0 orphans)</li>
+<li><strong>NORMAL</strong>: Battery is operating. The BMS monitors voltages, currents, and temperatures every cycle.</li>
+<li><strong>ERROR</strong>: A fault was detected (e.g., a cell exceeded 2.55 V). Contactors open to disconnect the battery — a real safety action.</li>
+<li><strong>PRECHARGE</strong>: Before connecting the battery to the motor, the BMS slowly charges the DC-link capacitor to avoid a dangerous inrush current spike.</li>
 </ul>
+<h3 id="fault-detection-the-safety-critical-part">Fault Detection (the safety-critical part)</h3>
+<p>The BMS continuously checks for dangerous conditions:</p>
+<table>
+<thead>
+<tr>
+<th>Fault</th>
+<th>What It Means</th>
+<th>Detection Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Overvoltage</strong></td>
+<td>A cell exceeded its safe voltage limit</td>
+<td>585 ms</td>
+</tr>
+<tr>
+<td><strong>Overcurrent</strong></td>
+<td>Too much current flowing through the pack</td>
+<td>116 ms</td>
+</tr>
+<tr>
+<td><strong>Overtemperature</strong></td>
+<td>A cell is getting dangerously hot</td>
+<td>5,510 ms</td>
+</tr>
+</tbody>
+</table>
+<p>When a fault is confirmed (threshold counters prevent false alarms), the BMS transitions to ERROR and opens the contactors. This is exactly what happens in a real EV — the battery disconnects itself to prevent fire or damage.</p>
+<hr />
+<h2 id="project-scope-at-a-glance">Project Scope at a Glance</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Test cases</td>
+<td><strong>2,005</strong> (ASIL-D level)</td>
+</tr>
+<tr>
+<td>Test pass rate</td>
+<td><strong>29/31</strong> scenarios (100% runnable)</td>
+</tr>
+<tr>
+<td>Requirement IDs traced</td>
+<td><strong>415</strong> with <strong>1,953</strong> links, <strong>0 orphans</strong></td>
+</tr>
+<tr>
+<td>Documentation pages</td>
+<td><strong>60</strong> (ASPICE CL2 + ISO 26262)</td>
+</tr>
+<tr>
+<td>Project completion</td>
+<td><strong>98%</strong> (113/115 criteria met)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phases-completed">Phases Completed</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>What Was Done</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. BMS NORMAL</td>
+<td>Get the BMS to reach NORMAL state with simulated battery</td>
+<td>Done (10/10)</td>
+</tr>
+<tr>
+<td>2. Realistic Simulation</td>
+<td>Plant model with accurate cell voltages, current, temperature</td>
+<td>Done (8/8)</td>
+</tr>
+<tr>
+<td>2.5. SIL Probes</td>
+<td>Instrument firmware to expose internal state for testing</td>
+<td>Done (76/76)</td>
+</tr>
+<tr>
+<td>3. Fault Injection</td>
+<td>Inject overvoltage, overcurrent, overtemperature faults</td>
+<td>Done (10/11)</td>
+</tr>
+<tr>
+<td>4. Integration</td>
+<td>Docker, CI pipeline, automated test suite</td>
+<td>Done (3/3)</td>
+</tr>
+<tr>
+<td>5. Web Demo</td>
+<td>Live dashboard, documentation site, portfolio</td>
+<td>Done (6/7)</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="quick-start">Quick Start</h2>
 <pre><code class="language-bash"># Prerequisites: Ubuntu 24.04, GCC 13+, Python 3.12
 git clone --recursive https://github.com/nhuvaoanh123/foxbms-posix.git
@@ -289,16 +385,9 @@ FOXBMS_CAN_IF=vcan1 ./foxbms-vecu
 - <code>0x220</code> BMS State: first byte <code>0x17</code> = state 7 (NORMAL) + 1 connected string
 - <code>0x235</code> SOC: byte 5 = <code>0xC8</code> = 50%
 - <code>0x250</code> Cell Voltages: non-zero data with mux cycling</p>
-<h2 id="architecture">Architecture</h2>
-<pre><code>Plant Model (Python)  &lt;--&gt;  SocketCAN (vcan1)  &lt;--&gt;  foxBMS vECU (C binary)
-  sends:                                              processes:
-  - 18 cell voltages (0x270)                          - BMS state machine
-  - IVT current 0A (0x521)                            - SOC estimation
-  - IVT voltages 66.6V (0x522-524)                    - Contactor control
-  - Cell temps 25C (0x280)                             - Precharge sequence
-  - State requests (0x210)                             - 15+ CAN TX messages
-</code></pre>
-<h2 id="browse-documentation-html">Browse Documentation (HTML)</h2>
+<hr />
+<h2 id="documentation-traceability">Documentation &amp; Traceability</h2>
+<h3 id="browse-the-docs-html">Browse the Docs (HTML)</h3>
 <p>The full documentation is available as an interactive HTML site with search, navigation, and <strong>clickable traceability links</strong>:</p>
 <pre><code class="language-bash"># Build the HTML site (requires: pip install markdown)
 python scripts/build-html.py
@@ -308,51 +397,46 @@ python scripts/build-trace-html.py
 xdg-open docs/site/index.html           # Linux
 start docs/site/index.html              # Windows
 </code></pre>
-<p><strong><code>docs/site/index.html</code></strong> — 59 document pages with sidebar navigation, search, and prev/next buttons.</p>
-<p>Every requirement ID (<span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-010">UT-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-011">UT-011</a><span style="color:var(--text2)"> +1 more</span></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-020">SYS-REQ-020</a><a class="tb-link tb-up" href="part-4-tsc.html#tsr-001">TSR-001</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1395</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1396</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1397</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1398</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1399</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1400</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1407</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1408</a><span style="color:var(--text2)"> +412 more</span></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #f39c12;cursor:help"><a href="traceability.html" style="color:#f39c12;text-decoration:none">SSR-003</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability-matrix.html#hz-001">HZ-001</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-002">HZ-002</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-003">HZ-003</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-004">HZ-004</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-005">HZ-005</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-006">HZ-006</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-007">HZ-007</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-008">HZ-008</a><span style="color:var(--text2)"> +12 more</span></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-008">FM-008</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-018">FM-018</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-032">IT-032</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-004">QT-004</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-016">UT-016</a></div></span></span>, etc.) is a <strong>colored link</strong>. Hover to see upstream/downstream trace links. Click to navigate to the linked requirement or the traceability explorer.</p>
-<p><strong><code>docs/site/traceability.html</code></strong> — Interactive traceability explorer. Click any of the 415 requirement IDs to see:
-- Full trace chain from stakeholder → system → software → test
-- Safety chain from hazard → safety goal → FSR → TSR → SSR → test
-- Color-coded by level, searchable, keyboard-navigable</p>
+<p>Every requirement ID (e.g., <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-010">UT-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-011">UT-011</a><span style="color:var(--text2)"> +1 more</span></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #2ecc71;cursor:help"><a href="traceability.html" style="color:#2ecc71;text-decoration:none">SW-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="part-8-traceability.html#sys-req-020">SYS-REQ-020</a><a class="tb-link tb-up" href="part-4-tsc.html#tsr-001">TSR-001</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1395</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1396</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1397</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1398</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1399</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1400</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1407</a><a class="tb-link tb-down" href="traceability.html">FI-COMBO-1408</a><span style="color:var(--text2)"> +412 more</span></div></span></span>) is a <strong>colored link</strong>. Hover to see upstream/downstream traces. Click to navigate.</p>
 <h3 id="documentation-map">Documentation Map</h3>
 <table>
 <thead>
 <tr>
 <th>Section</th>
-<th>Documents</th>
-<th>Description</th>
+<th>Docs</th>
+<th>What's Inside</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="STATUS.md">STATUS.md</a></td>
 <td>1</td>
-<td>Implementation history, 14 fixes, architecture</td>
+<td>Implementation history, 14 fixes, architecture decisions</td>
 </tr>
 <tr>
 <td><a href="PLAN.md">PLAN.md</a></td>
 <td>1</td>
-<td>Roadmap: Phase 1-4 complete (109/110, 99%)</td>
+<td>Roadmap: Phase 1–5 complete (113/115, 98%)</td>
 </tr>
 <tr>
 <td><a href="docs/aspice-cl2/">docs/aspice-cl2/</a></td>
 <td><strong>29</strong></td>
-<td>ASPICE CL2 package (SYS, SWE, MAN, SUP) + ISO 26262 ASIL-D (HARA, FSC, TSC, FMEA, FTTI, HSI)</td>
+<td>Full ASPICE CL2 package + ISO 26262 ASIL-D safety analysis</td>
 </tr>
 <tr>
 <td><a href="docs/foxbms-upstream/">docs/foxbms-upstream/</a></td>
 <td>25</td>
-<td>foxBMS module reference from docs.foxbms.org</td>
+<td>foxBMS module reference (state machine, diag, CAN, database)</td>
 </tr>
 <tr>
 <td><a href="docs/project/">docs/project/</a></td>
 <td>9</td>
-<td>Gap analysis, coverage, troubleshooting, audits, build guide</td>
+<td>Gap analysis, coverage matrix, troubleshooting, audits</td>
 </tr>
 <tr>
 <td><a href="docs/business/">docs/business/</a></td>
 <td>4</td>
-<td>ML integration, reusable pipeline, HIL data plan</td>
+<td>ML anomaly detection, reusable SIL pipeline, HIL data plan</td>
 </tr>
 <tr>
 <td><a href="docs/test/">docs/test/</a></td>
@@ -361,78 +445,114 @@ start docs/site/index.html              # Windows
 </tr>
 </tbody>
 </table>
-<h3 id="traceability">Traceability</h3>
-<pre><code class="language-bash"># Validate all trace links (CI also runs this)
-python scripts/trace-gen.py --check
-
-# Generate traceability matrix
-python scripts/trace-gen.py
-
-# Print summary
-python scripts/trace-gen.py --stats
+<h3 id="traceability-validation">Traceability Validation</h3>
+<pre><code class="language-bash">python scripts/trace-gen.py --check   # Validate all links (CI runs this too)
+python scripts/trace-gen.py           # Generate traceability matrix
+python scripts/trace-gen.py --stats   # Print summary
 </code></pre>
 <p>Current status: <strong>415 IDs, 1,953 links, 0 broken, 0 untested leaves — PASS</strong></p>
+<hr />
 <h2 id="repository-structure">Repository Structure</h2>
 <pre><code>foxbms-posix/
-├── README.md, STATUS.md, PLAN.md    ← Top-level project docs
+├── README.md, STATUS.md, PLAN.md    ← You are here
 ├── setup.sh                          ← Single-command setup + build + test
 ├── foxbms-2/                         ← Upstream foxBMS v1.10.0 (submodule)
 ├── src/                              ← POSIX port source + tests
 │   ├── foxbms_posix_main.c           Entry point + cooperative main loop
-│   ├── hal_stubs_posix.c             80+ HAL stubs + selective DIAG + SPS sim
+│   ├── hal_stubs_posix.c             80+ HAL stubs (replace real hardware)
 │   ├── sil_layer.c/h                 SIL probe + override instrumentation
-│   ├── posix_overrides.h             ARM asm + assert overrides
+│   ├── posix_overrides.h             ARM → x86 translation overrides
 │   ├── plant_model.py                Python battery simulator
-│   ├── test_smoke.py                 Smoke test (BMS NORMAL, SOC, strings)
+│   ├── test_smoke.py                 Smoke test (BMS reaches NORMAL?)
 │   ├── test_integration.py           21 integration criteria
 │   ├── test_asil.py                  50 ASIL safety criteria
 │   └── test_sil_probes.py            76 SIL probe criteria
 ├── patches/                          ← Python scripts to patch foxBMS source
-│   └── apply_all.sh                  Apply all patches in correct order
-├── scripts/
-│   ├── trace-gen.py                  Traceability scanner (415 IDs, CI validation)
-│   ├── build-html.py                 Multi-page HTML doc site with trace popups
-│   └── build-trace-html.py           Interactive traceability explorer
-├── .github/workflows/ci.yml          ← CI: smoke test + traceability + tests
-├── halcogen-headers/                 ← Pre-generated TMS570 headers
-└── docs/
-    ├── aspice-cl2/                   27 ASPICE CL2 + ASIL-D documents
-    │   ├── 00-assessment/            Scope, CL2 gap assessment, traceability
-    │   ├── 01-MAN.3.../             Project management
-    │   ├── 03-SYS.1.../            Stakeholder requirements (20)
-    │   ├── 04-SYS.2.../            System requirements (36)
-    │   ├── 05-SYS.3.../            System architecture
-    │   ├── 06-SYS.4.../            System integration test
-    │   ├── 07-SYS.5.../            System qualification test
-    │   ├── 08-SWE.1.../            Software requirements (42)
-    │   ├── 09-SWE.2.../            Software architecture (18 modules)
-    │   ├── 10-SWE.3.../            Detailed design (85 DIAG entries)
-    │   ├── 11-SWE.4.../            Unit test spec (45 cases)
-    │   ├── 12-SWE.5.../            Integration test spec (34 cases)
-    │   ├── 13-SWE.6.../            Qualification test spec (8 scenarios)
-    │   ├── 14-SUP.1.../            Quality assurance plan
-    │   ├── 15-SUP.8.../            Configuration management
-    │   ├── 16-SUP.9.../            Problem resolution (33 gaps tracked)
-    │   ├── 17-SUP.10../            Change request process
-    │   └── 18-safety/               ISO 26262 (HARA, FSC, TSC, FMEA, FTTI, HSI)
-    ├── foxbms-upstream/              24 reference docs from docs.foxbms.org
+├── scripts/                          ← Doc builder, traceability scanner
+├── .github/workflows/ci.yml          ← CI: build + test + traceability
+├── halcogen-headers/                 ← Pre-generated TMS570 register headers
+└── docs/                             ← 60-page documentation portfolio
+    ├── aspice-cl2/                   ASPICE CL2 + ISO 26262 ASIL-D
+    ├── foxbms-upstream/              foxBMS module reference
     ├── project/                      Gap analysis, coverage, troubleshooting
-    ├── business/                     ML integration, pipeline, service plans
-    ├── test/                         Fault injection test matrices
-    └── archive/                      Superseded plans and analyses
+    ├── business/                     ML integration, reusable pipeline
+    └── test/                         Fault injection test matrices
 </code></pre>
+<hr />
+<h2 id="glossary">Glossary</h2>
+<p>New to automotive embedded? Here are the key terms used throughout this project:</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>What It Means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BMS</strong></td>
+<td>Battery Management System — the controller that keeps a battery pack safe</td>
+</tr>
+<tr>
+<td><strong>CAN bus</strong></td>
+<td>Controller Area Network — the standard communication bus in vehicles</td>
+</tr>
+<tr>
+<td><strong>SIL</strong></td>
+<td>Software-in-the-Loop — running firmware on a PC instead of real hardware</td>
+</tr>
+<tr>
+<td><strong>HIL</strong></td>
+<td>Hardware-in-the-Loop — testing with real hardware + simulated environment</td>
+</tr>
+<tr>
+<td><strong>ASPICE</strong></td>
+<td>Automotive SPICE — process maturity standard (like CMMI for automotive)</td>
+</tr>
+<tr>
+<td><strong>ISO 26262</strong></td>
+<td>Functional safety standard for road vehicles</td>
+</tr>
+<tr>
+<td><strong>ASIL</strong></td>
+<td>Automotive Safety Integrity Level — A (lowest) to D (highest risk)</td>
+</tr>
+<tr>
+<td><strong>HARA</strong></td>
+<td>Hazard Analysis and Risk Assessment — identifies what can go wrong</td>
+</tr>
+<tr>
+<td><strong>vECU</strong></td>
+<td>Virtual Electronic Control Unit — firmware running on a PC</td>
+</tr>
+<tr>
+<td><strong>FTTI</strong></td>
+<td>Fault Tolerant Time Interval — how fast the system must react to a fault</td>
+</tr>
+<tr>
+<td><strong>Contactor</strong></td>
+<td>A high-voltage relay that connects/disconnects the battery pack</td>
+</tr>
+<tr>
+<td><strong>Precharge</strong></td>
+<td>Slowly charging capacitors before full connection (prevents sparks)</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="key-discoveries">Key Discoveries</h2>
+<p>Lessons learned while porting foxBMS to POSIX (useful for anyone doing similar work):</p>
 <ol>
-<li><strong>DECAN_DATA_IS_VALID = 1</strong> (not 0) — cell voltage invalid flag is inverted</li>
-<li><strong>SBC_STATEMACHINE_RUNNING = 2</strong> (not 3) — enum value mismatch caused SYS timeout</li>
-<li><strong>18 cells per module</strong> — battery config uses BS_NR_OF_CELL_BLOCKS_PER_MODULE=18</li>
-<li><strong>IVT Voltage 3 (0x524)</strong> — redundancy module uses <code>highVoltage_mV[s][2]</code>, not [s][0]</li>
-<li><strong>AFE runs in own FreeRTOS task</strong> — must call <code>MEAS_Control()</code> explicitly in cooperative mode</li>
-<li><strong>FreeRTOS POSIX port doesn't preempt</strong> — cooperative mode is the only reliable approach</li>
+<li><strong>DECAN_DATA_IS_VALID = 1</strong> (not 0) — the cell voltage "invalid" flag is inverted from what you'd expect</li>
+<li><strong>SBC_STATEMACHINE_RUNNING = 2</strong> (not 3) — an enum value mismatch caused a system timeout that blocked BMS startup</li>
+<li><strong>18 cells per module</strong> — the battery configuration uses <code>BS_NR_OF_CELL_BLOCKS_PER_MODULE=18</code></li>
+<li><strong>IVT Voltage 3 (CAN ID 0x524)</strong> — the redundancy module reads <code>highVoltage_mV[s][2]</code>, not <code>[s][0]</code></li>
+<li><strong>AFE runs in its own FreeRTOS task</strong> — must call <code>MEAS_Control()</code> explicitly in cooperative scheduling mode</li>
+<li><strong>FreeRTOS POSIX port doesn't preempt</strong> — cooperative mode is the only reliable approach on Linux</li>
 </ol>
 <h2 id="environment-variables">Environment Variables</h2>
 <ul>
-<li><code>FOXBMS_CAN_IF=vcan1</code> — SocketCAN interface (default: vcan1)</li>
+<li><code>FOXBMS_CAN_IF=vcan1</code> — SocketCAN interface name (default: vcan1)</li>
 </ul>
 <h2 id="license">License</h2>
 <p>POSIX port files: Taktflow Systems 2026

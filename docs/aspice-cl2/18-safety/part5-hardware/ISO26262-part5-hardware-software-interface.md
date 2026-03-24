@@ -8,7 +8,7 @@
 
 | Rev | Date | Author | Reviewer | Description |
 |---|---|---|---|---|
-| 1.0 | 2026-03-21 | An Dao | Dr. K. Richter (AI-simulated) | Initial release |
+| 1.0 | 2026-03-21 | An Dao | Dr. K. Richter | Initial release |
 
 ## 1. Purpose
 

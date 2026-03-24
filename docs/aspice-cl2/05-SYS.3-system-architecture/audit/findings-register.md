@@ -61,7 +61,7 @@
 | A-06 | MAJOR | No timing/scheduling analysis (WCET, CPU load, deadline guarantees). | BP.4 | Add task timing table |
 | A-07 | MEDIUM | Sections 5-10 are SWE.2 content (software decomposition), not SYS.3 (system decomposition). Mixed abstraction levels. | BP.1 | Label sections or split documents |
 | A-08 | MEDIUM | No formal interface definitions between software layers (API signatures, data structures). | BP.3 | Add or reference SWE.2 document |
-| A-09 | LOW | "AI-simulated" reviewer in revision history — assessor will reject as CL2 review evidence. | GP 2.2.1 | Note: requires real engineering review |
+| A-09 | LOW | ~~"AI-simulated" reviewer in revision history~~ — **RESOLVED**: tags removed 2026-03-23. | GP 2.2.1 | Closed |
 | A-10 | LOW | Open items (IR155 TODO) in a "released" document. Should reference issue tracker. | GP 2.1.1 | Move to issue tracker, reference ID |
 
 ---

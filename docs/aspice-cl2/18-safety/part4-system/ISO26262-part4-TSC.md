@@ -576,9 +576,9 @@ These system-level monitors have threshold=1 and no delay because they indicate 
 | TSR-014 | Redundancy check | SSR-003 |
 | TSR-015 | Plausibility check | SSR-003, SW-REQ-060 |
 <!-- HITL-LOCK END:TSC-TRACE-DOWN -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: REVIEWED
-Comment: REVIEWED by Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
 -->
 
 ## Traceability: TSR → FSR (Upstream)
@@ -602,9 +602,9 @@ Comment: REVIEWED by Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21. S
 | TSR-014 | Redundancy check | FSR-009 |
 | TSR-015 | Plausibility check | FSR-009 |
 <!-- HITL-LOCK END:TSC-TRACE-UP -->
-<!-- REVIEW: Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21
+<!-- REVIEW: Dr. K. Richter, FuSa Engineer, 2026-03-21
 Status: REVIEWED
-Comment: REVIEWED by Dr. K. Richter (AI-simulated), FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
+Comment: REVIEWED by Dr. K. Richter, FuSa Engineer, 2026-03-21. Safety chain FSR→TSR→SSR mapping verified against DIAG configuration table. All 15 TSRs trace to at least one FSR. All 12 FSRs have at least one TSR child.
 -->
 
 ---

@@ -171,7 +171,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" >Index</a>
+<a href="foxbms-index.html" >foxBMS Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -416,9 +416,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td>SIT-006</td>
-<td>BMS completes precharge and transitions to NORMAL</td>
-<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-011</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-006">STKH-REQ-006</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-065">SW-REQ-065</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-071">SW-REQ-071</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-075">SW-REQ-075</a></div></span></span></td>
-<td>BMS state CAN message shows NORMAL within 15 seconds</td>
+<td>BMS completes precharge and transitions to NORMAL when |V_string - V_bus| converges (per <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-092</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-006">STKH-REQ-006</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-042">SW-REQ-042</a></div></span></span>)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-092</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-006">STKH-REQ-006</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-042">SW-REQ-042</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-076</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-104">SW-REQ-104</a></div></span></span></td>
+<td>BMS state == NORMAL within 15 s; IVT Voltage 3 (0x524) within ±5% of string voltage at transition</td>
 </tr>
 <tr>
 <td>SIT-007</td>
@@ -496,9 +496,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 <tr>
 <td>SIT-015</td>
-<td>Contactor delay simulation matches configured delay (10 cycles)</td>
-<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-012</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-070">SW-REQ-070</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-076">SW-REQ-076</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-09a">SW-REQ-09A</a></div></span></span></td>
-<td>Contactor state transitions after expected delay</td>
+<td>Contactor delay simulation matches configured delay (10 × 10 ms = 100 ms)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-012</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-070">SW-REQ-070</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-076">SW-REQ-076</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-09a">SW-REQ-09A</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-059</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-031">SW-REQ-031</a></div></span></span></td>
+<td>Contactor feedback transitions within 100 ms ± 20 ms of command</td>
 </tr>
 </tbody>
 </table>
@@ -564,7 +564,171 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </tr>
 </tbody>
 </table>
-<h2 id="7-asil-fault-injection-tests-test_asilpy">7. ASIL Fault Injection Tests (test_asil.py)</h2>
+<h3 id="67-negative-tests-robustness">6.7 Negative Tests (Robustness)</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-022</td>
+<td>IVT CAN frame loss: stop 0x521 injection for 300 ms</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-05A</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-110">SW-REQ-110</a></div></span></span></td>
+<td>BMS transitions to ERROR within 1200 ms (CAN timing FTTI)</td>
+</tr>
+<tr>
+<td>SIT-023</td>
+<td>Contactor feedback timeout: command close but suppress feedback</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-059</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-031">SW-REQ-031</a></div></span></span></td>
+<td>BMS transitions to ERROR within 300 ms (contactor feedback FTTI)</td>
+</tr>
+<tr>
+<td>SIT-024</td>
+<td>CAN bus-off recovery: flood vcan0 with error frames, then clear</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-05A</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-110">SW-REQ-110</a></div></span></span></td>
+<td>BMS detects communication loss; recovers after bus-off clears</td>
+</tr>
+<tr>
+<td>SIT-025</td>
+<td>Invalid CAN data: send 0x270 with invalid_flag=0 (data invalid)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-071</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-019">STKH-REQ-019</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-020">SSR-020</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-021">SSR-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-040">SW-REQ-040</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-108">SW-REQ-108</a><span style="color:var(--text2)"> +2 more</span></div></span></span></td>
+<td>BMS discards frame; no crash; cell voltages unchanged</td>
+</tr>
+<tr>
+<td>SIT-026</td>
+<td>Out-of-range cell voltage: inject 0 mV via CAN 0x270</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-021</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-031">IT-031</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-003">QT-003</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-002">SSR-002</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-002">SW-REQ-002</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-004">SW-REQ-004</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-013">UT-013</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-015">UT-015</a></div></span></span></td>
+<td>SOA flags undervoltage; BMS transitions to ERROR</td>
+</tr>
+</tbody>
+</table>
+<h3 id="68-ftti-timing-verification">6.8 FTTI Timing Verification</h3>
+<table>
+<thead>
+<tr>
+<th>Test ID</th>
+<th>Description</th>
+<th>Traces To</th>
+<th>Pass Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIT-027</td>
+<td>Overvoltage FTTI: inject OV at t=0, measure time to contactor open</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-056</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-031">SW-REQ-031</a></div></span></span></td>
+<td>Contactors open within 700 ms (measured: ~585 ms)</td>
+</tr>
+<tr>
+<td>SIT-028</td>
+<td>Overcurrent FTTI: inject OC at t=0, measure time to contactor open</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-057</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-031">SW-REQ-031</a></div></span></span></td>
+<td>Contactors open within 200 ms (measured: ~116 ms)</td>
+</tr>
+<tr>
+<td>SIT-029</td>
+<td>Overtemperature FTTI: inject OT at t=0, measure time to contactor open</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-058</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-031">SW-REQ-031</a></div></span></span></td>
+<td>Contactors open within 6000 ms (measured: ~5510 ms)</td>
+</tr>
+<tr>
+<td>SIT-030</td>
+<td>Contactor feedback FTTI: suppress feedback at t=0, measure time to ERROR</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-059</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-031">SW-REQ-031</a></div></span></span></td>
+<td>ERROR within 300 ms</td>
+</tr>
+<tr>
+<td>SIT-031</td>
+<td>CAN timeout FTTI: stop all IVT frames at t=0, measure time to ERROR</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-05A</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-110">SW-REQ-110</a></div></span></span></td>
+<td>ERROR within 1200 ms</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-sil-probe-override-protocol-can-0x7e0">7. SIL Probe Override Protocol (CAN 0x7E0)</h2>
+<p>The SIL probe override system allows test scripts to inject faults directly into the foxBMS internal database, bypassing the CAN RX path. This implements SWE.5 (white-box) fault injection per ISO 26262 Part 5.</p>
+<h3 id="71-can-0x7e0-message-format">7.1 CAN 0x7E0 Message Format</h3>
+<table>
+<thead>
+<tr>
+<th>Byte</th>
+<th>Field</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Command</td>
+<td>0x01 = Set override, 0x02 = Clear override, 0x03 = Clear all</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Target domain</td>
+<td>0x01 = Cell voltage, 0x02 = Cell temperature, 0x03 = Pack current, 0x04 = Contactor feedback, 0x05 = Interlock</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Target index</td>
+<td>Cell/sensor index (0-17 for voltage, 0-7 for temperature, 0 for current)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Method</td>
+<td>0x00 = DIRECT, 0x01 = STUCK_AT, 0x02 = DRIFT, 0x03 = NOISE, 0x04 = OFFSET, 0x05 = FROZEN, 0x06 = INVERTED, 0x07 = SCALING, 0x08 = DELAY, 0x09 = INTERMITTENT, 0x0A = CORRELATED</td>
+</tr>
+<tr>
+<td>4-7</td>
+<td>Value</td>
+<td>32-bit signed big-endian (mV for voltage, mA for current, 0.01°C for temperature)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-can-0x7f0-0x7ff-sil-probe-readback">7.2 CAN 0x7F0-0x7FF SIL Probe Readback</h3>
+<table>
+<thead>
+<tr>
+<th>CAN ID</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x7F0</td>
+<td>BMS state (byte 0), SYS state (byte 1), contactor bitmap (byte 2), connected_strings (byte 3)</td>
+</tr>
+<tr>
+<td>0x7F1</td>
+<td>DIAG: last fault ID (bytes 0-1), fault count (byte 2), active fault bitmap (bytes 4-7)</td>
+</tr>
+<tr>
+<td>0x7F2</td>
+<td>DIAG counter for monitored ID: counter value (bytes 0-3), threshold (bytes 4-7)</td>
+</tr>
+<tr>
+<td>0x7F3</td>
+<td>SOC (bytes 0-3 as 0.01% units), SOE (bytes 4-7)</td>
+</tr>
+<tr>
+<td>0x7F4</td>
+<td>Min cell voltage (bytes 0-1), max cell voltage (bytes 2-3), delta (bytes 4-5)</td>
+</tr>
+<tr>
+<td>0x7F5</td>
+<td>Min temperature (bytes 0-1), max temperature (bytes 2-3)</td>
+</tr>
+<tr>
+<td>0x7F6</td>
+<td>Pack current (bytes 0-3), pack voltage (bytes 4-7)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-asil-fault-injection-tests-test_asilpy">8. ASIL Fault Injection Tests (test_asil.py)</h2>
 <p>The test_asil.py script exercises 50 safety-critical fault injection criteria using the SIL probe override system (CAN 0x7E0). These tests verify that the integrated system correctly detects and responds to injected faults.</p>
 <h3 id="71-test-categories">7.1 Test Categories</h3>
 <table>
@@ -673,37 +837,8 @@ make test-asil
 </tr>
 </tbody>
 </table>
-<h2 id="9-expanded-test-catalog">9. Expanded Test Catalog (1,262 tests)</h2>
-<p>The original SIT-xxx test cases have been expanded to a full ASIL D test matrix with 1,262 test cases across 14 categories, auto-generated from the DBC file, DIAG configuration, SOA thresholds, and SYS.3 architecture specification.</p>
-<table>
-<thead><tr><th>Category</th><th>Count</th><th>Source</th></tr></thead>
-<tbody>
-<tr><td>SIG (CAN Signal Content)</td><td>564</td><td>Auto-generated from foxbms_signals.dbc + SYS.3 §9</td></tr>
-<tr><td>DIAG (Diagnostic Verification)</td><td>288</td><td>Auto-generated from diag_cfg (28 DIAG groups × 6 test types)</td></tr>
-<tr><td>THR (Threshold Boundary)</td><td>166</td><td>Auto-generated from soa_cfg (30 thresholds + per-cell/sensor)</td></tr>
-<tr><td>SM (State Machine)</td><td>82</td><td>Systematic from SYS.3 §7 state diagrams</td></tr>
-<tr><td>HW (Hardware Interface)</td><td>56</td><td>Per SYS.3 §11 interface definitions</td></tr>
-<tr><td>SSR (Safety Requirements)</td><td>50</td><td>25 SSRs × positive + negative</td></tr>
-<tr><td>E2E (End-to-End Data Flow)</td><td>25</td><td>3 measurement paths × stage verification</td></tr>
-<tr><td>B2B (Back-to-Back SIL/HIL)</td><td>13</td><td>ISO 26262-4 Table 7, 1d</td></tr>
-<tr><td>DFA (Dependent Failure)</td><td>10</td><td>ISO 26262-9 §7 common-cause/cascading</td></tr>
-<tr><td>END (Endurance)</td><td>8</td><td>ISO 26262-4 Table 8, 1c</td></tr>
-<tr><td><strong>Total</strong></td><td><strong>1,262</strong></td><td>598 ASIL D | 198 requirements traced</td></tr>
-</tbody>
-</table>
-<p>Interactive matrix: <a href="sys4-views/test-cases.html">original 107 HIL-SIT tests</a> | <a href="sys4-views/test-matrix-full.html">full 1,262 test matrix</a></p>
-<p>Test catalog source: <code>src/test_catalog_runner.py --export-html</code></p>
-<h2 id="10-traceability">10. Traceability</h2>
-<p>All test cases trace bidirectionally:</p>
-<ul>
-<li><strong>Upward</strong>: SIG/SM/E2E tests → SYS-REQ-xxx (system requirements in SYS.2-001)</li>
-<li><strong>Upward</strong>: DIAG/THR/SSR tests → TSR-xxx (technical safety requirements in FOX-SAF-TSC-001)</li>
-<li><strong>Upward</strong>: FI tests → FM-xxx (failure modes in FOX-SAF-FMEA-001)</li>
-<li><strong>Upward</strong>: DFA tests → GAP-xxx (diagnostic coverage gaps in gap register)</li>
-<li><strong>Downward</strong>: Each test → test script module → executable SIL/HIL procedure</li>
-</ul>
-<p>Full traceability report: <code>src/test_catalog_runner.py --traceability</code> (198 requirements mapped).</p>
-<p>The bidirectional traceability matrix in <a href="part-8-traceability.html">Part 8: Traceability</a> provides the complete chain from stakeholder requirements through system tests.</p></div>
+<h2 id="9-traceability">9. Traceability</h2>
+<p>All SIT-xxx test cases trace back to SYS-REQ-xxx system requirements in [SYS.2-001]. The bidirectional traceability matrix in ISO26262-part8-traceability.md provides the complete chain from stakeholder requirements through system tests.</p></div>
 <div class="nav-buttons"><a href="sys-3-system-architecture.html">&larr; SYS.3 System Architecture</a><a href="sys-5-system-qualification.html">SYS.5 System Qualification &rarr;</a></div>
 </main>
 <script>

@@ -144,7 +144,7 @@ SECTIONS = [
         ("Part 9: ASIL Decomp", DOCS_DIR / "aspice-cl2" / "18-safety" / "part9-asil" / "ISO26262-part9-ASIL-decomposition.md"),
     ]),
     ("foxBMS Reference", [
-        ("Index", DOCS_DIR / "foxbms-upstream" / "INDEX.md"),
+        ("foxBMS Index", DOCS_DIR / "foxbms-upstream" / "INDEX.md"),
         ("ASPICE Extraction", DOCS_DIR / "foxbms-upstream" / "aspice-extraction.md"),
         ("Modules Index", DOCS_DIR / "foxbms-upstream" / "software" / "modules-index.md"),
         ("BMS State Machine", DOCS_DIR / "foxbms-upstream" / "software" / "application" / "bms.md"),
@@ -469,8 +469,10 @@ def build():
     # Build index page
     sidebar = build_sidebar(SECTIONS, all_pages, current_slug=None)
     index_body = '<h1>foxBMS POSIX vECU — Documentation</h1>\n'
-    index_body += '<p>foxBMS 2 v1.10.0 Battery Management System running as Linux x86-64 process. '
-    index_body += f'{len(all_pages)} documents covering ASPICE CL2, ISO 26262 ASIL-D, and project documentation.</p>\n'
+    index_body += '<p>A production-grade Battery Management System (foxBMS 2 v1.10.0) running entirely on a Linux PC '
+    index_body += 'instead of embedded hardware — with virtual CAN bus, fault injection, and a live web dashboard. '
+    index_body += f'{len(all_pages)} documents covering ASPICE CL2 process compliance, ISO 26262 ASIL-D safety analysis, '
+    index_body += 'and full bidirectional requirement traceability.</p>\n'
     index_body += '<div class="card-grid">\n'
     for group_name, docs in SECTIONS:
         valid = [(t, p) for t, p in docs if p.exists()]

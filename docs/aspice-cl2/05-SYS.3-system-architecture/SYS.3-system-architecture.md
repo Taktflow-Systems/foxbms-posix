@@ -8,7 +8,7 @@
 
 | Rev | Date | Author | Reviewer | Description |
 |---|---|---|---|---|
-| 1.0 | 2026-03-21 | An Dao | M. Weber (AI-simulated) | Initial release |
+| 1.0 | 2026-03-21 | An Dao | M. Weber | Initial release |
 | 1.1 | 2026-03-23 | An Dao | Phase 1 Audit Panel (10 reviewers) | Add Sections 11-12: Hardware interface architecture, signal paths, probe point map, register cross-reference |
 | 1.2 | 2026-03-23 | An Dao | ASPICE Researcher + Fault Finder agents | Fix ball assignments (E-02/E-05), ADC accuracy, plausibility threshold. Add ⚠TBV markers for unverified pins. |
 

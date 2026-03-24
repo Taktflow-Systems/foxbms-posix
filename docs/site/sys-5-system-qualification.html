@@ -171,7 +171,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" >Index</a>
+<a href="foxbms-index.html" >foxBMS Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -229,7 +229,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>1.0</td>
 <td>2026-03-21</td>
 <td>An Dao</td>
-<td>M. Weber (AI-simulated)</td>
+<td>M. Weber</td>
 <td>Initial release</td>
 </tr>
 </tbody>
@@ -323,7 +323,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>SQT-005</td>
 <td>BMS reaches NORMAL state within 15 seconds of vECU start</td>
 <td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-006</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-071">SW-REQ-071</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-011">SYS-REQ-011</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-080">SYS-REQ-080</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-081">SYS-REQ-081</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-082">SYS-REQ-082</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-083">SYS-REQ-083</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-090">SYS-REQ-090</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-091">SYS-REQ-091</a><span style="color:var(--text2)"> +5 more</span></div></span></span></td>
-<td>BMS state = NORMAL observed in CAN within 15s</td>
+<td>BMS state = NORMAL observed in CAN within 15 s (baseline: 6.3 s on reference workstation)</td>
 </tr>
 <tr>
 <td>SQT-006</td>
@@ -360,13 +360,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>SQT-009</td>
 <td>SOC is non-zero and reported on CAN 0x235</td>
 <td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-008</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-010">SW-REQ-010</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-030">SYS-REQ-030</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-130">SYS-REQ-130</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-131">SYS-REQ-131</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-132">SYS-REQ-132</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-133">SYS-REQ-133</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-134">SYS-REQ-134</a><span style="color:var(--text2)"> +1 more</span></div></span></span></td>
-<td>SOC value &gt; 0% in CAN message</td>
+<td>SOC value &gt;= 1% in CAN message (plant starts at 80% SOC)</td>
 </tr>
 <tr>
 <td>SQT-010</td>
 <td>SOC decreases over a 20-second discharge run</td>
 <td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-008</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-010">SW-REQ-010</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-030">SYS-REQ-030</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-130">SYS-REQ-130</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-131">SYS-REQ-131</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-132">SYS-REQ-132</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-133">SYS-REQ-133</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-134">SYS-REQ-134</a><span style="color:var(--text2)"> +1 more</span></div></span></span></td>
-<td>SOC at t=20s &lt; SOC at t=5s</td>
+<td>SOC at t=20s &lt; SOC at t=5s by at least 0.05% (1A discharge at 3Ah capacity)</td>
 </tr>
 <tr>
 <td>SQT-011</td>

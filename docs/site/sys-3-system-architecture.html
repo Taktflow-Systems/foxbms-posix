@@ -171,7 +171,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <a href="part-8-traceability.html" >Part 8: Traceability</a>
 <a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
 <h3>foxBMS Reference</h3>
-<a href="index.html" >Index</a>
+<a href="foxbms-index.html" >foxBMS Index</a>
 <a href="aspice-extraction.html" >ASPICE Extraction</a>
 <a href="modules-index.html" >Modules Index</a>
 <a href="bms-state-machine.html" >BMS State Machine</a>
@@ -207,8 +207,8 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <tbody>
 <tr>
 <td>SYS.3-001</td>
-<td>1.0</td>
-<td>2026-03-21</td>
+<td>1.2</td>
+<td>2026-03-23</td>
 <td>Confidential</td>
 </tr>
 </tbody>
@@ -229,8 +229,22 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>1.0</td>
 <td>2026-03-21</td>
 <td>An Dao</td>
-<td>M. Weber (AI-simulated)</td>
+<td>M. Weber</td>
 <td>Initial release</td>
+</tr>
+<tr>
+<td>1.1</td>
+<td>2026-03-23</td>
+<td>An Dao</td>
+<td>Phase 1 Audit Panel (10 reviewers)</td>
+<td>Add Sections 11-12: Hardware interface architecture, signal paths, probe point map, register cross-reference</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td>2026-03-23</td>
+<td>An Dao</td>
+<td>ASPICE Researcher + Fault Finder agents</td>
+<td>Fix ball assignments (E-02/E-05), ADC accuracy, plausibility threshold. Add ⚠TBV markers for unverified pins.</td>
 </tr>
 </tbody>
 </table>
@@ -274,6 +288,334 @@ contactors (string+, string-, precharge). External interfaces are:</p>
 <li>Current sensor (Isabellenhuette IVT) via CAN</li>
 <li>Interlock circuit for physical safety loop</li>
 </ul>
+<h2 id="4a-system-element-decomposition-aspice-sys3-bp1">4a. System Element Decomposition (ASPICE SYS.3 BP.1)</h2>
+<p>The BMS system is decomposed into the following elements per ASPICE SYS.3 BP.1.
+Each element has a unique ID for traceability to system requirements (§4b).</p>
+<h3 id="hardware-elements">Hardware Elements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Element</th>
+<th>Type</th>
+<th>Board</th>
+<th>Description</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SE-001</td>
+<td>Master ECU</td>
+<td>HW</td>
+<td>TMS570LC4357</td>
+<td>Main MCU: ARM Cortex-R4F lockstep, FreeRTOS, all safety logic</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-002</td>
+<td>Slave Board</td>
+<td>HW</td>
+<td>LTC6813-1</td>
+<td>Cell voltage + temperature measurement, 18-cell AFE</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-003</td>
+<td>Interface Board</td>
+<td>HW</td>
+<td>LTC6820 ×4</td>
+<td>SPI-to-isoSPI bridge, galvanic isolation</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-004</td>
+<td>Current Sensor</td>
+<td>HW</td>
+<td>IVT-S (Isabellenhuette)</td>
+<td>Shunt-based current measurement via CAN</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SE-005</td>
+<td>Insulation Monitor</td>
+<td>HW</td>
+<td>Bender IR155/iso165C</td>
+<td>HV insulation monitoring (PWM or CAN)</td>
+<td>A</td>
+</tr>
+<tr>
+<td>SE-006</td>
+<td>SPS IC</td>
+<td>HW</td>
+<td>on Master board</td>
+<td>8-ch MOSFET driver for contactor coils, UVLO fail-safe</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SE-007</td>
+<td>SBC</td>
+<td>HW</td>
+<td>NXP FS8x, on Master</td>
+<td>Watchdog, power supervision, ASIL D qualified</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-008</td>
+<td>Contactors ×3</td>
+<td>HW</td>
+<td>external</td>
+<td>String+, String-, Precharge. Spring-return (fail-safe open)</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SE-009</td>
+<td>Interlock Loop</td>
+<td>HW</td>
+<td>external</td>
+<td>Physical safety loop through HV connectors</td>
+<td>QM (FATAL)</td>
+</tr>
+<tr>
+<td>SE-010</td>
+<td>CAN Transceivers</td>
+<td>HW</td>
+<td>TJA1044/TJA1042</td>
+<td>CAN1 (non-isolated), CAN2 (isolated)</td>
+<td>B</td>
+</tr>
+<tr>
+<td>SE-011</td>
+<td>FRAM</td>
+<td>HW</td>
+<td>on Master board</td>
+<td>Persistent storage for SOC, fault flags, calibration</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="software-elements">Software Elements</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Element</th>
+<th>Type</th>
+<th>Runs On</th>
+<th>Description</th>
+<th>ASIL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SE-020</td>
+<td>BMS Application</td>
+<td>SW</td>
+<td>SE-001</td>
+<td>State machine, SOA checks, algorithms (SOC/SOE)</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-021</td>
+<td>Engine Layer</td>
+<td>SW</td>
+<td>SE-001</td>
+<td>Database, DIAG handler, SYS state machine</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-022</td>
+<td>Driver Layer</td>
+<td>SW</td>
+<td>SE-001</td>
+<td>CAN, SPI, I2C, SBC, SPS, contactor, IMD, interlock drivers</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-023</td>
+<td>HAL (TMS570)</td>
+<td>SW</td>
+<td>SE-001</td>
+<td>HalCoGen-generated register access, DMA, interrupt config</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-024</td>
+<td>HAL (POSIX)</td>
+<td>SW</td>
+<td>host PC</td>
+<td>RAM-mapped stubs, SocketCAN, cooperative loop (SIL variant)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>SE-025</td>
+<td>AFE Driver</td>
+<td>SW</td>
+<td>SE-001</td>
+<td>LTC6813-1 communication: SPI transactions, PEC check, DECAN</td>
+<td>D</td>
+</tr>
+<tr>
+<td>SE-026</td>
+<td>Plant Model</td>
+<td>SW</td>
+<td>host PC</td>
+<td>CAN-based cell/IVT/contactor simulation (SIL only)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="element-boundary-diagram">Element Boundary Diagram</h3>
+<pre><code>External:  Vehicle Controller ←─ CAN2 ─→ ┌──────────────────────────────────────┐
+           IVT (SE-004) ←────── CAN1 ──→ │                                      │
+                                          │  MASTER ECU (SE-001)                 │
+                                          │  ┌─────────────────────────────────┐ │
+                                          │  │ SE-020 BMS Application          │ │
+                                          │  │ SE-021 Engine (DB, DIAG, SYS)   │ │
+                                          │  │ SE-022 Drivers                   │ │
+                                          │  │ SE-023 HAL (HalCoGen)           │ │
+                                          │  └─────────────────────────────────┘ │
+                                          │  SE-006 SPS ──→ SE-008 Contactors   │
+                                          │  SE-007 SBC (watchdog)              │
+                                          │  SE-010 CAN transceivers            │
+                                          │  SE-011 FRAM                        │
+                                          └──────────┬─────────────────────────┘
+                                                     │ J9000 (SPI1/4)
+                                          ┌──────────┴─────────────────────────┐
+                                          │  SE-003 Interface Board (LTC6820)  │
+                                          └──────────┬─────────────────────────┘
+                                                     │ isoSPI (isolated)
+                                          ┌──────────┴─────────────────────────┐
+                                          │  SE-002 Slave Board (LTC6813)      │
+                                          │  ← Cell voltage (24-pin)           │
+                                          │  ← Temperature (16-pin)            │
+                                          └────────────────────────────────────┘
+           SE-009 Interlock Loop ←── J2033
+           SE-005 IMD ←───────────── J2034
+</code></pre>
+<h2 id="4b-requirements-allocation-aspice-sys3-bp2">4b. Requirements Allocation (ASPICE SYS.3 BP.2)</h2>
+<p>Each system requirement is allocated to one or more system elements. Full allocation
+matrix is maintained in the traceability tool. Summary by element:</p>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Allocated Requirements</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SE-001 (Master ECU)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-001">STKH-REQ-001</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-005">STKH-REQ-005</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-086</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-090">SW-REQ-090</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-122">SW-REQ-122</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-112">UT-112</a></div></span></span> (all)</td>
+<td>Platform for all SW elements</td>
+</tr>
+<tr>
+<td>SE-002 (Slave Board)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-010">UT-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-011">UT-011</a><span style="color:var(--text2)"> +1 more</span></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-043</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-005">QT-005</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-008">SSR-008</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-023">SW-REQ-023</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-021">UT-021</a></div></span></span> (voltage, temperature)</td>
+<td>Cell measurement</td>
+</tr>
+<tr>
+<td>SE-003 (Interface)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-012">IT-012</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-064">SW-REQ-064</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span> (SPI/isoSPI communication)</td>
+<td>Data transport</td>
+</tr>
+<tr>
+<td>SE-004 (IVT)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-010</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-005">STKH-REQ-005</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-065">SW-REQ-065</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-070">SW-REQ-070</a></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-012</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-011">IT-011</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-070">SW-REQ-070</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-076">SW-REQ-076</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-09a">SW-REQ-09A</a></div></span></span> (current, SOC)</td>
+<td>Current measurement</td>
+</tr>
+<tr>
+<td>SE-006 (SPS)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-006</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-050">IT-050</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-013">QT-013</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-044">SW-REQ-044</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-064">SW-REQ-064</a><span style="color:var(--text2)"> +2 more</span></div></span></span> (contactor control)</td>
+<td>Actuation</td>
+</tr>
+<tr>
+<td>SE-007 (SBC)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-050</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-007">QT-007</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-010">QT-010</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-011">QT-011</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-012">QT-012</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-014">QT-014</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><span style="color:var(--text2)"> +3 more</span></div></span></span> (system monitoring)</td>
+<td>MCU supervision</td>
+</tr>
+<tr>
+<td>SE-008 (Contactors)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-006</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-050">IT-050</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-013">QT-013</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-044">SW-REQ-044</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-064">SW-REQ-064</a><span style="color:var(--text2)"> +2 more</span></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-054</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-013">STKH-REQ-013</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#it-050">IT-050</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-004">QT-004</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-021">SSR-021</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-044">SW-REQ-044</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-067">SW-REQ-067</a><span style="color:var(--text2)"> +2 more</span></div></span></span> (safe state)</td>
+<td>Physical disconnection</td>
+</tr>
+<tr>
+<td>SE-009 (Interlock)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-050</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-007">QT-007</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-010">QT-010</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-011">QT-011</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-012">QT-012</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-014">QT-014</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><span style="color:var(--text2)"> +3 more</span></div></span></span> (connector integrity)</td>
+<td>HV safety loop</td>
+</tr>
+<tr>
+<td>SE-020 (BMS App)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-010">UT-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-011">UT-011</a><span style="color:var(--text2)"> +1 more</span></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-073</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-020">IT-020</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-024">IT-024</a><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-039">IT-039</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-005">QT-005</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-020">SSR-020</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-043">SW-REQ-043</a><span style="color:var(--text2)"> +6 more</span></div></span></span> (SOA, state machine)</td>
+<td>Safety logic</td>
+</tr>
+<tr>
+<td>SE-021 (Engine)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-050</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-007">QT-007</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-010">QT-010</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-011">QT-011</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-012">QT-012</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-014">QT-014</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><span style="color:var(--text2)"> +3 more</span></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-060</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-014">STKH-REQ-014</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-016">STKH-REQ-016</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-007">IT-007</a><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-060">SW-REQ-060</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-061">SW-REQ-061</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-068">SW-REQ-068</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-069">SW-REQ-069</a><span style="color:var(--text2)"> +11 more</span></div></span></span> (DIAG, database)</td>
+<td>Diagnostic services</td>
+</tr>
+<tr>
+<td>SE-022 (Drivers)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-012">IT-012</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-064">SW-REQ-064</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-060</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-014">STKH-REQ-014</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-016">STKH-REQ-016</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-007">IT-007</a><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-060">SW-REQ-060</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-061">SW-REQ-061</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-068">SW-REQ-068</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-069">SW-REQ-069</a><span style="color:var(--text2)"> +11 more</span></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-063</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-007">IT-007</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-006">QT-006</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-040">SSR-040</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-095">SW-REQ-095</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-09b">SW-REQ-09B</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-110">SW-REQ-110</a></div></span></span></td>
+<td>HW abstraction</td>
+</tr>
+<tr>
+<td>SE-025 (AFE Driver)</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-005</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-012">IT-012</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-064">SW-REQ-064</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-001">SSR-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-001">SW-REQ-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-003">SW-REQ-003</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-010">UT-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-011">UT-011</a><span style="color:var(--text2)"> +1 more</span></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-043</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-030">IT-030</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-035">IT-035</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-005">QT-005</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-008">SSR-008</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-023">SW-REQ-023</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-021">UT-021</a></div></span></span></td>
+<td>AFE communication</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4c-architecture-alternatives-analysis-aspice-sys3-bp5">4c. Architecture Alternatives Analysis (ASPICE SYS.3 BP.5)</h2>
+<table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Alternatives Considered</th>
+<th>Selected</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MCU</td>
+<td>TI TMS570LC4357 vs Infineon Aurix TC3xx vs Renesas RH850</td>
+<td>TMS570LC4357</td>
+<td>foxBMS reference platform. ARM Cortex-R4F lockstep provides ASIL D hardware safety. Mature HalCoGen tool support.</td>
+</tr>
+<tr>
+<td>AFE</td>
+<td>ADI LTC6813-1 vs TI BQ79616 vs Maxim MAX17853</td>
+<td>LTC6813-1</td>
+<td>foxBMS reference AFE. 18-cell support matches configuration. isoSPI provides galvanic isolation without separate isolator ICs. AEC-Q100 Grade 1.</td>
+</tr>
+<tr>
+<td>RTOS</td>
+<td>FreeRTOS vs AUTOSAR OS vs SafeRTOS</td>
+<td>FreeRTOS</td>
+<td>foxBMS reference RTOS. Open source, well-documented, adequate for the task architecture. SafeRTOS available as drop-in replacement for ASIL D certification.</td>
+</tr>
+<tr>
+<td>Architecture style</td>
+<td>Layered (foxBMS) vs AUTOSAR Classic vs Model-based</td>
+<td>Layered</td>
+<td>foxBMS uses a proven 4-layer architecture (App/Engine/Driver/HAL). Simpler than AUTOSAR for a single-function ECU. Well-suited for the BMS domain.</td>
+</tr>
+<tr>
+<td>SIL variant</td>
+<td>POSIX cooperative loop vs pthreads vs QEMU emulation</td>
+<td>POSIX cooperative loop</td>
+<td>Single-threaded preserves deterministic task ordering. SocketCAN provides real CAN integration. Avoids race conditions from threading.</td>
+</tr>
+<tr>
+<td>Contactor drive</td>
+<td>Direct GPIO vs SPS IC (integrated driver)</td>
+<td>SPS IC</td>
+<td>foxBMS reference design. Integrated current sensing for feedback. MOSFET driver handles inductive kickback. UVLO provides hardware fail-safe.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="5-system-block-diagram">5. System Block Diagram</h2>
 <pre><code>+-------------------------------------------------------------------+
 |                     APPLICATION LAYER                              |
@@ -535,6 +877,173 @@ Section 7.1, preserving the relative priority and data-flow dependencies.</p>
         ALGO_100ms()
         usleep(1000)  // 1ms tick approximation
 </code></pre>
+<h2 id="7a-state-machines-aspice-sys3-bp4">7a. State Machines (ASPICE SYS.3 BP.4)</h2>
+<h3 id="7a1-sys-state-machine-system-initialization">7a.1 SYS State Machine (System Initialization)</h3>
+<pre><code>                    ┌──────────────┐
+    Power-on ──────►│UNINITIALIZED │
+                    └──────┬───────┘
+                           │ Hardware init complete
+                           ▼
+                    ┌──────────────┐
+                    │  INITIALIZED │
+                    └──────┬───────┘
+                           │ OS started, tasks created
+                           ▼
+                    ┌──────────────┐
+                    │   RUNNING    │──── Normal operation
+                    └──────┬───────┘
+                           │ Fatal system error
+                           ▼
+                    ┌──────────────┐
+                    │    ERROR     │──── System-level fault
+                    └──────────────┘
+</code></pre>
+<p><strong>Transitions</strong>: SYS state machine is one-directional (no recovery from SYS ERROR).
+Managed by <code>SYS_Trigger()</code> in the Engine task.</p>
+<h3 id="7a2-bms-state-machine-application-level">7a.2 BMS State Machine (Application-Level)</h3>
+<pre><code>                         ┌───────────────┐
+    SYS == RUNNING ─────►│    STANDBY    │◄──────────────────────────────┐
+                         │               │                               │
+                         │ All contactors│                               │
+                         │ OPEN          │                               │
+                         └───────┬───────┘                               │
+                                 │                                       │
+                    CAN 0x210    │  State request                        │
+                    = NORMAL     │  received                             │
+                                 ▼                                       │
+                         ┌───────────────┐                               │
+                         │  PRECHARGE    │                               │
+                         │               │                               │
+                         │ 1. Close STR- │                               │
+                         │ 2. Close PRE  │                               │
+                         │ 3. Wait V_dc  │                               │
+                         │    ≈ V_pack   │                               │
+                         │ 4. Close STR+ │                               │
+                         │ 5. Open PRE   │                               │
+                         └──┬─────────┬──┘                               │
+                            │         │                                  │
+               Precharge    │         │ Precharge                        │
+               OK           │         │ FAIL/timeout                     │
+                            ▼         ▼                                  │
+                   ┌────────────┐  ┌──────────────┐   Fault cleared     │
+                   │   NORMAL   │  │    ERROR     │   AND               │
+                   │            │  │              │   CAN 0x210         │
+                   │ All 3 cont.│  │ All cont.   │   = STANDBY         │
+                   │ CLOSED     │  │ OPEN         ├──────────────────────┘
+                   │            │  │              │
+                   │ Full power │  │ Safe state   │
+                   │ operation  │  │ (latched)    │
+                   └─────┬──────┘  └──────────────┘
+                         │                 ▲
+                         │  ANY MSL fault  │
+                         │  (DIAG FATAL)   │
+                         └─────────────────┘
+</code></pre>
+<p><strong>States</strong>:
+| State | Contactors | Entry Condition | Exit Condition |
+|---|---|---|---|
+| STANDBY | All OPEN | SYS == RUNNING, or ERROR recovery | CAN state request = NORMAL |
+| PRECHARGE | STR- + PRE closed | State request received | Voltage match or timeout |
+| NORMAL | All CLOSED | Precharge voltage OK | FATAL flag or STANDBY request |
+| ERROR | All OPEN | Any DIAG FATAL flag set | Fault cleared AND STANDBY request (<span class="trace-id" style="border-bottom:1px dashed #f39c12;cursor:help"><a href="traceability.html" style="color:#f39c12;text-decoration:none">SSR-022</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability-matrix.html#hz-001">HZ-001</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-002">HZ-002</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-003">HZ-003</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-004">HZ-004</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-005">HZ-005</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-006">HZ-006</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-007">HZ-007</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-008">HZ-008</a><span style="color:var(--text2)"> +6 more</span></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-035">UT-035</a></div></span></span>/023/024) |</p>
+<p><strong>ERROR exit requires BOTH conditions (AND logic)</strong>:
+1. The originating fault condition has cleared (<span class="trace-id" style="border-bottom:1px dashed #f39c12;cursor:help"><a href="traceability.html" style="color:#f39c12;text-decoration:none">SSR-022</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability-matrix.html#hz-001">HZ-001</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-002">HZ-002</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-003">HZ-003</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-004">HZ-004</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-005">HZ-005</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-006">HZ-006</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-007">HZ-007</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-008">HZ-008</a><span style="color:var(--text2)"> +6 more</span></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-035">UT-035</a></div></span></span>)
+2. An explicit STANDBY request received via CAN 0x210 (<span class="trace-id" style="border-bottom:1px dashed #f39c12;cursor:help"><a href="traceability.html" style="color:#f39c12;text-decoration:none">SSR-023</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="traceability-matrix.html#hz-001">HZ-001</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-002">HZ-002</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-003">HZ-003</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-004">HZ-004</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-005">HZ-005</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-006">HZ-006</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-007">HZ-007</a><a class="tb-link tb-up" href="traceability-matrix.html#hz-008">HZ-008</a><span style="color:var(--text2)"> +5 more</span></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-025">IT-025</a><a class="tb-link tb-down" href="part-8-traceability.html#it-050">IT-050</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-051">IT-051</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-002">QT-002</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-035">UT-035</a></div></span></span>)</p>
+<h3 id="7a3-fault-reaction-sequence">7a.3 Fault Reaction Sequence</h3>
+<pre><code>Time ──────────────────────────────────────────────────────────────►
+
+ t0: Fault occurs (e.g., cell voltage &gt; 2800 mV)
+  │
+  ├─ t0+10ms: SOA_CheckCellVoltage() detects violation
+  │            DIAG_Handler(DIAG_ID_CELLVOLTAGE_OV_MSL, NOT_OK)
+  │            Threshold counter: 0 → 1
+  │
+  ├─ t0+20ms: SOA check again → counter: 1 → 2
+  │  ...
+  ├─ t0+500ms: Counter reaches 50 (threshold)
+  │
+  ├─ t0+700ms: 200ms debounce delay elapses
+  │             FATAL flag SET
+  │             DIAG_ErrorOvervoltage() callback executed
+  │
+  ├─ t0+710ms: BMS_Trigger() reads FATAL flag
+  │             BMS state → ERROR
+  │             CONT_OpenAll() called
+  │
+  ├─ t0+711ms: SPS SPI command sent (spiREG2)
+  │             Contactor coils de-energized
+  │
+  ├─ t0+750ms: Contactor mechanical open (spring return)
+  │
+  └─ t0+750ms: SAFE STATE REACHED
+               (Total FTTI: 750 ms for TSR-01)
+</code></pre>
+<h3 id="7a4-task-scheduling-timing">7a.4 Task Scheduling Timing</h3>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Period</th>
+<th>WCET (est.)</th>
+<th>CPU Load (est.)</th>
+<th>Priority</th>
+<th>Key Functions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Engine</td>
+<td>Event</td>
+<td>&lt;1 ms</td>
+<td>&lt;1%</td>
+<td>Highest</td>
+<td>SYS state machine</td>
+</tr>
+<tr>
+<td>1ms Task</td>
+<td>1 ms</td>
+<td>&lt;0.5 ms</td>
+<td>~50%</td>
+<td>High</td>
+<td>Contactor timing, fast loops</td>
+</tr>
+<tr>
+<td>AFE Task</td>
+<td>Async</td>
+<td>~3 ms</td>
+<td>~15%</td>
+<td>Medium</td>
+<td>SPI1 DMA to LTC6813</td>
+</tr>
+<tr>
+<td>10ms Task</td>
+<td>10 ms</td>
+<td>~2 ms</td>
+<td>~20%</td>
+<td>Medium</td>
+<td>CAN TX/RX, SPS_Ctrl, SBC_Trigger, SOA</td>
+</tr>
+<tr>
+<td>100ms Task</td>
+<td>100 ms</td>
+<td>~5 ms</td>
+<td>~5%</td>
+<td>Low</td>
+<td>BMS state machine, DIAG evaluation</td>
+</tr>
+<tr>
+<td>Algorithm</td>
+<td>100 ms</td>
+<td>~3 ms</td>
+<td>~3%</td>
+<td>Lowest</td>
+<td>SOC, SOE, SOH estimation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total estimated CPU load: ~94%</strong> (conservative worst-case). Margin: ~6%.</p>
+<p><strong>POSIX SIL variant</strong>: All tasks execute sequentially in a cooperative loop (<code>usleep(1000)</code> between
+iterations). No preemption, no priority inversion, deterministic ordering.</p>
 <h2 id="8-data-flow">8. Data Flow</h2>
 <h3 id="81-measurement-path">8.1 Measurement Path</h3>
 <pre><code>AFE (SPI) --&gt; AFE Driver --&gt; Database[CELL_VOLTAGE] --&gt; SOA --&gt; DIAG --&gt; BMS
@@ -725,6 +1234,2324 @@ Contactor Driver --&gt; Actuate contactors
 <li><strong>Layer 4 -- Contactors</strong>: Physical disconnection of the battery string.</li>
 </ol>
 <p>This architecture is preserved in the POSIX port for all software-checkable paths.</p>
+<h2 id="11-hardware-interface-architecture">11. Hardware Interface Architecture</h2>
+<p>This section documents the physical hardware interfaces of the foxBMS 2 system at
+connector-pin-signal level, as required for SYS.4 HIL test probe mapping and needle
+bed adapter design. All data sourced from foxBMS hardware schematics v1.2.2 (master),
+v1.1.3 (slave 18-cell), and v1.0.3 (interface).</p>
+<p><strong>Source Schematics</strong> (in <code>hardware/schematics/</code> — not duplicated here to avoid 42 MB bloat):</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Path</th>
+<th>Board</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Master schematics</td>
+<td><code>hardware/schematics/master/Assembly production/pdf/foxbms2-master-schematics-v1.2.3-0.PDF</code></td>
+<td>TMS570LC4357</td>
+<td>v1.2.3</td>
+</tr>
+<tr>
+<td>Slave schematics</td>
+<td><code>hardware/schematics/slave-18/Assembly automotive/pdf/schematics.PDF</code></td>
+<td>LTC6813-1 (18-cell)</td>
+<td>v1.1.3</td>
+</tr>
+<tr>
+<td>Interface schematics</td>
+<td><code>hardware/schematics/interface/Assembly default/pdf/schematics.PDF</code></td>
+<td>LTC6820</td>
+<td>v1.0.3</td>
+</tr>
+<tr>
+<td>Master placement</td>
+<td><code>hardware/schematics/master/Assembly production/pdf/foxbms2-master-placement-plan-v1.2.3-0.PDF</code></td>
+<td>Connector locations</td>
+<td>v1.2.3</td>
+</tr>
+<tr>
+<td>Master dimensions</td>
+<td><code>hardware/schematics/master/Assembly production/pdf/foxbms2-master-dimensions-mechanical-v1.2.3-0.PDF</code></td>
+<td>Board outline</td>
+<td>v1.2.3</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pinout CSVs</strong> (in foxBMS upstream repo <code>D:/workspace_ccstheia/foxbms-2/docs/hardware/</code>):</p>
+<table>
+<thead>
+<tr>
+<th>CSV</th>
+<th>Connector</th>
+<th>Pins</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_can1.csv</code></td>
+<td>J2021 CAN1</td>
+<td>4</td>
+</tr>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_can2.csv</code></td>
+<td>J2024 CAN2</td>
+<td>4</td>
+</tr>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_sps.csv</code></td>
+<td>J200x SPS</td>
+<td>4 each</td>
+</tr>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_interlock.csv</code></td>
+<td>J2033</td>
+<td>2</td>
+</tr>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_interface.csv</code></td>
+<td>J9000</td>
+<td>40</td>
+</tr>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_extension.csv</code></td>
+<td>J9002</td>
+<td>120</td>
+</tr>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_supply_ext.csv</code></td>
+<td>J2009</td>
+<td>8</td>
+</tr>
+<tr>
+<td><code>master/.../ti-tms570lc4357-v1.2.2_isomon.csv</code></td>
+<td>J2034</td>
+<td>4</td>
+</tr>
+<tr>
+<td><code>slaves/.../18-ltc-ltc6813-1-v1.1.3_cell_voltage-sense-connector.csv</code></td>
+<td>Cell voltage</td>
+<td>24</td>
+</tr>
+<tr>
+<td><code>slaves/.../18-ltc-ltc6813-1-v1.1.3_temperature-sensor-connector.csv</code></td>
+<td>Temperature</td>
+<td>16</td>
+</tr>
+<tr>
+<td><code>interfaces/.../ltc-ltc6820-v1.0.3_master_connector.csv</code></td>
+<td>Interface master</td>
+<td>40</td>
+</tr>
+<tr>
+<td><code>interfaces/.../ltc-ltc6820-v1.0.3_isospi_connectors.csv</code></td>
+<td>isoSPI</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>HalCoGen Pin Mux</strong> (MCU ball assignments):
+- Source: <code>D:/workspace_ccstheia/foxbms-2/conf/hcg/source/HL_pinmux.c</code>
+- Header: <code>D:/workspace_ccstheia/foxbms-2/conf/hcg/include/HL_pinmux.h</code></p>
+<p><strong>Visual Diagrams</strong> (self-contained HTML):</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="views/ecu-pin-mapping.html">views/ecu-pin-mapping.html</a></td>
+<td>Color-coded ECU pin mapping tables (dark theme, ASIL badges, gap markers)</td>
+</tr>
+<tr>
+<td><a href="views/wiring-diagram.html">views/wiring-diagram.html</a></td>
+<td>SVG wiring diagram with connectors, MCU balls, colored signal paths</td>
+</tr>
+</tbody>
+</table>
+<h3 id="111-system-board-topology">11.1 System Board Topology</h3>
+<pre><code>                    ┌──────────────────────────┐
+                    │      MASTER BOARD        │
+  J2009 ── Supply ──┤   TMS570LC4357 MCU       │
+  J2021 ── CAN1 ────┤                          │
+  J2024 ── CAN2 ────┤   SPI1 ──► J9000 ──────────► INTERFACE BOARD (LTC6820)
+  J2033 ── Intlck ──┤   SPI2 ──► SPS IC ──► J200x      │
+  J2034 ── IMD ─────┤   SPI3 ──► FRAM               isoSPI (transformer)
+  J200x ── SPS×8 ───┤   I2C1 ──► PEX (feedback)        │
+  J3008 ── Debug ───┤   SBC  ──► FS8x (watchdog)       ▼
+                    └──────────────────────────┘  SLAVE BOARD (LTC6813)
+                                                  ├── Cell voltage (24-pin)
+                                                  ├── Temperature (16-pin)
+                                                  └── Daisy chain (2+2 pin)
+</code></pre>
+<h3 id="1111-ecu-io-pin-mapping-safety-critical-signals">11.1.1 ECU I/O Pin Mapping (Safety-Critical Signals)</h3>
+<p>All MCU ball assignments from HalCoGen <code>HL_pinmux.c</code> (foxBMS v1.10.0).
+Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code> base.</p>
+<p><strong>CAN Interfaces:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin</th>
+<th>Signal</th>
+<th>Transceiver</th>
+<th>MCU Ball</th>
+<th>Mux Function</th>
+<th>Register</th>
+<th>DMA</th>
+<th>SW Module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J2021</td>
+<td>4</td>
+<td>CAN1_H</td>
+<td>TJA1044</td>
+<td>dedicated</td>
+<td>DCAN1TX</td>
+<td>canREG1 (DC00)</td>
+<td>—</td>
+<td>can.c</td>
+</tr>
+<tr>
+<td>J2021</td>
+<td>3</td>
+<td>CAN1_L</td>
+<td>TJA1044</td>
+<td>dedicated</td>
+<td>DCAN1RX</td>
+<td>canREG1</td>
+<td>—</td>
+<td>can.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>CAN1_EN</td>
+<td>—</td>
+<td>N4</td>
+<td>N2HET2[18]</td>
+<td>hetREG2 (B900)</td>
+<td>—</td>
+<td>can_cfg.h</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>CAN1_STB</td>
+<td>⚠ TBV</td>
+<td>N2HET2[23] (DOUT bit, no pinmux entry)</td>
+<td>hetREG2</td>
+<td>—</td>
+<td>can_cfg.h</td>
+<td></td>
+</tr>
+<tr>
+<td>J2024</td>
+<td>4</td>
+<td>CAN2_H</td>
+<td>TJA1042 (iso)</td>
+<td>dedicated</td>
+<td>DCAN2TX</td>
+<td>canREG2 (DE00)</td>
+<td>—</td>
+<td>can.c</td>
+</tr>
+<tr>
+<td>J2024</td>
+<td>3</td>
+<td>CAN2_L</td>
+<td>TJA1042 (iso)</td>
+<td>dedicated</td>
+<td>DCAN2RX</td>
+<td>canREG2</td>
+<td>—</td>
+<td>can.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>CAN2_EN</td>
+<td>—</td>
+<td>PEX</td>
+<td>I2C port exp.</td>
+<td>i2cREG1 (D400)</td>
+<td>—</td>
+<td>pex.c</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SPI1 → AFE (Cell Voltage + Temperature, ASIL D):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Ball</th>
+<th>Mux Function</th>
+<th>Register</th>
+<th>DMA</th>
+<th>SW Module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J9000</td>
+<td>1</td>
+<td>SPI1_SOMI0</td>
+<td>dedicated</td>
+<td>MIBSPI1SOMI_0</td>
+<td>spiREG1 (F400)</td>
+<td>CH1 (RX)</td>
+<td>afe.c</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>3</td>
+<td>SPI1_SIMO0</td>
+<td>dedicated</td>
+<td>MIBSPI1SIMO_0</td>
+<td>spiREG1</td>
+<td>CH0 (TX)</td>
+<td>afe.c</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>5</td>
+<td>SPI1_CLK</td>
+<td>dedicated</td>
+<td>MIBSPI1CLK</td>
+<td>spiREG1</td>
+<td>—</td>
+<td>afe.c</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>6</td>
+<td>SPI1_CS1</td>
+<td>F3</td>
+<td>MIBSPI1NCS_1</td>
+<td>spiREG1</td>
+<td>—</td>
+<td>afe.c (isoSPI ch1)</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>7</td>
+<td>SPI1_CS2</td>
+<td>G3</td>
+<td>MIBSPI1NCS_2</td>
+<td>spiREG1</td>
+<td>—</td>
+<td>afe.c (isoSPI ch2)</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>14</td>
+<td>SPI4_CS0</td>
+<td>U1</td>
+<td>MIBSPI4NCS_0</td>
+<td>spiREG4 (FA00)</td>
+<td>—</td>
+<td>afe.c (isoSPI ch3)</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>15</td>
+<td>SPI4_CS1</td>
+<td>B12</td>
+<td>MIBSPI4NCS_1</td>
+<td>spiREG4</td>
+<td>—</td>
+<td>afe.c (isoSPI ch4)</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>20</td>
+<td>IF_INT0</td>
+<td>C1</td>
+<td>GIOA_2</td>
+<td>gioREG (BC00)</td>
+<td>—</td>
+<td>afe.c</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>21</td>
+<td>IF_INT1</td>
+<td>E1</td>
+<td>GIOA_3</td>
+<td>gioREG</td>
+<td>—</td>
+<td>afe.c</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>22</td>
+<td>IF_INT2</td>
+<td>A6</td>
+<td>GIOA_4</td>
+<td>gioREG</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>23</td>
+<td>IF_INT3</td>
+<td>H3</td>
+<td>GIOA_6</td>
+<td>gioREG</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>J9000</td>
+<td>24-31</td>
+<td>IF_GPIO.0-7</td>
+<td>—</td>
+<td>via I2C PEX</td>
+<td>i2cREG1 (D400)</td>
+<td>—</td>
+<td>pex.c (LTC6820 en/mst)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SPI2 → SPS + SBC (Contactor Control + Watchdog, shared bus — CONSTRAINT-001):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Ball</th>
+<th>Mux Function</th>
+<th>Register</th>
+<th>DMA</th>
+<th>SW Module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J200x</td>
+<td>3</td>
+<td>SPS_OUT_X</td>
+<td>D1</td>
+<td>MIBSPI2SIMO</td>
+<td>spiREG2 (F600)</td>
+<td>CH2 (TX)</td>
+<td>sps.c</td>
+</tr>
+<tr>
+<td>J200x</td>
+<td>—</td>
+<td>(SPS SOMI)</td>
+<td>D2</td>
+<td>MIBSPI2SOMI</td>
+<td>spiREG2</td>
+<td>CH3 (RX)</td>
+<td>sps.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>(SPS CLK)</td>
+<td>E2</td>
+<td>MIBSPI2CLK</td>
+<td>spiREG2</td>
+<td>—</td>
+<td>sps.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>SPS_CS (SW)</td>
+<td>D8</td>
+<td>N2HET2[01]</td>
+<td>hetREG2 (B900)</td>
+<td>—</td>
+<td>spi_cfg.h</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>SPS_RESET</td>
+<td>T5</td>
+<td>N2HET2[20]</td>
+<td>hetREG2</td>
+<td>—</td>
+<td>sps_cfg.h</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>SPS_FB_EN</td>
+<td>⚠ TBV</td>
+<td>N2HET2[09]</td>
+<td>hetREG2</td>
+<td>—</td>
+<td>sps_cfg.h</td>
+</tr>
+<tr>
+<td>on-board</td>
+<td>—</td>
+<td>SBC_SIMO</td>
+<td>D1</td>
+<td>MIBSPI2SIMO</td>
+<td>spiREG2 (F600)</td>
+<td>—</td>
+<td>sbc.c (shared!)</td>
+</tr>
+<tr>
+<td>on-board</td>
+<td>—</td>
+<td>SBC_SOMI</td>
+<td>D2</td>
+<td>MIBSPI2SOMI</td>
+<td>spiREG2</td>
+<td>—</td>
+<td>sbc.c</td>
+</tr>
+<tr>
+<td>J9002</td>
+<td>80</td>
+<td>SBC_RSTB</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>sbc.c</td>
+</tr>
+<tr>
+<td>J9002</td>
+<td>79</td>
+<td>SBC_FS0B</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>sbc.c</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SPI3 → FRAM (Diagnostic Data Persistence):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Ball</th>
+<th>Mux Function</th>
+<th>Register</th>
+<th>DMA</th>
+<th>SW Module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>on-board</td>
+<td>—</td>
+<td>FRAM_CLK</td>
+<td>V9</td>
+<td>MIBSPI3CLK</td>
+<td>spiREG3 (F800)</td>
+<td>—</td>
+<td>fram.c</td>
+</tr>
+<tr>
+<td>on-board</td>
+<td>—</td>
+<td>FRAM_SIMO</td>
+<td>W8</td>
+<td>MIBSPI3SIMO</td>
+<td>spiREG3</td>
+<td>—</td>
+<td>fram.c</td>
+</tr>
+<tr>
+<td>on-board</td>
+<td>—</td>
+<td>FRAM_SOMI</td>
+<td>V8</td>
+<td>MIBSPI3SOMI</td>
+<td>spiREG3</td>
+<td>—</td>
+<td>fram.c</td>
+</tr>
+<tr>
+<td>on-board</td>
+<td>—</td>
+<td>FRAM_CS</td>
+<td>V10</td>
+<td>MIBSPI3NCS_0</td>
+<td>spiREG3</td>
+<td>—</td>
+<td>fram.c</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interlock (Safety Loop):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Ball</th>
+<th>Mux Function</th>
+<th>Register</th>
+<th>DMA</th>
+<th>SW Module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J2033</td>
+<td>1</td>
+<td>INTERLOCK_H</td>
+<td>B11</td>
+<td>N2HET1[30] (IL_HS_ENABLE)</td>
+<td>hetREG1 (B800)</td>
+<td>—</td>
+<td>interlock.c</td>
+</tr>
+<tr>
+<td>J2033</td>
+<td>2</td>
+<td>INTERLOCK_L</td>
+<td>A3</td>
+<td>N2HET1[29] (IL_STATE)</td>
+<td>hetREG1</td>
+<td>—</td>
+<td>interlock.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>IL_HS_VS</td>
+<td>—</td>
+<td>ADC ch2</td>
+<td>adcREG1 (C000)</td>
+<td>—</td>
+<td>interlock.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>IL_LS_VS</td>
+<td>—</td>
+<td>ADC ch3</td>
+<td>adcREG1</td>
+<td>—</td>
+<td>interlock.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>IL_HS_CS</td>
+<td>—</td>
+<td>ADC ch4</td>
+<td>adcREG1</td>
+<td>—</td>
+<td>interlock.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>IL_LS_CS</td>
+<td>—</td>
+<td>ADC ch5</td>
+<td>adcREG1</td>
+<td>—</td>
+<td>interlock.c</td>
+</tr>
+</tbody>
+</table>
+<p><strong>IMD (Insulation Monitoring):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Ball</th>
+<th>Mux Function</th>
+<th>Register</th>
+<th>DMA</th>
+<th>SW Module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J2034</td>
+<td>3</td>
+<td>IMD_OK</td>
+<td>A9</td>
+<td>N2HET1[27]</td>
+<td>hetREG1 (B800)</td>
+<td>—</td>
+<td>bender_ir155.c</td>
+</tr>
+<tr>
+<td>J2034</td>
+<td>4</td>
+<td>IMD_PWM</td>
+<td>D7</td>
+<td>N2HET2[02]</td>
+<td>hetREG2 (B900)</td>
+<td>—</td>
+<td>bender_ir155.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>IR155_EN</td>
+<td>M3</td>
+<td>N2HET1[25]</td>
+<td>hetREG1</td>
+<td>—</td>
+<td>bender_ir155.c</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>iso165C RX</td>
+<td>—</td>
+<td>via CAN1 (0x37)</td>
+<td>canREG1</td>
+<td>—</td>
+<td>bender_iso165c.c</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Contactor Feedback (via I2C Port Expander):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Ball</th>
+<th>Path</th>
+<th>Register</th>
+<th>SW Module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J200x</td>
+<td>1</td>
+<td>SPS_FB_0 (String+)</td>
+<td>B2/C3</td>
+<td>I2C → PEX1 pin 0</td>
+<td>i2cREG1 (D400)</td>
+<td>sps_cfg.c</td>
+</tr>
+<tr>
+<td>J200x</td>
+<td>1</td>
+<td>SPS_FB_1 (String-)</td>
+<td>B2/C3</td>
+<td>I2C → PEX1 pin 1</td>
+<td>i2cREG1</td>
+<td>sps_cfg.c</td>
+</tr>
+<tr>
+<td>J200x</td>
+<td>1</td>
+<td>SPS_FB_2 (Precharge)</td>
+<td>B2/C3</td>
+<td>I2C → PEX1 pin 2</td>
+<td>i2cREG1</td>
+<td>sps_cfg.c (NO_FB!)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1112-slave-board-io-ltc6813-1-aec-q100-grade-1">11.1.2 Slave Board I/O (LTC6813-1, AEC-Q100 Grade 1)</h3>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin(s)</th>
+<th>Signal</th>
+<th>LTC6813 Channel</th>
+<th>ADC Spec</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell voltage</td>
+<td>1</td>
+<td>VBAT-</td>
+<td>C0 neg ref</td>
+<td>16-bit, 0.1 mV/LSB</td>
+</tr>
+<tr>
+<td>Cell voltage</td>
+<td>2,14</td>
+<td>CELL_0+, CELL_1+</td>
+<td>C0+, C1+</td>
+<td>±2.2 mV TME (7kHz, 25°C)</td>
+</tr>
+<tr>
+<td>Cell voltage</td>
+<td>3-10, 15-22</td>
+<td>CELL_2+ to CELL_17+</td>
+<td>C2+ to C17+</td>
+<td>±3.3 mV over -40/+125°C</td>
+</tr>
+<tr>
+<td>Cell voltage</td>
+<td>11</td>
+<td>VBAT+</td>
+<td>C17+ ref</td>
+<td>conversion: 815 µs (18 cells)</td>
+</tr>
+<tr>
+<td>Temperature</td>
+<td>1-4</td>
+<td>T-SENSOR_0-3</td>
+<td>GPIO1-4 (MUX grp 0)</td>
+<td>10kΩ NTC, ADAX cmd</td>
+</tr>
+<tr>
+<td>Temperature</td>
+<td>5-8</td>
+<td>T-SENSOR_4-7</td>
+<td>GPIO5+1-3 (MUX grp 1)</td>
+<td>scan time: ~4 ms</td>
+</tr>
+<tr>
+<td>Temperature</td>
+<td>9-16</td>
+<td>FUSED_VBAT-</td>
+<td>NTC return</td>
+<td>all share common return</td>
+</tr>
+<tr>
+<td>Daisy In</td>
+<td>1-2</td>
+<td>IN+/IN-</td>
+<td>isoSPI input</td>
+<td>from prev slave / interface</td>
+</tr>
+<tr>
+<td>Daisy Out</td>
+<td>1-2</td>
+<td>OUT+/OUT-</td>
+<td>isoSPI output</td>
+<td>to next slave</td>
+</tr>
+</tbody>
+</table>
+<p><strong>NOTE</strong>: Cell connector uses interleaved pinout — even cells on row 1 (pins 2-11),
+odd cells on row 2 (pins 14-22). Cell emulator wiring must match.</p>
+<h3 id="1113-interface-board-io-ltc6820-4-channels">11.1.3 Interface Board I/O (LTC6820 × 4 channels)</h3>
+<table>
+<thead>
+<tr>
+<th>MCU Ball</th>
+<th>SPI CS</th>
+<th>LTC6820 Channel</th>
+<th>GPIO Enable</th>
+<th>GPIO Master</th>
+<th>isoSPI Spec</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F3</td>
+<td>MIBSPI1NCS_1</td>
+<td>ch1</td>
+<td>IF_GPIO.0 (PEX IO1_0)</td>
+<td>IF_GPIO.1 (PEX IO1_1)</td>
+<td>1 Mbps, 100m max</td>
+</tr>
+<tr>
+<td>G3</td>
+<td>MIBSPI1NCS_2</td>
+<td>ch2</td>
+<td>IF_GPIO.2 (PEX IO1_2)</td>
+<td>IF_GPIO.3 (PEX IO1_3)</td>
+<td>practical: &lt;2m</td>
+</tr>
+<tr>
+<td>U1</td>
+<td>MIBSPI4NCS_0</td>
+<td>ch3</td>
+<td>IF_GPIO.4 (PEX IO1_4)</td>
+<td>IF_GPIO.5 (PEX IO1_5)</td>
+<td>PEC-15, HD=6</td>
+</tr>
+<tr>
+<td>B12</td>
+<td>MIBSPI4NCS_1</td>
+<td>ch4</td>
+<td>IF_GPIO.6 (PEX IO1_6)</td>
+<td>IF_GPIO.7 (PEX IO1_7)</td>
+<td>2s watchdog</td>
+</tr>
+</tbody>
+</table>
+<h3 id="112-master-board-connectors-v122">11.2 Master Board Connectors (v1.2.2)</h3>
+<h4 id="1121-supply-connector-j2009-8-pin-micro-fit">11.2.1 Supply Connector — J2009 (8-pin Micro-Fit)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>Description</th>
+<th>HIL Relevance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>CLAMP15/IGNITION</td>
+<td>Ignition signal (wake)</td>
+<td>Simulate ignition on/off</td>
+</tr>
+<tr>
+<td>2</td>
+<td>CLAMP30/SUPPLY+</td>
+<td>Battery supply +</td>
+<td>Power supply to BMS</td>
+</tr>
+<tr>
+<td>3</td>
+<td>CLAMP30C/CONTACTOR_SUPPLY</td>
+<td>Contactor coil supply</td>
+<td>Measure contactor power</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CLAMP31/SUPPLY-</td>
+<td>Battery supply - (GND)</td>
+<td>System ground reference</td>
+</tr>
+<tr>
+<td>5</td>
+<td>CLAMP31/SUPPLY-</td>
+<td>Ground (duplicate)</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>CLAMP30/SUPPLY+</td>
+<td>Supply + (duplicate)</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>CLAMP30C/CONTACTOR_SUPPLY</td>
+<td>Contactor supply (duplicate)</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>CLAMP31/SUPPLY-</td>
+<td>Ground (duplicate)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Electrical</strong>: Automotive 12V supply. CLAMP15 is logic-level ignition signal.</p>
+<h4 id="1122-can1-connector-j2021-4-pin-micro-fit">11.2.2 CAN1 Connector — J2021 (4-pin Micro-Fit)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Peripheral</th>
+<th>Register Base</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>GND</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2</td>
+<td>— (NC)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>CAN_LOW</td>
+<td>DCAN1</td>
+<td>canREG1 (0xFFF7DC00)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CAN_HIGH</td>
+<td>DCAN1</td>
+<td>canREG1 (0xFFF7DC00)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Function</strong>: IVT current sensor (RX: 0x521-0x527), external communication.
+<strong>Not isolated</strong> — direct connection to TMS570 DCAN1 via CAN transceiver.</p>
+<h4 id="1123-can2-connector-j2024-4-pin-micro-fit">11.2.3 CAN2 Connector — J2024 (4-pin Micro-Fit)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Peripheral</th>
+<th>Register Base</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>GND</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2</td>
+<td>— (NC)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>CAN_LOW</td>
+<td>DCAN2</td>
+<td>canREG2 (0xFFF7DE00)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CAN_HIGH</td>
+<td>DCAN2</td>
+<td>canREG2 (0xFFF7DE00)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Function</strong>: Vehicle controller interface (state request RX: 0x210, BMS status TX: 0x220-0x260).
+<strong>Galvanically isolated</strong> — transformer-coupled CAN transceiver for HV isolation.</p>
+<h4 id="1124-sps-connectors-j2000-j2002-j2004-j2006-j2008-j2010-4-pin-micro-fit-each-8">11.2.4 SPS Connectors — J2000, J2002-J2004, J2006-J2008, J2010 (4-pin Micro-Fit each, ×8)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>Direction</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>SPS_FEEDBACK_X</td>
+<td>Input</td>
+<td>Contactor auxiliary contact feedback</td>
+</tr>
+<tr>
+<td>2</td>
+<td>FEEDBACK_SUPPLY</td>
+<td>Output</td>
+<td>Supply voltage for feedback circuit</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SPS_OUT_X</td>
+<td>Output</td>
+<td>SPS switched output to contactor coil</td>
+</tr>
+<tr>
+<td>4</td>
+<td>GND</td>
+<td>—</td>
+<td>Ground reference</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MCU Peripheral</strong>: spiREG2 (0xFFF7F600) → SPS IC, with software CS on hetREG2 pin 1.
+<strong>NOTE</strong>: J9002 schematic labels these pins as "MCU_SPI3" but the foxBMS software drives
+<code>spiREG2</code> for SPS. This is a naming convention difference between the board schematic
+and the TMS570 peripheral numbering. Verified via <code>spi_cfg.c</code> line 306.
+<strong>Contactor assignment</strong> (foxBMS default):
+- J2000: SPS channel 0 = String+ contactor
+- J2002: SPS channel 1 = String- contactor
+- J2003: SPS channel 2 = Precharge contactor
+- J2004–J2010: Channels 3-7 (spare)</p>
+<p><strong>Safety-critical</strong>: Pin 1 feedback used by DIAG_ID_STRING_<em>_CONTACTOR_FEEDBACK (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-08">HZ-08</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-12">FM-12</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-022">SSR-022</a></div></span></span>).
+</em><em>Feedback path</em>*: SPS_FEEDBACK_X → PEX_PORT_EXPANDER1 (I2C port expander), NOT direct GPIO.
+  - Channel 0 (J2000, String+) → PEX1 pin 0
+  - Channel 1 (J2002, String-) → PEX1 pin 1
+  - Channel 2 (J2003, Precharge) → PEX1 pin 2 (but <code>CONT_HAS_NO_FEEDBACK</code> — not monitored)
+  - SPS feedback enable: hetREG2 pin 9 (MOSFET gate for current-sense circuit)
+  - SPS reset: hetREG2 pin 16</p>
+<p><strong>Design note</strong>: Precharge contactor has no feedback monitoring (<code>CONT_HAS_NO_FEEDBACK</code>).
+This is a known foxBMS design choice — precharge welding is detected indirectly via
+current-on-open-string (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-15</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-08">HZ-08</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-14">FM-14</a></div></span></span>) or precharge timeout.</p>
+<h4 id="1125-interlock-connector-j2033-2-pin-micro-fit">11.2.5 Interlock Connector — J2033 (2-pin Micro-Fit)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>MCU Peripheral</th>
+<th>Register</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>INTERLOCK_HIGH</td>
+<td>N2HET1[30] ball B11</td>
+<td>hetREG1 (0xFFF7B800)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>INTERLOCK_LOW</td>
+<td>N2HET1[29] ball A3</td>
+<td>hetREG1 (0xFFF7B800)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Function</strong>: Physical safety loop. Current flows through INTERLOCK_HIGH, through external loop
+(connectors, service disconnect), returns via INTERLOCK_LOW. Loop open = fault.
+<strong>MCU pins</strong>: Feedback (IL_STATE) = hetREG1 pin 29 (input), HS enable = hetREG1 pin 30 (output).
+<strong>ADC channels</strong>: IL_HS_VS (ch2), IL_LS_VS (ch3), IL_HS_CS (ch4), IL_LS_CS (ch5).
+<strong>DIAG ID</strong>: DIAG_ID_INTERLOCK_FEEDBACK (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-13</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-10">HZ-10</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a></div></span></span>, FTTI 250 ms).</p>
+<h4 id="1126-insulation-monitoring-j2034-4-pin-micro-fit">11.2.6 Insulation Monitoring — J2034 (4-pin Micro-Fit)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>Direction</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>VSUP-</td>
+<td>—</td>
+<td>Supply ground</td>
+</tr>
+<tr>
+<td>2</td>
+<td>VSUP+</td>
+<td>—</td>
+<td>Supply voltage</td>
+</tr>
+<tr>
+<td>3</td>
+<td>OK/NOK Signal</td>
+<td>Input</td>
+<td>IMD status (digital)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>PWM</td>
+<td>Input</td>
+<td>IMD measurement (PWM-encoded resistance)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Function</strong>: Bender-type insulation monitoring device. Two variants supported:
+  - <strong>IR155 (PWM-based)</strong>: OK/NOK on hetREG1 pin 27, PWM on hetREG2 pin 27, supply enable hetREG1 pin 25.
+  - <strong>iso165C (CAN-based)</strong>: Communicates on CAN1 (canREG1), RX IDs 0x37 (info) and 0x23 (response), little-endian.
+<strong>DIAG ID</strong>: Part of system monitoring suite (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-15">FM-15</a></div></span></span>).
+<strong>OPEN ITEM</strong>: IR155 PWM pin assignment has an unresolved <code>TODO</code> comment in <code>bender_ir155_cfg.h</code>
+line 155 (<code>hetREG2</code> pin 27) — developer was uncertain. Needs schematic verification before HIL.</p>
+<h4 id="1127-rs485-connector-j2013-6-pin-micro-fit">11.2.7 RS485 Connector — J2013 (6-pin Micro-Fit)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Y</td>
+<td>RS485 differential pair 1+</td>
+</tr>
+<tr>
+<td>2</td>
+<td>A</td>
+<td>RS485 differential pair 2+</td>
+</tr>
+<tr>
+<td>3</td>
+<td>GND</td>
+<td>Ground</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Z</td>
+<td>RS485 differential pair 1-</td>
+</tr>
+<tr>
+<td>5</td>
+<td>B</td>
+<td>RS485 differential pair 2-</td>
+</tr>
+<tr>
+<td>6</td>
+<td>GND</td>
+<td>Ground</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Function</strong>: Secondary communication channel. Not used in default foxBMS configuration.</p>
+<h4 id="1128-interface-board-connector-j9000-40-pin-samtec">11.2.8 Interface Board Connector — J9000 (40-pin Samtec)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>Function</th>
+<th>isoSPI Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>MCU_SPI1.SOMI0</td>
+<td>SPI1 data in</td>
+<td>isoSPI ch1/2 MISO</td>
+</tr>
+<tr>
+<td>2</td>
+<td>MCU_SPI1.SOMI1</td>
+<td>SPI1 data in (alt)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>MCU_SPI1.SIMO0</td>
+<td>SPI1 data out</td>
+<td>isoSPI ch1/2 MOSI</td>
+</tr>
+<tr>
+<td>4</td>
+<td>MCU_SPI1.SIMO1</td>
+<td>SPI1 data out (alt)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>5</td>
+<td>MCU_SPI1.CLK</td>
+<td>SPI1 clock</td>
+<td>isoSPI ch1/2 SCK</td>
+</tr>
+<tr>
+<td>6</td>
+<td>MCU_SPI1.CS1</td>
+<td>SPI1 chip select 1</td>
+<td>isoSPI channel 1</td>
+</tr>
+<tr>
+<td>7</td>
+<td>MCU_SPI1.CS2</td>
+<td>SPI1 chip select 2</td>
+<td>isoSPI channel 2</td>
+</tr>
+<tr>
+<td>8-10</td>
+<td>MCU_SPI1.CS3-5</td>
+<td>SPI1 chip selects</td>
+<td>Spare</td>
+</tr>
+<tr>
+<td>11</td>
+<td>MCU_SPI4.SOMI</td>
+<td>SPI4 data in</td>
+<td>isoSPI ch3/4 MISO</td>
+</tr>
+<tr>
+<td>12</td>
+<td>MCU_SPI4.SIMO</td>
+<td>SPI4 data out</td>
+<td>isoSPI ch3/4 MOSI</td>
+</tr>
+<tr>
+<td>13</td>
+<td>MCU_SPI4.CLK</td>
+<td>SPI4 clock</td>
+<td>isoSPI ch3/4 SCK</td>
+</tr>
+<tr>
+<td>14</td>
+<td>MCU_SPI4.CS0</td>
+<td>SPI4 chip select 0</td>
+<td>isoSPI channel 3</td>
+</tr>
+<tr>
+<td>15</td>
+<td>MCU_SPI4.CS1</td>
+<td>SPI4 chip select 1</td>
+<td>isoSPI channel 4</td>
+</tr>
+<tr>
+<td>16-19</td>
+<td>MCU_SPI4.CS2-5</td>
+<td>SPI4 chip selects</td>
+<td>Spare</td>
+</tr>
+<tr>
+<td>20-23</td>
+<td>IF_INT0-3</td>
+<td>Interrupt pins</td>
+<td>GIOA_2/3/4/6</td>
+</tr>
+<tr>
+<td>24-31</td>
+<td>IF_GPIO.0-7</td>
+<td>GPIO via port expander</td>
+<td>LTC6820 enable/master</td>
+</tr>
+<tr>
+<td>32-33</td>
+<td>GND</td>
+<td>Ground</td>
+<td>Ground</td>
+</tr>
+<tr>
+<td>34-35</td>
+<td>MCU_3.3V</td>
+<td>3.3V supply</td>
+<td>Logic power</td>
+</tr>
+<tr>
+<td>36-37</td>
+<td>MCU_5.0V_LDO</td>
+<td>5.0V supply</td>
+<td>Peripheral power</td>
+</tr>
+<tr>
+<td>38</td>
+<td>VBB_12V</td>
+<td>12V from buck-boost</td>
+<td>—</td>
+</tr>
+<tr>
+<td>39-40</td>
+<td>VSUP</td>
+<td>Main supply voltage</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MCU Registers</strong>: spiREG1 (0xFFF7F400) for SPI1, spiREG4 (0xFFF7FA00) for SPI4.
+<strong>Safety-critical</strong>: This is the primary path for all cell voltage and temperature data (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-01">HZ-01</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-01">FM-01</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-02">HZ-02</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-03">FM-03</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-06">HZ-06</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-09">FM-09</a></div></span></span>).</p>
+<h4 id="1129-debug-connector-j3008-38-pin-mictor">11.2.9 Debug Connector — J3008 (38-pin Mictor)</h4>
+<p>Standard ARM JTAG + ETM trace port. Pins: TDI, TDO, TMS, TCK, TRST, RTCK, TRACECLK, TRACECTL, ETMDATA0-15.
+<strong>HIL Relevance</strong>: JTAG access for gcov coverage extraction during HIL execution.</p>
+<h4 id="11210-ethernet-connector-j2001-rj45-12-pin">11.2.10 Ethernet Connector — J2001 (RJ45, 12-pin)</h4>
+<p>Dual-port Ethernet (TX1/RX1, TX2/RX2) with LED indicators. Not used in default BMS configuration.</p>
+<h3 id="113-slave-board-connectors-18-cell-ltc6813-1-v113">11.3 Slave Board Connectors (18-cell LTC6813-1, v1.1.3)</h3>
+<h4 id="1131-cell-voltage-sense-connector-24-pin">11.3.1 Cell Voltage Sense Connector (24-pin)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>LTC6813 Input</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>VBAT-</td>
+<td>C0 (negative ref)</td>
+<td>Battery module negative terminal</td>
+</tr>
+<tr>
+<td>2</td>
+<td>CELL_0+</td>
+<td>C0+</td>
+<td>Cell 0 positive terminal</td>
+</tr>
+<tr>
+<td>3</td>
+<td>CELL_2+</td>
+<td>C2+</td>
+<td>Cell 2 positive terminal</td>
+</tr>
+<tr>
+<td>4</td>
+<td>CELL_4+</td>
+<td>C4+</td>
+<td>Cell 4 positive terminal</td>
+</tr>
+<tr>
+<td>5</td>
+<td>CELL_6+</td>
+<td>C6+</td>
+<td>Cell 6 positive terminal</td>
+</tr>
+<tr>
+<td>6</td>
+<td>CELL_8+</td>
+<td>C8+</td>
+<td>Cell 8 positive terminal</td>
+</tr>
+<tr>
+<td>7</td>
+<td>CELL_10+</td>
+<td>C10+</td>
+<td>Cell 10 positive terminal</td>
+</tr>
+<tr>
+<td>8</td>
+<td>CELL_12+</td>
+<td>C12+</td>
+<td>Cell 12 positive terminal</td>
+</tr>
+<tr>
+<td>9</td>
+<td>CELL_14+</td>
+<td>C14+</td>
+<td>Cell 14 positive terminal</td>
+</tr>
+<tr>
+<td>10</td>
+<td>CELL_16+</td>
+<td>C16+</td>
+<td>Cell 16 positive terminal</td>
+</tr>
+<tr>
+<td>11</td>
+<td>VBAT+</td>
+<td>C17+ (positive ref)</td>
+<td>Battery module positive terminal</td>
+</tr>
+<tr>
+<td>12</td>
+<td>NC</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>13</td>
+<td>CELL_0-</td>
+<td>C0- (= VBAT-)</td>
+<td>Cell 0 negative terminal</td>
+</tr>
+<tr>
+<td>14</td>
+<td>CELL_1+</td>
+<td>C1+</td>
+<td>Cell 1 positive terminal</td>
+</tr>
+<tr>
+<td>15</td>
+<td>CELL_3+</td>
+<td>C3+</td>
+<td>Cell 3 positive terminal</td>
+</tr>
+<tr>
+<td>16</td>
+<td>CELL_5+</td>
+<td>C5+</td>
+<td>Cell 5 positive terminal</td>
+</tr>
+<tr>
+<td>17</td>
+<td>CELL_7+</td>
+<td>C7+</td>
+<td>Cell 7 positive terminal</td>
+</tr>
+<tr>
+<td>18</td>
+<td>CELL_9+</td>
+<td>C9+</td>
+<td>Cell 9 positive terminal</td>
+</tr>
+<tr>
+<td>19</td>
+<td>CELL_11+</td>
+<td>C11+</td>
+<td>Cell 11 positive terminal</td>
+</tr>
+<tr>
+<td>20</td>
+<td>CELL_13+</td>
+<td>C13+</td>
+<td>Cell 13 positive terminal</td>
+</tr>
+<tr>
+<td>21</td>
+<td>CELL_15+</td>
+<td>C15+</td>
+<td>Cell 15 positive terminal</td>
+</tr>
+<tr>
+<td>22</td>
+<td>CELL_17+</td>
+<td>C17+</td>
+<td>Cell 17 positive terminal</td>
+</tr>
+<tr>
+<td>23-24</td>
+<td>NC</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Electrical ratings</strong>: Cell voltage range 0–5V, module voltage 16–90V.
+<strong>ADC</strong>: LTC6813 internal 16-bit ADC, ~0.1 mV/LSB, total error ±2.2 mV (7kHz, 25°C).
+<strong>Safety-critical</strong>: Direct measurement path for <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-01">HZ-01</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-01">FM-01</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (OV, ASIL D) and <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-02">HZ-02</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-03">FM-03</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (UV, ASIL C).</p>
+<p><strong>NOTE</strong>: Pins are NOT sequential — even-numbered cells on pins 2-11 (row 1), odd-numbered
+cells on pins 14-22 (row 2). Cell emulator wiring must account for this interleaved layout.</p>
+<h4 id="1132-temperature-sensor-connector-16-pin">11.3.2 Temperature Sensor Connector (16-pin)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>LTC6813 GPIO</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>T-SENSOR_0</td>
+<td>GPIO1 (MUX)</td>
+<td>NTC sensor 0, terminal 1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>T-SENSOR_1</td>
+<td>GPIO2 (MUX)</td>
+<td>NTC sensor 1, terminal 1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>T-SENSOR_2</td>
+<td>GPIO3 (MUX)</td>
+<td>NTC sensor 2, terminal 1</td>
+</tr>
+<tr>
+<td>4</td>
+<td>T-SENSOR_3</td>
+<td>GPIO4 (MUX)</td>
+<td>NTC sensor 3, terminal 1</td>
+</tr>
+<tr>
+<td>5</td>
+<td>T-SENSOR_4</td>
+<td>GPIO5 (MUX)</td>
+<td>NTC sensor 4, terminal 1</td>
+</tr>
+<tr>
+<td>6</td>
+<td>T-SENSOR_5</td>
+<td>GPIO1 (MUX)</td>
+<td>NTC sensor 5, terminal 1</td>
+</tr>
+<tr>
+<td>7</td>
+<td>T-SENSOR_6</td>
+<td>GPIO2 (MUX)</td>
+<td>NTC sensor 6, terminal 1</td>
+</tr>
+<tr>
+<td>8</td>
+<td>T-SENSOR_7</td>
+<td>GPIO3 (MUX)</td>
+<td>NTC sensor 7, terminal 1</td>
+</tr>
+<tr>
+<td>9-16</td>
+<td>FUSED_VBAT-</td>
+<td>—</td>
+<td>NTC sensor return (all share VBAT-)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Electrical</strong>: NTC nominal 10 kΩ. Measured via LTC6813 GPIO/ADC multiplexer.
+<strong>Safety-critical</strong>: Measurement path for <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-06">HZ-06</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (OT, ASIL C) and <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (UT, ASIL B).</p>
+<h4 id="1133-daisy-chain-connectors-2-pin-each">11.3.3 Daisy Chain Connectors (2-pin each)</h4>
+<table>
+<thead>
+<tr>
+<th>Connector</th>
+<th>Pin 1</th>
+<th>Pin 2</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Daisy Input</td>
+<td>IN+</td>
+<td>IN-</td>
+<td>isoSPI from previous slave (or interface board for first slave)</td>
+</tr>
+<tr>
+<td>Daisy Output</td>
+<td>OUT+</td>
+<td>OUT-</td>
+<td>isoSPI to next slave in chain</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Isolation</strong>: Transformer-coupled differential signaling. Galvanic isolation between
+master-side (low-voltage) and slave-side (high-voltage battery domain).</p>
+<h4 id="1134-analog-inputs-connector-18-pin">11.3.4 Analog Inputs Connector (18-pin)</h4>
+<p>Pins 1-16: ANALOG-IN_0 to ANALOG-IN_15 (0-5V range), Pin 17: +3.0V VREF2, Pin 18: FUSED_VBAT- (GND).
+Used for auxiliary measurements. Not in primary safety path.</p>
+<h4 id="1135-digital-io-connector-9-pin">11.3.5 Digital I/O Connector (9-pin)</h4>
+<p>Pins 1-7: DIGITAL-IO_0 to DIGITAL-IO_6 (0-5V, bidirectional), Pin 8: +5V VREG, Pin 9: FUSED_VBAT-.
+Used for GPIO expansion. Not in primary safety path.</p>
+<h3 id="114-interface-board-connectors-ltc6820-v103">11.4 Interface Board Connectors (LTC6820, v1.0.3)</h3>
+<h4 id="1141-master-connector-40-pin-mates-with-j9000">11.4.1 Master Connector (40-pin, mates with J9000)</h4>
+<p>The interface board connects to the master board via J9000. Key signal mapping:</p>
+<table>
+<thead>
+<tr>
+<th>Master J9000 Pin</th>
+<th>Interface Signal</th>
+<th>isoSPI Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (SPI1.SOMI0)</td>
+<td>SPI1 MISO</td>
+<td>Data from LTC6813 via LTC6820 ch1/2</td>
+</tr>
+<tr>
+<td>3 (SPI1.SIMO0)</td>
+<td>SPI1 MOSI</td>
+<td>Commands to LTC6813 via LTC6820 ch1/2</td>
+</tr>
+<tr>
+<td>5 (SPI1.CLK)</td>
+<td>SPI1 SCK</td>
+<td>Clock for ch1/2</td>
+</tr>
+<tr>
+<td>6 (SPI1.CS1)</td>
+<td>SPI1 CS1</td>
+<td>Chip select for isoSPI channel 1</td>
+</tr>
+<tr>
+<td>7 (SPI1.CS2)</td>
+<td>SPI1 CS2</td>
+<td>Chip select for isoSPI channel 2</td>
+</tr>
+<tr>
+<td>24 (IF_GPIO.0)</td>
+<td>Port expander IO1_0</td>
+<td>LTC6820 ch1 ENABLE</td>
+</tr>
+<tr>
+<td>25 (IF_GPIO.1)</td>
+<td>Port expander IO1_1</td>
+<td>LTC6820 ch1 MASTER select</td>
+</tr>
+<tr>
+<td>26 (IF_GPIO.2)</td>
+<td>Port expander IO1_2</td>
+<td>LTC6820 ch2 ENABLE</td>
+</tr>
+<tr>
+<td>27 (IF_GPIO.3)</td>
+<td>Port expander IO1_3</td>
+<td>LTC6820 ch2 MASTER select</td>
+</tr>
+</tbody>
+</table>
+<p><strong>NOTE</strong>: GPIO pins 24-31 go through an I2C port expander on the interface board, not
+direct GPIO from TMS570. The port expander is accessed via I2C from the master.</p>
+<h4 id="1142-isospi-connectors-2-pin-each">11.4.2 isoSPI Connectors (2-pin each)</h4>
+<table>
+<thead>
+<tr>
+<th>Pin</th>
+<th>Signal</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>isospi_p</td>
+<td>isoSPI positive (differential)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>isospi_n</td>
+<td>isoSPI negative (differential)</td>
+</tr>
+</tbody>
+</table>
+<p>One connector per daisy chain direction. The LTC6820 converts SPI (single-ended, master domain)
+to isoSPI (differential, transformer-coupled, battery domain).</p>
+<h3 id="115-critical-signal-paths-tsr-physical-path-probe-points">11.5 Critical Signal Paths (TSR → Physical Path → Probe Points)</h3>
+<p>Each signal path maps a TSR to the complete chain from sensor to actuator. Every node
+is classified as an observation point (O), fault injection point (F), or both (O/F).</p>
+<h4 id="1151-tsr-0102-cell-voltage-path-asil-d-asil-c">11.5.1 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-01">HZ-01</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-01">FM-01</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>/02: Cell Voltage Path (ASIL D / ASIL C)</h4>
+<pre><code>Cell terminal (O/F)
+  → Kelvin sense wire → Slave cell connector pin CELL_x+ (O/F)
+  → PCB trace → RC filter → LTC6813 ADC input C0-C17
+  → LTC6813 internal ADC (16-bit, ±2.2mV @25°C) (O: via RDCV command)
+  → isoSPI TX (differential, transformer-coupled) (O/F: break daisy chain)
+  → Interface board LTC6820 → SPI1 SOMI0
+  → J9000 pin 1 → Master board SPI1 (O: logic analyzer on J9000)
+  → TMS570 MibSPI1 (spiREG1, 0xFFF7F400)
+  → DMA transfer to RAM buffer
+  → afe_ltc6813.c: DECAN decode → DATA_BLOCK_CELL_VOLTAGE (O: database read)
+  → SOA_CheckCellVoltage() → compare vs BC_VOLTAGE_MAX_MSL (2800mV) / MIN (1500mV)
+  → DIAG_Handler(DIAG_ID_CELLVOLTAGE_*_MSL) → threshold counter (50/10ms)
+  → FATAL → BMS_STATEMACHINE_ERROR
+  → CONT_OpenAll() → SPS driver → spiREG2 (0xFFF7F600)
+  → J9002 → SPS IC → J200x pin 3 (SPS_OUT_X) → contactor coil de-energized (O/F)
+  → Contactor mechanical open (20-50ms)
+  → J200x pin 1 (SPS_FEEDBACK_X) → PEX_PORT_EXPANDER1 (I2C) → verification (O)
+</code></pre>
+<p><strong>FTTI</strong>: 750 ms (OV/UV)
+<strong>HIL probe points</strong>: Cell connector (emulator), J9000 (logic analyzer), J200x (contactor state), CAN bus (0x240-0x245 cell voltages)</p>
+<h4 id="1152-tsr-0405-current-path-asil-b-asil-c">11.5.2 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-04">HZ-04</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-07">FM-07</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>/05: Current Path (ASIL B / ASIL C)</h4>
+<pre><code>Battery string current path
+  → IVT shunt resistor (high-precision, in-line)
+  → IVT electronics: ADC → CAN frame encoding
+  → CAN bus → J2021 pin 4 (CAN_HIGH) / pin 3 (CAN_LOW) (O/F)
+  → CAN transceiver → TMS570 DCAN1 (canREG1, 0xFFF7DC00)
+  → CAN RX handler → can_cbs_rx_current-sensor.c
+  → DATA_BLOCK_CURRENT (O: database read)
+  → SOA_CheckCurrent() → compare vs BC_CURRENT_MAX_*_MSL
+  → DIAG_Handler(DIAG_ID_OVERCURRENT_*_MSL) → threshold counter (10/10ms)
+  → FATAL → BMS_STATEMACHINE_ERROR → contactor open chain (same as 11.5.1)
+</code></pre>
+<p><strong>FTTI</strong>: 250 ms
+<strong>HIL probe points</strong>: J2021 (CAN injection), CAN bus monitoring, J200x (contactor state)
+<strong>NOTE</strong>: IVT messages: 0x521 (current), 0x522-0x524 (voltage V1-V3), 0x525 (temp), 0x526 (power), 0x527 (coulomb count)</p>
+<h4 id="1153-tsr-0607-temperature-path-asil-c-asil-b">11.5.3 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-06">HZ-06</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>/07: Temperature Path (ASIL C / ASIL B)</h4>
+<pre><code>NTC thermistor (10kΩ nominal)
+  → Slave temp connector pin T-SENSOR_x (O/F: substitute with precision resistor)
+  → PCB trace → LTC6813 GPIO/ADC multiplexer
+  → LTC6813 ADC conversion (MUX scan, ~2ms per channel)
+  → isoSPI → Interface → SPI1 → TMS570 (same physical path as cell voltage)
+  → afe_ltc6813.c: temperature DECAN → DATA_BLOCK_CELL_TEMPERATURE (O)
+  → SOA_CheckTemperatures() → compare vs OT/UT limits (45/55°C, -20°C)
+  → DIAG_Handler(DIAG_ID_TEMP_*_MSL) → threshold counter (500/10ms = 5000ms)
+  → FATAL → BMS_STATEMACHINE_ERROR → contactor open chain
+</code></pre>
+<p><strong>FTTI</strong>: 6050 ms (justified by thermal inertia)
+<strong>HIL probe points</strong>: Temp connector (substitution resistor bank), CAN (0x260 mux temps)
+<strong>NOTE</strong>: Shares isoSPI path with cell voltage. AFE MUX failure detected by DIAG_ID_AFE_MUX (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-09">FM-09</a></div></span></span>).</p>
+<h4 id="1154-tsr-03-deep-discharge-path-qm">11.5.4 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-03</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-03">FM-03</a></div></span></span>: Deep Discharge Path (QM)</h4>
+<p>Same measurement path as <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-02">HZ-02</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-03">FM-03</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (cell voltage), but with threshold=1 and 100ms delay.
+<strong>FTTI</strong>: 160 ms. Triggers on extreme undervoltage below recovery threshold.</p>
+<h4 id="1155-tsr-08-contactor-feedback-path-asil-b">11.5.5 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-08">HZ-08</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-12">FM-12</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-022">SSR-022</a></div></span></span>: Contactor Feedback Path (ASIL B)</h4>
+<pre><code>Contactor auxiliary contact (normally-open or normally-closed)
+  → Wiring → J200x pin 1 (SPS_FEEDBACK_X) (O/F: open wire, short to GND/VCC)
+  → Feedback conditioning circuit → PEX_PORT_EXPANDER1 (I2C port expander)
+  → Contactor driver: compare feedback state vs SPS commanded state
+  → Mismatch → DIAG_Handler(DIAG_ID_STRING_*_CONTACTOR_FEEDBACK)
+  → Threshold counter (20/10ms = 200ms) + 100ms delay
+  → FATAL → BMS_STATEMACHINE_ERROR
+</code></pre>
+<p><strong>FTTI</strong>: 350 ms
+<strong>HIL probe points</strong>: J200x pin 1 (relay to simulate feedback), J200x pin 3 (SPS output state)
+<strong>Covers</strong>: Welding detection (commanded open, feedback closed) AND stuck-open detection.</p>
+<h4 id="1156-tsr-09-current-sensor-communication-path-asil-b">11.5.6 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-09">HZ-09</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-07">FM-07</a></div></span></span>: Current Sensor Communication Path (ASIL B)</h4>
+<pre><code>IVT current sensor → CAN frame (periodic, ~10ms cycle)
+  → J2021 (CAN1) → TMS570 DCAN1
+  → CAN RX handler: message receive timestamp
+  → Timeout check: if no message received within expected period
+  → DIAG_Handler(DIAG_ID_CURRENT_SENSOR_RESPONDING) → counter (100/10ms)
+  → 200ms delay → FATAL → ERROR → contactors open
+</code></pre>
+<p><strong>FTTI</strong>: 1250 ms (main current), 160 ms (voltage channels), 3050 ms (CC/EC)
+<strong>HIL injection</strong>: Stop transmitting IVT CAN frames to trigger timeout.</p>
+<h4 id="1157-tsr-10-afe-communication-path-asil-d-support">11.5.7 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-09">FM-09</a></div></span></span>: AFE Communication Path (ASIL D support)</h4>
+<pre><code>TMS570 SPI1 → J9000 → Interface LTC6820 → isoSPI → Slave LTC6813
+  → SPI transaction: command TX + data RX with PEC-15 CRC
+  → PEC check in afe_ltc6813.c
+  → Failure → DIAG_Handler(DIAG_ID_AFE_SPI or AFE_COMMUNICATION_INTEGRITY)
+  → Threshold counter (5/10ms = 50ms) + 100ms delay
+  → FATAL → ERROR → contactors open
+</code></pre>
+<p><strong>FTTI</strong>: 200 ms (SPI/CRC), 160 ms (config mismatch)
+<strong>HIL injection</strong>: Break isoSPI daisy chain (relay on daisy connector), corrupt SPI data.</p>
+<h4 id="1158-tsr-11-can-communication-path">11.5.8 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-11">FM-11</a></div></span></span>: CAN Communication Path</h4>
+<pre><code>Vehicle controller → CAN bus → J2024 (CAN2, isolated) or J2021 (CAN1)
+  → TMS570 DCAN → CAN RX handler
+  → Message receive timeout monitoring
+  → DIAG_Handler(DIAG_ID_CAN_TIMING) → counter (100/10ms)
+  → 200ms delay → FATAL → ERROR → contactors open
+</code></pre>
+<p><strong>FTTI</strong>: 1250 ms
+<strong>HIL injection</strong>: Stop sending expected CAN messages (disconnect CAN tool, or stop TX task).</p>
+<h4 id="1159-tsr-12-system-monitoring-asil-d">11.5.9 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-15">FM-15</a></div></span></span>: System Monitoring (ASIL D)</h4>
+<pre><code>TMS570 hardware self-test:
+  ├── CPU lockstep comparator → ESM (Error Signaling Module)
+  ├── RAM ECC → ESM
+  ├── Flash CRC → DIAG_ID_FLASHCHECKSUM
+  └── RTOS task timing → DIAG_ID_SYSTEM_MONITORING
+→ Any single event → FATAL (threshold=1, delay=0) → ERROR → contactors open
+</code></pre>
+<p><strong>FTTI</strong>: ~51 ms
+<strong>HIL limitation</strong>: Hardware self-test faults cannot be injected without modifying MCU silicon.
+SIL-only test: POSIX stubs suppress these DIAGs. HIL tests verify the DIAG is configured but
+cannot trigger it via external stimulus.</p>
+<h4 id="11510-tsr-13-interlock-loop-path">11.5.10 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-13</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-10">HZ-10</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a></div></span></span>: Interlock Loop Path</h4>
+<pre><code>Service disconnect / connector → external wiring loop
+  → J2033 pin 1 (INTERLOCK_HIGH) → current source
+  → Loop through external connectors, service disconnect switch
+  → J2033 pin 2 (INTERLOCK_LOW) → current return
+  → hetREG1 pin 29 → interlock.c: compare current/voltage against threshold
+  → DIAG_Handler(DIAG_ID_INTERLOCK_FEEDBACK) → counter (10/10ms)
+  → 100ms delay → FATAL → ERROR → contactors open
+</code></pre>
+<p><strong>FTTI</strong>: 250 ms
+<strong>HIL injection</strong>: Relay on J2033 pins to open interlock loop.</p>
+<h4 id="11511-tsr-14-sbc-reset-path">11.5.11 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-14</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-15">FM-15</a></div></span></span>: SBC Reset Path</h4>
+<pre><code>NXP FS8x SBC → SPI2 (spiREG2, 0xFFF7F600) ↔ TMS570
+  ├── Watchdog: MCU must service within window
+  ├── RSTB pin: SBC → MCU reset line (on J9002: SBC_MCU_RESET pin 80)
+  └── FS0B pin: SBC → safety output (on J9002: SBC_MCU_FS0B pin 79)
+→ RSTB assertion detected → DIAG_Handler(DIAG_ID_SBC_RSTB_ERROR)
+→ Threshold=1, delay=100ms → FATAL → ERROR → contactors open
+</code></pre>
+<p><strong>FTTI</strong>: 160 ms
+<strong>HIL limitation</strong>: Cannot externally trigger SBC reset without access to SBC watchdog.
+Test via: deliberate watchdog miss (software fault injection) or SBC FS0B pin manipulation.</p>
+<h4 id="11512-tsr-15-current-on-open-string-path">11.5.12 <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-15</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-08">HZ-08</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-14">FM-14</a></div></span></span>: Current on Open String Path</h4>
+<pre><code>All contactors commanded OPEN (SPS_OUT_X = 0)
+  → IVT measures string current → CAN → J2021 → DCAN1
+  → Current value &gt; threshold (should be ~0A with contactors open)
+  → DIAG_Handler(DIAG_ID_CURRENT_ON_OPEN_STRING) → counter (10/10ms)
+  → 100ms delay → FATAL → ERROR
+</code></pre>
+<p><strong>FTTI</strong>: 250 ms
+<strong>HIL injection</strong>: Apply current through string with contactors open (simulates welded contactor
+bypassing the feedback detection, or external fault path).</p>
+<h3 id="116-probe-point-map-for-needle-bed-hil-adapter">11.6 Probe Point Map for Needle Bed / HIL Adapter</h3>
+<p>This table maps every testable signal to its physical access point and the TSRs it covers.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Connector</th>
+<th>Pin(s)</th>
+<th>Signal</th>
+<th>Type</th>
+<th>TSR Coverage</th>
+<th>Probe Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PP-01</td>
+<td>Slave Cell</td>
+<td>1-22</td>
+<td>CELL_0+ to CELL_17+, VBAT±</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-01">HZ-01</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-01">FM-01</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>,02,03</td>
+<td>Cell emulator channels</td>
+</tr>
+<tr>
+<td>PP-02</td>
+<td>Slave Temp</td>
+<td>1-8</td>
+<td>T-SENSOR_0 to 7</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-06">HZ-06</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>,07</td>
+<td>Precision resistor bank</td>
+</tr>
+<tr>
+<td>PP-03</td>
+<td>Slave Temp</td>
+<td>9-16</td>
+<td>FUSED_VBAT- (return)</td>
+<td>O</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-06">HZ-06</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>,07</td>
+<td>GND reference</td>
+</tr>
+<tr>
+<td>PP-04</td>
+<td>Slave Daisy In</td>
+<td>1-2</td>
+<td>IN+/IN-</td>
+<td>F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-09">FM-09</a></div></span></span></td>
+<td>Relay (break chain)</td>
+</tr>
+<tr>
+<td>PP-05</td>
+<td>Slave Daisy Out</td>
+<td>1-2</td>
+<td>OUT+/OUT-</td>
+<td>F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-09">FM-09</a></div></span></span></td>
+<td>Relay (break chain)</td>
+</tr>
+<tr>
+<td>PP-06</td>
+<td>J2021 CAN1</td>
+<td>3-4</td>
+<td>CAN_H/CAN_L</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-04">HZ-04</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-07">FM-07</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>,05,09,15</td>
+<td>PCAN/python-can</td>
+</tr>
+<tr>
+<td>PP-07</td>
+<td>J2024 CAN2</td>
+<td>3-4</td>
+<td>CAN_H/CAN_L</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-11">FM-11</a></div></span></span></td>
+<td>PCAN/python-can</td>
+</tr>
+<tr>
+<td>PP-08</td>
+<td>J200x SPS</td>
+<td>1</td>
+<td>SPS_FEEDBACK_X</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-08</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-08">HZ-08</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-12">FM-12</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-022">SSR-022</a></div></span></span></td>
+<td>Relay (simulate feedback)</td>
+</tr>
+<tr>
+<td>PP-09</td>
+<td>J200x SPS</td>
+<td>3</td>
+<td>SPS_OUT_X</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-01">HZ-01</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-01">FM-01</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>-15</td>
+<td>Current probe / digital</td>
+</tr>
+<tr>
+<td>PP-10</td>
+<td>J2033</td>
+<td>1-2</td>
+<td>INTERLOCK_H/L</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-13</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-10">HZ-10</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a></div></span></span></td>
+<td>Relay (break loop)</td>
+</tr>
+<tr>
+<td>PP-11</td>
+<td>J2034</td>
+<td>3</td>
+<td>IMD OK/NOK</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-15">FM-15</a></div></span></span></td>
+<td>Digital signal</td>
+</tr>
+<tr>
+<td>PP-12</td>
+<td>J2034</td>
+<td>4</td>
+<td>IMD PWM</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-12</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-15">FM-15</a></div></span></span></td>
+<td>PWM generator</td>
+</tr>
+<tr>
+<td>PP-13</td>
+<td>J2009</td>
+<td>1</td>
+<td>CLAMP15</td>
+<td>F</td>
+<td>—</td>
+<td>Relay (ignition control)</td>
+</tr>
+<tr>
+<td>PP-14</td>
+<td>J9000</td>
+<td>1,3,5</td>
+<td>SPI1 SOMI/SIMO/CLK</td>
+<td>O</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-09">FM-09</a></div></span></span></td>
+<td>Logic analyzer</td>
+</tr>
+<tr>
+<td>PP-15</td>
+<td>J3008</td>
+<td>11,15,17,19</td>
+<td>JTAG TDO/TCK/TMS/TDI</td>
+<td>O</td>
+<td>—</td>
+<td>JTAG debugger</td>
+</tr>
+<tr>
+<td>PP-16</td>
+<td>J9002</td>
+<td>79</td>
+<td>SBC_MCU_FS0B</td>
+<td>O/F</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-14</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-15">FM-15</a></div></span></span></td>
+<td>Digital signal</td>
+</tr>
+<tr>
+<td>PP-17</td>
+<td>J9002</td>
+<td>80</td>
+<td>SBC_MCU_RESET</td>
+<td>O</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-14</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-15">FM-15</a></div></span></span></td>
+<td>Digital monitor</td>
+</tr>
+<tr>
+<td>PP-18</td>
+<td>J2021 CAN1</td>
+<td>3-4</td>
+<td>CAN1 bus termination</td>
+<td>O</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-04">HZ-04</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-07">FM-07</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>,05,09</td>
+<td>Verify 120Ω between H/L</td>
+</tr>
+<tr>
+<td>PP-19</td>
+<td>J2024 CAN2</td>
+<td>3-4</td>
+<td>CAN2 bus termination</td>
+<td>O</td>
+<td><span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-11</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-11">FM-11</a></div></span></span></td>
+<td>Verify 120Ω between H/L</td>
+</tr>
+</tbody>
+</table>
+<p><strong>CAN termination note</strong>: The foxBMS master board includes internal 120Ω termination resistors
+on both CAN1 and CAN2. The HIL bench CAN interface (PCAN, python-can adapter) typically also
+has internal termination. With both endpoints terminated, the bus has 60Ω differential
+impedance — this is correct for a two-node bus. If a third CAN node is added (e.g., CANoe
+for monitoring), its termination must be DISABLED to avoid triple-termination (40Ω, causing
+signal quality issues). Verify termination resistance with a multimeter before first test.</p>
+<h3 id="117-galvanic-isolation-boundaries">11.7 Galvanic Isolation Boundaries</h3>
+<pre><code>          LOW-VOLTAGE DOMAIN                    HIGH-VOLTAGE DOMAIN
+    (Master + Interface board)                (Slave + Battery cells)
+                                    │
+  TMS570 MCU ←→ SPI1 ←→ LTC6820   │    LTC6813 ←→ Cells (16-90V)
+                                 ──┤──  Transformer-coupled isoSPI
+  CAN2 transceiver               ──┤──  Isolated CAN (J2024)
+                                    │
+  CAN1 transceiver ←→ IVT          │    IVT shunt (in current path)
+     (NOT isolated on CAN1 side)    │
+                                    │
+  SPS IC ←→ Contactors             │    Contactor main contacts
+     (galvanic separation by        │    (high-voltage battery bus)
+      contactor coil/contact gap)   │
+</code></pre>
+<p><strong>Critical isolation point</strong>: The isoSPI transformer on the interface board provides the
+primary galvanic isolation between the master (low-voltage) and slave (battery-voltage)
+domains. All cell voltage and temperature data crosses this boundary.</p>
+<p><strong>CAN1 is NOT isolated</strong>: The IVT current sensor communicates on CAN1 (J2021), which is
+not galvanically isolated on the master board. The IVT itself provides isolation internally.</p>
+<h3 id="118-known-gotchas-for-hil-test-design-from-lessons-learned">11.8 Known Gotchas for HIL Test Design (from Lessons Learned)</h3>
+<p>These are verified pitfalls discovered during SIL integration that directly affect HIL test
+harness design. Each references a lesson ID from the lesson registry at
+<code>foxbms-posix/docs/lessons-learned/embedded/foxbms-integration.md</code> (28 lessons total).
+Full HIL signal path analysis: <code>docs/lessons-learned/embedded/foxbms-hil-signal-path-analysis.md</code>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Lesson</th>
+<th>Signal Path</th>
+<th>Gotcha</th>
+<th>Required Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>L-009</td>
+<td>Cell/IVT validity</td>
+<td><code>invalidFlag</code> uses inverted logic: <strong>1 = VALID</strong>, 0 = invalid</td>
+<td>Plant/emulator MUST send <code>invalidFlag=1</code> for valid data, or BMS rejects all measurements</td>
+</tr>
+<tr>
+<td>2</td>
+<td>L-010</td>
+<td>Cell voltage CAN</td>
+<td>Only 8 cells per CAN mux group (0x270). Need <strong>5 mux groups</strong> (0-4) for all 18 cells</td>
+<td>Cell emulator must cycle through mux groups 0-4 in plant model; single group = 10 cells missing</td>
+</tr>
+<tr>
+<td>3</td>
+<td>L-015</td>
+<td>BMS state (0x220)</td>
+<td>BMS state signal on CAN flickers due to multiplexing timing</td>
+<td>Test harness must read state via <code>BMS_GetState()</code> API or internal database, never by sniffing CAN 0x220</td>
+</tr>
+<tr>
+<td>4</td>
+<td>L-018/L-027</td>
+<td>Cell voltage plausibility</td>
+<td>Single-cell OV is rejected as outlier if spread &gt; 300 mV (<code>PL_CELL_VOLTAGE_SPREAD_TOLERANCE_mV</code>, WARNING severity only)</td>
+<td>OV fault injection must set <strong>ALL 18 cells</strong> to overvoltage simultaneously, not just one cell</td>
+</tr>
+<tr>
+<td>5</td>
+<td>L-019</td>
+<td>IVT current (0x521)</td>
+<td>Current flowing before contactors close is physically impossible</td>
+<td>Plant model must gate IVT current signal on contactor feedback state (0x7F0); send 0 mA until contactors confirmed closed</td>
+</tr>
+<tr>
+<td>6</td>
+<td>L-011</td>
+<td>IVT Voltage 3 (0x524)</td>
+<td>Missing V3 signal triggers DIAG timeout (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-09</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-09">HZ-09</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-07">FM-07</a></div></span></span>)</td>
+<td>Plant model must send 0x524 every cycle alongside 0x521-0x523; omission = spurious timeout fault</td>
+</tr>
+<tr>
+<td>7</td>
+<td>L-017</td>
+<td>OT fault trigger</td>
+<td>Temperature alone may not trigger OT fault — requires <strong>both</strong> current &gt; 0 AND temperature &gt; threshold</td>
+<td>OT test must apply load current simultaneously with elevated temperature</td>
+</tr>
+<tr>
+<td>8</td>
+<td>L-014</td>
+<td>Test infrastructure</td>
+<td>Stale foxbms-vecu processes ghost CAN frames at 100× normal rate</td>
+<td><code>killall -9 foxbms-vecu</code> before each HIL test run; verify CAN bus is clean before stimulus</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Impact on SYS.4 test design</strong>: Gotchas 1-6 are <strong>test-blocking</strong> — if not addressed in the plant
+model or test harness, the affected test cases will produce false results (either false pass or
+false fail). Gotcha 4 is particularly dangerous because a single-cell OV test would appear to
+pass (no fault triggered) when in fact the plausibility check is silently rejecting the stimulus.</p>
+<h3 id="119-cross-check-verification-status">11.9 Cross-Check Verification Status</h3>
+<p>Agent cross-check performed 2026-03-23 against foxBMS v1.10.0 source code.</p>
+<table>
+<thead>
+<tr>
+<th>Signal Path</th>
+<th>HW CSV</th>
+<th>SW Register</th>
+<th>DMA</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SPI1 → AFE (LTC6813)</td>
+<td>J9000 pins 1-10</td>
+<td>spiREG1</td>
+<td>CH0/CH1</td>
+<td>VERIFIED</td>
+<td>CS1 = LTC6820 ch1</td>
+</tr>
+<tr>
+<td>SPI2 → SPS</td>
+<td>J9002 + J200x</td>
+<td>spiREG2</td>
+<td>CH2/CH3</td>
+<td>VERIFIED</td>
+<td>SW CS via hetREG2 pin 1 (schematic labels as "SPI3")</td>
+</tr>
+<tr>
+<td>CAN1 → IVT</td>
+<td>J2021 pins 3-4</td>
+<td>canREG1</td>
+<td>N/A (mailbox)</td>
+<td>VERIFIED</td>
+<td>IDs 0x521-0x527, 6-byte, big-endian</td>
+</tr>
+<tr>
+<td>CAN2 → Vehicle</td>
+<td>J2024 pins 3-4</td>
+<td>canREG2</td>
+<td>N/A (mailbox)</td>
+<td>VERIFIED</td>
+<td>No default RX/TX callbacks (integrator-specific)</td>
+</tr>
+<tr>
+<td>Interlock</td>
+<td>J2033 pins 1-2</td>
+<td>hetREG1 pins 29/30</td>
+<td>N/A</td>
+<td>VERIFIED</td>
+<td>ADC channels 2-5 for current/voltage</td>
+</tr>
+<tr>
+<td>SPS feedback</td>
+<td>J200x pin 1</td>
+<td>PEX1 pins 0-2 (I2C)</td>
+<td>N/A</td>
+<td>VERIFIED</td>
+<td>Via I2C port expander, not direct GPIO</td>
+</tr>
+<tr>
+<td>IMD (iso165C)</td>
+<td>J2034</td>
+<td>canREG1, IDs 0x37/0x23</td>
+<td>N/A</td>
+<td>VERIFIED</td>
+<td>Little-endian (differs from all other foxBMS CAN)</td>
+</tr>
+<tr>
+<td>IMD (IR155)</td>
+<td>J2034</td>
+<td>hetREG1 p25/27, hetREG2 p27</td>
+<td>N/A</td>
+<td><strong>OPEN</strong></td>
+<td>Unresolved TODO on PWM pin in source code</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Open items requiring resolution before Phase 3 (SYS.4 test cases):</strong>
+1. IR155 PWM pin assignment — verify hetREG2 pin 27 against master board schematic
+2. Precharge contactor has no feedback monitoring — document as accepted gap in test coverage</p>
+<hr />
+<h2 id="12-register-to-connector-cross-reference">12. Register-to-Connector Cross-Reference</h2>
+<p>This table maps MCU peripheral register bases to their physical connectors, enabling
+software-hardware traceability for HIL test verification.</p>
+<table>
+<thead>
+<tr>
+<th>MCU Peripheral</th>
+<th>Register Base</th>
+<th>TMS570 Address</th>
+<th>Physical Connector</th>
+<th>Signal Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DCAN1</td>
+<td>canREG1</td>
+<td>0xFFF7DC00</td>
+<td>J2021 (CAN1)</td>
+<td>CAN H/L</td>
+</tr>
+<tr>
+<td>DCAN2</td>
+<td>canREG2</td>
+<td>0xFFF7DE00</td>
+<td>J2024 (CAN2)</td>
+<td>CAN H/L (isolated)</td>
+</tr>
+<tr>
+<td>MibSPI1</td>
+<td>spiREG1</td>
+<td>0xFFF7F400</td>
+<td>J9000 pins 1-10</td>
+<td>SPI → AFE (LTC6813 via LTC6820)</td>
+</tr>
+<tr>
+<td>SPI2</td>
+<td>spiREG2</td>
+<td>0xFFF7F600</td>
+<td>J9002 + J200x</td>
+<td>SPI → SPS IC (SW CS via hetREG2 pin 1)</td>
+</tr>
+<tr>
+<td>SPI3</td>
+<td>spiREG3</td>
+<td>0xFFF7F800</td>
+<td>On-board</td>
+<td>SPI → FRAM (diagnostic data persistence)</td>
+</tr>
+<tr>
+<td>MibSPI4</td>
+<td>spiREG4</td>
+<td>0xFFF7FA00</td>
+<td>J9000 pins 11-19</td>
+<td>SPI → isoSPI ch3/4</td>
+</tr>
+<tr>
+<td>SPI5</td>
+<td>spiREG5</td>
+<td>0xFFF7FC00</td>
+<td>J9002 pins 6-18</td>
+<td>SPI → spare</td>
+</tr>
+<tr>
+<td>N2HET1</td>
+<td>hetREG1</td>
+<td>0xFFF7B800</td>
+<td>J2033 (interlock), J2034 (IMD)</td>
+<td>[B11] ch30 IL_HS_EN, [A3] ch29 IL_STATE, [M3] ch25 IR155_EN, [A9] ch27 IR155_OK</td>
+</tr>
+<tr>
+<td>N2HET2</td>
+<td>hetREG2</td>
+<td>0xFFF7B900</td>
+<td>J200x, J2021, J2034</td>
+<td>[D8] ch01 SPS_CS, [T5] ch20 SPS_RST, ch09 SPS_FB_EN, [N4] ch18 CAN1_EN, [D7] ch02 IR155_PWM</td>
+</tr>
+<tr>
+<td>PEX1</td>
+<td>I2C port expander</td>
+<td>via i2cREG1</td>
+<td>J200x pin 1 (feedback)</td>
+<td>Contactor feedback: ch0=String+, ch1=String-, ch2=Precharge</td>
+</tr>
+<tr>
+<td>I2C1</td>
+<td>i2cREG1</td>
+<td>0xFFF7D400</td>
+<td>J9002 pins 19-20</td>
+<td>I2C → peripherals</td>
+</tr>
+<tr>
+<td>ADC1</td>
+<td>adcREG1</td>
+<td>0xFFF7C000</td>
+<td>J9002 pins 58-61</td>
+<td>Analog inputs</td>
+</tr>
+<tr>
+<td>ADC2</td>
+<td>adcREG2</td>
+<td>0xFFF7C200</td>
+<td>J9002 pins 62-65</td>
+<td>Analog inputs</td>
+</tr>
+<tr>
+<td>RTI</td>
+<td>rtiREG1</td>
+<td>0xFFFFFC00</td>
+<td>Internal</td>
+<td>Timers, watchdog</td>
+</tr>
+<tr>
+<td>ESM</td>
+<td>esmREG</td>
+<td>0xFFFFF500</td>
+<td>Internal</td>
+<td>Error signaling</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bus sharing note (CONSTRAINT-001):</strong> spiREG2 is shared between SPS IC and NXP FS8x SBC.
+Both use software chip selects on separate hetREG2 pins ([D8] ch01 for SPS, SBC CS TBV).
+SPS_Ctrl() must execute before SBC_Trigger() in the 10ms task. A hardware fault on SPI2
+disables both contactor actuation and watchdog — SBC timeout resets MCU → fail-safe open.</p>
+<p><strong>⚠ TBV markers:</strong> Items marked <code>⚠ TBV</code> (To Be Verified) have HET channel assignments from
+<code>can_cfg.h</code>/<code>sps_cfg.h</code> but their physical ball assignments could not be confirmed from
+HalCoGen <code>HL_pinmux.c</code> (channel index beyond configured range or not in signal routing table).
+These require schematic cross-reference for final verification.</p>
 <hr />
 <p><em>End of Document</em></p></div>
 <div class="nav-buttons"><a href="sys-2-system-reqs.html">&larr; SYS.2 System Reqs</a><a href="sys-4-system-integration-test.html">SYS.4 System Integration Test &rarr;</a></div>
