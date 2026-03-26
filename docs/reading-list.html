@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>foxBMS POSIX — Reading List</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  body.viewer-open { overflow: hidden; }
+
+  h1 { font-size: 1.8rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    user-select: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-header:hover { background: rgba(88, 166, 255, 0.04); }
+
+  .section-badge {
+    font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem;
+    border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+  }
+
+  .badge-core { background: var(--red); color: #fff; }
+  .badge-arch { background: var(--accent); color: #fff; }
+  .badge-safety { background: var(--orange); color: #000; }
+  .badge-build { background: var(--green); color: #000; }
+  .badge-deep { background: var(--purple); color: #fff; }
+  .badge-verify { background: #f778ba; color: #000; }
+
+  .section-title { font-size: 1.1rem; font-weight: 600; flex: 1; }
+  .section-desc { color: var(--text-muted); font-size: 0.85rem; padding: 0 1.25rem 0.75rem; }
+  .chevron { transition: transform 0.2s; color: var(--text-muted); font-size: 0.8rem; }
+
+  .section.collapsed .chevron { transform: rotate(-90deg); }
+  .section.collapsed .section-body { display: none; }
+  .section.collapsed .section-desc { display: none; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+
+  th {
+    text-align: left; padding: 0.6rem 1.25rem; color: var(--text-muted);
+    font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border);
+  }
+  th:first-child { width: 2.5rem; text-align: center; }
+
+  td { padding: 0.7rem 1.25rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:first-child { text-align: center; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(88, 166, 255, 0.04); }
+
+  a { color: var(--accent); text-decoration: none; font-weight: 500; cursor: pointer; }
+  a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+  .why { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem; }
+  .why strong { color: var(--text); }
+
+  .progress {
+    display: flex; gap: 0.5rem; align-items: center; margin: 1.5rem 0;
+    padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; font-size: 0.9rem;
+  }
+  .progress-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 3px; width: 0%; transition: width 0.3s; }
+  .progress-text { color: var(--text-muted); font-size: 0.85rem; white-space: nowrap; }
+
+  .check {
+    width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; transition: all 0.15s; vertical-align: middle; margin-right: 0.5rem;
+  }
+  .check.checked { background: var(--green); border-color: var(--green); }
+  .check.checked::after { content: '\2713'; color: #fff; font-size: 0.7rem; font-weight: 700; }
+
+  .doc-cell { display: flex; align-items: flex-start; }
+
+  footer {
+    margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 0.8rem; text-align: center;
+  }
+
+  /* ===== Markdown Viewer Overlay ===== */
+  #viewer-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  }
+  #viewer-overlay.open { display: flex; justify-content: center; align-items: stretch; }
+
+  #viewer-panel {
+    width: min(90vw, 900px); margin: 2vh 0; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 10px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  #viewer-toolbar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+  }
+  #viewer-toolbar .path { flex: 1; color: var(--text-muted); font-size: 0.85rem; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #viewer-close {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    padding: 0.25rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+  }
+  #viewer-close:hover { background: var(--surface); border-color: var(--text-muted); }
+
+  #viewer-content {
+    flex: 1; overflow-y: auto; padding: 2rem 2.5rem;
+    font-size: 0.95rem; line-height: 1.7;
+  }
+
+  /* Rendered markdown styles */
+  #viewer-content h1 { font-size: 1.6rem; margin: 1.5rem 0 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  #viewer-content h2 { font-size: 1.3rem; margin: 1.5rem 0 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+  #viewer-content h3 { font-size: 1.1rem; margin: 1.25rem 0 0.4rem; }
+  #viewer-content h4 { font-size: 1rem; margin: 1rem 0 0.3rem; }
+  #viewer-content p { margin: 0.6rem 0; }
+  #viewer-content ul, #viewer-content ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  #viewer-content li { margin: 0.2rem 0; }
+  #viewer-content code {
+    background: rgba(110,118,129,0.2); padding: 0.15rem 0.4rem;
+    border-radius: 4px; font-size: 0.88rem; font-family: 'Consolas', 'Monaco', monospace;
+  }
+  #viewer-content pre {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 1rem; overflow-x: auto; margin: 0.75rem 0;
+  }
+  #viewer-content pre code { background: none; padding: 0; }
+  #viewer-content blockquote {
+    border-left: 3px solid var(--accent); padding: 0.5rem 1rem;
+    margin: 0.75rem 0; color: var(--text-muted); background: rgba(88,166,255,0.04);
+    border-radius: 0 4px 4px 0;
+  }
+  #viewer-content table { border-collapse: collapse; margin: 0.75rem 0; width: 100%; }
+  #viewer-content th, #viewer-content td {
+    border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left;
+    font-size: 0.88rem; background: transparent; color: var(--text);
+    text-transform: none; letter-spacing: normal; font-weight: normal;
+  }
+  #viewer-content th { background: var(--surface); font-weight: 600; }
+  #viewer-content hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  #viewer-content strong { color: var(--text); }
+  #viewer-content a { color: var(--accent); }
+  #viewer-content img { max-width: 100%; border-radius: 6px; margin: 0.5rem 0; }
+
+  #viewer-content .loading { color: var(--text-muted); font-style: italic; padding: 2rem; text-align: center; }
+  #viewer-content .error { color: var(--red); padding: 2rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>foxBMS POSIX &mdash; Reading List</h1>
+<p class="subtitle">19 documents organized by topic. Click any document to read it. Progress is saved in your browser.</p>
+
+<div class="progress">
+  <span class="progress-text"><span id="done-count">0</span> / 19 read</span>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<!-- ============ CORE ============ -->
+<div class="section" id="sec-core">
+  <div class="section-header" onclick="toggleSection('sec-core')">
+    <span class="chevron">&#9660;</span>
+    <span class="section-badge badge-core">Start Here</span>
+    <span class="section-title">Core &mdash; Getting Started</span>
+  </div>
+  <p class="section-desc">Get the SIL demo running and know where to look when things break.</p>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Document</th><th>Why Read This</th></tr>
+      <tr>
+        <td>1</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('SIL-DEMO-GUIDE.md','docs/SIL-DEMO-GUIDE.md')">docs/SIL-DEMO-GUIDE.md</a></div></td>
+        <td class="why">Step-by-step guide to run the SIL demo. <strong>Start here on day one.</strong></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('project/troubleshooting.md','docs/project/troubleshooting.md')">docs/project/troubleshooting.md</a></div></td>
+        <td class="why">Common issues and fixes. <strong>Keep open while setting up.</strong></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ ASPICE ============ -->
+<div class="section" id="sec-aspice">
+  <div class="section-header" onclick="toggleSection('sec-aspice')">
+    <span class="chevron">&#9660;</span>
+    <span class="section-badge badge-arch">Process</span>
+    <span class="section-title">ASPICE Process</span>
+  </div>
+  <p class="section-desc">ASPICE CL2 process artifacts: gap assessment, requirements, architecture, and detailed design.</p>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Document</th><th>Why Read This</th></tr>
+      <tr>
+        <td>3</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/00-assessment/cl2-gap-assessment.md','docs/aspice-cl2/00-assessment/cl2-gap-assessment.md')">cl2-gap-assessment.md</a></div></td>
+        <td class="why">ASPICE CL2 gap assessment: what's done, what's missing.</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/03-SYS.1-stakeholder-requirements/stakeholder-requirements.md','docs/aspice-cl2/03-SYS.1-stakeholder-requirements/stakeholder-requirements.md')">stakeholder-requirements.md</a></div></td>
+        <td class="why">SYS.1 stakeholder requirements.</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/04-SYS.2-system-requirements/SYS.2-system-requirements.md','docs/aspice-cl2/04-SYS.2-system-requirements/SYS.2-system-requirements.md')">SYS.2-system-requirements.md</a></div></td>
+        <td class="why">SYS.2 system requirements.</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/05-SYS.3-system-architecture/SYS.3-system-architecture.md','docs/aspice-cl2/05-SYS.3-system-architecture/SYS.3-system-architecture.md')">SYS.3-system-architecture.md</a></div></td>
+        <td class="why">SYS.3 system architecture: vECU + CAN topology.</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/10-SWE.3-software-detailed-design/SWE.3-software-detailed-design.md','docs/aspice-cl2/10-SWE.3-software-detailed-design/SWE.3-software-detailed-design.md')">SWE.3-software-detailed-design.md</a></div></td>
+        <td class="why">SWE.3 detailed design.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ SAFETY ============ -->
+<div class="section" id="sec-safety">
+  <div class="section-header" onclick="toggleSection('sec-safety')">
+    <span class="chevron">&#9660;</span>
+    <span class="section-badge badge-safety">Safety</span>
+    <span class="section-title">Safety &mdash; ISO 26262</span>
+  </div>
+  <p class="section-desc">ISO 26262 safety lifecycle: HARA, functional and technical safety concepts, FMEA, FTTI, and ASIL decomposition.</p>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Document</th><th>Why Read This</th></tr>
+      <tr>
+        <td>8</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/18-safety/part3-concept/ISO26262-part3-HARA.md','docs/aspice-cl2/18-safety/part3-concept/ISO26262-part3-HARA.md')">ISO26262-part3-HARA.md</a></div></td>
+        <td class="why">HARA: hazard analysis and ASIL allocation.</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/18-safety/part4-system/ISO26262-part4-FSC.md','docs/aspice-cl2/18-safety/part4-system/ISO26262-part4-FSC.md')">ISO26262-part4-FSC.md</a></div></td>
+        <td class="why">Functional Safety Concept.</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/18-safety/part4-system/ISO26262-part4-TSC.md','docs/aspice-cl2/18-safety/part4-system/ISO26262-part4-TSC.md')">ISO26262-part4-TSC.md</a></div></td>
+        <td class="why">Technical Safety Concept.</td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/18-safety/part4-system/ISO26262-part4-TSR-deep-analysis.md','docs/aspice-cl2/18-safety/part4-system/ISO26262-part4-TSR-deep-analysis.md')">ISO26262-part4-TSR-deep-analysis.md</a></div></td>
+        <td class="why">TSR deep analysis.</td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/18-safety/part5-hardware/ISO26262-part5-FMEA.md','docs/aspice-cl2/18-safety/part5-hardware/ISO26262-part5-FMEA.md')">ISO26262-part5-FMEA.md</a></div></td>
+        <td class="why">Hardware FMEA.</td>
+      </tr>
+      <tr>
+        <td>13</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/18-safety/part6-software/ISO26262-part6-FTTI-calculations.md','docs/aspice-cl2/18-safety/part6-software/ISO26262-part6-FTTI-calculations.md')">ISO26262-part6-FTTI-calculations.md</a></div></td>
+        <td class="why">FTTI calculations.</td>
+      </tr>
+      <tr>
+        <td>14</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/18-safety/part9-asil/ISO26262-part9-ASIL-decomposition.md','docs/aspice-cl2/18-safety/part9-asil/ISO26262-part9-ASIL-decomposition.md')">ISO26262-part9-ASIL-decomposition.md</a></div></td>
+        <td class="why">ASIL decomposition.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ VERIFICATION ============ -->
+<div class="section" id="sec-verify">
+  <div class="section-header" onclick="toggleSection('sec-verify')">
+    <span class="chevron">&#9660;</span>
+    <span class="section-badge badge-verify">Verify</span>
+    <span class="section-title">Verification &amp; Traceability</span>
+  </div>
+  <p class="section-desc">HIL test specs, requirement-to-test traceability, and audit results.</p>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Document</th><th>Why Read This</th></tr>
+      <tr>
+        <td>15</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/06-SYS.4-system-integration-test/SYS.4-HIL-test-specification.md','docs/aspice-cl2/06-SYS.4-system-integration-test/SYS.4-HIL-test-specification.md')">SYS.4-HIL-test-specification.md</a></div></td>
+        <td class="why">HIL test specification (largest doc).</td>
+      </tr>
+      <tr>
+        <td>16</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/12-SWE.5-software-integration-test/traceability-req-to-test.md','docs/aspice-cl2/12-SWE.5-software-integration-test/traceability-req-to-test.md')">traceability-req-to-test.md</a></div></td>
+        <td class="why">Requirement-to-test traceability.</td>
+      </tr>
+      <tr>
+        <td>17</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('aspice-cl2/00-assessment/traceability-matrix-generated.md','docs/aspice-cl2/00-assessment/traceability-matrix-generated.md')">traceability-matrix-generated.md</a></div></td>
+        <td class="why">Generated traceability matrix.</td>
+      </tr>
+      <tr>
+        <td>18</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('project/audit-traceability-v1.md','docs/project/audit-traceability-v1.md')">audit-traceability-v1.md</a></div></td>
+        <td class="why">Traceability audit results.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ BUSINESS ============ -->
+<div class="section" id="sec-business">
+  <div class="section-header" onclick="toggleSection('sec-business')">
+    <span class="chevron">&#9660;</span>
+    <span class="section-badge badge-build">Business</span>
+    <span class="section-title">Business &amp; Architecture</span>
+  </div>
+  <p class="section-desc">Reusable pipeline architecture for scaling the SIL platform across customers.</p>
+  <div class="section-body">
+    <table>
+      <tr><th>#</th><th>Document</th><th>Why Read This</th></tr>
+      <tr>
+        <td>19</td>
+        <td><div class="doc-cell"><span class="check" onclick="toggle(this)"></span><a onclick="openDoc('business/pipeline-reusable.md','docs/business/pipeline-reusable.md')">pipeline-reusable.md</a></div></td>
+        <td class="why">Reusable SIL pipeline architecture for multiple customers.</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<footer>
+  foxBMS POSIX &mdash; Reading List &mdash; 19 documents<br>
+  Progress saved in localStorage. Click any document to read it inline.
+</footer>
+
+<!-- ===== Viewer Overlay ===== -->
+<div id="viewer-overlay" onclick="closeViewer(event)">
+  <div id="viewer-panel" onclick="event.stopPropagation()">
+    <div id="viewer-toolbar">
+      <span class="path" id="viewer-path"></span>
+      <button id="viewer-close" onclick="closeViewer()">ESC &times;</button>
+    </div>
+    <div id="viewer-content"></div>
+  </div>
+</div>
+
+<script>
+  /* ===== Markdown Parser (zero dependencies) ===== */
+  function parseMd(src) {
+    // Strip HITL lock boilerplate and frontmatter
+    src = src.replace(/^---[\s\S]*?---\s*/m, '');
+    src = src.replace(/## Human-in-the-Loop[\s\S]*?(?=\n#[^#]|\n$)/m, '');
+
+    let html = '';
+    const lines = src.split('\n');
+    let i = 0;
+    let inCode = false, codeLang = '', codeLines = [];
+    let inTable = false, tableRows = [];
+
+    function inline(t) {
+      t = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
+      t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+      t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+      return t;
+    }
+
+    function flushTable() {
+      if (!tableRows.length) return '';
+      let h = '<table>';
+      tableRows.forEach((row, ri) => {
+        // skip separator row
+        if (/^\|[\s\-:|]+\|$/.test(row.trim())) return;
+        const tag = ri === 0 ? 'th' : 'td';
+        const cells = row.split('|').slice(1, -1);
+        h += '<tr>' + cells.map(c => `<${tag}>${inline(c.trim())}</${tag}>`).join('') + '</tr>';
+      });
+      h += '</table>';
+      tableRows = [];
+      inTable = false;
+      return h;
+    }
+
+    while (i < lines.length) {
+      const line = lines[i];
+
+      // Fenced code blocks
+      if (/^```/.test(line)) {
+        if (inCode) {
+          html += '<pre><code>' + codeLines.join('\n').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>';
+          inCode = false; codeLines = [];
+        } else {
+          if (inTable) html += flushTable();
+          inCode = true; codeLang = line.replace(/^```\s*/, '');
+        }
+        i++; continue;
+      }
+      if (inCode) { codeLines.push(line); i++; continue; }
+
+      // Table rows
+      if (/^\|/.test(line.trim())) {
+        if (!inTable) inTable = true;
+        tableRows.push(line);
+        i++; continue;
+      }
+      if (inTable) html += flushTable();
+
+      // Blank line
+      if (!line.trim()) { i++; continue; }
+
+      // Headings
+      const hm = line.match(/^(#{1,6})\s+(.*)/);
+      if (hm) { const lvl = hm[1].length; html += `<h${lvl}>${inline(hm[2])}</h${lvl}>`; i++; continue; }
+
+      // Horizontal rule
+      if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { html += '<hr>'; i++; continue; }
+
+      // Blockquote
+      if (/^>\s?/.test(line)) {
+        let bq = '';
+        while (i < lines.length && /^>\s?/.test(lines[i])) { bq += lines[i].replace(/^>\s?/, '') + '\n'; i++; }
+        html += '<blockquote>' + inline(bq.trim()) + '</blockquote>'; continue;
+      }
+
+      // Unordered list
+      if (/^[\-\*]\s/.test(line.trim())) {
+        html += '<ul>';
+        while (i < lines.length && /^[\-\*]\s/.test(lines[i].trim())) {
+          html += '<li>' + inline(lines[i].trim().replace(/^[\-\*]\s+/, '')) + '</li>'; i++;
+        }
+        html += '</ul>'; continue;
+      }
+
+      // Ordered list
+      if (/^\d+\.\s/.test(line.trim())) {
+        html += '<ol>';
+        while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+          html += '<li>' + inline(lines[i].trim().replace(/^\d+\.\s+/, '')) + '</li>'; i++;
+        }
+        html += '</ol>'; continue;
+      }
+
+      // Paragraph
+      html += '<p>' + inline(line) + '</p>';
+      i++;
+    }
+
+    if (inTable) html += flushTable();
+    return html;
+  }
+
+  /* ===== Viewer ===== */
+  function openDoc(relPath, displayPath) {
+    const overlay = document.getElementById('viewer-overlay');
+    const content = document.getElementById('viewer-content');
+    const pathEl = document.getElementById('viewer-path');
+
+    pathEl.textContent = displayPath;
+    content.innerHTML = '<div class="loading">Loading...</div>';
+    overlay.classList.add('open');
+    document.body.classList.add('viewer-open');
+
+    fetch(relPath)
+      .then(r => {
+        if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+        return r.text();
+      })
+      .then(text => {
+        if (relPath.endsWith('.md')) {
+          content.innerHTML = parseMd(text);
+        } else {
+          // Non-markdown — show as preformatted text
+          content.innerHTML = '<pre><code>' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</code></pre>';
+        }
+      })
+      .catch(err => {
+        content.innerHTML = '<div class="error">Could not load file: ' + err.message + '<br><br>Try opening directly: <a href="' + relPath + '" target="_blank">' + displayPath + '</a></div>';
+      });
+  }
+
+  function closeViewer(e) {
+    if (e && e.target !== document.getElementById('viewer-overlay')) return;
+    document.getElementById('viewer-overlay').classList.remove('open');
+    document.body.classList.remove('viewer-open');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeViewer(); });
+
+  /* ===== Progress ===== */
+  const STORAGE_KEY = 'foxbms-posix-reading-list-progress';
+  function loadProgress() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+  function saveProgress(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+  function updateProgressBar() {
+    const all = document.querySelectorAll('.check');
+    const done = document.querySelectorAll('.check.checked').length;
+    document.getElementById('done-count').textContent = done;
+    document.getElementById('progress-fill').style.width = Math.round((done / all.length) * 100) + '%';
+  }
+
+  function toggle(el) {
+    el.classList.toggle('checked');
+    const state = loadProgress();
+    const idx = Array.from(document.querySelectorAll('.check')).indexOf(el);
+    state[idx] = el.classList.contains('checked');
+    saveProgress(state);
+    updateProgressBar();
+    event.stopPropagation();
+  }
+
+  function toggleSection(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+  // Restore
+  (function init() {
+    const state = loadProgress();
+    document.querySelectorAll('.check').forEach((el, i) => { if (state[i]) el.classList.add('checked'); });
+    updateProgressBar();
+  })();
+</script>
+
+</body>
+</html>
