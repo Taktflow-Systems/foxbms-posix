@@ -33,6 +33,30 @@ services:
     networks:
       - canbus
 
+  ml-sidecar:
+    build: .
+    container_name: foxbms-ml-sidecar
+    privileged: true
+    depends_on:
+      - vecu
+    environment:
+      - FOXBMS_CAN_IF=vcan1
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        # Setup vcan
+        modprobe vcan 2>/dev/null || true
+        ip link add vcan1 type vcan 2>/dev/null || true
+        ip link set vcan1 up
+        # Install ML dependencies
+        pip install -q onnxruntime numpy scikit-learn joblib 2>/dev/null || true
+        # Train anomaly model if not present
+        python3 /app/train_anomaly_bms.py --output-dir /app 2>/dev/null || true
+        # Run ML sidecar (anomaly detection + ONNX if models available)
+        exec python3 /app/ml_sidecar.py vcan1 --no-onnx
+    networks:
+      - canbus
+
   test:
     build: .
     container_name: foxbms-test

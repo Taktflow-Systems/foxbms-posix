@@ -88,7 +88,7 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
 .can-monitor .panel-title{margin-bottom:4px}
 .can-log{height:120px;overflow-y:auto;background:#0A0A14;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-family:'Cascadia Code','Fira Code','Consolas',monospace;font-size:11px;line-height:1.5}
 .can-frame{white-space:pre}
-.can-bms{color:var(--ok)}.can-plant{color:var(--cold)}.can-probe{color:var(--accent2)}.can-other{color:var(--dim)}
+.can-bms{color:var(--ok)}.can-plant{color:var(--cold)}.can-probe{color:var(--accent2)}.can-ml{color:#F59E0B}.can-other{color:var(--dim)}
 #connLabel{font-size:12px;color:var(--dim)}
 </style>
 </head>
@@ -226,6 +226,70 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
     </table>
     <div style="margin-top:6px;color:var(--dim);font-size:10px">
       Total: 29 PASS / 0 FAIL / 6 SKIP | Test matrix: 2,005 cases | <span style="color:var(--ok)">100% pass rate (runnable)</span>
+    </div>
+  </div>
+</div>
+<!-- ML Intelligence Panel -->
+<div style="background:var(--panel);border-top:1px solid var(--border);padding:8px 16px">
+  <div class="panel-title" style="display:flex;align-items:center;gap:8px">
+    ML Intelligence (Sidecar)
+    <span id="mlStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block"></span>
+    <span id="mlStatusLabel" style="font-size:10px;color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">Waiting</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:8px">
+    <!-- SOC Comparison -->
+    <div style="background:#12122A;border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:10px;color:var(--accent2);letter-spacing:1px;margin-bottom:6px">SOC LSTM</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mlSocVal">---%</div>
+      <div style="font-size:10px;margin-top:4px">
+        <span style="color:var(--dim)">vs BMS:</span>
+        <span id="mlSocDiff" style="font-weight:600">---</span>
+      </div>
+      <div style="height:4px;background:#1a1a3a;border-radius:2px;margin-top:6px;overflow:hidden">
+        <div id="mlSocBar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width .3s"></div>
+      </div>
+    </div>
+    <!-- SOH -->
+    <div style="background:#12122A;border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:10px;color:var(--accent2);letter-spacing:1px;margin-bottom:6px">SOH</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mlSohVal">---%</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">Transformer</div>
+      <div style="height:4px;background:#1a1a3a;border-radius:2px;margin-top:6px;overflow:hidden">
+        <div id="mlSohBar" style="height:100%;width:0%;background:var(--ok);border-radius:2px;transition:width .3s"></div>
+      </div>
+    </div>
+    <!-- Thermal Risk -->
+    <div style="background:#12122A;border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:10px;color:var(--accent2);letter-spacing:1px;margin-bottom:6px">THERMAL</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mlThermalVal">0.000</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">CNN risk score</div>
+      <div style="height:4px;background:#1a1a3a;border-radius:2px;margin-top:6px;overflow:hidden">
+        <div id="mlThermalBar" style="height:100%;width:0%;border-radius:2px;transition:width .3s,background .3s"></div>
+      </div>
+    </div>
+    <!-- Imbalance -->
+    <div style="background:#12122A;border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:10px;color:var(--accent2);letter-spacing:1px;margin-bottom:6px">IMBALANCE</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mlImbalVal">--- mV</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">Cell V spread</div>
+      <div style="height:4px;background:#1a1a3a;border-radius:2px;margin-top:6px;overflow:hidden">
+        <div id="mlImbalBar" style="height:100%;width:0%;background:var(--cold);border-radius:2px;transition:width .3s"></div>
+      </div>
+    </div>
+    <!-- RUL -->
+    <div style="background:#12122A;border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:10px;color:var(--accent2);letter-spacing:1px;margin-bottom:6px">RUL</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mlRulVal">---</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">Cycles remaining</div>
+    </div>
+    <!-- Anomaly -->
+    <div style="background:#12122A;border:1px solid var(--border);border-radius:6px;padding:10px">
+      <div style="font-size:10px;color:var(--accent2);letter-spacing:1px;margin-bottom:6px">ANOMALY</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mlAnomVal">0.000</div>
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">IsolationForest</div>
+      <div style="height:4px;background:#1a1a3a;border-radius:2px;margin-top:6px;overflow:hidden">
+        <div id="mlAnomBar" style="height:100%;width:0%;border-radius:2px;transition:width .3s,background .3s"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -442,6 +506,42 @@ function update(d){
   document.getElementById("fCellV").textContent=mn+"\u2013"+mx+" mV";
   document.getElementById("fTemp").textContent=tMin.toFixed(1)+"\u2013"+tMax.toFixed(1)+" \u00B0C";
   document.getElementById("fUptime").textContent=((d.uptime_ms??0)/1000).toFixed(0)+" s";
+  // ML Intelligence panel
+  const mlActive=d.ml_active||false;
+  const mlDot=document.getElementById("mlStatusDot");
+  const mlLabel=document.getElementById("mlStatusLabel");
+  if(mlActive){
+    mlDot.style.background="var(--ok)";mlDot.style.boxShadow="0 0 6px var(--ok)";
+    mlLabel.textContent="Active";mlLabel.style.color="var(--ok)";
+  }else{
+    mlDot.style.background="var(--dim)";mlDot.style.boxShadow="none";
+    mlLabel.textContent="Waiting";mlLabel.style.color="var(--dim)";
+  }
+  const mlSoc=d.ml_soc_pct??0,mlDiff=d.ml_soc_diff??0;
+  document.getElementById("mlSocVal").textContent=mlActive?mlSoc.toFixed(1)+"%":"---%";
+  document.getElementById("mlSocBar").style.width=Math.min(mlSoc,100)+"%";
+  const diffEl=document.getElementById("mlSocDiff");
+  if(mlActive){
+    diffEl.textContent=(mlDiff>=0?"+":"")+mlDiff.toFixed(2)+"%";
+    diffEl.style.color=Math.abs(mlDiff)<2?"var(--ok)":Math.abs(mlDiff)<5?"var(--warn)":"var(--err)";
+  }else{diffEl.textContent="---";diffEl.style.color="var(--dim)";}
+  const mlSoh=d.ml_soh_pct??0;
+  document.getElementById("mlSohVal").textContent=mlActive&&mlSoh>0?mlSoh.toFixed(1)+"%":"---%";
+  document.getElementById("mlSohBar").style.width=Math.min(mlSoh,100)+"%";
+  const mlThermal=d.ml_thermal_risk??0;
+  document.getElementById("mlThermalVal").textContent=mlThermal.toFixed(3);
+  document.getElementById("mlThermalVal").style.color=mlThermal<0.3?"var(--ok)":mlThermal<0.7?"var(--warn)":"var(--err)";
+  document.getElementById("mlThermalBar").style.width=(mlThermal*100)+"%";
+  document.getElementById("mlThermalBar").style.background=mlThermal<0.3?"var(--ok)":mlThermal<0.7?"var(--warn)":"var(--err)";
+  document.getElementById("mlImbalVal").textContent=(d.ml_imbalance_mv??0)+" mV";
+  document.getElementById("mlImbalBar").style.width=Math.min((d.ml_imbalance_mv??0)/100*100,100)+"%";
+  document.getElementById("mlRulVal").textContent=(d.ml_rul_cycles??0)>0?(d.ml_rul_cycles):"---";
+  const mlAnom=d.ml_anomaly_score??0;
+  document.getElementById("mlAnomVal").textContent=mlAnom.toFixed(3);
+  document.getElementById("mlAnomVal").style.color=mlAnom<0.3?"var(--ok)":mlAnom<0.7?"var(--warn)":"var(--err)";
+  document.getElementById("mlAnomBar").style.width=(mlAnom*100)+"%";
+  document.getElementById("mlAnomBar").style.background=mlAnom<0.3?"var(--ok)":mlAnom<0.7?"var(--warn)":"var(--err)";
+
   if(d.can_log&&d.can_log.length){canFrames=d.can_log.slice(-MAX_CAN);renderCanLog();}
   // Event log
   if(d.event_log&&d.event_log.length){
@@ -468,6 +568,7 @@ function renderCanLog(){
     let cls="can-other";
     if(idNum>=0x200&&idNum<0x300)cls="can-bms";
     else if(idNum>=0x600&&idNum<0x700)cls="can-plant";
+    else if(idNum>=0x700&&idNum<0x710)cls="can-ml";
     else if(idNum>=0x7F0&&idNum<=0x7FF)cls="can-probe";
     return `<div class="can-frame ${cls}">${ts}  ${idStr} [${data.length/2}] ${hex}</div>`;
   }).join("");

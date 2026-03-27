@@ -31,6 +31,15 @@ state: dict[str, Any] = {
     "plant_ocv_mv": 0, "plant_pack_voltage_mv": 0,
     "plant_ir_drop_mv": 0, "plant_discharging": False, "plant_n_cells": 18,
     "plant_cell_voltages": [0] * 18,
+    # ML sidecar predictions (CAN 0x700-0x705)
+    "ml_soc_pct": 0.0, "ml_soc_diff": 0.0,
+    "ml_soh_pct": 0.0,
+    "ml_thermal_risk": 0.0,
+    "ml_imbalance_mv": 0,
+    "ml_rul_cycles": 0,
+    "ml_anomaly_score": 0.0,
+    "ml_active": False,
+    "ml_last_update": 0.0,
 }
 
 ws_clients: set[web.WebSocketResponse] = set()
@@ -183,6 +192,35 @@ def _p_plant_cells(base_idx: int, d: bytes) -> None:
         if idx < 18 and (2 * i + 2) <= len(d):
             state["plant_cell_voltages"][idx] = struct.unpack_from("<H", d, 2 * i)[0]
 
+# -- ML sidecar predictions (0x700-0x705) ------------------------------------
+def _p_0x700(d: bytes) -> None:
+    """ML SOC prediction: [ml_soc_raw(H), bms_soc_raw(H), diff_raw(h)]"""
+    ml_raw, bms_raw, diff_raw = struct.unpack_from(">HHh", d, 0)
+    state["ml_soc_pct"] = round(ml_raw / 100.0, 2)
+    state["ml_soc_diff"] = round(diff_raw / 100.0, 2)
+    state["ml_active"] = True
+    state["ml_last_update"] = time.time()
+def _p_0x701(d: bytes) -> None:
+    """ML SOH prediction: [soh_raw(H)]"""
+    soh_raw = struct.unpack_from(">H", d, 0)[0]
+    state["ml_soh_pct"] = round(soh_raw / 100.0, 2)
+def _p_0x702(d: bytes) -> None:
+    """ML thermal risk score: [risk_raw(H)] 0-1000 = 0.0-1.0"""
+    risk_raw = struct.unpack_from(">H", d, 0)[0]
+    state["ml_thermal_risk"] = round(risk_raw / 1000.0, 3)
+def _p_0x703(d: bytes) -> None:
+    """ML cell imbalance: [spread_mv(H)]"""
+    state["ml_imbalance_mv"] = struct.unpack_from(">H", d, 0)[0]
+def _p_0x704(d: bytes) -> None:
+    """ML RUL estimate: [cycles(H)]"""
+    state["ml_rul_cycles"] = struct.unpack_from(">H", d, 0)[0]
+def _p_0x705(d: bytes) -> None:
+    """ML anomaly score: [score_raw(H)] 0-1000 = 0.0-1.0"""
+    score_raw = struct.unpack_from(">H", d, 0)[0]
+    state["ml_anomaly_score"] = round(score_raw / 1000.0, 3)
+    if score_raw > 700:
+        _add_event("diag", f"ML ANOMALY: score={state['ml_anomaly_score']:.3f}")
+
 # -- CAN message log -------------------------------------------------------
 can_log: list[dict] = []
 def _log_can(can_id: int, d: bytes) -> None:
@@ -200,6 +238,9 @@ PARSERS: dict[int, Any] = {
     0x605: lambda d: _p_plant_cells(8, d),
     0x606: lambda d: _p_plant_cells(12, d),
     0x607: lambda d: _p_plant_cells(16, d),
+    # ML sidecar predictions
+    0x700: _p_0x700, 0x701: _p_0x701, 0x702: _p_0x702,
+    0x703: _p_0x703, 0x704: _p_0x704, 0x705: _p_0x705,
 }
 
 # -- Fault injection (browser -> CAN) --------------------------------------
@@ -245,7 +286,8 @@ async def can_reader(interface: str) -> None:
         data = frame[8 : 8 + dlc]
         if arb_id in (0x220, 0x270, 0x280, 0x521, 0x210, 0x7F0, 0x7F7,
                       0x7F8, 0x7F9, 0x600, 0x601, 0x602, 0x603, 0x604,
-                      0x605, 0x606, 0x607):
+                      0x605, 0x606, 0x607,
+                      0x700, 0x701, 0x702, 0x703, 0x704, 0x705):
             _log_can(arb_id, data)
         parser = PARSERS.get(arb_id)
         if parser:

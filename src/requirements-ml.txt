@@ -1,0 +1,18 @@
+# foxBMS POSIX vECU — ML Sidecar Dependencies
+#
+# Install: pip install -r requirements-ml.txt
+#
+# Core ML inference
+onnxruntime>=1.15.0        # ONNX model inference (SOC LSTM, SOH Transformer, Thermal CNN)
+numpy>=1.20.0              # Numerical arrays for model I/O
+
+# Anomaly detection (IsolationForest)
+scikit-learn>=1.4.0        # IsolationForest + StandardScaler
+joblib>=1.3.0              # Model persistence (pkl files)
+
+# CAN tooling (optional — for DBC-based decoding)
+# python-can>=4.0.0        # Not needed: using raw SocketCAN
+# cantools>=4.0.0           # Not needed: using manual encoding from foxbms_constants.py
+
+# Test & analysis tools
+pytest>=7.4               # Test runner (generates JUnit XML for trend-analyze.py)

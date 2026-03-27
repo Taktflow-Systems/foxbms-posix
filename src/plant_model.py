@@ -20,11 +20,26 @@ R_TOTAL_MOHM = R_CELL_MOHM * N_CELLS  # Total string resistance (mΩ)
 I_DISCHARGE_MA = 1000       # Discharge current when NORMAL (1 A, 0.33C — slow for demo)
 DT_S = 0.001                # Loop period (1 ms) — SIL rate, synced with foxBMS cycle
 
-# OCV(SOC) lookup — linear approximation (mV)
-# 3400 mV @ 0% SOC → 4200 mV @ 100% SOC
+# OCV(SOC) lookup — piecewise linear NMC 811 S-curve (mV)
+# Source: NMC 811 cell datasheets (Samsung SDI / LG Chem)
+# Steep at extremes, flat plateau at 30-70% SOC
+OCV_TABLE = [
+    (0.0,  2800), (2.5,  3000), (5.0,  3200), (10.0, 3350),
+    (15.0, 3450), (20.0, 3520), (30.0, 3580), (40.0, 3620),
+    (50.0, 3650), (60.0, 3700), (70.0, 3780), (80.0, 3880),
+    (85.0, 3950), (90.0, 4020), (95.0, 4100), (100.0, 4200),
+]
+
 def ocv_mv(soc_pct):
-    """Open-circuit voltage from SOC (linear model)."""
-    return int(3400.0 + 800.0 * (soc_pct / 100.0))
+    """Open-circuit voltage from SOC (piecewise linear NMC S-curve)."""
+    soc_pct = max(0.0, min(100.0, soc_pct))
+    for i in range(len(OCV_TABLE) - 1):
+        s0, v0 = OCV_TABLE[i]
+        s1, v1 = OCV_TABLE[i + 1]
+        if s0 <= soc_pct <= s1:
+            frac = (soc_pct - s0) / (s1 - s0) if s1 != s0 else 0
+            return int(v0 + frac * (v1 - v0))
+    return OCV_TABLE[-1][1]
 
 # ================================================================
 # foxBMS CAN big-endian encoding (same lookup table as foxBMS)
@@ -98,10 +113,16 @@ print(f"[plant] {N_CELLS}S pack on {CAN_INTERFACE}, {Q_CELL_MAH}mAh, R={R_CELL_M
 def can_send(can_id, data):
     s.send(struct.pack("=IB3x8s", can_id, len(data), data + bytes(8 - len(data))))
 
+# -- Thermal model parameters -----------------------------------------------
+THERMAL_MASS_J_K = 50.0           # Thermal mass per cell (J/K) — NMC pouch typical
+AMBIENT_TEMP_C = 25.0              # Ambient temperature
+COOLING_COEFF_W_K = 0.5            # Natural convection cooling (W/K per cell)
+
 # -- Battery state ---------------------------------------------------------
 soc_pct = 50.0; current_ma = 0; bms_state_normal = False
 random.seed(42)
 per_cell_offset = [random.gauss(0, 5.0) for _ in range(N_CELLS)]
+cell_temp_c = [AMBIENT_TEMP_C] * N_CELLS  # Per-cell temperature tracking
 
 # AFE-style moving average filter (16 samples, like ADI ADES1830)
 AFE_AVG_DEPTH = 16
@@ -157,6 +178,20 @@ try:
         current_ma = I_DISCHARGE_MA if bms_state_normal else 0
         if (0x03, 0) in plant_overrides: current_ma = plant_overrides[(0x03, 0)]
 
+        # -- Thermal model (I²R heating + ambient cooling) ------------------
+        for ci in range(N_CELLS):
+            # I²R heating: P = I² × R_cell
+            power_w = (current_ma / 1000.0) ** 2 * R_CELL_MOHM / 1000.0
+            # Center cells heat ~20% more (worse airflow in pack center)
+            heat_factor = 1.0 + 0.2 * (1.0 - abs(ci - N_CELLS / 2) / (N_CELLS / 2))
+            dT_heat = power_w * heat_factor * DT_S / THERMAL_MASS_J_K
+            # Newton cooling toward ambient
+            dT_cool = COOLING_COEFF_W_K * (cell_temp_c[ci] - AMBIENT_TEMP_C) * DT_S / THERMAL_MASS_J_K
+            cell_temp_c[ci] += dT_heat - dT_cool
+            # Apply override if set
+            if (0x02, ci) in plant_overrides:
+                cell_temp_c[ci] = plant_overrides[(0x02, ci)] / 10.0  # override is in ddegC
+
         # -- SOC integration (coulomb counting) ----------------------------
         if current_ma > 0:
             soc_pct -= (current_ma / 1000.0) / (Q_CELL_MAH / 1000.0) * (DT_S / 3600.0) * 100.0
@@ -182,11 +217,9 @@ try:
         can_send(0x521, struct.pack(">BBi", mc & 0xFF, 0, current_ma)[:6])
         for vid in (0x522, 0x523, 0x524):
             can_send(vid, struct.pack(">BBi", mc & 0xFF, 0, pack_voltage_mv)[:6])
-        # IVT Temperature — check for override
-        temp_ddegc = 250
-        for si in range(8):
-            if (0x02, si) in plant_overrides: temp_ddegc = plant_overrides[(0x02, si)]; break
-        can_send(0x527, struct.pack(">BBi", mc & 0xFF, 0, temp_ddegc)[:6])
+        # IVT Temperature — use average cell temperature
+        avg_temp_ddegc = int(sum(cell_temp_c) / N_CELLS * 10)
+        can_send(0x527, struct.pack(">BBi", mc & 0xFF, 0, avg_temp_ddegc)[:6])
 
         # -- BMS State Request (0x210) -------------------------------------
         can_send(0x210, bytes([0x00 if tick < 3000 else 0x02, 0, 0, 0, 0, 0, 0, 0]))
@@ -198,10 +231,13 @@ try:
             volts = [cell_voltages[base+j] if base+j < N_CELLS else 0 for j in range(4)]
             can_send(0x270, encode_cell_voltage_msg(mux, volts))
 
-        # -- Cell Temperatures (0x280) -------------------------------------
+        # -- Cell Temperatures (0x280) — use per-cell thermal model ---------
         for mux in range(2):
             n_sens = min(6, 8 - mux * 6)
-            temps = [plant_overrides.get((0x02, mux*6+si), 250) for si in range(max(1, n_sens))]
+            temps = []
+            for si in range(max(1, n_sens)):
+                cell_idx = min(mux * 6 + si, N_CELLS - 1)
+                temps.append(int(cell_temp_c[cell_idx] * 10))  # °C → ddegC
             can_send(0x280, encode_cell_temp_msg(mux, temps))
 
         # -- Plant telemetry (0x600-0x607) for web dashboard ---------------
@@ -216,8 +252,10 @@ try:
         # -- Status log (every 5s) ----------------------------------------
         if tick % 5000 == 0:
             ovr = f" OVR={len(plant_overrides)}" if plant_overrides else ""
+            t_min = min(cell_temp_c); t_max = max(cell_temp_c)
             print(f"[plant] tick={tick} SOC={soc_pct:.1f}% I={current_ma/1000:.1f}A "
                   f"Vcell={v_ocv}mV Vpack={pack_voltage_mv}mV IR={ir_drop_mv}mV "
+                  f"T={t_min:.1f}-{t_max:.1f}°C "
                   f"{'NORMAL' if bms_state_normal else 'idle'}{ovr}")
 
         time.sleep(DT_S)
