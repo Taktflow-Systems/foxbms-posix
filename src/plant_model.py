@@ -18,6 +18,9 @@ Q_CELL_MAH = 3000.0        # Cell capacity (mAh)
 R_CELL_MOHM = 50.0          # Internal resistance per cell (mΩ)
 R_TOTAL_MOHM = R_CELL_MOHM * N_CELLS  # Total string resistance (mΩ)
 I_DISCHARGE_MA = 1000       # Discharge current when NORMAL (1 A, 0.33C — slow for demo)
+I_CHARGE_MA = 800           # Charge current (0.8 A CC phase)
+SOC_LOW_THRESHOLD = 20.0    # Start charging below this SOC %
+SOC_HIGH_THRESHOLD = 80.0   # Stop charging above this SOC %
 DT_S = 0.001                # Loop period (1 ms) — SIL rate, synced with foxBMS cycle
 
 # OCV(SOC) lookup — piecewise linear NMC 811 S-curve (mV)
@@ -119,7 +122,7 @@ AMBIENT_TEMP_C = 25.0              # Ambient temperature
 COOLING_COEFF_W_K = 0.5            # Natural convection cooling (W/K per cell)
 
 # -- Battery state ---------------------------------------------------------
-soc_pct = 50.0; current_ma = 0; bms_state_normal = False
+soc_pct = 50.0; current_ma = 0; bms_state_normal = False; charging = False
 random.seed(42)
 per_cell_offset = [random.gauss(0, 5.0) for _ in range(N_CELLS)]
 cell_temp_c = [AMBIENT_TEMP_C] * N_CELLS  # Per-cell temperature tracking
@@ -174,14 +177,24 @@ try:
         except BlockingIOError:
             pass  # No more frames to read
 
-        # -- Current model -------------------------------------------------
-        current_ma = I_DISCHARGE_MA if bms_state_normal else 0
+        # -- Current model (charge/discharge cycling) ------------------------
+        if bms_state_normal:
+            if not charging and soc_pct <= SOC_LOW_THRESHOLD:
+                charging = True
+                print(f"[plant] SOC={soc_pct:.1f}% — switching to CHARGE")
+            elif charging and soc_pct >= SOC_HIGH_THRESHOLD:
+                charging = False
+                print(f"[plant] SOC={soc_pct:.1f}% — switching to DISCHARGE")
+            current_ma = -I_CHARGE_MA if charging else I_DISCHARGE_MA
+        else:
+            current_ma = 0
+            charging = False
         if (0x03, 0) in plant_overrides: current_ma = plant_overrides[(0x03, 0)]
 
         # -- Thermal model (I²R heating + ambient cooling) ------------------
         for ci in range(N_CELLS):
             # I²R heating: P = I² × R_cell
-            power_w = (current_ma / 1000.0) ** 2 * R_CELL_MOHM / 1000.0
+            power_w = (abs(current_ma) / 1000.0) ** 2 * R_CELL_MOHM / 1000.0
             # Center cells heat ~20% more (worse airflow in pack center)
             heat_factor = 1.0 + 0.2 * (1.0 - abs(ci - N_CELLS / 2) / (N_CELLS / 2))
             dT_heat = power_w * heat_factor * DT_S / THERMAL_MASS_J_K
@@ -193,7 +206,8 @@ try:
                 cell_temp_c[ci] = plant_overrides[(0x02, ci)] / 10.0  # override is in ddegC
 
         # -- SOC integration (coulomb counting) ----------------------------
-        if current_ma > 0:
+        # Positive current = discharge (SOC decreases), negative = charge (SOC increases)
+        if current_ma != 0:
             soc_pct -= (current_ma / 1000.0) / (Q_CELL_MAH / 1000.0) * (DT_S / 3600.0) * 100.0
             soc_pct = max(0.0, min(100.0, soc_pct))
 
@@ -209,7 +223,9 @@ try:
         for i in range(N_CELLS):
             if (0x01, i) in plant_overrides: cell_voltages[i] = plant_overrides[(0x01, i)]
         # Pack voltage with IR drop
-        ir_drop_mv = int((current_ma / 1000.0) * R_TOTAL_MOHM)
+        ir_drop_mv = int((abs(current_ma) / 1000.0) * R_TOTAL_MOHM)
+        if current_ma < 0:
+            ir_drop_mv = -ir_drop_mv  # Charging raises terminal voltage above OCV
         pack_voltage_mv = max(0, sum(cell_voltages) - ir_drop_mv)
 
         # -- IVT messages --------------------------------------------------
@@ -256,7 +272,7 @@ try:
             print(f"[plant] tick={tick} SOC={soc_pct:.1f}% I={current_ma/1000:.1f}A "
                   f"Vcell={v_ocv}mV Vpack={pack_voltage_mv}mV IR={ir_drop_mv}mV "
                   f"T={t_min:.1f}-{t_max:.1f}°C "
-                  f"{'NORMAL' if bms_state_normal else 'idle'}{ovr}")
+                  f"{'CHG' if charging else 'DIS' if bms_state_normal else 'idle'}{ovr}")
 
         time.sleep(DT_S)
 

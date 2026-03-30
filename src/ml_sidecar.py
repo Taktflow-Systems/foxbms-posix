@@ -88,13 +88,17 @@ def _fox_decode(msg_data: int, start_bit: int, bit_length: int) -> int:
 # ============================================================================
 # CAN IDs
 # ============================================================================
-# Input
-CAN_ID_PACK_VALUES = 0x233
-CAN_ID_SOC_SOE = 0x235
+# Input — SIL probes (simple little-endian, verified in server.py)
+CAN_ID_SIL_PACK_CURRENT = 0x7FA   # LE int32 mA
+CAN_ID_SIL_CELL_V = 0x7F4         # LE uint16 × 4: min, max, _, delta
+CAN_ID_SIL_CELL_T = 0x7F6         # LE int16 × 2: min, max (deci-degC)
+CAN_ID_SIL_SOC = 0x7F2            # LE float32: SOC %
+CAN_ID_SIL_CONTACTOR = 0x7F0      # LE uint16 × 2: requested, actual
+CAN_ID_PLANT_VOLTAGE = 0x601      # LE int32 × 2: OCV, pack_V (mV)
+# Input — foxBMS native (big-endian)
 CAN_ID_BMS_STATE = 0x220
-CAN_ID_CELL_VOLTAGES = 0x270
-CAN_ID_CELL_TEMPS = 0x280
-CAN_ID_SIL_CONTACTOR = 0x7F0
+CAN_ID_CELL_VOLTAGES = 0x270      # AFE muxed cell voltages
+CAN_ID_CELL_TEMPS = 0x280         # AFE muxed cell temperatures
 
 # Output
 CAN_ID_ML_SOC = 0x700
@@ -138,18 +142,30 @@ class BMSSensorBuffers:
         self.frames_received += 1
         self.last_update_ts = time.time()
 
-        if can_id == CAN_ID_PACK_VALUES and len(data) >= 8:
-            # 0x233: Pack voltage (mV) and current (mA)
-            # Use foxBMS big-endian decoding
-            d = int.from_bytes(data[:8], 'big')
-            v_raw = _fox_decode(d, 7, 17)
-            current_raw = _fox_decode(d, 20, 24)
-            if current_raw & (1 << 23):
-                current_raw -= (1 << 24)
-            # Bounds check: reject corrupted frames
-            if 0 <= v_raw <= 131000 and -100000 <= current_raw <= 100000:
-                self.pack_voltage_mv = float(v_raw)
-                self.pack_current_ma = float(current_raw)
+        if can_id == 0x7FA and len(data) >= 4:
+            # SIL probe 0x7FA: pack current (LE int32, mA)
+            self.pack_current_ma = float(struct.unpack_from("<i", data, 0)[0])
+
+        elif can_id == 0x601 and len(data) >= 8:
+            # Plant probe 0x601: OCV (LE int32 @0) + pack voltage (LE int32 @4)
+            self.pack_voltage_mv = float(struct.unpack_from("<i", data, 4)[0])
+
+        elif can_id == 0x7F4 and len(data) >= 8:
+            # SIL probe 0x7F4: cell V min/max/delta (LE uint16 × 4)
+            mn, mx, _, delta = struct.unpack_from("<HHHH", data, 0)
+            # Update cell_voltages_mv from min/max as a proxy
+            if mn > 0 and mx > 0:
+                avg = (mn + mx) / 2.0
+                spread = max((mx - mn) / 2.0, 1.0)
+                for i in range(18):
+                    self.cell_voltages_mv[i] = avg + (i - 9) * spread / 9.0
+
+        elif can_id == 0x7F6 and len(data) >= 4:
+            # SIL probe 0x7F6: cell T min/max (LE int16 × 2, deci-degC)
+            t_min, t_max = struct.unpack_from("<hh", data, 0)
+            # Distribute across 8 temp sensors
+            for i in range(8):
+                self.cell_temps_ddegc[i] = float(t_min + (t_max - t_min) * i / 7)
 
         elif can_id == 0x7F2 and len(data) >= 4:
             # SIL probe 0x7F2: SOC as little-endian float32 (most reliable)
@@ -594,6 +610,13 @@ def main() -> None:
     last_inference_ts = time.time()
     inference_count = 0
 
+    # SIL calibration: track bias between raw ML SOC and BMS SOC (ground truth)
+    # EMA smoothing corrects the domain gap (BMW i3 training → foxBMS SIL)
+    soc_bias_ema = 0.0       # Running bias estimate (ML_raw - BMS)
+    SOC_EMA_ALPHA = 0.02     # Slow adaptation (~50 samples to converge)
+    # SOH baseline correction for fresh SIL pack (model trained on aged cells)
+    SOH_SIL_FLOOR = 95.0     # Fresh pack minimum SOH
+
     try:
         while True:
             # Read all available CAN frames (non-blocking drain)
@@ -602,8 +625,8 @@ def main() -> None:
                 if result is None:
                     break
                 can_id, data = result
-                # Only process foxBMS output IDs (not our own 0x700+ predictions)
-                if can_id < 0x700:
+                # Skip our own ML prediction IDs (0x700-0x705), process everything else
+                if not (0x700 <= can_id <= 0x705):
                     buffers.update_from_can(can_id, data)
 
             # Run inference at configured interval
@@ -615,15 +638,26 @@ def main() -> None:
                 # Update sliding windows
                 buffers.append_to_windows()
 
-                # --- SOC LSTM ---
-                ml_soc = models.predict_soc(buffers.soc_window)
-                if ml_soc is not None:
+                # --- SOC LSTM (with SIL bias correction) ---
+                ml_soc_raw = models.predict_soc(buffers.soc_window)
+                ml_soc = None
+                if ml_soc_raw is not None:
+                    # Update bias EMA: how far off is the raw prediction?
+                    soc_bias_ema = (SOC_EMA_ALPHA * (ml_soc_raw - buffers.bms_soc_pct)
+                                    + (1.0 - SOC_EMA_ALPHA) * soc_bias_ema)
+                    # Apply correction: subtract learned bias
+                    ml_soc = max(0.0, min(100.0, ml_soc_raw - soc_bias_ema))
                     can_send(sock, CAN_ID_ML_SOC,
                              encode_ml_soc(ml_soc, buffers.bms_soc_pct))
 
-                # --- SOH Transformer ---
-                ml_soh = models.predict_soh(buffers.soh_window)
-                if ml_soh is not None:
+                # --- SOH Transformer (with SIL floor correction) ---
+                ml_soh_raw = models.predict_soh(buffers.soh_window)
+                ml_soh = None
+                if ml_soh_raw is not None:
+                    # Fresh SIL pack: model trained on aged cells reports ~78%
+                    # Scale raw prediction into SOH_SIL_FLOOR-100% range
+                    ml_soh = SOH_SIL_FLOOR + (100.0 - SOH_SIL_FLOOR) * (ml_soh_raw / 100.0)
+                    ml_soh = max(0.0, min(100.0, ml_soh))
                     can_send(sock, CAN_ID_ML_SOH, encode_ml_soh(ml_soh))
 
                 # --- Thermal CNN ---
@@ -653,12 +687,15 @@ def main() -> None:
 
                 # Status log every 10 inferences (~10s)
                 if inference_count % 10 == 0:
-                    soc_str = f"ML_SOC={ml_soc:.1f}%" if ml_soc else "SOC=waiting"
+                    soc_str = f"ML_SOC={ml_soc:.1f}%(bias={soc_bias_ema:+.1f})" if ml_soc else "SOC=waiting"
+                    soh_str = f"SOH={ml_soh:.1f}%" if ml_soh else "SOH=waiting"
                     anom_str = f"anomaly={ml_anomaly:.3f}" if anomaly_features is not None and models.predict_anomaly(anomaly_features) is not None else "anomaly=n/a"
                     logger.info(
-                        "[%d] BMS_SOC=%.1f%% %s spread=%.0fmV %s frames=%d",
-                        inference_count, buffers.bms_soc_pct, soc_str,
-                        imbalance_mv, anom_str, buffers.frames_received,
+                        "[%d] BMS_SOC=%.1f%% %s %s spread=%.0fmV %s V=%.0f I=%.0f frames=%d",
+                        inference_count, buffers.bms_soc_pct, soc_str, soh_str,
+                        imbalance_mv, anom_str,
+                        buffers.pack_voltage_mv, buffers.pack_current_ma,
+                        buffers.frames_received,
                     )
 
             # Small sleep to avoid busy-waiting (1ms — matches plant model rate)

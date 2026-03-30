@@ -1,0 +1,71 @@
+# foxBMS BMS Dashboard — Docker build
+#
+# Builds the foxbms vECU + plant model + ML sidecar + web dashboard
+# in a single container. Exposes HTTP on $BMS_WEB_PORT (default 8092).
+#
+# Usage (standalone):
+#   docker build -f docker/Dockerfile.bms-web -t foxbms-bms-web .
+#   docker run --privileged --network host foxbms-bms-web
+#
+# Requires: vcan1 on host (or --privileged for auto-creation)
+
+# ============================================================
+# Stage 1: Builder — compile the vECU binary
+# ============================================================
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    make \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /foxbms-posix
+COPY . .
+
+RUN bash patches/apply_all.sh --force
+RUN cd src && make clean && make -j$(nproc)
+
+# ============================================================
+# Stage 2: Runtime — vECU + plant + ML sidecar + web server
+# ============================================================
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip \
+    can-utils \
+    iproute2 \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Web server dependencies
+RUN pip install --no-cache-dir --break-system-packages \
+    "aiohttp>=3.9.0"
+
+# ML dependencies (optional — sidecar works without ONNX too)
+COPY src/requirements-ml.txt /tmp/requirements-ml.txt
+RUN pip install --no-cache-dir --break-system-packages \
+    -r /tmp/requirements-ml.txt 2>/dev/null || true
+
+WORKDIR /foxbms-posix
+
+# vECU binary
+COPY --from=builder /foxbms-posix/src/foxbms-vecu /foxbms-posix/src/foxbms-vecu
+
+# Plant model + ML sidecar
+COPY src/plant_model.py src/foxbms_signals.dbc /foxbms-posix/src/
+COPY src/ml_sidecar.py src/train_anomaly_bms.py /foxbms-posix/src/
+
+# Web dashboard
+COPY web/ /foxbms-posix/web/
+
+# Entrypoint: start vECU + plant + ML sidecar + web server
+COPY docker/entrypoint-bms-web.sh /foxbms-posix/entrypoint-bms-web.sh
+RUN chmod +x /foxbms-posix/entrypoint-bms-web.sh
+
+ENV BMS_WEB_PORT=8092
+ENV FOXBMS_CAN_IF=vcan1
+
+EXPOSE ${BMS_WEB_PORT}
+
+ENTRYPOINT ["/foxbms-posix/entrypoint-bms-web.sh"]
