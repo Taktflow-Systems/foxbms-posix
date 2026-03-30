@@ -2743,6 +2743,12 @@ real observed data, not idealized specifications.
 
 ---
 
-*Phase 3 (Day 61–90) will be detailed here after Phase 2 exit criteria are met.*
-*Phase 3 theme: Production hardening — drift monitoring (PSI), CI gates, systemd stability.*
-*Phase 3 priority order determined by which Phase 2 gates required fine-tune (models with fine-tune are drift candidates).*
+**Phase 3 detail**: see [`day61-90-daily-tasks.md`](day61-90-daily-tasks.md) — 30 days,
+4 milestones (M3.1–M3.4), 12 ASPICE process areas covered.
+
+*Workstreams: SIL Validation Framework (Day 61–67) · CAN Interface Hardening (Day 68–74) ·
+Monitoring Dashboard (Day 75–81) · Drift Monitoring + CI Gates + Phase Close (Day 82–90).*
+
+*Phase 3 priority order: SIL validation first (makes all claims testable), CAN hardening second
+(DBC-driven tests catch encoding regressions), dashboard third (makes gaps visible to operators),
+drift monitoring fourth (prevents silent model decay after Phase 2 retraining).*

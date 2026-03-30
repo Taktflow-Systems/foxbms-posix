@@ -9,6 +9,7 @@
 | Rev | Date | Author | Reviewer | Description |
 |---|---|---|---|---|
 | 1.0 | 2026-03-21 | An Dao | Dr. K. Richter | Initial release |
+| 1.1 | 2026-03-27 | Claude (AI) | An Dao | Section 11: expand SW-REQ-ML-001 and SW-REQ-ML-006 with P95 error, max error, region-specific RMSE, cycle-to-cycle noise, SOH range guard, and inference latency gates |
 
 ## 1. Purpose
 
@@ -230,6 +231,100 @@ Each software requirement is accepted when:
 2. It is traced forward to detailed design in SWE.3-001.
 3. It is covered by at least one test case in SWE.4-001, SWE.5-001, or SWE.6-001.
 4. The covering test case passes on the POSIX SIL target.
+
+---
+
+## 11. ML Inference Module Requirements (Phase 2 Addition)
+
+**Revision**: 2.1 — 2026-03-27. Rationale: Phase 1 audit
+(`docs/ai_audit.md`) identified 12 accuracy gaps (GAP-ML-001..012). Phase 2 adds
+formal requirements to close P0 and P1 gaps. Rev 2.1 clarifies SW-REQ-ML-001 and
+SW-REQ-ML-006 with additional KPIs (P95 error, max error, region-specific RMSE,
+cycle-to-cycle noise, SOH range guard, inference latency) that were absent from Rev 2.0.
+See `docs/plans/plan-ai-180-day.md` Phase 2 section for implementation tasks and evidence.
+
+**Safety classification**: All requirements in this section are **QM** (non-safety).
+The ML inference layer (`src/ml_sidecar.py`, VPS-side Python) is an advisory monitoring
+function. It publishes predictions on CAN 0x700–0x705 which are displayed on a
+monitoring dashboard and may be used to inform operator decisions. The ML layer
+**does not** control any actuator. Safety protection of the battery pack is provided
+exclusively by the deterministic SOA module (SW-REQ-001..SW-REQ-035, ASIL-D) and the
+BMS state machine (SW-REQ-040..SW-REQ-045, ASIL-D). An incorrect ML SOC prediction
+cannot cause a safety violation because the BMS acts on coulomb-counting SOC
+(SW-REQ-070), not ML SOC. This independence is the justification for QM classification.
+
+### 11.1 SOC Estimation Accuracy
+
+| ID | Requirement | Derives From | ASIL | Verification |
+|---|---|---|---|---|
+| SW-REQ-ML-001 | The SOC LSTM shall achieve the following accuracy KPIs on the FOBSS validation dataset (real foxBMS 2 hardware, KIT Radar; minimum N ≥ 1,000 samples) after applying normalization statistics computed from the training split. Partial FOBSS fine-tune (Day 35–36 path) is permitted if OCV + norm-stats correction alone does not reach the gates. **(a) RMSE ≤ 3.0%** — primary accuracy gate. **(b) MAE ≤ 2.0%** — median-error gate; insensitive to outliers. **(c) 95th-percentile absolute error ≤ 5.0%** — tail-error gate; at RMSE = 3.0% with near-Gaussian residuals, P95 ≈ 4.9%; catches spikes not visible in mean metrics. **(d) Maximum single-sample absolute error ≤ 8.0%** on FOBSS — clips extreme outliers that would mislead operators (corresponds to approximately 2.7σ at RMSE = 3.0%). **(e) Region-specific RMSE**: plateau region (20–80% SOC) **≤ 4.5%**; boundary regions (0–20% and 80–100% SOC) **≤ 4.0%** — NMC 811 has a shallow OCV gradient across the plateau, making LSTM reliant on current integration there; region-level gates ensure no single operating zone fails silently even when the global gate passes. **(f) Steady-state SOC bias over a 30-minute foxBMS SIL window ≤ ±3.0%** — limits systematic offset visible on the operator dashboard. **(g) Inference latency ≤ 100 ms** per 1 Hz tick on the VPS host (Intel/AMD x86-64, ONNX Runtime ≥ 1.15) — leaves ≥ 900 ms of scheduling headroom within the 1-second tick period. **Acceptance**: `scripts/compare_soc_fix_stages.py` reports FOBSS RMSE ≤ 3.0%, MAE ≤ 2.0%, P95 ≤ 5.0%, max ≤ 8.0%, plateau RMSE ≤ 4.5%, boundary RMSE ≤ 4.0%; `tests/test_ml_accuracy.py::TestSOCLSTMAccuracy::test_sil_bias` passes (gate ±3.0%); `tests/test_ml_accuracy.py::TestSOCLSTMAccuracy::test_inference_latency` reports mean latency ≤ 100 ms. | GAP-ML-001 | QM | ML-TC-001 |
+| SW-REQ-ML-002 | SOC LSTM normalization statistics (`soc_lstm_mean.npy`, `soc_lstm_std.npy`) shall be computed from the BMW i3 training split (trips 1–60, ≥60,000 samples), not from estimated specification values. The provenance record in `data/norm_stats/registry.json` shall identify the source dataset, split, and sample count. **Acceptance**: `registry.json` field `computed_from_dataset` = "bmw-i3-kaggle-72trips", `split` = "train (trips 1-60)", `n_samples` > 0. | GAP-ML-002 | QM | ML-TC-002 |
+
+### 11.2 Plant Model OCV Fidelity
+
+| ID | Requirement | Derives From | ASIL | Verification |
+|---|---|---|---|---|
+| SW-REQ-ML-003 | The OCV lookup table in `src/plant_model.py` shall use a ≥21-point measured NMC 811 S-curve covering 0–100% SOC. The table shall be monotonically non-decreasing. The plateau region (30–70% SOC) shall have a gradient ≤ 5 mV/%. The round-trip error (SOC → OCV → SOC via linear interpolation) shall be < 1.0%. **Acceptance**: `scripts/validate_ocv_table.py` exits 0. | P0.3 (ml-improvement-plan.md) | QM | ML-TC-003 |
+
+### 11.3 Anomaly Detection Accuracy
+
+| ID | Requirement | Derives From | ASIL | Verification |
+|---|---|---|---|---|
+| SW-REQ-ML-004 | The IsolationForest anomaly model shall be trained on a dataset containing ≥30 minutes of real foxBMS SIL CAN baseline data (from automated telemetry, Phase 1 Day 1–2 deliverable). The model shall achieve a mean anomaly score < 0.15 on a 5-minute hold-out of real normal-operation SIL data. **Acceptance**: `scripts/retrain_anomaly_real.py` hold-out mean < 0.15 on training completion; `scripts/validate_anomaly_v2.py` normal mean < 0.15 on VPS. | GAP-ML-003 | QM | ML-TC-004 |
+
+### 11.4 Thermal Risk Inference
+
+| ID | Requirement | Derives From | ASIL | Verification |
+|---|---|---|---|---|
+| SW-REQ-ML-005 | The thermal inference pipeline in `src/ml_sidecar.py` shall compute dT/dt (°C/s) as a finite difference of successive T_avg samples at the 1 Hz inference tick. The computed dT/dt shall be non-zero in ≥90% of samples during active discharge (|I_A| > 0.1 A). **Acceptance**: `tests/test_thermal_cnn_phase2.py::test_dTdt_nonzero_during_discharge` passes. | GAP-ML-004 | QM | ML-TC-005 |
+| SW-REQ-ML-010 | The Thermal CNN false-positive rate (risk score > 0.3 during normal discharge) shall be ≤ 2% measured over a 30-minute NORMAL operating window. The Thermal CNN shall detect an overtemperature fault (60°C spike injection) with a risk score > 0.3 within 30 seconds of fault onset. **Acceptance**: `tests/test_thermal_cnn_phase2.py::test_thermal_fpr_gate` and `::test_ot_detection_latency` pass. | GAP-ML-004 | QM | ML-TC-010 |
+
+### 11.5 State of Health Estimation
+
+| ID | Requirement | Derives From | ASIL | Verification |
+|---|---|---|---|---|
+| SW-REQ-ML-006 | The SOH Transformer shall produce meaningful SOH predictions when provided a sliding window of ≥10 charge-discharge cycle summaries. The system shall provide this history via synthetic cycle replay (`scripts/generate_cycle_history.py`) generating ≥500 cycles with NMC 811 capacity fade at 0.02% Ah/cycle. On synthetic 500-cycle data the following KPIs shall all be met: **(a) RMSE ≤ 12.0%** — primary gate; set at 1.23× the published LiionPro-DT benchmark of 9.79% to allow for synthetic-vs-real distribution gap; tightens to ≤ 9.79% in Phase 5 on real cycle data. **(b) MAE ≤ 8.0%** — median-error gate. **(c) Major trend inversions < 10** — defined as a predicted SOH increase > 2% between consecutive cycles; the 2% threshold tolerates ±1% model noise while flagging degraded monotonicity. **(d) 95th-percentile absolute error ≤ 18.0%** — tail-error gate; equals 1.5× the RMSE gate, consistent with Laplace-distributed residuals; ensures the vast majority of per-cycle predictions are useful even when a few outliers elevate RMSE. **(e) Cycle-to-cycle prediction noise ≤ 1.5% standard deviation** — measured as std dev of SOH[n] − SOH[n−1] over the 490 consecutive-cycle pairs on a strictly monotone-decreasing ground truth; at σ = 1.5% the P95 noise swing ≈ ±2.5%, remaining just below the 2% major-inversion threshold and validating that the ±1% noise assumption embedded in gate (c) is met. **(f) All 490 predicted SOH values in the physically plausible range [65%, 100%]** for an NMC 811 pack completing 500 cycles (expected true SOH ≈ 90% at cycle 499 with 0.02% Ah/cycle fade; any prediction outside this range indicates model divergence). **(g) Inference latency ≤ 200 ms** per cycle-window update on the VPS host (Intel/AMD x86-64, ONNX Runtime ≥ 1.15). **Acceptance**: `scripts/validate_soh_transformer.py` prints PASS on all seven gates (a)–(g). | GAP-ML-005 | QM | ML-TC-006 |
+
+### 11.6 CI Pipeline Integrity
+
+| ID | Requirement | Derives From | ASIL | Verification |
+|---|---|---|---|---|
+| SW-REQ-ML-007 | The CI `ml-sidecar-smoke` job shall assert that at least one CAN 0x705 (anomaly score) frame is received within a 30-second capture window after sidecar startup. Failure to receive a frame within this window shall fail the CI job (non-zero exit). The `continue-on-error` flag shall not be set. **Acceptance**: GitHub Actions `ml-sidecar-smoke` job fails when sidecar is intentionally broken (e.g., `ml_sidecar.py` exits immediately). | GAP-ML-012 | QM | ML-TC-007 |
+
+### 11.7 Model Provenance and Reporting
+
+| ID | Requirement | Derives From | ASIL | Verification |
+|---|---|---|---|---|
+| SW-REQ-ML-008 | All deployed ML model versions shall be recorded in `models/registry.json`. Each entry shall contain: `id` (unique version string), `file` (path to model artifact), `training_data` (list of dataset IDs), `training_date`, `phase2_baseline_*` metric fields, and `deployed_to_vps` boolean. Null `phase2_baseline_*` fields indicate measurement not yet performed and shall not be merged to main after Phase 2 completion. **Acceptance**: `models/registry.json` parsed without error; all deployed models have non-null `phase2_baseline_*` fields by Day 60. | Best practice | QM | ML-TC-008 |
+| SW-REQ-ML-009 | A Phase 2 accuracy report (`docs/plans/baseline-metrics-phase2.md`) shall be published at Phase 2 close. The report shall document measured RMSE/F1/FPR/TPR metrics for all 5 deployed models across all available datasets. Every table row shall have a PASS/FAIL verdict against the gates defined in this Section 11. **Acceptance**: file exists, committed to main, zero `___` placeholder cells remaining. | SWE.6 | QM | ML-TC-009 |
+
+### 11.8 Traceability Summary
+
+| SW-REQ-ML-ID | SWE.3 Design Item | SWE.4 Test | SWE.6 Qualification Evidence |
+|---|---|---|---|
+| SW-REQ-ML-001 | FOBSS feature extraction + norm pipeline; region-split evaluation; latency measurement | ML-TC-001 | Phase 2 report SOC FOBSS rows (RMSE, MAE, P95, max, plateau/boundary RMSE, latency) |
+| SW-REQ-ML-002 | `compute_norm_stats.py` + registry | ML-TC-002 | `data/norm_stats/registry.json` |
+| SW-REQ-ML-003 | `ocv_lookup_nmc811()` in plant_model.py | ML-TC-003 | `validate_ocv_table.py` output |
+| SW-REQ-ML-004 | `retrain_anomaly_real.py` design | ML-TC-004 | Phase 2 report anomaly normal row |
+| SW-REQ-ML-005 | `dT/dt` computation in `append_to_windows()` | ML-TC-005 | Phase 2 report thermal dT/dt row |
+| SW-REQ-ML-006 | `generate_cycle_history.py` + SOH window; P95/noise/range/latency validation | ML-TC-006 | Phase 2 report SOH rows (RMSE, MAE, inversions, P95, noise, range, latency) |
+| SW-REQ-ML-007 | CI yaml strict assertion | ML-TC-007 | GitHub Actions log |
+| SW-REQ-ML-008 | `models/registry.json` schema | ML-TC-008 | `registry.json` committed |
+| SW-REQ-ML-009 | Phase 2 report template | ML-TC-009 | `baseline-metrics-phase2.md` |
+| SW-REQ-ML-010 | dT/dt pipeline + thermal FPR measurement | ML-TC-010 | Phase 2 report thermal FPR/latency row |
+
+---
+
+## 10. Acceptance Criteria
+
+Each software requirement is accepted when:
+
+1. It is traced backward to at least one system requirement in SYS.2-001 (for SW-REQ-001 through SW-REQ-205) or to a documented audit gap reference (for SW-REQ-ML-001 through SW-REQ-ML-010).
+2. It is traced forward to detailed design in SWE.3-001.
+3. It is covered by at least one test case in SWE.4-001, SWE.5-001, or SWE.6-001.
+4. The covering test case passes on the POSIX SIL target.
+
+For SW-REQ-ML requirements, the SWE.6 qualification evidence is `docs/plans/baseline-metrics-phase2.md`, which documents measured metrics with PASS/FAIL verdicts.
 
 ---
 *End of Document*

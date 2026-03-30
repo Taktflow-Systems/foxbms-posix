@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "sil_layer.h"
+#include "posix_can.h"
 
 /* ================================================================
  * SIL probe state variables — populated by stubs, read by probes
@@ -58,9 +59,6 @@ typedef _Bool boolean;
 #define CAN_MAX_MAILBOXES 64u
 static uint32_t can_mailbox_id[CAN_MAX_MAILBOXES] = {0};
 
-/* SocketCAN integration */
-extern int posix_can_open(const char *ifname);
-
 // HITL-LOCK START:HAL-EARLY-INIT
 /* Constructor: runs before main() */
 __attribute__((constructor)) void posix_early_init(void) {
@@ -88,9 +86,6 @@ void hetInit(void) { fprintf(stderr, "[POSIX] hetInit()\n"); fflush(stderr); }
 void etpwmInit(void) { fprintf(stderr, "[POSIX] etpwmInit()\n"); fflush(stderr); }
 void crcInit(void) { fprintf(stderr, "[POSIX] crcInit()\n"); fflush(stderr); }
 void spiInit(void) { fprintf(stderr, "[POSIX] spiInit()\n"); fflush(stderr); }
-/* SocketCAN integration */
-extern int posix_can_open(const char *ifname);
-extern int posix_can_send(uint32_t id, const uint8_t *data, uint8_t dlc);
 
 // HITL-LOCK START:HAL-CAN-INIT
 static int can_initialized_posix = 0;
@@ -111,9 +106,7 @@ void systemInit(void) {}
  * These are called by foxBMS CAN driver (can.c)
  * ================================================================ */
 
-/* canTransmit routes to SocketCAN */
-extern int posix_can_send(uint32_t id, const uint8_t *data, uint8_t dlc);
-
+/* canTransmit routes to SocketCAN (declared in posix_can.h) */
 static uint32_t can_tx_count = 0u;
 
 /* SIL probe: capture last TX data for key CAN IDs */
@@ -409,14 +402,30 @@ static volatile uint32_t posix_afe_volt_head, posix_afe_volt_tail;
 static uint8_t posix_afe_temp_buf[POSIX_AFE_QUEUE_SIZE][64];
 static volatile uint32_t posix_afe_temp_head, posix_afe_temp_tail;
 
+/* foxBMS queue/task handle stubs (normally in ftask_freertos.c) */
+volatile bool ftsk_allQueuesCreated = false;
+static uint8_t dummy_dbQueue_storage[1] = {0};
+void *ftsk_databaseQueue = dummy_dbQueue_storage; /* non-NULL for queue check */
+void *ftsk_imdCanDataQueue = NULL;
+static uint8_t dummy_canRxQueue_storage[1] = {0};
+void *ftsk_canRxQueue = dummy_canRxQueue_storage; /* non-NULL so queue check passes */
+void *ftsk_canTxUnsentMessagesQueue = NULL;
+void *ftsk_afeRequestQueue = NULL;
+void *ftsk_rtcSetTimeQueue = NULL;
+void *ftsk_afeToI2cQueue = NULL;
+void *ftsk_afeFromI2cQueue = NULL;
+/* AFE cell data queue handles (buffers declared earlier) */
+static uint8_t dummy_afe_volt_q[1] = {0};
+static uint8_t dummy_afe_temp_q[1] = {0};
+void *ftsk_canToAfeCellTemperaturesQueue = dummy_afe_temp_q;
+void *ftsk_canToAfeCellVoltagesQueue = dummy_afe_volt_q;
+void *ftsk_taskHandleAfe = NULL;
+void *ftsk_taskHandleI2c = NULL;
+
 /* Queue operations — CAN RX queue + database queue from ring buffers */
 OS_STD_RETURN_e OS_ReceiveFromQueue(void *xQueue, void *pvBuffer, uint32_t ticksToWait) {
     (void)ticksToWait;
     /* Only CAN RX queue has data */
-    extern void *ftsk_canRxQueue;
-    /* AFE cell voltage queue (defined later in this file) */
-    extern void *ftsk_canToAfeCellVoltagesQueue;
-    extern void *ftsk_canToAfeCellTemperaturesQueue;
     if (xQueue == ftsk_canToAfeCellVoltagesQueue && posix_afe_volt_head != posix_afe_volt_tail) {
         memcpy(pvBuffer, posix_afe_volt_buf[posix_afe_volt_tail], 16);
         posix_afe_volt_tail = (posix_afe_volt_tail + 1) % POSIX_AFE_QUEUE_SIZE;
@@ -449,7 +458,6 @@ OS_STD_RETURN_e OS_ReceiveFromQueue(void *xQueue, void *pvBuffer, uint32_t ticks
 }
 OS_STD_RETURN_e OS_SendToBackOfQueue(void *xQueue, const void *pvItem, uint32_t ticksToWait) {
     (void)ticksToWait;
-    extern void *ftsk_databaseQueue;
     if (xQueue == ftsk_databaseQueue && pvItem != NULL) {
         DATA_IterateOverDatabaseEntries(pvItem);
 #ifdef FOXBMS_SIL_PROBES
@@ -457,8 +465,6 @@ OS_STD_RETURN_e OS_SendToBackOfQueue(void *xQueue, const void *pvItem, uint32_t 
 #endif
     }
     /* AFE cell voltage queue */
-    extern void *ftsk_canToAfeCellVoltagesQueue;
-    extern void *ftsk_canToAfeCellTemperaturesQueue;
     if (xQueue == ftsk_canToAfeCellVoltagesQueue && pvItem != NULL) {
         uint32_t next = (posix_afe_volt_head + 1) % POSIX_AFE_QUEUE_SIZE;
         if (next != posix_afe_volt_tail) {
@@ -487,29 +493,6 @@ uint32_t OS_GetNumberOfStoredMessagesInQueue(void *xQueue) {
 
 void OS_SuspendTask(void *task) { (void)task; }
 void OS_ResumeTask(void *task) { (void)task; }
-
-/* CheckTimeHasPassed needs OS_GetTickCount which is defined above */
-extern uint32_t OS_CheckTimeHasPassedSelfTest(void);  /* defined in os.c, uses OS_GetTickCount */
-
-/* foxBMS queue/task handle stubs (normally in ftask_freertos.c) */
-volatile bool ftsk_allQueuesCreated = false;
-static uint8_t dummy_dbQueue_storage[1] = {0};
-void *ftsk_databaseQueue = dummy_dbQueue_storage; /* non-NULL for queue check */
-void *ftsk_imdCanDataQueue = NULL;
-static uint8_t dummy_canRxQueue_storage[1] = {0};
-void *ftsk_canRxQueue = dummy_canRxQueue_storage; /* non-NULL so queue check passes */
-void *ftsk_canTxUnsentMessagesQueue = NULL;
-void *ftsk_afeRequestQueue = NULL;
-void *ftsk_rtcSetTimeQueue = NULL;
-void *ftsk_afeToI2cQueue = NULL;
-void *ftsk_afeFromI2cQueue = NULL;
-/* AFE cell data queue handles (buffers declared earlier) */
-static uint8_t dummy_afe_volt_q[1] = {0};
-static uint8_t dummy_afe_temp_q[1] = {0};
-void *ftsk_canToAfeCellTemperaturesQueue = dummy_afe_temp_q;
-void *ftsk_canToAfeCellVoltagesQueue = dummy_afe_volt_q;
-void *ftsk_taskHandleAfe = NULL;
-void *ftsk_taskHandleI2c = NULL;
 
 /* FreeRTOS API stubs (no scheduler) */
 void FTSK_CreateQueues(void) {}
@@ -543,7 +526,6 @@ void vApplicationIdleHook(void) {}
 void vApplicationStackOverflowHook(void *task, char *name) { (void)task; (void)name; }
 
 /* xQueueSendToBack wrapper — might be a macro, provide function version */
-extern uint32_t xQueueGenericSend(void *, const void *, uint32_t, uint32_t);
 uint32_t xQueueSendToBack(void *q, const void *item, uint32_t ticks) {
     return xQueueGenericSend(q, item, ticks, 0);
 }

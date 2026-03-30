@@ -12,16 +12,30 @@
 /* @satisfies SW-REQ-060 Database passthrough */
 /* @satisfies SW-REQ-090 CAN TX periodic */
 
+/* MISRA-C:2012 Rule 21.1 deviation (DEV-SIL-21.1): _GNU_SOURCE begins with
+ * underscore (reserved identifier per C11 §7.1.3), but is required on Linux
+ * to expose POSIX/GNU socket extensions needed by this SIL harness. */
 #define _GNU_SOURCE
 #include <stdint.h>
 #include <stdbool.h>
+/* MISRA-C:2012 Rule 21.6 deviation (DEV-SIL-21.6): <stdio.h> I/O functions
+ * (fprintf, perror, setbuf) are used for diagnostic output only. This file is
+ * a POSIX SIL harness, never compiled for production firmware. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <time.h>
+/* MISRA-C:2012 Rule 21.5 deviation (DEV-SIL-21.5): <signal.h> is required for
+ * SIGINT handling to provide graceful SIL vECU shutdown in CI and interactive use. */
 #include <signal.h>
 #include "sil_layer.h"
+/* MISRA-C:2012 Rule 8.4 compliance (DEV-SIL-8.4): posix_can_open() and
+ * posix_can_send() are defined in this TU with external linkage.  This header
+ * provides the prior compatible declarations required by Rule 8.4 and the
+ * single-location declaration required by Rule 8.5. */
+#include "posix_can.h"
 
 /* foxBMS init functions (from main.c) */
 extern void muxInit(void);
@@ -62,8 +76,11 @@ extern void FTSK_RunUserCodeCyclic10ms(void);
 extern void FTSK_RunUserCodeCyclic100ms(void);
 extern void FTSK_RunUserCodeCyclicAlgorithm100ms(void);
 
-/* diag_device from diag_cfg.c — opaque pointer to avoid including diag headers */
-extern char diag_device[];  /* actually DIAG_DEV_s, but we just pass the address */
+/* MISRA-C:2012 Rule 8.3 deviation (DEV-SIL-8.3): diag_device actual type is
+ * DIAG_DEV_s in diag_cfg.c. Declared as uint8_t[] here to avoid pulling in
+ * foxBMS application headers into the POSIX SIL harness. Address is passed
+ * to DIAG_Initialize(void *) — behaviour is well-defined for the SIL target. */
+extern uint8_t diag_device[];
 
 /* os_boot states */
 #define OS_OFF (0u)
@@ -81,6 +98,31 @@ extern char diag_device[];  /* actually DIAG_DEV_s, but we just pass the address
 
 static int can_socket = -1;
 
+/* Rule 8.5: SIL probe externs moved from function body to file scope.
+ * Full MISRA compliance would require a shared header; this is the SIL harness
+ * equivalent. Guarded by FOXBMS_SIL_PROBES to match usage context. */
+#ifdef FOXBMS_SIL_PROBES
+extern uint8_t BMS_GetState(void);
+extern uint8_t BMS_GetNumberOfConnectedStrings(void);
+extern float posix_sil_soc_pct;
+extern uint16_t posix_sil_cell_v_min;
+extern uint16_t posix_sil_cell_v_max;
+extern int32_t posix_sil_string_voltage_mv;
+extern int32_t posix_sil_bus_voltage_mv;
+extern int16_t posix_sil_cell_t_min;
+extern int16_t posix_sil_cell_t_max;
+extern int32_t posix_sil_current_ma;
+extern uint32_t posix_diag_fault_count;
+extern uint8_t posix_diag_last_id;
+extern uint8_t posix_diag_last_event;
+extern uint64_t posix_diag_bitmap;
+extern uint32_t posix_sil_db_write_count;
+extern uint32_t posix_sil_db_read_count;
+#endif /* FOXBMS_SIL_PROBES */
+
+/* Rule 8.5: shutdown helper moved from function body to file scope */
+extern void SPS_SwitchOffAllGeneralIoChannels(void);
+
 int posix_can_open(const char *ifname)
 {
     if (can_socket >= 0) {
@@ -91,13 +133,18 @@ int posix_can_open(const char *ifname)
     struct ifreq ifr;
     can_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (can_socket < 0) { perror("socket"); return -1; }
-    fcntl(can_socket, F_SETFL, O_NONBLOCK);
+    /* Rule 17.7: fcntl return value checked; non-fatal if it fails */
+    if (fcntl(can_socket, F_SETFL, O_NONBLOCK) < 0) {
+        perror("fcntl O_NONBLOCK");
+    }
     strncpy(ifr.ifr_name, ifname, IFNAMSIZ - 1);
     ifr.ifr_name[IFNAMSIZ - 1] = '\0';
     if (ioctl(can_socket, SIOCGIFINDEX, &ifr) < 0) { perror("ioctl"); close(can_socket); can_socket = -1; return -1; }
     memset(&addr, 0, sizeof(addr));
     addr.can_family = AF_CAN;
     addr.can_ifindex = ifr.ifr_ifindex;
+    /* MISRA-C:2012 Rule 11.3 deviation (DEV-SIL-11.3): POSIX bind() requires
+     * struct sockaddr_can * to be cast to struct sockaddr *. */
     if (bind(can_socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) { perror("bind"); close(can_socket); can_socket = -1; return -1; }
     fprintf(stderr, "[CAN] '%s' opened (fd=%d)\n", ifname, can_socket);
     return 0;
@@ -109,10 +156,11 @@ int posix_can_send(uint32_t id, const uint8_t *data, uint8_t dlc)
     struct can_frame frame;
     memset(&frame, 0, sizeof(frame));
     frame.can_id = id;
-    frame.can_dlc = dlc > 8 ? 8 : dlc;
+    frame.can_dlc = dlc > 8u ? 8u : dlc;
     memcpy(frame.data, data, frame.can_dlc);
     ssize_t n = write(can_socket, &frame, sizeof(frame));
-    return (n == sizeof(frame)) ? 0 : -1;
+    /* Rule 10.4: cast n to size_t for unsigned comparison with sizeof */
+    return ((size_t)n == sizeof(frame)) ? 0 : -1;
 }
 
 /* Timing */
@@ -123,15 +171,15 @@ static uint64_t get_time_us(void)
     return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
 }
 
-/* CAN RX from SocketCAN — feed into foxBMS CAN RX buffer queue */
-extern void posix_can_rx_inject(uint32_t id, uint8_t *data, uint8_t dlc);
+/* posix_can_rx_inject() declaration provided by posix_can.h (Rule 8.4/8.5) */
 
 static volatile int running = 1;
 static void sigint_handler(int sig) { (void)sig; running = 0; }
 
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, sigint_handler);
+    /* Rule 17.7: discard previous signal handler (SIL harness, not production) */
+    (void)signal(SIGINT, sigint_handler);
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
@@ -139,19 +187,31 @@ int main(int argc, char *argv[])
     int timeout_s = 0;
     for (int i = 1; i < argc - 1; i++) {
         if (strcmp(argv[i], "--timeout") == 0) {
-            timeout_s = atoi(argv[i + 1]);
+            /* Rule 21.7: replaced atoi() with strtol() for proper error detection */
+            char *endptr = NULL;
+            long v;
+            errno = 0;
+            v = strtol(argv[i + 1], &endptr, 10);
+            if (endptr != argv[i + 1] && *endptr == '\0' && errno == 0 && v > 0L) {
+                timeout_s = (int)v;
+            }
             break;
         }
     }
 
     /* Open SocketCAN early */
+    /* MISRA-C:2012 Rule 21.8 deviation (DEV-SIL-21.8): getenv() is the only
+     * practical mechanism to pass CAN interface name in containerised/CI use. */
     const char *can_if = getenv("FOXBMS_CAN_IF");
-    if (!can_if) can_if = "vcan1";
+    if (can_if == NULL) { can_if = "vcan1"; }
     fprintf(stderr, "=== foxBMS 2 POSIX vECU ===\n");
     if (timeout_s > 0) {
         fprintf(stderr, "[init] Timeout: %d s\n", timeout_s);
     }
-    posix_can_open(can_if);
+    /* Rule 17.7: check return value of posix_can_open */
+    if (posix_can_open(can_if) != 0) {
+        fprintf(stderr, "[init] WARNING: CAN open failed on '%s' — continuing without CAN\n", can_if);
+    }
 
     /* Phase 1: Hardware init (all stubbed) */
     fprintf(stderr, "[init] HAL init...\n");
@@ -174,9 +234,13 @@ int main(int argc, char *argv[])
 
     /* Phase 2: DIAG init */
     fprintf(stderr, "[init] DIAG...\n");
-    DIAG_Initialize(&diag_device);
+    /* Rule 17.7: check DIAG_Initialize return value */
+    if (DIAG_Initialize(&diag_device) != 0u) {
+        fprintf(stderr, "[init] WARNING: DIAG_Initialize returned non-zero\n");
+    }
     MATH_StartupSelfTest();
-    OS_CheckTimeHasPassedSelfTest();
+    /* Rule 17.7: self-test result not actionable in SIL context; discard explicitly */
+    (void)OS_CheckTimeHasPassedSelfTest();
     fprintf(stderr, "[init] DIAG done\n");
 
     /* Phase 3: No FreeRTOS — just set the flag so DATA_Initialize passes */
@@ -204,16 +268,18 @@ int main(int argc, char *argv[])
     uint64_t last_10ms = last_1ms;
     uint64_t last_100ms = last_1ms;
     uint64_t start_us = last_1ms;
-    uint32_t tick = 0;
+    /* Rule 7.2: unsigned literals with u suffix */
+    uint32_t tick = 0u;
 
     /* GA-01: Cycle time measurement */
-    uint64_t max_1ms_us = 0, max_10ms_us = 0, max_100ms_us = 0;
-    uint32_t deadline_violations = 0;
+    uint64_t max_1ms_us = 0u, max_10ms_us = 0u, max_100ms_us = 0u;
+    uint32_t deadline_violations = 0u;
 
     /* GA-24: Software watchdog — if main loop stalls for >100ms, trigger ERROR */
     uint64_t last_watchdog_feed = start_us;
 
-    while (running) {
+    /* Rule 14.4: running is volatile int; != 0 gives essentially-Boolean controlling expression */
+    while (running != 0) {
         uint64_t now = get_time_us();
 
         /* GA-28: Check timeout */
@@ -226,7 +292,8 @@ int main(int argc, char *argv[])
         /* CAN RX from SocketCAN — read all pending frames */
         {
             struct can_frame rx_frame;
-            while (read(can_socket, &rx_frame, sizeof(rx_frame)) == sizeof(rx_frame)) {
+            /* Rule 10.4: cast sizeof to ssize_t so both operands are signed */
+            while (read(can_socket, &rx_frame, sizeof(rx_frame)) == (ssize_t)sizeof(rx_frame)) {
                 /* Skip error frames, RTR frames, and extended (29-bit) frames —
                  * foxBMS uses standard 11-bit IDs only. */
                 if (rx_frame.can_id & (CAN_ERR_FLAG | CAN_RTR_FLAG | CAN_EFF_FLAG)) {
@@ -311,9 +378,6 @@ int main(int argc, char *argv[])
                 /* State machine probe: SYS state + BMS state
                  * Read directly from foxBMS API — not CAN sniffing
                  * (CAN 0x220 has multiplexed sub-messages that cause flicker) */
-                extern volatile uint8_t os_boot;
-                extern uint8_t BMS_GetState(void);
-                extern uint8_t BMS_GetNumberOfConnectedStrings(void);
                 uint8_t bms_st = BMS_GetState();
                 uint8_t bms_strings = BMS_GetNumberOfConnectedStrings();
                 uint8_t sm_buf[8] = {0};
@@ -323,7 +387,6 @@ int main(int argc, char *argv[])
                 sil_probe_raw(SIL_PROBE_STATE_MACHINE, sm_buf, 8);
 
                 /* SOC probe — read from DB via extern */
-                extern float posix_sil_soc_pct;
                 float soc = posix_sil_soc_pct;
                 /* Override SOC if active */
                 if (sil_override_active(SIL_SOC, 0)) {
@@ -336,36 +399,34 @@ int main(int argc, char *argv[])
                 /* Cell voltage summary probe — reads from posix_sil_cell_v_min/max
                    which are updated by the DB inject patch in DATA_IterateOverDatabaseEntries
                    every time BMS reads MIN_MAX */
-                extern uint16_t posix_sil_cell_v_min, posix_sil_cell_v_max;
                 uint16_t v_min = posix_sil_cell_v_min;
                 uint16_t v_max = posix_sil_cell_v_max;
-                uint16_t v_avg = (v_min + v_max) / 2u;
-                uint16_t v_delta = v_max - v_min;
+                /* Rule 10.3: widen to uint32_t before addition to prevent overflow,
+                 * then cast result back to uint16_t */
+                uint16_t v_avg = (uint16_t)(((uint32_t)v_min + (uint32_t)v_max) / 2u);
+                uint16_t v_delta = (uint16_t)(v_max - v_min);
                 sil_probe_4u16(SIL_PROBE_CELL_V_SUMMARY, v_min, v_max, v_avg, v_delta);
 
                 /* Pack voltage probe */
-                extern int32_t posix_sil_string_voltage_mv;
-                extern int32_t posix_sil_bus_voltage_mv;
                 sil_probe_2i32(SIL_PROBE_PACK_V,
                     posix_sil_string_voltage_mv, posix_sil_bus_voltage_mv);
 
                 /* Cell temperature summary probe — check all sensor overrides */
-                extern int16_t posix_sil_cell_t_min, posix_sil_cell_t_max;
                 int16_t tmin = posix_sil_cell_t_min;
                 int16_t tmax = posix_sil_cell_t_max;
-                for (uint8_t ti = 0; ti < 18; ti++) {
+                for (uint8_t ti = 0u; ti < 18u; ti++) {
                     if (sil_override_active(SIL_CELL_TEMP, ti)) {
                         int16_t ot = (int16_t)sil_override_get_i32(SIL_CELL_TEMP, ti);
                         if (ot > tmax) tmax = ot;
                         if (ot < tmin) tmin = ot;
                     }
                 }
-                int16_t tavg = (tmin + tmax) / 2;
-                int16_t tdelta = tmax - tmin;
+                /* Rule 10.3: widen to int32_t before addition, cast result back to int16_t */
+                int16_t tavg = (int16_t)(((int32_t)tmin + (int32_t)tmax) / 2);
+                int16_t tdelta = (int16_t)(tmax - tmin);
                 sil_probe_4i16(SIL_PROBE_CELL_T_SUMMARY, tmin, tmax, tavg, tdelta);
 
                 /* Current probe */
-                extern int32_t posix_sil_current_ma;
                 int32_t cur = posix_sil_current_ma;
                 if (sil_override_active(SIL_PACK_CURRENT, 0)) {
                     cur = sil_override_get_i32(SIL_PACK_CURRENT, 0);
@@ -373,9 +434,6 @@ int main(int argc, char *argv[])
                 sil_probe_2i32(SIL_PROBE_CURRENT, cur, 0);
 
                 /* DIAG status probe (0x7F7) */
-                extern uint32_t posix_diag_fault_count;
-                extern uint8_t posix_diag_last_id;
-                extern uint8_t posix_diag_last_event;
                 {
                     uint8_t dbuf[8] = {0};
                     memcpy(&dbuf[0], &posix_diag_fault_count, 4);
@@ -385,35 +443,41 @@ int main(int argc, char *argv[])
                 }
 
                 /* DIAG bitmap probe (0x7F8) */
-                extern uint64_t posix_diag_bitmap;
-                sil_probe_raw(SIL_PROBE_DIAG_BITMAP, (const uint8_t *)&posix_diag_bitmap, 8u);
+                /* Rule 11.3: use memcpy to serialise uint64_t to byte buffer,
+                 * avoiding pointer cast between incompatible object types */
+                {
+                    uint8_t diag_bitmap_bytes[8];
+                    memcpy(diag_bitmap_bytes, &posix_diag_bitmap, sizeof(diag_bitmap_bytes));
+                    sil_probe_raw(SIL_PROBE_DIAG_BITMAP, diag_bitmap_bytes, 8u);
+                }
 
                 /* DB counters probe */
-                extern uint32_t posix_sil_db_write_count;
-                extern uint32_t posix_sil_db_read_count;
                 sil_probe_2i32(SIL_PROBE_DB_COUNTERS,
                     (int32_t)posix_sil_db_write_count, (int32_t)posix_sil_db_read_count);
 
                 /* SOC integrator probe */
-                sil_probe_2i32(SIL_PROBE_SOC_INTEGRATOR, (int32_t)(cur), (int32_t)(dt));
+                /* Rule 10.3 deviation: dt is uint64_t; value is bounded by 100ms task
+                 * duration (well below INT32_MAX µs) so narrowing cast is safe here. */
+                sil_probe_2i32(SIL_PROBE_SOC_INTEGRATOR, cur, (int32_t)(dt));
             }
 #endif
         }
 
         /* SIL probes — heartbeat + timing every 100ms */
-        if (tick > 0 && tick % 100 == 0) {
+        /* Rule 7.2 / 10.4: unsigned literals with u suffix for unsigned operands */
+        if (tick > 0u && tick % 100u == 0u) {
             uint32_t uptime_ms = (uint32_t)((now - start_us) / 1000ULL);
             sil_probe_heartbeat(tick, uptime_ms);
             sil_probe_4u16(SIL_PROBE_TIMING,
-                (uint16_t)(max_1ms_us > 65535 ? 65535 : max_1ms_us),
-                (uint16_t)(max_10ms_us > 65535 ? 65535 : max_10ms_us),
-                (uint16_t)(max_100ms_us > 65535 ? 65535 : max_100ms_us),
-                (uint16_t)(tick & 0xFFFF));
+                (uint16_t)(max_1ms_us > 65535u ? 65535u : max_1ms_us),
+                (uint16_t)(max_10ms_us > 65535u ? 65535u : max_10ms_us),
+                (uint16_t)(max_100ms_us > 65535u ? 65535u : max_100ms_us),
+                (uint16_t)(tick & 0xFFFFu));
         }
 
         /* Status every 5 seconds */
-        if (tick > 0 && tick % 5000 == 0) {
-            fprintf(stderr, "[%u] foxBMS running\n", tick / 1000);
+        if (tick > 0u && tick % 5000u == 0u) {
+            fprintf(stderr, "[%u] foxBMS running\n", tick / 1000u);
         }
 
         /* Sleep 500us to avoid busy-wait */
@@ -422,10 +486,7 @@ int main(int argc, char *argv[])
 
     /* GA-22: Graceful shutdown — open all contactors */
     fprintf(stderr, "[exit] Graceful shutdown — opening all contactors...\n");
-    {
-        extern void SPS_SwitchOffAllGeneralIoChannels(void);
-        SPS_SwitchOffAllGeneralIoChannels();
-    }
+    SPS_SwitchOffAllGeneralIoChannels();
 
     /* GA-01: Print timing summary */
     fprintf(stderr, "[exit] foxBMS stopped after %u ticks\n", tick);
