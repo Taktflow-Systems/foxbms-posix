@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Breakdown — foxBMS POSIX vECU</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --accent: #0891b2;
+    --accent-light: #ecfeff;
+    --text: #1e1e2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --orange: #d97706;
+    --orange-bg: #fffbeb;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 2rem; color: var(--accent); margin-bottom: 0.25rem; }
+  h1 small { font-size: 0.9rem; color: var(--muted); font-weight: 400; display: block; margin-top: 0.25rem; }
+  h2 { font-size: 1.4rem; color: var(--text); margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 1.1rem; margin: 1.2rem 0 0.5rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card-accent { border-left: 4px solid var(--accent); }
+  .card-green { border-left: 4px solid var(--green); background: var(--green-bg); }
+  .card-blue { border-left: 4px solid var(--blue); background: var(--blue-bg); }
+  .card-orange { border-left: 4px solid var(--orange); background: var(--orange-bg); }
+  .card-red { border-left: 4px solid var(--red); background: var(--red-bg); }
+  .card-purple { border-left: 4px solid var(--purple); background: var(--purple-bg); }
+  .label {
+    display: inline-block; font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.15rem 0.5rem; border-radius: 4px; margin-bottom: 0.5rem;
+  }
+  .label-arch { background: var(--accent); color: #fff; }
+  .label-posix { background: var(--green); color: #fff; }
+  .label-bms { background: var(--blue); color: #fff; }
+  .label-can { background: var(--orange); color: #fff; }
+  .label-test { background: var(--purple); color: #fff; }
+  .label-safety { background: var(--red); color: #fff; }
+  .label-patch { background: #475569; color: #fff; }
+  .label-plant { background: #059669; color: #fff; }
+  .label-probe { background: #7c3aed; color: #fff; }
+  .label-ml { background: #2563eb; color: #fff; }
+  .label-discovery { background: var(--orange); color: #fff; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.88rem; }
+  th { text-align: left; padding: 0.5rem; background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  td { padding: 0.5rem; border-bottom: 1px solid var(--border); }
+  td:first-child { font-weight: 500; }
+  ul { padding-left: 1.25rem; margin: 0.5rem 0; }
+  li { margin-bottom: 0.3rem; }
+  code { background: var(--accent-light); color: var(--accent); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.85em; }
+  pre {
+    background: #1e1e2e; color: #cdd6f4; padding: 1rem; border-radius: 8px;
+    font-size: 0.82rem; line-height: 1.5; overflow-x: auto; margin: 0.75rem 0;
+  }
+  .section-nav {
+    position: sticky; top: 0; background: var(--bg);
+    padding: 0.75rem 0; border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem; z-index: 10;
+    display: flex; gap: 1rem; flex-wrap: wrap;
+  }
+  .section-nav a { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+  .section-nav a:hover { text-decoration: underline; }
+  .metric-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0; }
+  .metric {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.6rem 1rem; text-align: center; min-width: 100px; flex: 1;
+  }
+  .metric strong { display: block; font-size: 1.5rem; color: var(--accent); }
+  .metric span { font-size: 0.75rem; color: var(--muted); }
+  .confidential {
+    text-align: center; color: var(--muted); font-size: 0.8rem;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 1.5rem; padding: 0.5rem;
+    border: 1px dashed var(--border); border-radius: 8px;
+  }
+  @media print {
+    body { padding: 1rem; font-size: 0.85rem; }
+    .section-nav { display: none; }
+    .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="confidential">Internal Reference &mdash; System Breakdown &mdash; foxBMS POSIX vECU</div>
+
+<h1>System Breakdown
+  <small>foxBMS 2 (v1.10.0) Software-in-the-Loop &mdash; POSIX vECU with Fault Injection &amp; Plant Model</small>
+</h1>
+
+<nav class="section-nav">
+  <a href="#overview">Overview</a>
+  <a href="#posix">POSIX Layer</a>
+  <a href="#bms">BMS State Machine</a>
+  <a href="#probes">SIL Probes</a>
+  <a href="#plant">Plant Model</a>
+  <a href="#can">CAN Bus</a>
+  <a href="#patches">Patches</a>
+  <a href="#build">Build</a>
+  <a href="#docker">Docker</a>
+  <a href="#test">Testing</a>
+  <a href="#web">Web Dashboard</a>
+  <a href="#ml">ML Sidecar</a>
+  <a href="#discoveries">Discoveries</a>
+  <a href="#docs">Documentation</a>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="overview">Platform Overview</h2>
+
+<div class="metric-row">
+  <div class="metric"><strong>170+</strong><span>foxBMS source files</span></div>
+  <div class="metric"><strong>19</strong><span>Patch scripts</span></div>
+  <div class="metric"><strong>80+</strong><span>HAL stubs</span></div>
+  <div class="metric"><strong>2,005</strong><span>ASIL-D fault scenarios</span></div>
+  <div class="metric"><strong>415</strong><span>Traced requirement IDs</span></div>
+  <div class="metric"><strong>20+</strong><span>Test modules</span></div>
+  <div class="metric"><strong>98%</strong><span>Completion (113/115)</span></div>
+</div>
+
+<div class="card card-accent">
+  <span class="label label-arch">Architecture</span>
+  <pre>
++-----------------------------------------------------------+
+|  Test Drivers (Python)                                     |
+|  test_smoke, test_fault_injection, test_asil, fi/          |
++-----------------------------------------------------------+
+|  Plant Model (Python)             Web Dashboard (aiohttp)  |
+|  plant_model.py                   web/server.py            |
++---------------------+-------------------------------------+
+                      |
+              SocketCAN (vcan1)
+                      |
++---------------------+-------------------------------------+
+|  foxBMS Application (170+ C sources from upstream)         |
+|  BMS state machine, SOC, diagnostics, CAN, contactors     |
++-----------------------------------------------------------+
+|  SIL Layer (sil_layer.c)                                   |
+|  Probes: 0x7F0-0x7FF    Overrides: 0x7E0                  |
++-----------------------------------------------------------+
+|  POSIX Abstraction (hal_stubs_posix.c)                     |
+|  80+ HAL stubs, DIAG suppression, SPS sim, RTC/SBC forced |
++-----------------------------------------------------------+
+|  Cooperative Main Loop (foxbms_posix_main.c)               |
+|  1ms / 10ms / 100ms cyclic, software watchdog              |
++-----------------------------------------------------------+
+|  posix_overrides.h + halcogen-headers/ (RAM buffers)       |
++-----------------------------------------------------------+</pre>
+</div>
+
+<div class="card">
+  <h3>Directory Layout</h3>
+  <pre>
+foxbms-posix/
+  src/
+    foxbms_posix_main.c    Cooperative main loop (550 lines)
+    hal_stubs_posix.c      80+ HAL stubs (936 lines)
+    posix_overrides.h      ARM &rarr; x86 translation (63 lines)
+    sil_layer.c/h          SIL probes + overrides
+    posix_can.h            SocketCAN interface
+    plant_model.py         Battery simulator (14K)
+    ml_sidecar.py          LSTM/CNN/IF anomaly detection (31K)
+    fi/                    Fault injection framework (17 runners)
+    test_*.py              20+ test modules
+    foxbms_signals.dbc     CAN database
+  foxbms-2/               Upstream submodule v1.10.0 (NOT committed)
+  freertos-posix-port/    FreeRTOS cooperative stubs
+  halcogen-headers/       60+ TMS570 register headers (patched)
+  patches/                19 Python patch scripts
+  scripts/                Doc generation, traceability validation
+  tools/                  foxbms_constants.py, SOC analysis
+  web/                    Live dashboard (aiohttp + WebSocket)
+  docker/                 Dockerfile.bms-web
+  docs/                   60+ pages (ASPICE CL2 + ISO 26262)</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="posix">POSIX Abstraction Layer</h2>
+
+<div class="card card-green">
+  <span class="label label-posix">Core Files</span>
+  <table>
+    <tr><th>File</th><th>Lines</th><th>Purpose</th></tr>
+    <tr><td><code>foxbms_posix_main.c</code></td><td>550</td><td>Cooperative main loop replacing FreeRTOS scheduler</td></tr>
+    <tr><td><code>hal_stubs_posix.c</code></td><td>936</td><td>80+ HAL stubs (CAN, SBC, RTC, SPS, DIAG, FAS_ASSERT)</td></tr>
+    <tr><td><code>posix_overrides.h</code></td><td>63</td><td>ARM inline asm &rarr; no-op, FreeRTOS CLZ, FAS_ASSERT level</td></tr>
+    <tr><td><code>posix_can.h</code></td><td>55</td><td>SocketCAN open/send/rx_inject</td></tr>
+    <tr><td><code>sil_layer.c/h</code></td><td>123</td><td>SIL probes (0x7F0-0x7FF) and overrides (0x7E0)</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Cooperative Main Loop</h3>
+  <pre>
+while (running):
+    // CAN RX from SocketCAN (non-blocking)
+    // Process override commands (0x7E0)
+
+    // 1ms cyclic
+    FTSK_RunUserCodeCyclic1ms()           // Timers, DIAG flags
+    FTSK_RunUserCodeEngine()               // DATA task
+    MEAS_Control()                         // AFE cell voltage/temp queueing
+
+    // 10ms cyclic
+    FTSK_RunUserCodeCyclic10ms()           // SYS, BMS, CAN TX
+
+    // 100ms cyclic
+    FTSK_RunUserCodeCyclic100ms()          // Balancing, SOC/SOE
+    FTSK_RunUserCodeCyclicAlgorithm100ms()
+
+    // Software watchdog: stall &gt;100ms &rarr; force ERROR
+    usleep(500)  // 500&micro;s per iteration (~2kHz)</pre>
+</div>
+
+<div class="card">
+  <h3>Initialization Sequence (6 phases)</h3>
+  <ol>
+    <li>Hardware init (all stubbed) + DIAG init</li>
+    <li>Set <code>ftsk_allQueuesCreated</code> flag (DATA_Initialize passes)</li>
+    <li>Set <code>os_boot = OS_SCHEDULER_RUNNING</code></li>
+    <li><code>FTSK_InitializeUserCodeEngine</code> (BMS_Init, etc.)</li>
+    <li>Set <code>os_boot = OS_ENGINE_RUNNING</code></li>
+    <li><code>FTSK_InitializeUserCodePreCyclicTasks</code> &rarr; enter main loop</li>
+  </ol>
+</div>
+
+<div class="card card-blue">
+  <span class="label label-arch">Register Redirection to RAM</span>
+  <p>All TMS570 hardware registers redirected to 4KB RAM buffers via patches:</p>
+  <pre>
+// Before (TMS570 hardware)
+#define canREG ((canBASE_t *)0xFFF7BC00U)
+
+// After (FOXBMS_POSIX)
+extern char posix_canreg[];
+#define canREG ((canBASE_t *)posix_canreg)</pre>
+  <p>No segfault on memory-mapped I/O dereference. Register writes/reads are harmless (no side effects).</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="bms">BMS State Machine</h2>
+
+<div class="card card-accent">
+  <span class="label label-bms">State Transitions</span>
+  <pre>
+UNINITIALIZED (0)
+    &darr;
+INITIALIZATION (1)
+    &darr;
+INITIALIZED (2)
+    &darr;
+IDLE (3)
+    &darr;
+STANDBY (5)      &larr; Plant requests (first 3 seconds)
+    &darr;
+PRECHARGE (6)    &larr; Charge HV bus capacitor via SPS channels
+    &darr;
+NORMAL (7)       &larr; Steady state &mdash; monitoring + balancing
+    &darr;
+ERROR (10)       &larr; Open all contactors immediately</pre>
+</div>
+
+<div class="grid">
+  <div class="card card-red">
+    <span class="label label-safety">Fault Detection</span>
+    <table>
+      <tr><th>Fault</th><th>Threshold</th><th>Detection</th><th>Action</th></tr>
+      <tr><td>Overvoltage (MSL)</td><td>4250 mV/cell</td><td>585 ms</td><td>Contactors open</td></tr>
+      <tr><td>Undervoltage (MSL)</td><td>2500 mV/cell</td><td>589 ms</td><td>Contactors open</td></tr>
+      <tr><td>Overcurrent discharge</td><td>15 A string</td><td>116 ms</td><td>Contactors open</td></tr>
+      <tr><td>Overtemperature</td><td>80&deg;C</td><td>5510 ms</td><td>Contactors open</td></tr>
+      <tr><td>Cell imbalance</td><td>30 mV</td><td>Detection</td><td>Balancing activated</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Contactor Control (SPS Simulation)</h3>
+    <ul>
+      <li><strong>3 channels:</strong> Negative contactor, Positive contactor, Precharge relay</li>
+      <li><strong>10ms settling delay</strong> (simulates relay mechanical delay)</li>
+      <li><strong>Welding detection:</strong> stuck-on state logged + open attempt signaled</li>
+      <li><strong>Feedback probe</strong> (0x7F0) shows state + pending transitions</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="probes">SIL Instrumentation (Probes &amp; Overrides)</h2>
+
+<div class="grid">
+  <div class="card card-purple">
+    <span class="label label-probe">Override Commands (CAN 0x7E0)</span>
+    <pre>
+Byte 0: Override ID (0x01-0x0D)
+Byte 1: Index (0-18, e.g. cell 0-17)
+Byte 2: Active (1=enable, 0=disable)
+Bytes 3-6: Value (LE int32/float32)</pre>
+    <table>
+      <tr><th>ID</th><th>Override</th></tr>
+      <tr><td>0x01</td><td>Cell voltage (mV)</td></tr>
+      <tr><td>0x02</td><td>Cell temperature (ddegC)</td></tr>
+      <tr><td>0x03</td><td>Pack current (mA)</td></tr>
+      <tr><td>0x04</td><td>SOC (%)</td></tr>
+      <tr><td>0x05</td><td>Contactor feedback (welding)</td></tr>
+      <tr><td>0x06</td><td>HV interlock</td></tr>
+      <tr><td>0x07</td><td>Pack voltage (mV)</td></tr>
+      <tr><td>0x08</td><td>Force diagnostic fault</td></tr>
+      <tr><td>0x09</td><td>Clear diagnostic fault</td></tr>
+      <tr><td>0x0A</td><td>Force contactor state</td></tr>
+      <tr><td>0x0B</td><td>IVT sensor loss</td></tr>
+      <tr><td>0x0C</td><td>Cell data invalid</td></tr>
+      <tr><td>0x0D</td><td>Force balancing state</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <span class="label label-probe">Probe Output (CAN 0x7F0&ndash;0x7FF)</span>
+    <table>
+      <tr><th>CAN ID</th><th>Content</th></tr>
+      <tr><td>0x7F0</td><td>SPS state + pending (contactor I/O)</td></tr>
+      <tr><td>0x7F1</td><td>SPS pending transitions</td></tr>
+      <tr><td>0x7F2</td><td>SOC (float32, %)</td></tr>
+      <tr><td>0x7F3</td><td>SOC integrator (float32)</td></tr>
+      <tr><td>0x7F4</td><td>Cell V summary (min, max, delta)</td></tr>
+      <tr><td>0x7F5</td><td>Pack voltage (int32, mV)</td></tr>
+      <tr><td>0x7F6</td><td>Cell T summary (min, max)</td></tr>
+      <tr><td>0x7F7</td><td>DIAG fault count + last ID</td></tr>
+      <tr><td>0x7F8</td><td>DIAG bitmap (64-bit fault mask)</td></tr>
+      <tr><td>0x7F9</td><td>BMS state (state, strings)</td></tr>
+      <tr><td>0x7FA</td><td>Pack current (int32, mA)</td></tr>
+      <tr><td>0x7FB</td><td>Timing (1ms, 10ms, 100ms max &micro;s)</td></tr>
+      <tr><td>0x7FC</td><td>Database counters (read, write)</td></tr>
+      <tr><td>0x7FF</td><td>Heartbeat (tick, uptime_ms)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="plant">Plant Model (Battery Simulator)</h2>
+
+<div class="card card-green">
+  <span class="label label-plant">plant_model.py (14,153 bytes)</span>
+  <div class="grid">
+    <div>
+      <h3>Battery Parameters</h3>
+      <table>
+        <tr><td>Cells</td><td>18 series (NMC 811)</td></tr>
+        <tr><td>Capacity</td><td>3000 mAh / cell</td></tr>
+        <tr><td>Internal R</td><td>50 m&Omega; / cell</td></tr>
+        <tr><td>OCV range</td><td>2800 mV (0%) &rarr; 4200 mV (100%)</td></tr>
+        <tr><td>Discharge</td><td>1000 mA (0.33C)</td></tr>
+        <tr><td>Charge</td><td>800 mA (0.27C)</td></tr>
+        <tr><td>Thermal mass</td><td>50 J/K per cell</td></tr>
+        <tr><td>Noise</td><td>&plusmn;3 mV Gaussian per cell</td></tr>
+        <tr><td>AFE filter</td><td>16-sample moving average</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>CAN TX (every 100ms)</h3>
+      <table>
+        <tr><th>CAN ID</th><th>Content</th></tr>
+        <tr><td>0x521</td><td>IVT Current (mA)</td></tr>
+        <tr><td>0x522-524</td><td>IVT Voltages (3-ch, mV)</td></tr>
+        <tr><td>0x527</td><td>IVT Temperature (&deg;C)</td></tr>
+        <tr><td>0x270</td><td>Cell Voltages (18 cells, 5 mux)</td></tr>
+        <tr><td>0x280</td><td>Cell Temperatures (8 sensors)</td></tr>
+        <tr><td>0x210</td><td>BMS State Request</td></tr>
+      </table>
+    </div>
+  </div>
+  <h3>Closed-Loop Features</h3>
+  <ul>
+    <li>Reads foxBMS CAN TX (0x220) to detect NORMAL state</li>
+    <li>Only discharges when state 7 (NORMAL) detected</li>
+    <li>SOC tracking: <code>SOC_new = SOC - (I_mA &times; dt_h / Q_mAh)</code></li>
+    <li>IR drop: <code>V_pack = OCV - I &times; R_total</code></li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="can">CAN Communication</h2>
+
+<div class="card card-orange">
+  <span class="label label-can">Key Messages (vcan1)</span>
+  <table>
+    <tr><th>CAN ID</th><th>Purpose</th><th>Period</th><th>Direction</th></tr>
+    <tr><td>0x210</td><td>BMS State Request</td><td>100 ms</td><td>Plant &rarr; BMS</td></tr>
+    <tr><td>0x220</td><td>BMS State + strings</td><td>100 ms</td><td>BMS &rarr; Plant</td></tr>
+    <tr><td>0x221</td><td>SYS State + flags</td><td>100 ms</td><td>BMS</td></tr>
+    <tr><td>0x231-235</td><td>SOC / SOE / pack voltage</td><td>100 ms</td><td>BMS</td></tr>
+    <tr><td>0x270</td><td>Cell voltages (AFE mux)</td><td>100 ms</td><td>Plant &rarr; BMS</td></tr>
+    <tr><td>0x280</td><td>Cell temperatures (AFE mux)</td><td>100 ms</td><td>Plant &rarr; BMS</td></tr>
+    <tr><td>0x301</td><td>Balancing activation</td><td>100 ms</td><td>BMS</td></tr>
+    <tr><td>0x521</td><td>IVT Current</td><td>100 ms</td><td>Plant &rarr; BMS</td></tr>
+    <tr><td>0x522-524</td><td>IVT Voltages (3-ch)</td><td>100 ms</td><td>Plant &rarr; BMS</td></tr>
+    <tr><td>0x527</td><td>IVT Temperature</td><td>100 ms</td><td>Plant &rarr; BMS</td></tr>
+    <tr><td><strong>0x7E0</strong></td><td>SIL Override Command</td><td>On-demand</td><td>Test &rarr; vECU</td></tr>
+    <tr><td><strong>0x7F0-7FF</strong></td><td>SIL Probe Output</td><td>1-100 ms</td><td>vECU &rarr; Test</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Big-Endian Encoding (Critical Gotcha)</h3>
+  <p>foxBMS uses non-standard big-endian bit numbering (NOT DBC positions). Verified lookup table:</p>
+  <pre>
+CAN_BIG_ENDIAN_TABLE = [
+    56,57,58,59,60,61,62,63, 48,49,50,51,52,53,54,55,
+    40,41,42,43,44,45,46,47, 32,33,34,35,36,37,38,39,
+    24,25,26,27,28,29,30,31, 16,17,18,19,20,21,22,23,
+     8, 9,10,11,12,13,14,15,  0, 1, 2, 3, 4, 5, 6, 7,
+]</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="patches">Patching Strategy (19 Patches)</h2>
+
+<div class="card">
+  <span class="label label-patch">patches/apply_all.sh</span>
+  <table>
+    <tr><th>Patch</th><th>Purpose</th></tr>
+    <tr><td>patch_all_regs.py</td><td>80+ register &rarr; RAM buffer pointers</td></tr>
+    <tr><td>patch_sbc.py / patch_sbc2.py</td><td>Force SBC to RUNNING state (enum = 2)</td></tr>
+    <tr><td>patch_rtc.py</td><td>RTC always initialized</td></tr>
+    <tr><td>patch_can_sensor.py</td><td>IVT sensor always present</td></tr>
+    <tr><td>patch_database.py</td><td>DATA_Initialize no longer waits for FreeRTOS queue</td></tr>
+    <tr><td>patch_ftask.py</td><td>osCreateTask &rarr; no-op</td></tr>
+    <tr><td>patch_diag_posix.py</td><td>DIAG_Handler: 42 HW suppressed, 43 SW retained</td></tr>
+    <tr><td>patch_diag_probe.py</td><td>Threshold counting instrumentation</td></tr>
+    <tr><td>patch_db_inject.py</td><td>Fault injection hook at database read pipeline</td></tr>
+    <tr><td>patch_battery_cfg.py</td><td>NMC 2500-4250 mV, 15A limits</td></tr>
+    <tr><td>patch_precharge.py</td><td>Timing adjustment for simulation</td></tr>
+    <tr><td>patch_canreg.py</td><td>CAN register offset fixes</td></tr>
+    <tr><td>+ 7 more</td><td>Miscellaneous register/init/timing fixes</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="build">Build System</h2>
+
+<div class="grid">
+  <div class="card">
+    <h3>Compilation</h3>
+    <ul>
+      <li><strong>Compiler:</strong> GCC 13+ (x86-64)</li>
+      <li><strong>Standard:</strong> C11</li>
+      <li><strong>Output:</strong> <code>foxbms-vecu</code> (3-5 MB)</li>
+    </ul>
+    <pre>
+-std=c11 -DFOXBMS_POSIX -DGNU_COMPILER
+-DFOXBMS_USES_FREERTOS=1
+-DFOXBMS_SIL_PROBES
+-Wall -Wextra -fcommon -g -O0
+-include posix_overrides.h</pre>
+  </div>
+  <div class="card">
+    <h3>Source Breakdown</h3>
+    <table>
+      <tr><td>POSIX layer</td><td>3 files</td></tr>
+      <tr><td>foxBMS app sources</td><td>170+ files (filtered from foxbms-2/src/app)</td></tr>
+      <tr><td>OS stub</td><td>1 file (os.c)</td></tr>
+    </table>
+    <p><strong>Excluded:</strong> AFE vendor drivers, SPI/I2C/DMA/FRAM, os_freertos.c, bootloader</p>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Build Commands</h3>
+  <pre>
+# Full setup from scratch
+./setup.sh [vcan_interface]
+# &rarr; submodule init &rarr; patch &rarr; build &rarr; vcan &rarr; smoke test
+
+# Manual build
+cd src &amp;&amp; make -j4
+
+# Docker build
+docker build -t foxbms-vecu .
+docker run --privileged --rm foxbms-vecu</pre>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="docker">Docker</h2>
+
+<div class="card">
+  <h3>Multi-Stage Dockerfile</h3>
+  <table>
+    <tr><th>Stage</th><th>Base</th><th>Steps</th></tr>
+    <tr><td><strong>Builder</strong></td><td>Ubuntu 24.04</td><td>Copy repo &rarr; apply patches &rarr; make -j$(nproc)</td></tr>
+    <tr><td><strong>Runtime</strong></td><td>Ubuntu 24.04 (slim, ~500MB)</td><td>foxbms-vecu + tests + plant + ML (optional)</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Docker Compose Services</h3>
+  <table>
+    <tr><th>Service</th><th>Purpose</th></tr>
+    <tr><td><strong>vecu</strong></td><td>foxBMS vECU + plant model (privileged for vcan)</td></tr>
+    <tr><td><strong>ml-sidecar</strong></td><td>ONNX anomaly detection (SOC, SOH, thermal)</td></tr>
+    <tr><td><strong>test</strong></td><td>Smoke test runner</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="test">Testing Infrastructure</h2>
+
+<div class="card card-purple">
+  <span class="label label-test">20+ Test Modules</span>
+  <table>
+    <tr><th>Test</th><th>Criteria</th><th>Status</th></tr>
+    <tr><td><strong>test_smoke.py</strong></td><td>BMS reaches NORMAL</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_integration.py</strong></td><td>21 integration criteria</td><td style="color:var(--green)">20/21 PASS</td></tr>
+    <tr><td><strong>test_asil.py</strong></td><td>50 ASIL safety criteria</td><td style="color:var(--green)">50/50 PASS</td></tr>
+    <tr><td><strong>test_sil_probes.py</strong></td><td>76 SIL probe criteria</td><td style="color:var(--green)">76/76 PASS</td></tr>
+    <tr><td><strong>test_fault_injection.py</strong></td><td>2,005 ASIL-D scenarios</td><td style="color:var(--green)">29/31 PASS</td></tr>
+    <tr><td><strong>test_can_signals.py</strong></td><td>CAN message DBC compliance</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_state_machine.py</strong></td><td>49 state transitions</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_safety_validation.py</strong></td><td>1000+ SWE.5/SWE.6 criteria</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_diag_verification.py</strong></td><td>DIAG code assignment</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_bms_states.py</strong></td><td>BMS state sequencing</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_cell_plausibility.py</strong></td><td>Cell voltage/temp range</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_contactor_safety.py</strong></td><td>Contactor response time</td><td style="color:var(--green)">PASS</td></tr>
+    <tr><td><strong>test_soc_estimation.py</strong></td><td>SOC counting accuracy</td><td style="color:var(--green)">PASS</td></tr>
+  </table>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>Fault Injection Framework (<code>fi/</code>)</h3>
+    <ul>
+      <li><strong>can_bus.py:</strong> SocketCAN abstraction</li>
+      <li><strong>injector.py:</strong> Fault injection engine</li>
+      <li><strong>vecu_manager.py:</strong> vECU process lifecycle</li>
+      <li><strong>probe_monitor.py:</strong> Real-time SIL probe capture</li>
+      <li><strong>report.py:</strong> ASPICE audit report generation</li>
+      <li><strong>17 test runners:</strong> test_combo &rarr; test_warning</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Fault Methods</h3>
+    <table>
+      <tr><td>STEP_TO_VALUE</td><td>Immediate override</td></tr>
+      <tr><td>RAMP_UP / RAMP_DOWN</td><td>Slow change over 10s</td></tr>
+      <tr><td>OSCILLATE</td><td>Oscillate around boundary</td></tr>
+      <tr><td>STEP_RELEASE</td><td>Inject then release after N sec</td></tr>
+      <tr><td>PULSE</td><td>Inject for 100ms then release</td></tr>
+    </table>
+    <p><strong>CSV matrix:</strong> 2,005 test cases (VOLT, TEMP, CURR, etc.)</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="web">Web Dashboard</h2>
+
+<div class="card">
+  <span class="label label-arch">web/server.py &mdash; aiohttp WebSocket</span>
+  <p>Live at <code>https://sil.taktflow-systems.com/bms/</code></p>
+  <div class="grid">
+    <div>
+      <h3>Live Telemetry (10 Hz)</h3>
+      <ul>
+        <li>BMS state + substates</li>
+        <li>Pack voltage, current, SOC</li>
+        <li>18 cell voltages</li>
+        <li>8 cell temperatures</li>
+        <li>Contactor state + requested</li>
+        <li>Diagnostic bitmap (64-bit)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Features</h3>
+      <ul>
+        <li><strong>Fault injection controls:</strong> Plant override (SWE.6) + BMS override (SWE.5)</li>
+        <li><strong>Plant physics:</strong> OCV curve, IR drop, discharge/charge toggle</li>
+        <li><strong>Event log:</strong> State transitions, fault timestamps, DIAG chain</li>
+        <li><strong>State history graph:</strong> BMS state, SOC, contactor time-series</li>
+        <li><strong>CAN monitor:</strong> Live traffic, color-coded by type</li>
+        <li><strong>ML predictions:</strong> SOC, SOH, thermal risk, anomaly, RUL</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="ml">ML Sidecar</h2>
+
+<div class="card card-blue">
+  <span class="label label-ml">ml_sidecar.py (31,380 bytes) &mdash; ONNX + scikit-learn</span>
+  <table>
+    <tr><th>Model</th><th>Input</th><th>Output</th><th>CAN ID</th></tr>
+    <tr><td><strong>SOC LSTM</strong></td><td>60-step [V, I, T_avg, T_max, vel]</td><td>SOC % (1.83% RMSE)</td><td>0x700</td></tr>
+    <tr><td><strong>SOH Transformer</strong></td><td>10-step [V, I, T, cap, R, cycle, ...]</td><td>SOH % (9.79% RMSE)</td><td>0x701</td></tr>
+    <tr><td><strong>Thermal CNN</strong></td><td>30-step [T_avg, T_max, dT/dt, I]</td><td>Risk 0-1000</td><td>0x702</td></tr>
+    <tr><td><strong>Imbalance CNN</strong></td><td>Cell voltage spread</td><td>Score</td><td>0x703</td></tr>
+    <tr><td><strong>IsolationForest</strong></td><td>10-sample rolling telemetry</td><td>Anomaly 0-1 (thr 0.7)</td><td>0x705</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="discoveries">Critical Discoveries</h2>
+
+<div class="card card-orange">
+  <span class="label label-discovery">6 Key Findings (from STATUS.md)</span>
+  <table>
+    <tr><th>#</th><th>Discovery</th><th>Impact</th></tr>
+    <tr><td>1</td><td><code>DECAN_DATA_IS_VALID = 1</code> (not 0)</td><td>"1" means VALID &mdash; counterintuitive flag inversion</td></tr>
+    <tr><td>2</td><td><code>SBC_STATEMACHINE_RUNNING = 2</code> (not 3)</td><td>Enum mismatch caused system timeout during init</td></tr>
+    <tr><td>3</td><td>18 cells per module (<code>BS_NR_OF_CELL_BLOCKS_PER_MODULE=18</code>)</td><td>Configuration critical for plant model alignment</td></tr>
+    <tr><td>4</td><td>IVT Voltage 3: <code>highVoltage_mV[s][2]</code>, not <code>[s][0]</code></td><td>Redundancy module reads wrong index without this</td></tr>
+    <tr><td>5</td><td>AFE runs in separate FreeRTOS task</td><td>Must call <code>MEAS_Control()</code> explicitly in main loop</td></tr>
+    <tr><td>6</td><td>FreeRTOS POSIX port is cooperative-only</td><td>No preemption on Linux &mdash; all scheduling manual</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="docs">Documentation (ASPICE CL2 + ISO 26262)</h2>
+
+<div class="card">
+  <table>
+    <tr><th>Process</th><th>Content</th></tr>
+    <tr><td>MAN.3</td><td>Project plan, WBS, schedule, risk register</td></tr>
+    <tr><td>SYS.1</td><td>12 stakeholder requirement IDs</td></tr>
+    <tr><td>SYS.2</td><td>40+ system requirements</td></tr>
+    <tr><td>SYS.3</td><td>Block diagrams, interfaces, HARA (12 hazards), FTTI</td></tr>
+    <tr><td>SYS.4-5</td><td>HIL test spec, system qualification</td></tr>
+    <tr><td>SWE.1</td><td>60+ SW-REQ IDs</td></tr>
+    <tr><td>SWE.2</td><td>Module hierarchy, data flow, safety mechanisms</td></tr>
+    <tr><td>SWE.3</td><td>POSIX layer design, main loop pseudocode</td></tr>
+    <tr><td>SWE.4</td><td>Unit test coverage, MISRA-C:2012 (14 documented deviations)</td></tr>
+    <tr><td>SWE.5</td><td>Integration criteria, SIL probe validation</td></tr>
+    <tr><td>SWE.6</td><td>Fault injection results, ASIL-D verdicts</td></tr>
+    <tr><td>SUP.1</td><td>QA plan, review procedures</td></tr>
+    <tr><td>SUP.8-10</td><td>CM plan, problem resolution, change management</td></tr>
+  </table>
+  <p><strong>Traceability:</strong> 415 IDs, 1,953 links, 0 orphans. Validated by <code>scripts/trace-gen.py</code>.</p>
+</div>
+
+<div class="card">
+  <h3>Known Limitations</h3>
+  <table>
+    <tr><th>Gap</th><th>Description</th><th>Mitigation</th></tr>
+    <tr><td>GA-02</td><td>No E2E protection</td><td>SIL scope, not production</td></tr>
+    <tr><td>GA-08</td><td>vcan only, no real CAN</td><td>Virtual CAN sufficient for SIL</td></tr>
+    <tr><td>GA-26</td><td>Signal loss timeout</td><td>Requires plant pause capability</td></tr>
+    <tr><td>GA-33</td><td>14 MISRA deviations</td><td>Documented with rationale (DEV-SIL-*)</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Performance</h3>
+  <table>
+    <tr><td>CPU</td><td>15-20% (1 core at 2.4 GHz)</td></tr>
+    <tr><td>Memory</td><td>50-80 MB</td></tr>
+    <tr><td>CAN frames/sec</td><td>~300 (200 BMS TX + 100 plant RX)</td></tr>
+    <tr><td>Timing jitter</td><td>&plusmn;100 &micro;s (1ms cycle)</td></tr>
+    <tr><td>Latency</td><td>~10 ms (CAN RX to contactor close)</td></tr>
+  </table>
+</div>
+
+</body>
+</html>
