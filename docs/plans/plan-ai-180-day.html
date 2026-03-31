@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>180-Day AI/ML Roadmap — foxBMS POSIX vECU</title>
+<style>
+  :root {
+    --primary: #0d2137;
+    --primary-light: #1a4a7a;
+    --accent: #10b981;
+    --accent-soft: #d1fae5;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+    --phase1: #3b82f6;
+    --phase2: #8b5cf6;
+    --phase3: #f59e0b;
+    --phase4: #ef4444;
+    --phase5: #06b6d4;
+    --phase6: #10b981;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --critical: #ef4444;
+    --high: #f97316;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  /* ─── Sidebar ─── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 240px;
+    height: 100vh;
+    background: var(--primary);
+    color: white;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 1.25rem 0;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
+  }
+  .sidebar-title {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.45);
+    padding: 0 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1.25rem;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 0.82rem;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar a:hover { background: rgba(255,255,255,0.08); color: white; }
+  .sidebar a.active {
+    background: rgba(255,255,255,0.12);
+    color: white;
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .sidebar .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sidebar .nav-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar .nav-section:first-child { margin-top: 0; border-top: none; }
+  .sidebar .nav-sub {
+    padding-left: 2.75rem;
+    font-size: 0.76rem;
+    color: rgba(255,255,255,0.5);
+  }
+  .sidebar .nav-sub:hover { color: rgba(255,255,255,0.85); }
+
+  .hero { margin-left: 240px; }
+  .main-wrap { margin-left: 240px; }
+
+  .sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 0.75rem; left: 0.75rem;
+    z-index: 200;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 40px; height: 40px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); transition: transform 0.25s; }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
+    .hero, .main-wrap, .footer { margin-left: 0; }
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #0d2137 0%, #1e3a5f 50%, #2563eb 100%);
+    color: white;
+    padding: 3rem 2rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; }
+  .hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+  .hero .subtitle { font-size: 1.1rem; opacity: 0.85; margin-bottom: 0.75rem; }
+  .hero .date-line { font-size: 0.85rem; opacity: 0.7; }
+
+  .status-badge {
+    display: inline-block;
+    background: rgba(245,158,11,0.2);
+    border: 1px solid rgba(245,158,11,0.4);
+    color: #fbbf24;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .engagement-ctx {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 1.5rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .engagement-ctx strong { color: #93c5fd; }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  .hero-stat {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 0.85rem;
+    text-align: center;
+  }
+  .hero-stat .num { font-size: 1.5rem; font-weight: 700; }
+  .hero-stat .lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.7; }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Section */
+  .section-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  /* Summary table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.88rem;
+  }
+  thead th {
+    background: var(--primary);
+    color: white;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  thead th:first-child { border-radius: 6px 0 0 0; }
+  thead th:last-child { border-radius: 0 6px 0 0; }
+  tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #f1f5f9; }
+
+  /* Gap cards */
+  .gap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+  }
+  .gap-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .gap-sev {
+    flex-shrink: 0;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .gap-sev.critical { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .gap-sev.high { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+  .gap-card .gap-id { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); }
+  .gap-card p { font-size: 0.85rem; margin-top: 0.25rem; }
+
+  /* Phase blocks */
+  .phase {
+    margin-bottom: 0;
+    padding: 2rem 0 2.5rem;
+    border-top: 4px solid var(--border);
+    position: relative;
+  }
+  .phase[data-phase="0"]::before { content:''; position:absolute; top:0; left:-1.5rem; right:-1.5rem; height:4px; background:#475569; }
+  .phase[data-phase="1"]::before { content:''; position:absolute; top:0; left:-1.5rem; right:-1.5rem; height:4px; background:var(--phase1); }
+  .phase[data-phase="2"]::before { content:''; position:absolute; top:0; left:-1.5rem; right:-1.5rem; height:4px; background:var(--phase2); }
+  .phase[data-phase="3"]::before { content:''; position:absolute; top:0; left:-1.5rem; right:-1.5rem; height:4px; background:var(--phase3); }
+  .phase[data-phase="4"]::before { content:''; position:absolute; top:0; left:-1.5rem; right:-1.5rem; height:4px; background:var(--phase4); }
+  .phase[data-phase="5"]::before { content:''; position:absolute; top:0; left:-1.5rem; right:-1.5rem; height:4px; background:var(--phase5); }
+  .phase[data-phase="6"]::before { content:''; position:absolute; top:0; left:-1.5rem; right:-1.5rem; height:4px; background:var(--phase6); }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .phase-header h2 { font-size: 1.3rem; font-weight: 700; }
+  .phase-header .days { font-size: 0.85rem; color: var(--text-muted); margin-left: auto; }
+  .phase-goal {
+    font-style: italic;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    padding-left: 3rem;
+    font-size: 0.9rem;
+  }
+
+  /* Milestone timeline */
+  .milestones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+  .milestone {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 0.65rem 1rem;
+    flex: 1;
+    min-width: 200px;
+  }
+  .milestone .m-id {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+  .milestone .m-day {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+  }
+  .milestone p { font-size: 0.85rem; margin-top: 0.25rem; }
+
+  /* Week blocks */
+  .week {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .week-header {
+    background: var(--code-bg);
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .week-num {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    color: white;
+  }
+  .week-header h3 { font-size: 0.95rem; font-weight: 600; }
+  .week-header .wdays { margin-left: auto; font-size: 0.8rem; color: var(--text-muted); }
+  .week-body { padding: 1.25rem; }
+  .week-body h4 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 1.25rem 0 0.5rem;
+  }
+  .week-body h4:first-child { margin-top: 0; }
+
+  /* Day items */
+  .day-item {
+    border-left: 3px solid var(--border);
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+  }
+  .day-item h5 {
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .day-item p, .day-item li { font-size: 0.88rem; }
+  .day-item ul, .day-item ol { padding-left: 1.25rem; margin: 0.35rem 0; }
+  .day-item li { margin-bottom: 0.2rem; }
+
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.83em;
+    background: var(--code-bg);
+    padding: 0.15rem 0.35rem;
+    border-radius: 3px;
+  }
+
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0.75rem 0;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  .cmt { color: #64748b; }
+
+  /* Deliverable / Acceptance */
+  .deliverable {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.88rem;
+  }
+  .deliverable strong { color: #16a34a; }
+
+  .gate-box {
+    background: #fefce8;
+    border: 1px solid #fef08a;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.88rem;
+  }
+  .gate-box strong { color: #ca8a04; }
+
+  /* Exit criteria */
+  .exit-criteria {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1.5rem 0;
+  }
+  .exit-criteria h4 {
+    color: var(--accent);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.75rem;
+  }
+  .exit-criteria ul { padding-left: 1.25rem; }
+  .exit-criteria li { font-size: 0.88rem; margin-bottom: 0.3rem; }
+
+  /* Risk badges */
+  .risk-high { color: #dc2626; font-weight: 600; }
+  .risk-medium { color: #d97706; font-weight: 600; }
+  .risk-low { color: #16a34a; font-weight: 600; }
+
+  /* Timeline bar */
+  .timeline-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 1.5rem 0 0.75rem;
+  }
+  .timeline-bar div { height: 100%; }
+  .tl-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+  .tl-legend span::before {
+    content: '';
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  /* Summary cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .kpi-card .kpi-val { font-size: 1.6rem; font-weight: 700; color: var(--primary-light); }
+  .kpi-card .kpi-lbl { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ASPICE badge */
+  .aspice-tag {
+    display: inline-block;
+    background: #ede9fe;
+    color: #7c3aed;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+    margin-left: 240px;
+  }
+
+  @media print {
+    body { font-size: 11pt; }
+    .hero { padding: 1.5rem; }
+    .week { break-inside: avoid; }
+    pre { font-size: 8pt; }
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 1.4rem; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .milestones { flex-direction: column; }
+    .gap-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-title">Navigation</div>
+
+  <div class="nav-section">
+    <a href="#top"><span class="nav-dot" style="background:var(--accent)"></span>Overview</a>
+    <a href="#platform-sec"><span class="nav-dot" style="background:var(--accent)"></span>Platform Status</a>
+    <a href="#models-sec"><span class="nav-dot" style="background:var(--accent)"></span>ML Models (5)</a>
+    <a href="#can-sec"><span class="nav-dot" style="background:var(--accent)"></span>CAN Interface</a>
+    <a href="#safety-sec"><span class="nav-dot" style="background:#7c3aed"></span>Safety &amp; ASPICE</a>
+    <a href="#plant-sec"><span class="nav-dot" style="background:var(--accent)"></span>Plant Model</a>
+    <a href="#gaps-sec"><span class="nav-dot" style="background:var(--critical)"></span>Gaps (12)</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="sidebar-title">Phases</div>
+    <a href="#phase-0"><span class="nav-dot" style="background:#475569"></span>Day 0 &mdash; Pre-Flight</a>
+
+    <a href="#phase-1"><span class="nav-dot" style="background:var(--phase1)"></span>Phase 1 &mdash; Data + Baseline</a>
+    <a href="#phase-1" class="nav-sub">W1: Data Collection</a>
+    <a href="#phase-1" class="nav-sub">W2: Normalization + Thermal</a>
+    <a href="#phase-1" class="nav-sub">W3: Baseline Measurement</a>
+    <a href="#phase-1" class="nav-sub">W4: CI Gates + Close</a>
+
+    <a href="#phase-2"><span class="nav-dot" style="background:var(--phase2)"></span>Phase 2 &mdash; Accuracy</a>
+    <a href="#phase-2" class="nav-sub">W5: SOC LSTM Gap Closure</a>
+    <a href="#phase-2" class="nav-sub">W6: Anomaly + Thermal</a>
+    <a href="#phase-2" class="nav-sub">W7: SOH + RUL</a>
+    <a href="#phase-2" class="nav-sub">W8: Close + ASPICE</a>
+
+    <a href="#phase-3"><span class="nav-dot" style="background:var(--phase3)"></span>Phase 3 &mdash; Hardening</a>
+    <a href="#phase-4"><span class="nav-dot" style="background:var(--phase4)"></span>Phase 4 &mdash; Customer</a>
+    <a href="#phase-5"><span class="nav-dot" style="background:var(--phase5)"></span>Phase 5 &mdash; Advanced</a>
+    <a href="#phase-6"><span class="nav-dot" style="background:var(--phase6)"></span>Phase 6 &mdash; Business</a>
+  </div>
+
+  <div class="nav-section">
+    <div class="sidebar-title">Reference</div>
+    <a href="#aspice-sec"><span class="nav-dot" style="background:#7c3aed"></span>ASPICE Coverage</a>
+    <a href="#reqs-sec"><span class="nav-dot" style="background:#7c3aed"></span>SW Requirements</a>
+    <a href="#risk-sec"><span class="nav-dot" style="background:#64748b"></span>Risk Register</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════ HERO ═══════════════════════════════════════════ -->
+<header class="hero" id="top">
+  <div class="hero-content">
+    <h1>180-Day AI/ML Roadmap <span class="status-badge">Draft</span></h1>
+    <p class="subtitle">foxBMS POSIX vECU &mdash; ML Pipeline Validation &amp; Production Hardening</p>
+    <p class="date-line">2026-03-27 &rarr; 2026-09-23 &bull; Phase 1 (Day 1&ndash;30) detailed &bull; Phase 2 (Day 31&ndash;60) detailed &bull; Phases 3&ndash;6 outlined</p>
+
+    <div class="engagement-ctx">
+      <strong>Engagement context:</strong> This roadmap runs in parallel with the Munich Electrification Senior Testing Engineer engagement (70 EUR/hr, 180 days). The ME engagement focuses on XIL framework testing, ISO 26262 Part 6 certification, and ISO 21434 cybersecurity &mdash; see <code>mebms-classic/docs/plans/engagement-180d.md</code>. This foxBMS ML roadmap provides the <strong>AI/data validation layer</strong> that feeds into the ME test evidence pipeline (anomaly detection, SOC accuracy, predictive diagnostics).
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num">5</div>
+        <div class="lbl">ML Models</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">12</div>
+        <div class="lbl">Known Gaps</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">6</div>
+        <div class="lbl">Phases</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">10</div>
+        <div class="lbl">SW-REQ-ML</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">0</div>
+        <div class="lbl">Validated Models</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container main-wrap">
+
+<!-- ═══════════════════════════════ EXECUTIVE SUMMARY ═══════════════════════════════ -->
+<p class="section-title" id="summary-sec">Executive Summary</p>
+<p style="font-size:0.92rem;margin-bottom:1rem;">Six months from today the foxBMS POSIX ML pipeline should be: <strong>Validated</strong> (every model measured on real foxBMS data), <strong>Monitored</strong> (drift detection + CI accuracy gates), <strong>Customer-deliverable</strong> (offline audit pipeline, DBC-driven bench sidecar), and <strong>Architecturally improved</strong> (LSTM-Autoencoder temporal detection, PSI drift monitoring).</p>
+
+<!-- Phase timeline -->
+<div class="timeline-bar">
+  <div style="width:16.7%;background:var(--phase1)" title="Phase 1"></div>
+  <div style="width:16.7%;background:var(--phase2)" title="Phase 2"></div>
+  <div style="width:16.7%;background:var(--phase3)" title="Phase 3"></div>
+  <div style="width:16.7%;background:var(--phase4)" title="Phase 4"></div>
+  <div style="width:16.6%;background:var(--phase5)" title="Phase 5"></div>
+  <div style="width:16.6%;background:var(--phase6)" title="Phase 6"></div>
+</div>
+
+<table>
+  <thead><tr><th>Phase</th><th>Days</th><th>Theme</th><th>Key Deliverable</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Phase 1</strong></td><td>1&ndash;30</td><td>Data infrastructure + baseline metrics</td><td>Measured accuracy on all datasets; automated data pipeline</td><td>Detailed</td></tr>
+    <tr><td><strong>Phase 2</strong></td><td>31&ndash;60</td><td>Model accuracy improvements</td><td>P0/P1 gaps closed; validated accuracy numbers citable</td><td>Detailed</td></tr>
+    <tr><td><strong>Phase 3</strong></td><td>61&ndash;90</td><td>Production hardening</td><td>Drift monitoring; CI gates; systemd stability</td><td>Outlined</td></tr>
+    <tr><td><strong>Phase 4</strong></td><td>91&ndash;120</td><td>Customer pipeline</td><td><code>run_audit.py</code>; DBC-driven sidecar; report generator</td><td>Outlined</td></tr>
+    <tr><td><strong>Phase 5</strong></td><td>121&ndash;150</td><td>Advanced models</td><td>LSTM-Autoencoder; hybrid digital twin prototype</td><td>Outlined</td></tr>
+    <tr><td><strong>Phase 6</strong></td><td>151&ndash;180</td><td>Business delivery</td><td>Demo package; Tier 0 customer engagement; Tier 1 pilot</td><td>Outlined</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ PLATFORM STATUS ═══════════════════════════════ -->
+<p class="section-title" style="margin-top:2rem;" id="platform-sec">Platform Status &mdash; foxBMS POSIX vECU</p>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-val">98%</div><div class="kpi-lbl">Project Complete (113/115)</div></div>
+  <div class="kpi-card"><div class="kpi-val">183</div><div class="kpi-lbl">Unit Tests (100% pass)</div></div>
+  <div class="kpi-card"><div class="kpi-val">45</div><div class="kpi-lbl">Integration Tests</div></div>
+  <div class="kpi-card"><div class="kpi-val">415</div><div class="kpi-lbl">Traced Requirements</div></div>
+  <div class="kpi-card"><div class="kpi-val">34</div><div class="kpi-lbl">FTTI Verdicts (all ADEQUATE)</div></div>
+</div>
+
+<!-- ML Models Detail -->
+<p class="section-title" style="margin-top:2rem;" id="models-sec">Deployed ML Models (5)</p>
+<table>
+  <thead><tr><th>Model</th><th>Architecture</th><th>Input</th><th>CAN Out</th><th>Accuracy</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><strong>SOC LSTM</strong></td><td>BiLSTM 128&rarr;64</td><td><code>(1, 60, 5)</code></td><td>0x700</td><td>1.83% RMSE (BMW i3) / <span style="color:var(--critical);font-weight:600;">20% gap on SIL</span></td><td>Running</td></tr>
+    <tr><td><strong>SOH Transformer</strong></td><td>Transformer encoder</td><td><code>(1, 10, 12)</code></td><td>0x701</td><td>9.79% RMSE (LiionPro-DT benchmark)</td><td style="color:var(--warning);">Not Operational</td></tr>
+    <tr><td><strong>Thermal CNN</strong></td><td>1D-CNN 30-step</td><td><code>(1, 30, 4)</code></td><td>0x702</td><td>F1=1.000 (NREL) / <span style="color:var(--critical);">dT/dt=0.0</span></td><td style="color:var(--warning);">Broken Input</td></tr>
+    <tr><td><strong>IsolationForest</strong></td><td>scikit-learn (100 trees)</td><td><code>(1, 5)</code></td><td>0x705</td><td>78% TPR / <span style="color:var(--critical);">0.36 normal score</span></td><td>Running (high FPR)</td></tr>
+    <tr><td><strong>Cell Imbalance</strong></td><td>Direct computation</td><td>18 cell V</td><td>0x703</td><td>14 mV observed (correct)</td><td style="color:var(--success);">Healthy</td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.5rem;"><strong>Features (SOC):</strong> <code>[cell_V, pack_I_A, T_avg, T_max, velocity_kmh]</code> &mdash; per-cell normalization makes models topology-independent (18S SIL, 44S FOBSS, 96S BMW i3 &rarr; same input range). <strong>Inference:</strong> 1 Hz, &lt;15 ms latency on Netcup VPS. <strong>Dashboard:</strong> Live at sil.taktflow-systems.com/bms/ with 6 ML gauges, CAN monitor, fault injection controls.</p>
+
+<!-- CAN Interface -->
+<p class="section-title" style="margin-top:2rem;" id="can-sec">CAN Interface Map</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+  <div>
+    <h4 style="font-size:0.82rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem;">Input (Subscribed)</h4>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>CAN ID</th><th>Message</th><th>Encoding</th></tr></thead>
+      <tbody>
+        <tr><td><code>0x220</code></td><td>BMS State</td><td>BE</td></tr>
+        <tr><td><code>0x270</code></td><td>Cell Voltages (muxed, 18 cells)</td><td>BE (foxBMS table)</td></tr>
+        <tr><td><code>0x280</code></td><td>Cell Temperatures (8 sensors)</td><td>BE</td></tr>
+        <tr><td><code>0x521</code></td><td>IVT Current (pack mA)</td><td>BE</td></tr>
+        <tr><td><code>0x7F2</code></td><td>SIL SOC (BMS coulomb-count)</td><td>LE</td></tr>
+        <tr><td><code>0x7F4</code></td><td>SIL Cell V stats (min/max/delta)</td><td>LE</td></tr>
+        <tr><td><code>0x7F6</code></td><td>SIL Cell T stats (min/max)</td><td>LE</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h4 style="font-size:0.82rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem;">Output (Published by ML Sidecar)</h4>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>CAN ID</th><th>Message</th><th>Scale</th></tr></thead>
+      <tbody>
+        <tr><td><code>0x700</code></td><td>ML SOC prediction</td><td>&times;100 (0.01%)</td></tr>
+        <tr><td><code>0x701</code></td><td>ML SOH estimate</td><td>&times;100</td></tr>
+        <tr><td><code>0x702</code></td><td>Thermal risk score</td><td>&times;1000</td></tr>
+        <tr><td><code>0x703</code></td><td>Cell imbalance spread</td><td>mV integer</td></tr>
+        <tr><td><code>0x704</code></td><td>RUL estimate</td><td style="color:var(--warning);">NOT PUBLISHED</td></tr>
+        <tr><td><code>0x705</code></td><td>Anomaly score</td><td>&times;1000</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Safety & ASPICE Evidence -->
+<p class="section-title" style="margin-top:2rem;" id="safety-sec">Safety &amp; ASPICE Evidence</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+  <div>
+    <h4 style="font-size:0.82rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem;">ISO 26262 Safety Documentation</h4>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>Part</th><th>Document</th><th>Key Data</th></tr></thead>
+      <tbody>
+        <tr><td>Part 3</td><td>HARA</td><td>12 hazards analyzed</td></tr>
+        <tr><td>Part 4</td><td>FSC + TSC + TSR</td><td>5 safety goals (SG-001&ndash;005)</td></tr>
+        <tr><td>Part 5</td><td>FMEA + HW/SW Interface</td><td>Cell/contactor/AFE/IVT modes</td></tr>
+        <tr><td>Part 6</td><td>FTTI Calculations</td><td>34 verdicts, all ADEQUATE</td></tr>
+        <tr><td>Part 6</td><td>Safety Requirements</td><td>30 SSRs (10 detect + 5 react + 4 diag + 3 comm + 3 contactor)</td></tr>
+        <tr><td>Part 8</td><td>Traceability</td><td>1,953 links, 0 orphans</td></tr>
+        <tr><td>Part 9</td><td>ASIL Decomposition</td><td>D&rarr;C+A patterns</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.5rem;"><strong>ASIL ratings:</strong> SG-01 OV: ASIL D, SG-02 OC: ASIL D, SG-03 OT: ASIL C, SG-04 Contactor: ASIL C, SG-05 IVT: ASIL B</p>
+  </div>
+  <div>
+    <h4 style="font-size:0.82rem;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem;">ASPICE CL2 Assessment</h4>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>Process</th><th>ID</th><th>Documents</th></tr></thead>
+      <tbody>
+        <tr><td>Project management</td><td>MAN.3</td><td>Project plan + ADR log</td></tr>
+        <tr><td>Stakeholder req</td><td>SYS.1</td><td>1 spec</td></tr>
+        <tr><td>System architecture</td><td>SYS.3</td><td>3 docs + audit</td></tr>
+        <tr><td>HIL test</td><td>SYS.4</td><td>5 specs</td></tr>
+        <tr><td>SW requirements</td><td>SWE.1</td><td>1 spec (+ ML Section 11 planned)</td></tr>
+        <tr><td>SW architecture</td><td>SWE.2</td><td>1 spec</td></tr>
+        <tr><td>Unit verification</td><td>SWE.4</td><td>183 tests, 100% pass</td></tr>
+        <tr><td>Integration test</td><td>SWE.5</td><td>3 results + traceability</td></tr>
+        <tr><td>Qualification test</td><td>SWE.6</td><td>2 specs + results</td></tr>
+        <tr><td>QA + CM + PR + CR</td><td>SUP.1/8/9/10</td><td>4 process docs</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.5rem;"><strong>Total:</strong> 38 ASPICE documents, 415 requirement IDs traced, 100% bidirectional coverage</p>
+  </div>
+</div>
+
+<!-- Plant Model Detail -->
+<p class="section-title" style="margin-top:2rem;" id="plant-sec">Plant Model &mdash; Battery Simulation</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+  <div>
+    <table style="font-size:0.85rem;">
+      <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Cells in series</td><td>18 NMC</td></tr>
+        <tr><td>Cell capacity</td><td>3,000 mAh</td></tr>
+        <tr><td>Voltage range</td><td>2,800&ndash;4,200 mV/cell</td></tr>
+        <tr><td>Internal resistance</td><td>50 m&Omega;/cell (900 m&Omega; string)</td></tr>
+        <tr><td>Thermal mass</td><td>50 J/K per cell</td></tr>
+        <tr><td>Cooling</td><td>0.5 W/K natural convection</td></tr>
+        <tr><td>OCV table</td><td>16-point NMC 811 S-curve</td></tr>
+        <tr><td>CAN cycle</td><td>100 ms</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table style="font-size:0.85rem;">
+      <thead><tr><th>Feature</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>I&sup2;R self-heating</td><td>Per-cell with position-dependent gradient</td></tr>
+        <tr><td>AFE averaging</td><td>16-sample moving average (ADI ADES1830 emulation)</td></tr>
+        <tr><td>Contactor model</td><td>3 contactors (main+/&minus;, precharge) with wire animation</td></tr>
+        <tr><td>Fault injection</td><td>0x6E0 plant override (OV, OC, OT, CMB loss, weld)</td></tr>
+        <tr><td>Big-endian encoding</td><td>foxBMS 64-bit lookup table (roundtrip-verified)</td></tr>
+        <tr><td>Deployment</td><td>Live 24/7 on VPS 152.53.245.209</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ CRITICAL GAPS ═══════════════════════════════ -->
+<p class="section-title" style="margin-top:2rem;" id="gaps-sec">Critical Gaps &mdash; 12 Documented (from ai_audit.md)</p>
+<table style="font-size:0.85rem;">
+  <thead><tr><th>Gap</th><th>Severity</th><th>Issue</th><th>Effort</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td><code>GAP-ML-011</code></td><td class="risk-high">CRITICAL</td><td>FOBSS dataset (real foxBMS 2 hardware, 128 MB, CC-BY) never downloaded</td><td>2&ndash;3 days</td><td>1</td></tr>
+    <tr><td><code>GAP-ML-001</code></td><td class="risk-high">CRITICAL</td><td>SOC LSTM: 20% error on SIL (ML=70.2% vs BMS=50%); linear OCV + estimated norm stats</td><td>2&ndash;3 days</td><td>1&ndash;2</td></tr>
+    <tr><td><code>GAP-ML-002</code></td><td class="risk-medium">HIGH</td><td>Normalization mean/std estimated from BMW i3 specs, not training data</td><td>2 hours</td><td>1</td></tr>
+    <tr><td><code>GAP-ML-003</code></td><td class="risk-medium">HIGH</td><td>IsolationForest trained on synthetic data; normal score=0.36 (should be &lt;0.1)</td><td>8 hours</td><td>2</td></tr>
+    <tr><td><code>GAP-ML-004</code></td><td class="risk-medium">HIGH</td><td>Thermal CNN dT/dt input always 0.0 &mdash; plant isothermal at 25&deg;C</td><td>1 hour</td><td>1</td></tr>
+    <tr><td><code>GAP-ML-005</code></td><td class="risk-medium">MEDIUM</td><td>SOH Transformer: no cycling history (cycle_count=0.0), no meaningful output</td><td>2&ndash;5 days</td><td>2</td></tr>
+    <tr><td><code>GAP-ML-006</code></td><td class="risk-medium">MEDIUM</td><td>RUL Transformer not deployed; 0x704 publishes nothing</td><td>1 day</td><td>2</td></tr>
+    <tr><td><code>GAP-ML-007</code></td><td class="risk-medium">MEDIUM</td><td>IsolationForest misses temporal anomalies (slow drift); LSTM-AE achieves 94% vs 78%</td><td>2 weeks</td><td>5</td></tr>
+    <tr><td><code>GAP-ML-008</code></td><td class="risk-medium">MEDIUM</td><td>No PSI drift monitoring; model accuracy silently degrades over battery lifetime</td><td>3 days</td><td>3</td></tr>
+    <tr><td><code>GAP-ML-009</code></td><td class="risk-low">LOW</td><td>No explainability for anomaly scores; CAN 0x705 is scalar only</td><td>1 week</td><td>5</td></tr>
+    <tr><td><code>GAP-ML-010</code></td><td class="risk-low">LOW</td><td>Offline audit pipeline (<code>run_audit.py</code>) not implemented; no customer PDF reports</td><td>3&ndash;5 days</td><td>4</td></tr>
+    <tr><td><code>GAP-ML-012</code></td><td class="risk-low">LOW</td><td>CI ML test non-blocking; passes even if 0x705 not captured in 8s window</td><td>30 min</td><td>1</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ DAY 0 ═══════════════════════════════ -->
+<div class="phase" id="phase-0" data-phase="0">
+  <div class="phase-header">
+    <div class="phase-badge" style="background:#475569;">0</div>
+    <h2>Pre-Flight Infrastructure Check</h2>
+    <span class="days">Before Day 1 &bull; 1&ndash;2 hrs</span>
+  </div>
+  <p class="phase-goal">Snapshot current infrastructure state. Any gap must be resolved before the clock starts.</p>
+
+  <div class="week">
+    <div class="week-header">
+      <h3>Pre-Flight Checklist</h3>
+    </div>
+    <div class="week-body">
+      <table>
+        <thead><tr><th>Check</th><th>Expected</th><th>Action if Fails</th></tr></thead>
+        <tbody>
+          <tr><td>VPS services</td><td><code>active</code> for plant</td><td>Investigate systemd; restart</td></tr>
+          <tr><td>Disk <code>/var/lib</code></td><td>&ge;500 MB free</td><td>Clean logs; request expansion</td></tr>
+          <tr><td>Python</td><td>&ge;3.10</td><td><code>apt install python3.11</code></td></tr>
+          <tr><td>ONNX Runtime</td><td>&ge;1.15</td><td><code>pip3 install onnxruntime&gt;=1.15</code></td></tr>
+          <tr><td>Models</td><td>3 <code>.onnx</code> files</td><td>Re-run deploy script</td></tr>
+          <tr><td>Feature branch</td><td>Pushed to remote</td><td><code>git checkout -b feat/ai-phase1-foundation</code></td></tr>
+        </tbody>
+      </table>
+
+      <h4>Storage Budget</h4>
+      <table>
+        <thead><tr><th>Data</th><th>Size</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td>FOBSS download</td><td>128 MB</td><td><code>taktflow-bms-ml/data/fobss/</code></td></tr>
+          <tr><td>BMW i3 raw CSVs</td><td>37 MB</td><td><code>data/bms-raw/bmw-i3-driving/</code></td></tr>
+          <tr><td>BMW i3 processed splits</td><td>~60 MB</td><td><code>data/bmw-i3-processed/</code></td></tr>
+          <tr><td>SIL telemetry/day (gz)</td><td>~5 MB</td><td>VPS: <code>/var/lib/foxbms-telemetry/</code></td></tr>
+          <tr><td>Model artifacts</td><td>~3 MB</td><td><code>models/bms/</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PHASE 1 ═══════════════════════════════ -->
+<div class="phase" id="phase-1" data-phase="1">
+  <div class="phase-header">
+    <div class="phase-badge" style="background:var(--phase1);">1</div>
+    <h2>Data Infrastructure + Baseline Metrics</h2>
+    <span class="days">Day 1&ndash;30</span>
+  </div>
+  <p class="phase-goal">Establish the measurement foundation before touching a single model weight. Phase 1 is purely measurement and infrastructure.</p>
+
+  <div class="milestones">
+    <div class="milestone"><span class="m-id">M1.1</span><span class="m-day">Day 7</span><p>Automated data capture running; data catalog populated</p></div>
+    <div class="milestone"><span class="m-id">M1.2</span><span class="m-day">Day 14</span><p>All external datasets ingested; unified feature pipeline live</p></div>
+    <div class="milestone"><span class="m-id">M1.3</span><span class="m-day">Day 21</span><p>Baseline accuracy measured for all 5 models</p></div>
+    <div class="milestone"><span class="m-id">M1.4</span><span class="m-day">Day 30</span><p>CI metrics gate operational; baseline report locked</p></div>
+  </div>
+
+  <!-- Week 1 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase1);">W1</span>
+      <h3>Data Collection Infrastructure</h3>
+      <span class="wdays">Day 1&ndash;7</span>
+    </div>
+    <div class="week-body">
+      <div class="day-item">
+        <h5>Day 1&ndash;2: Automated SIL Telemetry Capture</h5>
+        <p><code>systemd</code> service pair &mdash; continuous <code>candump</code> capture + daily rotation with metadata JSON.</p>
+        <ul>
+          <li><code>foxbms-capture.service</code> &mdash; continuous vcan1 capture</li>
+          <li><code>foxbms-rotate.timer</code> &mdash; daily 00:05 rotation + gzip + metadata</li>
+          <li><code>write_capture_metadata.py</code> &mdash; frame counts, CAN IDs, git SHA provenance</li>
+        </ul>
+        <div class="deliverable"><strong>Deliverable:</strong> Continuous, zero-touch SIL telemetry with provenance. No more manual capture.</div>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 3&ndash;4: FOBSS Dataset Ingestion <span class="aspice-tag">GAP-ML-011</span></h5>
+        <p>128 MB of real foxBMS 2 monitoring data from KIT Karlsruhe (CC-BY 4.0). The <em>only</em> public dataset sharing the same firmware.</p>
+        <ul>
+          <li>Download from KIT Radar; per-cell normalization makes topology-independent</li>
+          <li><code>scripts/ingest_fobss.py</code> &rarr; canonical <code>(N, 5)</code> feature matrix</li>
+          <li>44 cells vs 18-cell SIL &mdash; irrelevant once per-cell voltage is normalized</li>
+        </ul>
+        <div class="gate-box"><strong>Acceptance:</strong> <code>fobss_features.npz</code> shape <code>(N, 5)</code>, N &gt; 10,000, SOC range 20&ndash;80%</div>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 5&ndash;6: Unified Feature Extraction Pipeline <span class="aspice-tag">GAP-ML-002</span></h5>
+        <p>Single source of truth: <code>pipeline/feature_extractor.py</code>. Replaces 4 scattered extraction implementations.</p>
+        <ul>
+          <li>Canonical features: <code>[cell_V, pack_I_A, T_avg, T_max, velocity_kmh]</code></li>
+          <li>Per-cell normalization: foxBMS SIL (18S), FOBSS (44S), BMW i3 (96S) &rarr; same input range</li>
+          <li>All consumers import from one module &mdash; changes propagate automatically</li>
+        </ul>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 7: Data Catalog</h5>
+        <p><code>data/catalog.json</code> &mdash; machine-readable manifest for all datasets (SIL, FOBSS, BMW i3, synthetic).</p>
+      </div>
+
+      <div class="exit-criteria">
+        <h4>Week 1 Exit Criteria</h4>
+        <ul>
+          <li>Automated VPS telemetry: 24h continuous capture, auto-rotating, metadata written</li>
+          <li>FOBSS downloaded and ingested to <code>fobss_features.npz</code> (N &gt; 10,000)</li>
+          <li><code>pipeline/feature_extractor.py</code> implemented and imported by <code>ml_sidecar.py</code></li>
+          <li><code>data/catalog.json</code> populated with all three datasets</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week 2 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase1);">W2</span>
+      <h3>Normalization Infrastructure + Thermal Pipeline Fix</h3>
+      <span class="wdays">Day 8&ndash;14</span>
+    </div>
+    <div class="week-body">
+      <div class="day-item">
+        <h5>Day 8&ndash;9: Ground-Truth Normalization Stats <span class="aspice-tag">GAP-ML-002</span></h5>
+        <p>Compute from actual BMW i3 training split (trips 1&ndash;60). Replaces estimated values that caused 20% SOC bias.</p>
+        <ul>
+          <li><code>scripts/compute_norm_stats.py</code> &rarr; <code>soc_lstm_mean.npy</code>, <code>soc_lstm_std.npy</code></li>
+          <li>Normalization registry <code>data/norm_stats/registry.json</code> for provenance</li>
+        </ul>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 10&ndash;11: Fix Thermal dT/dt Pipeline <span class="aspice-tag">GAP-ML-004</span></h5>
+        <p>Two bugs: plant model isothermal (T=25&deg;C always), sidecar dT/dt = 0. Fix: add I&sup2;R self-heating model + finite difference at 1 Hz.</p>
+        <div class="gate-box"><strong>Acceptance:</strong> After 5 min discharge, thermal risk &gt; 0.001 (was 0.000). After 60&deg;C spike, risk &gt; 0.25 within 30s.</div>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 12&ndash;13: BMW i3 Dataset Standardization</h5>
+        <p>One canonical preparation script &rarr; fixed train/val/test splits with manifest. No more scattered parsers.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 14: Data Quality Gate (CI)</h5>
+        <p><code>scripts/check_data_quality.py</code> &mdash; runs in CI on every push. Verifies all data infrastructure is consistent.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week 3 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase1);">W3</span>
+      <h3>Baseline Accuracy Measurement</h3>
+      <span class="wdays">Day 15&ndash;21</span>
+    </div>
+    <div class="week-body">
+      <p style="font-style:italic;color:var(--text-muted);margin-bottom:1rem;"><strong>Rule:</strong> No model is touched this week. No retraining, no weight changes. Pure measurement. These numbers become the immutable Phase 2 baseline.</p>
+
+      <div class="day-item">
+        <h5>Day 15&ndash;16: SOC LSTM Baseline</h5>
+        <p><code>scripts/validate_soc_lstm.py</code> &mdash; RMSE, MAE, max error, bias across BMW i3 test, FOBSS, SIL 30-min.</p>
+        <table>
+          <thead><tr><th>Dataset</th><th>Expected</th><th>Gate</th><th>If Fails</th></tr></thead>
+          <tbody>
+            <tr><td>BMW i3 test split</td><td>~1.83% RMSE</td><td>&lt;3.0%</td><td>Normalization mismatch</td></tr>
+            <tr><td>FOBSS (real foxBMS)</td><td>Unknown</td><td>&lt;5.0%</td><td>Plan FOBSS fine-tune in Phase 2</td></tr>
+            <tr><td>foxBMS SIL 30-min</td><td>Unknown</td><td>&lt;10.0%</td><td>Document domain gap</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 17: IsolationForest Baseline</h5>
+        <p>Automated fault-injection: normal (300s), overvoltage, overtemperature, overcurrent. Measure score separation.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 18: Thermal CNN + SOH Transformer + Cell Imbalance</h5>
+        <p>Measure FPR, peak risk, cycle count dependency. SOH Transformer documented as NOT OPERATIONAL.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 19&ndash;20: Baseline Report Assembly</h5>
+        <p><code>docs/plans/baseline-metrics-phase1.md</code> &mdash; all Phase 1 measurements consolidated. Immutable reference for Phase 2.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week 4 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase1);">W4</span>
+      <h3>CI Metrics Gate + Phase 1 Close</h3>
+      <span class="wdays">Day 22&ndash;30</span>
+    </div>
+    <div class="week-body">
+      <div class="day-item">
+        <h5>Day 22&ndash;24: CI Accuracy Gate <span class="aspice-tag">SWE.4</span></h5>
+        <p><code>tests/test_ml_accuracy.py</code> &mdash; accuracy regression gate. Any model change that degrades below baseline causes CI failure.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 25&ndash;27: Model Registry</h5>
+        <p><code>models/registry.json</code> &mdash; version provenance for all deployed models. No more untracked SCP deploys.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 28&ndash;29: Data Pipeline Documentation</h5>
+        <ul>
+          <li><code>data-collection-guide.md</code> &mdash; how to add a new dataset</li>
+          <li><code>metrics-interpretation-guide.md</code> &mdash; how to read Phase 1 numbers</li>
+        </ul>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 30: Phase 1 Close</h5>
+        <p>Fill all baseline report fields. Derive Phase 2 priority order. Tag M1.4.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 1 Exit Criteria -->
+  <div class="exit-criteria">
+    <h4>Phase 1 Exit Criteria</h4>
+    <ul>
+      <li>Automated SIL telemetry: 24h continuous capture, auto-rotating</li>
+      <li>FOBSS ingested: <code>fobss_features.npz</code> shape <code>(N, 5)</code>, N &gt; 10,000</li>
+      <li>BMW i3 standardized: fixed train/val/test split with manifest</li>
+      <li>Normalization stats computed from actual training data, registry written</li>
+      <li>Thermal dT/dt: Thermal CNN risk &gt; 0.001 during discharge</li>
+      <li>SOC LSTM measured on BMW i3, FOBSS, and SIL &mdash; all baseline rows filled</li>
+      <li>IsolationForest: normal/fault score separation measured</li>
+      <li>CI accuracy gate: <code>pytest tests/test_ml_accuracy.py</code> passes</li>
+      <li>Model registry: all deployed models have <code>phase1_baseline_*</code> fields</li>
+      <li>Baseline report: all cells filled, PASS/FAIL complete</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PHASE 2 ═══════════════════════════════ -->
+<div class="phase" id="phase-2" data-phase="2">
+  <div class="phase-header">
+    <div class="phase-badge" style="background:var(--phase2);">2</div>
+    <h2>Model Accuracy Improvements</h2>
+    <span class="days">Day 31&ndash;60</span>
+  </div>
+  <p class="phase-goal">Close all P0 and P1 accuracy gaps. Make every accuracy number citable &mdash; backed by measured validation evidence.</p>
+
+  <div class="milestones">
+    <div class="milestone"><span class="m-id">M2.1</span><span class="m-day">Day 37</span><p>SOC LSTM: OCV fix deployed; RMSE measured on FOBSS</p></div>
+    <div class="milestone"><span class="m-id">M2.2</span><span class="m-day">Day 44</span><p>IsolationForest v2 retrained; Thermal FPR &lt; 2%</p></div>
+    <div class="milestone"><span class="m-id">M2.3</span><span class="m-day">Day 51</span><p>SOH Transformer operational; RUL CAN 0x704 publishing</p></div>
+    <div class="milestone"><span class="m-id">M2.4</span><span class="m-day">Day 60</span><p>Phase 2 accuracy report; all SW-REQ-ML gates closed</p></div>
+  </div>
+
+  <!-- Phase 2 KPI targets -->
+  <p class="section-title" style="margin-top:1.5rem;">Phase 2 Accuracy Targets</p>
+  <table>
+    <thead><tr><th>Model</th><th>Phase 1 Baseline</th><th>Phase 2 Target</th><th>Primary Method</th><th>Gate</th></tr></thead>
+    <tbody>
+      <tr><td>SOC LSTM (FOBSS)</td><td>Unknown</td><td>&le;3.0% RMSE</td><td>NMC 811 OCV + correct normalization</td><td>Hard</td></tr>
+      <tr><td>SOC LSTM (SIL bias)</td><td>+20.24%</td><td>&le;&plusmn;3.0%</td><td>OCV fix + norm stats</td><td>Hard</td></tr>
+      <tr><td>SOC LSTM (BMW i3)</td><td>~1.83%</td><td>&le;2.0% RMSE</td><td>Anti-regression gate</td><td>Hard (CI)</td></tr>
+      <tr><td>IsolationForest v2</td><td>0.36 normal score</td><td>&lt;0.15 normal, &ge;80% TPR</td><td>Retrain on real SIL baseline</td><td>Hard</td></tr>
+      <tr><td>Thermal CNN</td><td>0.000 risk (broken)</td><td>&le;2% FPR, OT &le;30s</td><td>dT/dt fix + validation</td><td>Hard</td></tr>
+      <tr><td>SOH Transformer</td><td>NOT OPERATIONAL</td><td>&le;12.0% RMSE (synthetic)</td><td>Synthetic cycle replay</td><td>Hard</td></tr>
+      <tr><td>RUL Transformer</td><td>Not deployed</td><td>CAN 0x704 publishing</td><td>Initial deployment</td><td>Hard</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Week 5 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase2);">W5</span>
+      <h3>SOC LSTM Accuracy Gap Closure</h3>
+      <span class="wdays">Day 31&ndash;37</span>
+    </div>
+    <div class="week-body">
+      <div class="day-item">
+        <h5>Day 31&ndash;32: NMC 811 OCV Table Replacement <span class="aspice-tag">SW-REQ-ML-003</span></h5>
+        <p>Replace linear OCV approximation with 21-point measured NMC 811 S-curve. Removes ~2% systematic SOC error in 30&ndash;70% plateau.</p>
+        <div class="gate-box"><strong>Gate:</strong> Monotone, round-trip error &lt;1%, plateau gradient &le;5 mV/%</div>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 33&ndash;34: Stage-by-Stage SOC Error Attribution</h5>
+        <p>Measure RMSE after OCV fix (no retraining). Decompose 20% gap into: normalization, OCV, and domain gap components.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 35&ndash;36: FOBSS Partial Fine-Tune (Conditional)</h5>
+        <p>Only if FOBSS RMSE &gt;3.0% after OCV+norm fix. Freeze encoder, unfreeze head. Anti-regression: BMW i3 RMSE must not rise &gt;0.5%.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 37: M2.1 &mdash; SOC Baseline Measurement</h5>
+        <p>Fill Phase 2 accuracy report. Update model registry v2. Tighten CI gates to Phase 2 thresholds.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week 6 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase2);">W6</span>
+      <h3>Anomaly Detection + Thermal CNN</h3>
+      <span class="wdays">Day 38&ndash;44</span>
+    </div>
+    <div class="week-body">
+      <div class="day-item">
+        <h5>Day 38&ndash;40: IsolationForest Real-Data Retrain <span class="aspice-tag">SW-REQ-ML-004</span></h5>
+        <p>Extract real SIL features from Phase 1 telemetry. Retrain with 70% real + 30% anchored synthetic. Target: normal score &lt;0.15.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 41&ndash;42: Thermal CNN + NMC 811 Thermal Validation <span class="aspice-tag">SW-REQ-ML-010</span></h5>
+        <p>Validate FPR &le;2% during normal discharge. OT fault detection &le;30s. Augment with synthetic gradual events if needed.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 43&ndash;44: M2.2 &mdash; Anomaly + Thermal Close</h5>
+        <p>Fill IsolationForest v2 and Thermal CNN rows in Phase 2 report.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week 7 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase2);">W7</span>
+      <h3>SOH Transformer + RUL Deployment</h3>
+      <span class="wdays">Day 45&ndash;51</span>
+    </div>
+    <div class="week-body">
+      <div class="day-item">
+        <h5>Day 45&ndash;48: SOH Transformer Activation <span class="aspice-tag">SW-REQ-ML-006</span></h5>
+        <p>Synthetic cycle replay: 500 cycles, 0.02%/cycle capacity fade. Target: &le;12.0% RMSE, &lt;10 inversions, physical range [65&ndash;100%].</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 49&ndash;51: RUL Transformer Initial Deployment + M2.3</h5>
+        <p>CAN 0x704 publishing after &ge;20 cycle history. MIT dataset validation deferred to Phase 5.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week 8 -->
+  <div class="week">
+    <div class="week-header">
+      <span class="week-num" style="background:var(--phase2);">W8</span>
+      <h3>Phase 2 Close + ASPICE Evidence</h3>
+      <span class="wdays">Day 52&ndash;60</span>
+    </div>
+    <div class="week-body">
+      <div class="day-item">
+        <h5>Day 52&ndash;56: Phase 2 Accuracy Report</h5>
+        <p><code>baseline-metrics-phase2.md</code> &mdash; closes SW-REQ-ML-001..010. All models measured, all gates determined.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 57&ndash;58: ASPICE Work Products Update <span class="aspice-tag">SWE.1&ndash;SWE.6</span></h5>
+        <p>Add SW-REQ-ML requirements to SWE.1. Add ML-TC-001..010 to SWE.4. Update traceability matrix.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 59: Lessons Learned</h5>
+        <p>Document SOC normalization gap and IsolationForest synthetic training pitfall.</p>
+      </div>
+
+      <div class="day-item">
+        <h5>Day 60: Phase 2 Close &mdash; M2.4</h5>
+        <p>All gates closed. PR merged to main. Tag M2.4.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 2 Exit Criteria -->
+  <div class="exit-criteria">
+    <h4>Phase 2 Exit Criteria</h4>
+    <ul>
+      <li>SOC LSTM FOBSS: &le;3.0% RMSE, &le;2.0% MAE</li>
+      <li>SOC LSTM SIL bias: &le;&plusmn;3.0% (was +20.24%)</li>
+      <li>SOC LSTM BMW i3: &le;2.0% RMSE (not regressed)</li>
+      <li>IsolationForest v2: normal mean &lt;0.15, fault TPR &ge;80%</li>
+      <li>Thermal CNN: FPR &le;2%, OT detection &le;30s</li>
+      <li>SOH Transformer: &le;12.0% RMSE on synthetic 500 cycles</li>
+      <li>RUL Transformer: CAN 0x704 publishing after &ge;20 cycles</li>
+      <li>NMC 811 OCV table: 21-point, monotone, round-trip &lt;1%</li>
+      <li>SW-REQ-ML-001..010: all PASS in traceability matrix</li>
+      <li>Phase 2 accuracy report: published, all cells filled</li>
+      <li>Lessons learned: committed</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PHASES 3-6 OUTLINE ═══════════════════════════════ -->
+<div class="phase" id="phase-3" data-phase="3">
+  <div class="phase-header">
+    <div class="phase-badge" style="background:var(--phase3);">3</div>
+    <h2>Production Hardening</h2>
+    <span class="days">Day 61&ndash;90</span>
+  </div>
+  <p class="phase-goal">SIL validation framework, CAN interface hardening, monitoring dashboard, drift monitoring + CI gates.</p>
+
+  <div class="week">
+    <div class="week-body">
+      <p style="font-size:0.9rem;color:var(--text-muted);font-style:italic;">Detailed daily tasks in <code>day61-90-daily-tasks.md</code> &mdash; 30 days, 4 milestones (M3.1&ndash;M3.4), 12 ASPICE process areas.</p>
+      <h4>Workstreams</h4>
+      <ul>
+        <li><strong>Day 61&ndash;67:</strong> SIL Validation Framework &mdash; makes all claims testable</li>
+        <li><strong>Day 68&ndash;74:</strong> CAN Interface Hardening &mdash; DBC-driven tests catch encoding regressions</li>
+        <li><strong>Day 75&ndash;81:</strong> Monitoring Dashboard &mdash; makes gaps visible to operators</li>
+        <li><strong>Day 82&ndash;90:</strong> Drift Monitoring &mdash; prevents silent model decay after Phase 2 retraining</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="phase" id="phase-4" data-phase="4">
+  <div class="phase-header">
+    <div class="phase-badge" style="background:var(--phase4);">4</div>
+    <h2>Customer Pipeline</h2>
+    <span class="days">Day 91&ndash;120</span>
+  </div>
+  <p class="phase-goal"><code>run_audit.py</code> offline pipeline; DBC-driven bench sidecar; automated PDF report generation for customer deliveries.</p>
+</div>
+
+<div class="phase" id="phase-5" data-phase="5">
+  <div class="phase-header">
+    <div class="phase-badge" style="background:var(--phase5);">5</div>
+    <h2>Advanced Models</h2>
+    <span class="days">Day 121&ndash;150</span>
+  </div>
+  <p class="phase-goal">LSTM-Autoencoder temporal anomaly detection; hybrid digital twin prototype; real foxBMS cycle validation.</p>
+</div>
+
+<div class="phase" id="phase-6" data-phase="6">
+  <div class="phase-header">
+    <div class="phase-badge" style="background:var(--phase6);">6</div>
+    <h2>Business Delivery</h2>
+    <span class="days">Day 151&ndash;180</span>
+  </div>
+  <p class="phase-goal">Demo package; Tier 0 customer engagement; Tier 1 pilot deployment.</p>
+</div>
+
+<!-- ═══════════════════════════════ ASPICE COVERAGE ═══════════════════════════════ -->
+<p class="section-title" style="margin-top:2rem;" id="aspice-sec">ASPICE Process Coverage (Phase 2)</p>
+<table>
+  <thead><tr><th>Deliverable</th><th>ASPICE Process</th><th>Process ID</th><th>Work Product</th></tr></thead>
+  <tbody>
+    <tr><td>ML accuracy requirements</td><td>SW Requirements Analysis</td><td>SWE.1</td><td>SW Requirements Specification</td></tr>
+    <tr><td>OCV table, cycle replay, dT/dt impl</td><td>SW Detailed Design</td><td>SWE.3</td><td>SW Detailed Design Description</td></tr>
+    <tr><td>Unit tests for accuracy gates</td><td>SW Unit Verification</td><td>SWE.4</td><td>Unit Test Specification</td></tr>
+    <tr><td>FOBSS e2e SOC validation</td><td>SW Integration Test</td><td>SWE.5</td><td>Integration Test Specification</td></tr>
+    <tr><td>Accuracy report</td><td>SW Qualification Test</td><td>SWE.6</td><td>Qualification Test Specification</td></tr>
+    <tr><td>Model registry v2</td><td>Quality Assurance</td><td>SUP.1</td><td>QA Plan</td></tr>
+    <tr><td>Phase 2 milestone tracking</td><td>Project Management</td><td>MAN.3</td><td>Project Plan</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ SW REQUIREMENTS ═══════════════════════════════ -->
+<p class="section-title" style="margin-top:2rem;" id="reqs-sec">Software Requirements &mdash; ML Inference Module (all QM, non-safety)</p>
+<table>
+  <thead><tr><th>ID</th><th>Requirement</th><th>Gap</th></tr></thead>
+  <tbody>
+    <tr><td><code>SW-REQ-ML-001</code></td><td>SOC LSTM RMSE &le;3.0% on FOBSS after correct normalization</td><td>GAP-ML-001</td></tr>
+    <tr><td><code>SW-REQ-ML-002</code></td><td>Normalization stats from BMW i3 training split (trips 1&ndash;60)</td><td>GAP-ML-002</td></tr>
+    <tr><td><code>SW-REQ-ML-003</code></td><td>OCV table &ge;21-point measured NMC 811 S-curve; RT error &lt;1%</td><td>P0.3</td></tr>
+    <tr><td><code>SW-REQ-ML-004</code></td><td>IsolationForest retrained on real SIL; normal mean &lt;0.15</td><td>GAP-ML-003</td></tr>
+    <tr><td><code>SW-REQ-ML-005</code></td><td>Thermal dT/dt non-zero in &ge;90% of discharge samples</td><td>GAP-ML-004</td></tr>
+    <tr><td><code>SW-REQ-ML-006</code></td><td>SOH Transformer operational on &ge;100 synthetic cycles</td><td>GAP-ML-005</td></tr>
+    <tr><td><code>SW-REQ-ML-007</code></td><td>CI strict CAN 0x705 assertion within 30s</td><td>GAP-ML-012</td></tr>
+    <tr><td><code>SW-REQ-ML-008</code></td><td>Model registry with training provenance for all deployed versions</td><td>&mdash;</td></tr>
+    <tr><td><code>SW-REQ-ML-009</code></td><td>Phase 2 accuracy report with all PASS/FAIL gates</td><td>&mdash;</td></tr>
+    <tr><td><code>SW-REQ-ML-010</code></td><td>Thermal CNN FPR &le;2%, OT detection &le;30s</td><td>GAP-ML-004</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════ RISK REGISTER ═══════════════════════════════ -->
+<p class="section-title" style="margin-top:2rem;" id="risk-sec">Risk Register (Phase 1 + Phase 2 Combined)</p>
+<table>
+  <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead>
+  <tbody>
+    <tr><td>FOBSS URL dead</td><td class="risk-low">Low</td><td class="risk-high">High</td><td>Email KIT. Fallback: BMW i3 per-cell cross-validation</td></tr>
+    <tr><td>FOBSS uses foxBMS v2.x CAN (different IDs)</td><td class="risk-medium">Medium</td><td class="risk-medium">Medium</td><td>Remap signals via DBC; cell V/I/T signals unchanged</td></tr>
+    <tr><td>SOC LSTM RMSE on FOBSS &gt;10%</td><td class="risk-medium">Medium</td><td class="risk-high">High</td><td>Domain gap too large; fine-tune on FOBSS</td></tr>
+    <tr><td>Thermal dT/dt still zero after plant fix</td><td class="risk-low">Low</td><td class="risk-medium">Medium</td><td>Debug via <code>candump vcan1,280:7FF</code></td></tr>
+    <tr><td>IsolationForest fails all fault gates</td><td class="risk-medium">Medium</td><td class="risk-medium">Medium</td><td>Immediate retrain (P0 in Phase 2)</td></tr>
+    <tr><td>Fine-tune causes BMW i3 catastrophic forgetting</td><td class="risk-low">Low</td><td class="risk-high">High</td><td>Anti-regression gate: BMW i3 &le;0.5% rise</td></tr>
+    <tr><td>Cycle replay SOH RMSE &gt;12%</td><td class="risk-medium">Medium</td><td class="risk-medium">Medium</td><td>Defer to Phase 5 with real cycle data</td></tr>
+    <tr><td>Phase 2 scope creep into LSTM-Autoencoder</td><td class="risk-high">High</td><td class="risk-medium">Medium</td><td>Strictly defer to Phase 5</td></tr>
+    <tr><td>VPS CAN capture fails during retrain</td><td class="risk-low">Low</td><td class="risk-medium">Medium</td><td>Use Phase 1 automated telemetry archive</td></tr>
+  </tbody>
+</table>
+
+</div><!-- /container -->
+
+<footer class="footer">
+  <p>180-Day AI/ML Roadmap &mdash; foxBMS POSIX vECU &mdash; Munich Electrification</p>
+  <p>Generated 2026-03-30 &bull; Phase 1 &amp; 2 detailed &bull; Phases 3&ndash;6 outlined &bull; Confidential</p>
+</footer>
+
+<script>
+(function() {
+  const links = document.querySelectorAll('.sidebar a[href^="#"]');
+  const sections = [];
+  links.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) sections.push({ el, link });
+  });
+
+  function update() {
+    let current = sections[0];
+    for (const s of sections) {
+      if (s.el.getBoundingClientRect().top <= 80) current = s;
+    }
+    links.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+
+  links.forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelector('.sidebar').classList.remove('open');
+    });
+  });
+})();
+</script>
+</body>
+</html>

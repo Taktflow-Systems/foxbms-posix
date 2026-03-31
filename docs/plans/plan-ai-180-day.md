@@ -1,9 +1,18 @@
 # 180-Day AI/ML Roadmap — foxBMS POSIX vECU
 
-**Date**: 2026-03-27
+**Date**: 2026-03-27 (updated 2026-03-30)
 **Horizon**: 180 days (2026-03-27 → 2026-09-23)
 **Status**: DRAFT — Phase 1 (Day 1–30) detailed; Phases 2–6 in outline
 **Starting point**: ML sidecar live on VPS; 5 models deployed; 12 known accuracy gaps; zero validated accuracy on real foxBMS hardware data
+
+**Engagement context**: This roadmap runs in parallel with the Munich
+Electrification Senior Testing Engineer engagement (70 EUR/hr, 180 days).
+The ME engagement focuses on XIL framework testing, ISO 26262 Part 6
+certification, and ISO 21434 cybersecurity — see
+`mebms-classic/docs/plans/engagement-180d.md` for the primary work plan.
+This foxBMS ML roadmap provides the **AI/data validation layer** that
+feeds into the ME test evidence pipeline (anomaly detection, SOC accuracy,
+predictive diagnostics).
 
 ---
 
