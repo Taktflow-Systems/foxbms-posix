@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BMS Plant Model</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>BMS Plant Model</h1>
+        <p id="endpointLine">Starting</p>
+      </div>
+      <div class="status" id="serverStatus">Loading</div>
+    </header>
+
+    <main class="workspace">
+      <aside class="leftPane" aria-label="Plant controls">
+        <section class="panel">
+          <h2>Load Register File</h2>
+          <form id="uploadForm" class="upload">
+            <input id="file" name="file" type="file" accept=".csv,.tsv,.xlsx" />
+            <label id="workbookSheetWrap" class="sheetSelect hidden">
+              Register Sheet
+              <select id="workbookSheet" name="workbookSheet"></select>
+            </label>
+            <button type="submit" class="primary" title="Load Excel or CSV file">
+              <span class="icon">+</span><span>Load</span>
+            </button>
+          </form>
+          <p id="importSummary" class="muted"></p>
+        </section>
+
+        <section class="panel">
+          <h2>State Preset</h2>
+          <div class="presetGrid" id="presetGrid"></div>
+          <button id="resetModel" title="Reset generated BMS plant model">
+            <span class="icon">R</span><span>Reset</span>
+          </button>
+        </section>
+
+        <section class="panel">
+          <h2>BMS Interface Use Cases</h2>
+          <div id="useCases" class="useCases"></div>
+        </section>
+      </aside>
+
+      <section class="mainPane" aria-label="Registers and events">
+        <div class="summaryBand">
+          <div>
+            <span class="metric" id="registerCount">0</span>
+            <span class="metricLabel">Registers</span>
+          </div>
+          <div>
+            <span class="metric" id="deviceAddress">1</span>
+            <span class="metricLabel">Device Address</span>
+          </div>
+          <div>
+            <span class="metric" id="presetName">nominal</span>
+            <span class="metricLabel">Preset</span>
+          </div>
+        </div>
+
+        <section class="tablePanel">
+          <div class="tableHeader">
+            <h2>Register Map</h2>
+            <input id="registerSearch" placeholder="Filter registers" />
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Table</th>
+                  <th>Address</th>
+                  <th>Name</th>
+                  <th>Value</th>
+                  <th>Source</th>
+                  <th>Access</th>
+                </tr>
+              </thead>
+              <tbody id="registerRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="logPanel">
+          <div class="tableHeader">
+            <h2>Plant Events</h2>
+            <span id="eventCount" class="muted">0</span>
+          </div>
+          <pre id="eventLog"></pre>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BMS Interface Test Console</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>BMS Interface Test Console</h1>
+        <p id="sourceLine"></p>
+      </div>
+      <div class="status" id="serverStatus">Loading</div>
+    </header>
+
+    <section class="controls" aria-label="Connection settings">
+      <label>
+        Adapter
+        <select id="adapter" name="adapter"></select>
+      </label>
+      <label>
+        Host
+        <input id="host" name="host" autocomplete="off" placeholder="BMS IP or host" />
+      </label>
+      <label>
+        Port
+        <input id="port" name="port" type="number" min="1" max="65535" />
+      </label>
+      <label>
+        Unit
+        <input id="unit_id" name="unit_id" type="number" min="0" max="247" />
+      </label>
+      <label>
+        Cycles
+        <input id="cycles" name="cycles" type="number" min="1" max="1000" />
+      </label>
+      <label>
+        Interval
+        <input id="interval" name="interval" type="number" min="0" step="0.1" />
+      </label>
+      <label>
+        Sessions
+        <input id="sessions" name="sessions" type="number" min="1" max="64" />
+      </label>
+      <label>
+        Hold
+        <input id="hold_seconds" name="hold_seconds" type="number" min="0" step="0.5" />
+      </label>
+      <label>
+        Write Value
+        <input id="write_value" name="write_value" type="number" min="0" max="65535" />
+      </label>
+      <label class="toggle">
+        <input id="dry_run" name="dry_run" type="checkbox" checked />
+        <span>Dry Run</span>
+      </label>
+      <label class="toggle">
+        <input id="allow_writes" name="allow_writes" type="checkbox" />
+        <span>Arm Writes</span>
+      </label>
+    </section>
+
+    <main class="workspace">
+      <section class="cases" id="caseList" aria-label="Use cases"></section>
+      <section class="details" aria-label="Selected use case">
+        <div class="detailHeader">
+          <div>
+            <h2 id="detailTitle">Use Case</h2>
+            <p id="detailMeta"></p>
+          </div>
+          <div class="actions">
+            <button id="monitorSelected" class="primary hidden" title="Open the use case 1 dashboard and poll every 1 second"></button>
+            <button id="runSelected" class="primary" title="Run selected scenario"></button>
+            <button id="cancelRun" title="Cancel active run"></button>
+          </div>
+        </div>
+        <div class="detailBody">
+          <section>
+            <h3>Scenario</h3>
+            <p id="detailText"></p>
+          </section>
+          <section>
+            <div class="sectionHeader">
+              <h3>Actions</h3>
+              <button id="resetFlow" class="secondary" title="Reset selected actions">Reset</button>
+            </div>
+            <div id="actionFlow" class="actionFlow"></div>
+          </section>
+          <section>
+            <h3>Operations</h3>
+            <div id="operationPlan" class="chips"></div>
+          </section>
+          <section>
+            <h3>CSV Evidence</h3>
+            <div id="csvSnippets" class="snippets"></div>
+          </section>
+        </div>
+        <section id="signalBoard" class="signalBoard hidden" aria-label="Use case 1 signal board">
+          <div class="boardHeader">
+            <div>
+              <h3>Signal Board</h3>
+              <p id="signalBoardMeta"></p>
+            </div>
+            <div class="boardControls">
+              <label>
+                Plot
+                <select id="signalPlotMode" name="signalPlotMode">
+                  <option value="all">All Visible</option>
+                  <option value="pinned">Pinned</option>
+                </select>
+              </label>
+              <label>
+                Filter
+                <input id="signalFilter" name="signalFilter" autocomplete="off" placeholder="SOC, 40071, M802" />
+              </label>
+              <button id="pinVisibleSignals" class="secondary" title="Pin visible signals">Pin Visible</button>
+              <button id="clearPinnedSignals" class="secondary" title="Clear pinned signals">Clear Pins</button>
+              <button id="startSignalMonitor" class="secondary" title="Start live polling every 1 second">Start 1s</button>
+              <button id="stopSignalMonitor" class="secondary" title="Stop live polling">Stop</button>
+            </div>
+          </div>
+          <div id="signalChart" class="signalChart"></div>
+          <div id="signalList" class="signalList"></div>
+        </section>
+        <section class="runPanel">
+          <div class="runHeader">
+            <h3>Run Log</h3>
+            <span id="runState">Idle</span>
+          </div>
+          <pre id="runLog"></pre>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

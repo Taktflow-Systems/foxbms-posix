@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "description": "Data-driven execution profiles for BMS interface e2e use cases. Addresses are best-effort until validated against the source register specification.",
+  "defaults": {
+    "adapter": "modbus_tcp",
+    "host": "",
+    "port": 502,
+    "unit_id": 1,
+    "address_base": "auto",
+    "connect_timeout": 3.0,
+    "request_timeout": 2.0,
+    "cycles": 1,
+    "interval": 1.0,
+    "sessions": 4,
+    "hold_seconds": 5.0,
+    "write_value": 1
+  },
+  "adapters": {
+    "modbus_tcp": {
+      "label": "Modbus TCP",
+      "description": "Direct Modbus/TCP connection to BMS Ethernet interface.",
+      "capabilities": ["read_holding_registers", "write_single_register", "connection_stress"]
+    },
+    "backend_polling_api": {
+      "label": "Backend Polling API",
+      "description": "Connect to a backend poller/cache API instead of opening direct Modbus sessions from this test console.",
+      "capabilities": ["read_register_cache", "write_request", "shared_backend_cache"]
+    },
+    "external_software": {
+      "label": "External Software",
+      "description": "Reserved integration point for an external app, HIL, CI runner, or service tool bridge.",
+      "capabilities": ["planned_only"]
+    }
+  },
+  "profiles": {
+    "1": {
+      "kind": "read",
+      "read_all_available": true,
+      "terms": ["Device Address", "SoC", "SoH", "ModSoC", "CellV", "IsoMon"],
+      "reads": [
+        {"name": "M1 common model", "sheet": "sheet_1", "table": "holding", "address": 40002, "count": 8, "data_type": "raw"},
+        {"name": "M802 BMS summary", "sheet": "sheet_802", "table": "holding", "address": 40071, "count": 60, "data_type": "raw"},
+        {"name": "M804 module summary", "sheet": "sheet_804", "table": "holding", "address": 40157, "count": 80, "data_type": "raw"},
+        {"name": "M805 cell/module values", "sheet": "sheet_805", "table": "holding", "address": 40339, "count": 96, "data_type": "raw"},
+        {"name": "M64093 custom status", "sheet": "sheet_64093", "table": "holding", "address": 42282, "count": 80, "data_type": "raw"}
+      ]
+    },
+    "2": {
+      "kind": "write_verify",
+      "terms": ["SetEna", "SetCon", "ConSt", "Contactor Status", "PRECHARGE"],
+      "reads": [
+        {"name": "M804 contactor command/status area", "sheet": "sheet_804", "table": "holding", "address": 40157, "count": 40, "data_type": "raw"},
+        {"name": "M804 event/status area", "sheet": "sheet_804", "table": "holding", "address": 40169, "count": 24, "data_type": "raw"}
+      ],
+      "writes": [
+        {"name": "SetEna", "table": "holding", "address": 40170, "default": 1},
+        {"name": "SetCon", "table": "holding", "address": 40171, "default": 1}
+      ]
+    },
+    "3": {
+      "kind": "write_verify",
+      "terms": ["Evt1", "Evt2", "EvtVnd", "CusEvt", "AlrnRst", "Alarm Reset"],
+      "reads": [
+        {"name": "M802 events", "sheet": "sheet_802", "table": "holding", "address": 40097, "count": 8, "data_type": "raw"},
+        {"name": "M804 events", "sheet": "sheet_804", "table": "holding", "address": 40168, "count": 8, "data_type": "raw"},
+        {"name": "M64093 custom events", "sheet": "sheet_64093", "table": "holding", "address": 42356, "count": 24, "data_type": "raw"}
+      ],
+      "writes": [
+        {"name": "AlmRst", "table": "holding", "address": 40090, "default": 1}
+      ]
+    },
+    "4": {
+      "kind": "read",
+      "terms": ["SoC", "SoH", "DoD", "WCha", "WDis", "Cycle", "DCIR"],
+      "reads": [
+        {"name": "M802 SOC/SOH/SOP area", "sheet": "sheet_802", "table": "holding", "address": 40071, "count": 56, "data_type": "raw"},
+        {"name": "M804 module SOC/SOH area", "sheet": "sheet_804", "table": "holding", "address": 40182, "count": 72, "data_type": "raw"},
+        {"name": "M805 cell voltage area", "sheet": "sheet_805", "table": "holding", "address": 40339, "count": 96, "data_type": "raw"}
+      ]
+    },
+    "5": {
+      "kind": "write_verify",
+      "terms": ["IsoMonEnable", "IsoMonStatus", "IsoMonRes", "GROUND ISO"],
+      "reads": [
+        {"name": "M64093 isolation monitoring area", "sheet": "sheet_64093", "table": "holding", "address": 42288, "count": 32, "data_type": "raw"},
+        {"name": "M802 isolation event bits", "sheet": "sheet_802", "table": "holding", "address": 40102, "count": 8, "data_type": "raw"}
+      ],
+      "writes": [
+        {"name": "IsoMonEnable", "table": "holding", "address": 42292, "default": 1}
+      ]
+    },
+    "6": {
+      "kind": "write_verify",
+      "terms": ["EnterPowerSaving", "PowerSaving", "PowerSav", "wake"],
+      "reads": [
+        {"name": "M64093 power saving area", "sheet": "sheet_64093", "table": "holding", "address": 42286, "count": 16, "data_type": "raw"}
+      ],
+      "writes": [
+        {"name": "EnterPowerSaving", "table": "holding", "address": 42288, "default": 1}
+      ]
+    },
+    "7": {
+      "kind": "read",
+      "terms": ["ModSoC", "ModSoH", "ModCell", "aggregate", "Module"],
+      "reads": [
+        {"name": "M804 module aggregates", "sheet": "sheet_804", "table": "holding", "address": 40182, "count": 120, "data_type": "raw"},
+        {"name": "M805 repeated module/cell aggregates", "sheet": "sheet_805", "table": "holding", "address": 42074, "count": 80, "data_type": "raw"}
+      ]
+    },
+    "8": {
+      "kind": "manual",
+      "terms": ["flash", "update", "contactor", "SW UPDATE"],
+      "reads": [
+        {"name": "M64093 firmware/update status area", "sheet": "sheet_64093", "table": "holding", "address": 42330, "count": 40, "data_type": "raw"}
+      ]
+    },
+    "9": {
+      "kind": "read",
+      "terms": ["Evt", "Wh", "Cycle", "Serial", "histogram", "freeze"],
+      "reads": [
+        {"name": "M802 counters/events", "sheet": "sheet_802", "table": "holding", "address": 40092, "count": 32, "data_type": "raw"},
+        {"name": "M804 events", "sheet": "sheet_804", "table": "holding", "address": 40168, "count": 16, "data_type": "raw"},
+        {"name": "M64093 custom event range", "sheet": "sheet_64093", "table": "holding", "address": 42334, "count": 64, "data_type": "raw"}
+      ]
+    },
+    "10": {
+      "kind": "write_verify",
+      "terms": ["Device Address", "DA", "Modbus device address"],
+      "reads": [
+        {"name": "M1 common model and device address", "sheet": "sheet_1", "table": "holding", "address": 40002, "count": 9, "data_type": "raw"}
+      ],
+      "writes": [
+        {"name": "DA", "table": "holding", "address": 40068, "default": 1}
+      ]
+    },
+    "11": {
+      "kind": "connection",
+      "terms": ["CtrlHb", "Heartbeat", "Device Address", "connection"],
+      "reads": [
+        {"name": "M802 heartbeat area", "sheet": "sheet_802", "table": "holding", "address": 40088, "count": 4, "data_type": "raw"}
+      ],
+      "writes": [
+        {"name": "CtrlHb", "table": "holding", "address": 40089, "default": 1}
+      ]
+    },
+    "12": {
+      "kind": "read",
+      "terms": ["NCellBal", "Balanced Cell Count", "CellTmp", "CellV", "thermal"],
+      "reads": [
+        {"name": "M804 balancing summary", "sheet": "sheet_804", "table": "holding", "address": 40157, "count": 120, "data_type": "raw"},
+        {"name": "M805 balancing and cell thermal range", "sheet": "sheet_805", "table": "holding", "address": 40339, "count": 120, "data_type": "raw"},
+        {"name": "M805 repeated balancing range", "sheet": "sheet_805", "table": "holding", "address": 40884, "count": 120, "data_type": "raw"}
+      ]
+    },
+    "13": {
+      "kind": "manual",
+      "terms": ["calibration", "service", "debug", "Device Address"],
+      "reads": [
+        {"name": "M1 service connectivity check", "sheet": "sheet_1", "table": "holding", "address": 40002, "count": 9, "data_type": "raw"},
+        {"name": "M64093 custom/service range", "sheet": "sheet_64093", "table": "holding", "address": 42282, "count": 96, "data_type": "raw"}
+      ]
+    }
+  }
+}

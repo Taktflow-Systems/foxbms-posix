@@ -1,0 +1,647 @@
+:root {
+  color-scheme: light;
+  --bg: #f7f7f4;
+  --panel: #ffffff;
+  --ink: #1f2523;
+  --muted: #63706c;
+  --line: #d7ddd8;
+  --soft: #eef2ee;
+  --green: #147a59;
+  --green-dark: #0f5e46;
+  --blue: #256f9c;
+  --amber: #a76516;
+  --red: #b5413c;
+  --shadow: 0 10px 28px rgba(23, 34, 31, 0.08);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.topbar {
+  min-height: 86px;
+  padding: 18px 24px 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+  background: #fbfbf8;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 750;
+}
+
+h2 {
+  font-size: 21px;
+  font-weight: 720;
+}
+
+h3 {
+  font-size: 13px;
+  font-weight: 720;
+  color: #44514d;
+}
+
+#sourceLine,
+#detailMeta {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.status {
+  min-width: 92px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.controls {
+  padding: 12px 24px;
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(180px, 2fr) repeat(7, minmax(72px, 1fr)) repeat(2, auto);
+  gap: 10px;
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  padding: 7px 9px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(20, 122, 89, 0.14);
+}
+
+.toggle {
+  min-height: 34px;
+  display: inline-flex;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+
+.toggle input {
+  width: 16px;
+  min-height: 16px;
+}
+
+.workspace {
+  min-height: calc(100vh - 155px);
+  display: grid;
+  grid-template-columns: minmax(310px, 380px) minmax(0, 1fr);
+}
+
+.cases {
+  border-right: 1px solid var(--line);
+  background: #f2f3ef;
+  overflow: auto;
+  max-height: calc(100vh - 155px);
+}
+
+.caseCard {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.caseCard:hover,
+.caseCard.active {
+  background: #fff;
+}
+
+.caseCard.active {
+  box-shadow: inset 4px 0 0 var(--green);
+}
+
+.caseId {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: #e4ece7;
+  color: var(--green-dark);
+  font-weight: 760;
+  font-size: 13px;
+}
+
+.caseTitle {
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+.caseSub {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.kind {
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 750;
+  background: #e9eff2;
+  color: var(--blue);
+  white-space: nowrap;
+}
+
+.details {
+  min-width: 0;
+  padding: 22px 24px;
+  display: grid;
+  grid-template-rows: auto auto minmax(220px, 1fr);
+  gap: 16px;
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+button {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 11px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: #9cb0a8;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+button.primary:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+}
+
+button.secondary {
+  min-height: 28px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.detailBody {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.1fr) minmax(260px, 1fr) minmax(280px, 1.1fr);
+  gap: 14px;
+}
+
+.detailBody section,
+.runPanel,
+.signalBoard {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#detailText {
+  margin-top: 9px;
+  color: #2c3531;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.actionFlow {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.flowButton {
+  width: 100%;
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: minmax(72px, auto) 1fr;
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+  text-align: left;
+  border-color: #d4dbd6;
+}
+
+.flowButton.available {
+  border-color: var(--green);
+  background: #e8f4ee;
+  box-shadow: inset 4px 0 0 var(--green);
+  color: var(--green-dark);
+}
+
+.flowButton.done {
+  background: #eef2ee;
+  color: #42504a;
+}
+
+.flowButton.locked {
+  background: #f7f8f6;
+  color: #8a9691;
+}
+
+.flowVerb {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.flowTarget {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 620;
+  line-height: 1.25;
+}
+
+.chips {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.registerRead {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(190px, 1.3fr);
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  background: #f8faf8;
+}
+
+.chip {
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: #25302c;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.chip.write {
+  background: #fff4e8;
+  border-color: #e7c9a6;
+  color: var(--amber);
+}
+
+.chip.manual {
+  background: #f4eeee;
+  border-color: #dfc5c2;
+  color: var(--red);
+}
+
+.snippets {
+  margin-top: 10px;
+  display: grid;
+  gap: 7px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.snippet {
+  padding: 7px 8px;
+  border-left: 3px solid var(--blue);
+  background: #f6f9fa;
+  color: #27312e;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.snippet small {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.signalBoard {
+  display: grid;
+  gap: 12px;
+}
+
+.boardHeader {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(360px, 1.4fr);
+  gap: 14px;
+  align-items: end;
+}
+
+#signalBoardMeta {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.boardControls {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.45fr) minmax(180px, 1fr) repeat(4, auto);
+  gap: 8px;
+  align-items: end;
+}
+
+.signalChart {
+  min-height: 280px;
+  border: 1px solid var(--line);
+  background: #fbfcfb;
+  overflow: hidden;
+}
+
+.emptyChart,
+.emptySignals {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 16px;
+}
+
+.plotSvg {
+  width: 100%;
+  min-height: 250px;
+  display: block;
+}
+
+.axis {
+  stroke: #aab7b0;
+  stroke-width: 1;
+}
+
+.axisLabel {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.seriesLine {
+  stroke-width: 2.1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.88;
+}
+
+.plotLegend {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--line);
+  color: #2b3732;
+  font-size: 11px;
+}
+
+.plotLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plotLegend i {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+}
+
+.signalList {
+  max-height: 270px;
+  overflow: auto;
+  border: 1px solid var(--line);
+}
+
+.signalRows {
+  display: grid;
+  grid-template-columns: 74px minmax(240px, 1fr) minmax(80px, auto) minmax(70px, auto);
+  align-items: center;
+}
+
+.signalRows > * {
+  min-height: 34px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.pinButton {
+  min-height: 28px;
+  margin: 3px 6px;
+  padding: 4px 7px;
+  font-size: 12px;
+}
+
+.pinButton.pinned {
+  background: #e8f4ee;
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.signalName {
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+
+.signalValue,
+.signalSamples {
+  text-align: right;
+  font-family: "Cascadia Mono", Consolas, monospace;
+}
+
+.runPanel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.runHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+#runState {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#runLog {
+  min-height: 210px;
+  max-height: calc(100vh - 505px);
+  margin: 10px 0 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #17201c;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1100px) {
+  .controls {
+    grid-template-columns: repeat(4, minmax(92px, 1fr));
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .cases {
+    max-height: 360px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .detailBody {
+    grid-template-columns: 1fr;
+  }
+
+  .boardHeader,
+  .boardControls {
+    grid-template-columns: 1fr;
+  }
+
+  #runLog {
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 620px) {
+  .topbar,
+  .detailHeader {
+    display: grid;
+  }
+
+  .controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px 12px;
+  }
+
+  .details {
+    padding: 14px 12px;
+  }
+
+  .caseCard {
+    grid-template-columns: 32px 1fr;
+  }
+
+  .registerRead {
+    grid-template-columns: 1fr;
+  }
+
+  .signalRows {
+    grid-template-columns: 68px minmax(140px, 1fr) minmax(60px, auto);
+  }
+
+  .signalSamples {
+    display: none;
+  }
+
+  .kind {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
