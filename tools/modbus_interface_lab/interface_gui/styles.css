@@ -25,6 +25,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
+  overflow-x: hidden;
 }
 
 .topbar {
@@ -36,6 +37,10 @@ body {
   gap: 18px;
   border-bottom: 1px solid var(--line);
   background: #fbfbf8;
+}
+
+.topbar > div:first-child {
+  min-width: 0;
 }
 
 h1,
@@ -66,6 +71,7 @@ h3 {
   margin-top: 5px;
   color: var(--muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .status {
@@ -215,6 +221,10 @@ select:focus {
   justify-content: space-between;
   gap: 20px;
   align-items: flex-start;
+}
+
+.detailHeader > div:first-child {
+  min-width: 0;
 }
 
 .actions {
@@ -580,11 +590,21 @@ button.secondary {
   line-height: 1.45;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1400px) {
   .controls {
     grid-template-columns: repeat(4, minmax(92px, 1fr));
   }
 
+  .detailBody {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .boardControls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -593,10 +613,6 @@ button.secondary {
     max-height: 360px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
-  }
-
-  .detailBody {
-    grid-template-columns: 1fr;
   }
 
   .boardHeader,

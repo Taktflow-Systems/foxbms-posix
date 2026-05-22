@@ -603,16 +603,16 @@ def parse_custom_read_items(text: str) -> list[dict[str, Any]]:
         address_text = parts[0]
         if "-" in address_text:
             start_text, end_text = [part.strip() for part in address_text.split("-", 1)]
-            address = int(start_text, 0)
-            end = int(end_text, 0)
+            address = parse_custom_int(start_text, "address", token)
+            end = parse_custom_int(end_text, "range end", token)
             if end < address:
                 raise ValueError(f"range end before start in custom register entry: {token!r}")
             count = end - address + 1
         else:
-            address = int(address_text, 0)
+            address = parse_custom_int(address_text, "address", token)
             count = 1
         if len(parts) == 2:
-            count = int(parts[1], 0)
+            count = parse_custom_int(parts[1], "count", token)
 
         items.append(
             {
@@ -624,6 +624,13 @@ def parse_custom_read_items(text: str) -> list[dict[str, Any]]:
             }
         )
     return items
+
+
+def parse_custom_int(text: str, label: str, token: str) -> int:
+    try:
+        return int(text, 0)
+    except ValueError as exc:
+        raise ValueError(f"custom register {label} must be an integer in entry {token!r}") from exc
 
 
 class GuiModbusClient(ModbusTcpClient):
@@ -953,6 +960,12 @@ def text_response(handler: BaseHTTPRequestHandler, body: bytes, content_type: st
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
+
+
+def no_content_response(handler: BaseHTTPRequestHandler) -> None:
+    handler.send_response(HTTPStatus.NO_CONTENT)
+    handler.send_header("Content-Length", "0")
+    handler.end_headers()
 
 
 def run_scenario(run: RunState, request: dict[str, Any]) -> None:
@@ -1326,6 +1339,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/":
                 return self.serve_static("index.html", "text/html; charset=utf-8")
+            if path == "/favicon.ico":
+                return no_content_response(self)
             if path == "/app.js":
                 return self.serve_static("app.js", "application/javascript; charset=utf-8")
             if path == "/styles.css":
@@ -1466,6 +1481,13 @@ def self_test() -> int:
     custom_reads = [make_spec(item, 1, "auto") for item in parse_custom_read_items("40071:2, input:30001:4")]
     if len(custom_reads) != 2:
         raise SystemExit("custom register parser did not create expected reads")
+    try:
+        parse_custom_read_items("not-a-register")
+    except ValueError as exc:
+        if "custom register address must be an integer" not in str(exc):
+            raise SystemExit(f"custom register parser returned unclear error: {exc}") from exc
+    else:
+        raise SystemExit("custom register parser accepted invalid input")
     values = values_from_backend_payload({"items": [{"values": [1, 2]}]}, custom_reads[0])
     if values != [1, 2]:
         raise SystemExit("backend register read response parser failed")

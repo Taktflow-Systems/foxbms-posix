@@ -1081,6 +1081,8 @@ class PlantHttpHandler(BaseHTTPRequestHandler):
         try:
             if parsed.path == "/":
                 return self.serve_static("index.html", "text/html; charset=utf-8")
+            if parsed.path == "/favicon.ico":
+                return no_content_response(self)
             if parsed.path == "/app.js":
                 return self.serve_static("app.js", "application/javascript; charset=utf-8")
             if parsed.path == "/styles.css":
@@ -1144,6 +1146,12 @@ def json_response(handler: BaseHTTPRequestHandler, payload: object, status: HTTP
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
+
+
+def no_content_response(handler: BaseHTTPRequestHandler) -> None:
+    handler.send_response(HTTPStatus.NO_CONTENT)
+    handler.send_header("Content-Length", "0")
+    handler.end_headers()
 
 
 def read_json(handler: BaseHTTPRequestHandler) -> dict[str, Any]:

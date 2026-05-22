@@ -16,6 +16,8 @@ const state = {
   },
 };
 
+const MONITOR_CYCLES = 3600;
+
 const icons = {
   play:
     '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l14 8-14 8z"/></svg>',
@@ -138,6 +140,7 @@ function renderDetails() {
   $("operationPlan").innerHTML = renderOperations(item);
   $("csvSnippets").innerHTML = renderSnippets(item);
   $("monitorSelected").innerHTML = `${icons.monitor}<span>Monitor 1s</span>`;
+  $("monitorSelected").title = `Live read every 1 second; stop manually or after ${MONITOR_CYCLES} cycles`;
   $("monitorSelected").classList.toggle("hidden", item.id !== "1");
   $("runSelected").innerHTML = `${icons.play}<span>Run</span>`;
   $("cancelRun").innerHTML = `${icons.stop}<span>Cancel</span>`;
@@ -321,17 +324,19 @@ function renderSignalBoard(item) {
   const entries = visibleSignalEntries();
   const total = signalEntries().length;
   const pinnedCount = Object.keys(state.signalBoard.pinned).length;
-  const liveText = state.monitoring ? " | live 1s monitor running" : "";
+  const liveText = state.monitoring ? ` | live 1s monitor running | max ${MONITOR_CYCLES} cycles` : "";
   $("signalBoardMeta").textContent =
     total > 0
       ? `${total} signals captured from run ${state.signalBoard.runId || ""} | ${pinnedCount} pinned${liveText}`
       : state.monitoring
-        ? "Live 1s monitor started; waiting for the first read."
+        ? `Live 1s monitor started; waiting for the first read. Max ${MONITOR_CYCLES} cycles.`
         : "Run use case 1 against hardware or the plant model, or start the 1s monitor.";
   $("signalPlotMode").value = state.signalBoard.plotMode;
   $("signalFilter").value = state.signalBoard.filter;
   $("startSignalMonitor").disabled = state.monitoring;
+  $("startSignalMonitor").title = `Live read every 1 second; stop manually or after ${MONITOR_CYCLES} cycles`;
   $("stopSignalMonitor").disabled = !state.monitoring;
+  $("stopSignalMonitor").title = "Stop the active live monitor run";
   $("signalChart").innerHTML = renderSignalChart(entries);
   $("signalList").innerHTML = renderSignalList(entries, total);
   bindSignalBoardControls();
@@ -523,9 +528,15 @@ function openSignalDashboard() {
 
 async function startSignalMonitor() {
   openSignalDashboard();
-  $("dry_run").checked = false;
+  if ($("dry_run").checked) {
+    state.monitoring = false;
+    $("runState").textContent = "Monitor blocked";
+    $("runLog").textContent = "Live monitor requires Dry Run to be unchecked.";
+    renderSignalBoard(selectedCase());
+    return;
+  }
   $("interval").value = 1;
-  $("runState").textContent = "Starting 1s monitor";
+  $("runState").textContent = `Starting 1s monitor (${MONITOR_CYCLES} max)`;
   $("runLog").textContent = "";
   state.monitoring = true;
   state.signalBoard.samples = {};
@@ -536,7 +547,7 @@ async function startSignalMonitor() {
       ...formPayload("1"),
       dry_run: false,
       allow_writes: false,
-      cycles: 3600,
+      cycles: MONITOR_CYCLES,
       interval: 1,
     };
     const result = await api("/api/run", {

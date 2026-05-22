@@ -105,12 +105,15 @@ After a successful run:
 2. Click `Pin Visible`.
 3. Change `Plot` to `Pinned`.
 4. Confirm the row changes from `Pin` to `Unpin`.
-5. Click `Start 1s` or `Monitor 1s` to start live polling.
-6. Watch the sample count increase and the plot update.
-7. Click `Stop` to cancel the monitor.
+5. Confirm `Dry Run` is unchecked.
+6. Click `Start 1s` or `Monitor 1s` to start live polling.
+7. Watch the sample count increase and the plot update.
+8. Click `Stop` to cancel the monitor.
 
-`Start 1s` and `Monitor 1s` intentionally start a long polling run
-(`cycles=3600`). Treat them as a monitor mode that should be stopped manually.
+`Start 1s` and `Monitor 1s` intentionally start a long live-read polling run
+(`cycles=3600`). If `Dry Run` is still checked, the console blocks monitor
+startup and leaves the safety setting unchanged. Treat monitor mode as a
+long-running live read that should be stopped manually.
 
 ## Direct Modbus Mode
 
