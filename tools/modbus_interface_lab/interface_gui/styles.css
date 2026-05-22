@@ -11,6 +11,7 @@
   --blue: #256f9c;
   --amber: #a76516;
   --red: #b5413c;
+  --radius: 7px;
   --shadow: 0 10px 28px rgba(23, 34, 31, 0.08);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -25,6 +26,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
+  line-height: 1.35;
   overflow-x: hidden;
 }
 
@@ -78,10 +80,34 @@ h3 {
   min-width: 92px;
   padding: 7px 10px;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: var(--soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   font-size: 13px;
   font-weight: 650;
   text-align: center;
+}
+
+.status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(20, 122, 89, 0.12);
+}
+
+.status[data-tone="loading"]::before {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px rgba(167, 101, 22, 0.12);
+}
+
+.status[data-tone="error"]::before {
+  background: var(--red);
+  box-shadow: 0 0 0 3px rgba(181, 65, 60, 0.12);
 }
 
 .controls {
@@ -107,11 +133,16 @@ select {
   width: 100%;
   min-height: 34px;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: #fff;
   color: var(--ink);
   font-size: 14px;
   padding: 7px 9px;
   outline: none;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
 }
 
 input:focus,
@@ -125,10 +156,11 @@ select:focus {
   display: inline-flex;
   grid-auto-flow: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 7px;
   padding: 0 10px;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: #fff;
   color: var(--ink);
 }
@@ -136,12 +168,13 @@ select:focus {
 .toggle input {
   width: 16px;
   min-height: 16px;
+  accent-color: var(--green);
 }
 
 .workspace {
   min-height: calc(100vh - 155px);
   display: grid;
-  grid-template-columns: minmax(310px, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
 }
 
 .cases {
@@ -164,6 +197,9 @@ select:focus {
   color: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .caseCard:hover,
@@ -180,6 +216,7 @@ select:focus {
   height: 30px;
   display: grid;
   place-items: center;
+  border-radius: 6px;
   background: #e4ece7;
   color: var(--green-dark);
   font-weight: 760;
@@ -187,12 +224,20 @@ select:focus {
 }
 
 .caseTitle {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   font-size: 14px;
   font-weight: 720;
   line-height: 1.25;
 }
 
 .caseSub {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
   margin-top: 5px;
   color: var(--muted);
   font-size: 12px;
@@ -201,11 +246,32 @@ select:focus {
 
 .kind {
   padding: 4px 6px;
+  border-radius: 999px;
   font-size: 11px;
   font-weight: 750;
   background: #e9eff2;
   color: var(--blue);
   white-space: nowrap;
+}
+
+.kind.read {
+  background: #e6f2ec;
+  color: var(--green-dark);
+}
+
+.kind.write-verify {
+  background: #fff4e8;
+  color: var(--amber);
+}
+
+.kind.manual {
+  background: #f4eeee;
+  color: var(--red);
+}
+
+.kind.connection {
+  background: #e7f1f5;
+  color: var(--blue);
 }
 
 .details {
@@ -237,6 +303,7 @@ select:focus {
 button {
   min-height: 36px;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: #fff;
   color: var(--ink);
   display: inline-flex;
@@ -247,10 +314,21 @@ button {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease;
 }
 
 button:hover {
   border-color: #9cb0a8;
+}
+
+button:focus-visible {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(20, 122, 89, 0.16);
 }
 
 button:disabled {
@@ -292,8 +370,10 @@ button.secondary {
 .signalBoard {
   background: var(--panel);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 14px;
+  min-width: 0;
 }
 
 .hidden {
@@ -382,8 +462,12 @@ button.secondary {
   max-width: 100%;
   padding: 6px 8px;
   border: 1px solid var(--line);
+  border-radius: 999px;
   background: var(--soft);
   color: #25302c;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -411,6 +495,7 @@ button.secondary {
 .snippet {
   padding: 7px 8px;
   border-left: 3px solid var(--blue);
+  border-radius: 0 6px 6px 0;
   background: #f6f9fa;
   color: #27312e;
   font-size: 12px;
@@ -452,6 +537,7 @@ button.secondary {
 .signalChart {
   min-height: 280px;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: #fbfcfb;
   overflow: hidden;
 }
@@ -512,6 +598,7 @@ button.secondary {
 .plotLegend i {
   width: 9px;
   height: 9px;
+  border-radius: 2px;
   flex: 0 0 auto;
 }
 
@@ -519,6 +606,7 @@ button.secondary {
   max-height: 270px;
   overflow: auto;
   border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 
 .signalRows {
@@ -532,6 +620,21 @@ button.secondary {
   padding: 7px 8px;
   border-bottom: 1px solid var(--line);
   font-size: 12px;
+}
+
+.signalRowsHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef2ee;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.signalRowsHeader > * {
+  min-height: 30px;
 }
 
 .pinButton {
@@ -573,9 +676,37 @@ button.secondary {
 }
 
 #runState {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+}
+
+#runState[data-tone="running"] {
+  border-color: #b6d4df;
+  background: #e7f1f5;
+  color: var(--blue);
+}
+
+#runState[data-tone="success"] {
+  border-color: #b9d8ca;
+  background: #e6f2ec;
+  color: var(--green-dark);
+}
+
+#runState[data-tone="warning"] {
+  border-color: #e3c698;
+  background: #fff4e8;
+  color: var(--amber);
+}
+
+#runState[data-tone="error"] {
+  border-color: #dfc5c2;
+  background: #f4eeee;
+  color: var(--red);
 }
 
 #runLog {
@@ -604,7 +735,14 @@ button.secondary {
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+  .boardHeader,
+  .registerRead {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 920px) {
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -622,6 +760,12 @@ button.secondary {
 
   #runLog {
     max-height: 360px;
+  }
+}
+
+@media (max-width: 760px) {
+  .detailBody {
+    grid-template-columns: 1fr;
   }
 }
 

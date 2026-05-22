@@ -35,6 +35,33 @@ const icons = {
 
 const $ = (id) => document.getElementById(id);
 
+function kindClass(value) {
+  return String(value || "unknown")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function setRunState(text, tone = "idle") {
+  const node = $("runState");
+  node.textContent = text;
+  node.dataset.tone = tone;
+}
+
+function setServerStatus(text, tone = "loading") {
+  const node = $("serverStatus");
+  node.textContent = text;
+  node.dataset.tone = tone;
+}
+
+function runTone(status) {
+  if (status === "completed") return "success";
+  if (status === "failed") return "error";
+  if (status === "cancelled") return "warning";
+  if (status === "running" || status === "created") return "running";
+  return "idle";
+}
+
 function esc(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -59,10 +86,10 @@ async function loadModel() {
     populateAdapters(state.model.adapters, state.model.defaults.adapter);
     applyDefaults(state.model.defaults);
     $("sourceLine").textContent = `${state.model.use_case_markdown} | ${state.model.profile_file}`;
-    $("serverStatus").textContent = "Ready";
+    setServerStatus("Ready", "ready");
     render();
   } catch (error) {
-    $("serverStatus").textContent = "Error";
+    setServerStatus("Error", "error");
     $("runLog").textContent = String(error);
   }
 }
@@ -117,7 +144,7 @@ function renderCases() {
             <span class="caseTitle">${esc(item.title)}</span>
             <span class="caseSub">${esc(item.available_test || item.status)}</span>
           </span>
-          <span class="kind">${esc(item.kind)}</span>
+          <span class="kind ${esc(kindClass(item.kind))}">${esc(item.kind)}</span>
         </button>
       `;
     })
@@ -204,7 +231,7 @@ async function transitionAction(item, actionId) {
     $("runLog").textContent += `${$("runLog").textContent ? "\n" : ""}action ${result.action.label}: ${result.previous_state} -> ${result.state}`;
     renderDetails();
   } catch (error) {
-    $("runState").textContent = "Action blocked";
+    setRunState("Action blocked", "warning");
     $("runLog").textContent += `${$("runLog").textContent ? "\n" : ""}${String(error)}`;
   }
 }
@@ -410,7 +437,13 @@ function renderSignalList(entries, total) {
   if (!total) return '<div class="emptySignals">No live signal values captured yet.</div>';
   if (!entries.length) return '<div class="emptySignals">No signal matches the filter.</div>';
   return `
-    <div class="signalRows">
+    <div class="signalRows signalRowsHeader" aria-hidden="true">
+      <span></span>
+      <span>Signal</span>
+      <span>Value</span>
+      <span>Samples</span>
+    </div>
+    <div class="signalRows signalRowsBody">
       ${entries
         .map((entry) => {
           const pinned = Boolean(state.signalBoard.pinned[entry.key]);
@@ -503,7 +536,7 @@ function formPayload(id) {
 
 async function runSelected() {
   const item = selectedCase();
-  $("runState").textContent = "Starting";
+  setRunState("Starting", "running");
   $("runLog").textContent = "";
   try {
     const payload = await api("/api/run", {
@@ -513,7 +546,7 @@ async function runSelected() {
     state.activeRunId = payload.run_id;
     pollRun();
   } catch (error) {
-    $("runState").textContent = "Error";
+    setRunState("Error", "error");
     $("runLog").textContent = String(error);
   }
 }
@@ -530,13 +563,13 @@ async function startSignalMonitor() {
   openSignalDashboard();
   if ($("dry_run").checked) {
     state.monitoring = false;
-    $("runState").textContent = "Monitor blocked";
+    setRunState("Monitor blocked", "warning");
     $("runLog").textContent = "Live monitor requires Dry Run to be unchecked.";
     renderSignalBoard(selectedCase());
     return;
   }
   $("interval").value = 1;
-  $("runState").textContent = `Starting 1s monitor (${MONITOR_CYCLES} max)`;
+  setRunState(`Starting 1s monitor (${MONITOR_CYCLES} max)`, "running");
   $("runLog").textContent = "";
   state.monitoring = true;
   state.signalBoard.samples = {};
@@ -558,7 +591,7 @@ async function startSignalMonitor() {
     pollRun();
   } catch (error) {
     state.monitoring = false;
-    $("runState").textContent = "Monitor error";
+    setRunState("Monitor error", "error");
     $("runLog").textContent = String(error);
     renderSignalBoard(selectedCase());
   }
@@ -584,7 +617,7 @@ async function pollRun() {
   clearTimeout(state.pollTimer);
   try {
     const run = await api(`/api/run/${state.activeRunId}`);
-    $("runState").textContent = `${run.status}${run.exit_code === null ? "" : ` (${run.exit_code})`}`;
+    setRunState(`${run.status}${run.exit_code === null ? "" : ` (${run.exit_code})`}`, runTone(run.status));
     $("runLog").textContent = run.events.map(formatEvent).join("\n");
     if (run.scenario_id === "1") {
       state.signalBoard.runId = run.run_id;
@@ -597,7 +630,7 @@ async function pollRun() {
     else if (run.scenario_id === "1") renderSignalBoard(selectedCase());
   } catch (error) {
     state.monitoring = false;
-    $("runState").textContent = "Error";
+    setRunState("Error", "error");
     $("runLog").textContent += `\n${String(error)}`;
     renderSignalBoard(selectedCase());
   }
