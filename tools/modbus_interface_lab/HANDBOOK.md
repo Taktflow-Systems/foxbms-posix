@@ -73,12 +73,17 @@ http://127.0.0.1:8768/
 
 Use these controls in the interface console:
 
+- `Target`: `Plant API`
+- `Probe`: confirms the HTTP link before the run
+- Use case: `1`
+
+The preset sets:
+
 - `Adapter`: `Backend Polling API`
 - `Host`: `http://127.0.0.1:8766`
 - `Port`: `8766`
 - `Dry Run`: unchecked
 - `Arm Writes`: unchecked
-- Use case: `1`
 - `Read Source`: `Custom`
 - `Register Text`: `40071:1`
 
@@ -119,10 +124,17 @@ long-running live read that should be stopped manually.
 
 To bypass the HTTP compatibility path:
 
+- `Target`: `Plant Modbus`
+- `Probe`: confirms the TCP socket before the run
+
+The preset sets:
+
 - `Adapter`: `Modbus TCP`
 - `Host`: `127.0.0.1`
 - `Port`: `1502`
 - `Dry Run`: unchecked
+- `Read Source`: `Custom`
+- `Register Text`: `40071:1`
 
 Use the same use-case and register controls. This opens Modbus/TCP sessions
 directly against the local plant model.

@@ -113,11 +113,15 @@ h3 {
 .controls {
   padding: 12px 24px;
   display: grid;
-  grid-template-columns: minmax(130px, 1fr) minmax(180px, 2fr) repeat(7, minmax(72px, 1fr)) repeat(2, auto);
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 10px;
   align-items: end;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
+}
+
+.wideField {
+  grid-column: span 2;
 }
 
 label {
@@ -169,6 +173,71 @@ select:focus {
   width: 16px;
   min-height: 16px;
   accent-color: var(--green);
+}
+
+.controlButton {
+  align-self: end;
+  min-height: 34px;
+}
+
+.connectionStatus {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--soft);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 720;
+  overflow-wrap: anywhere;
+}
+
+.connectionStatus::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #9aa6a1;
+  box-shadow: 0 0 0 3px rgba(99, 112, 108, 0.1);
+  flex: 0 0 auto;
+}
+
+.connectionStatus[data-tone="running"] {
+  border-color: #b6d4df;
+  background: #e7f1f5;
+  color: var(--blue);
+}
+
+.connectionStatus[data-tone="running"]::before {
+  background: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 111, 156, 0.12);
+}
+
+.connectionStatus[data-tone="ready"],
+.connectionStatus[data-tone="success"] {
+  border-color: #b9d8ca;
+  background: #e6f2ec;
+  color: var(--green-dark);
+}
+
+.connectionStatus[data-tone="ready"]::before,
+.connectionStatus[data-tone="success"]::before {
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(20, 122, 89, 0.12);
+}
+
+.connectionStatus[data-tone="error"] {
+  border-color: #dfc5c2;
+  background: #f4eeee;
+  color: var(--red);
+}
+
+.connectionStatus[data-tone="error"]::before {
+  background: var(--red);
+  box-shadow: 0 0 0 3px rgba(181, 65, 60, 0.12);
 }
 
 .workspace {
@@ -778,6 +847,10 @@ button.secondary {
   .controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 10px 12px;
+  }
+
+  .wideField {
+    grid-column: span 2;
   }
 
   .details {

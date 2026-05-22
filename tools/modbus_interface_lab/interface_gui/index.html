@@ -17,10 +17,18 @@
 
     <section class="controls" aria-label="Connection settings">
       <label>
+        Target
+        <select id="target_preset" name="target_preset">
+          <option value="manual">Manual</option>
+          <option value="plant_api">Plant API</option>
+          <option value="plant_modbus">Plant Modbus</option>
+        </select>
+      </label>
+      <label>
         Adapter
         <select id="adapter" name="adapter"></select>
       </label>
-      <label>
+      <label class="wideField">
         Host
         <input id="host" name="host" autocomplete="off" placeholder="BMS IP or host" />
       </label>
@@ -60,6 +68,8 @@
         <input id="allow_writes" name="allow_writes" type="checkbox" />
         <span>Arm Writes</span>
       </label>
+      <button id="probeConnection" class="controlButton" type="button" title="Test current connection settings">Probe</button>
+      <div class="connectionStatus wideField" id="connectionStatus" data-tone="idle">Not tested</div>
     </section>
 
     <main class="workspace">

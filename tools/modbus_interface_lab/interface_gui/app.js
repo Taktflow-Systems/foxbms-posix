@@ -17,6 +17,23 @@ const state = {
 };
 
 const MONITOR_CYCLES = 3600;
+const TARGET_PRESETS = {
+  manual: null,
+  plant_api: {
+    adapter: "backend_polling_api",
+    host: "http://127.0.0.1:8766",
+    port: 8766,
+    readMode: "custom",
+    customRegisters: "40071:1",
+  },
+  plant_modbus: {
+    adapter: "modbus_tcp",
+    host: "127.0.0.1",
+    port: 1502,
+    readMode: "custom",
+    customRegisters: "40071:1",
+  },
+};
 
 const icons = {
   play:
@@ -50,6 +67,12 @@ function setRunState(text, tone = "idle") {
 
 function setServerStatus(text, tone = "loading") {
   const node = $("serverStatus");
+  node.textContent = text;
+  node.dataset.tone = tone;
+}
+
+function setConnectionStatus(text, tone = "idle") {
+  const node = $("connectionStatus");
   node.textContent = text;
   node.dataset.tone = tone;
 }
@@ -108,8 +131,10 @@ function applyDefaults(defaults) {
     const input = $(key);
     if (input) input.value = value;
   }
+  $("target_preset").value = "manual";
   $("dry_run").checked = true;
   $("allow_writes").checked = false;
+  setConnectionStatus("Not tested", "idle");
 }
 
 function updateAdapterHints() {
@@ -121,6 +146,33 @@ function updateAdapterHints() {
   }
   $("host").placeholder = "BMS IP or host";
   $("port").placeholder = "Modbus port";
+}
+
+function applyTargetPreset() {
+  const presetKey = $("target_preset").value;
+  const preset = TARGET_PRESETS[presetKey];
+  if (!preset) {
+    setConnectionStatus("Manual target", "idle");
+    return;
+  }
+
+  $("adapter").value = preset.adapter;
+  $("host").value = preset.host;
+  $("port").value = preset.port;
+  $("unit_id").value = 1;
+  $("dry_run").checked = false;
+  $("allow_writes").checked = false;
+  state.selectedId = "1";
+  state.case1ReadMode = preset.readMode;
+  state.case1CustomRegisters = preset.customRegisters;
+  updateAdapterHints();
+  setConnectionStatus("Preset loaded", "ready");
+  render();
+}
+
+function markConnectionDirty() {
+  $("target_preset").value = "manual";
+  setConnectionStatus("Not tested", "idle");
 }
 
 function selectedCase() {
@@ -534,6 +586,37 @@ function formPayload(id) {
   return payload;
 }
 
+function summarizeProbe(result) {
+  if (result.dry_run) return "Dry run only";
+  if (result.adapter === "backend_polling_api") {
+    const mode = result.mode ? ` (${result.mode})` : "";
+    const elapsed = Number.isFinite(result.elapsed_ms) ? ` ${result.elapsed_ms} ms` : "";
+    return `Backend OK${mode}${elapsed}`;
+  }
+  const elapsed = Number.isFinite(result.elapsed_ms) ? ` ${result.elapsed_ms} ms` : "";
+  return `TCP OK${elapsed}`;
+}
+
+async function probeConnection() {
+  if (!state.model) return;
+  setConnectionStatus("Probing", "running");
+  setRunState("Probing connection", "running");
+  try {
+    const result = await api("/api/connection/test", {
+      method: "POST",
+      body: JSON.stringify({ ...formPayload(selectedCase().id), dry_run: false }),
+    });
+    const summary = summarizeProbe(result);
+    setConnectionStatus(summary, "success");
+    setRunState("Connection OK", "success");
+    $("runLog").textContent = JSON.stringify(result, null, 2);
+  } catch (error) {
+    setConnectionStatus("Probe failed", "error");
+    setRunState("Connection failed", "error");
+    $("runLog").textContent = String(error);
+  }
+}
+
 async function runSelected() {
   const item = selectedCase();
   setRunState("Starting", "running");
@@ -647,5 +730,13 @@ function formatEvent(event) {
 $("runSelected").addEventListener("click", runSelected);
 $("cancelRun").addEventListener("click", cancelRun);
 $("monitorSelected").addEventListener("click", startSignalMonitor);
-$("adapter").addEventListener("change", updateAdapterHints);
+$("adapter").addEventListener("change", () => {
+  updateAdapterHints();
+  markConnectionDirty();
+});
+$("host").addEventListener("input", markConnectionDirty);
+$("port").addEventListener("input", markConnectionDirty);
+$("unit_id").addEventListener("input", markConnectionDirty);
+$("target_preset").addEventListener("change", applyTargetPreset);
+$("probeConnection").addEventListener("click", probeConnection);
 loadModel();
