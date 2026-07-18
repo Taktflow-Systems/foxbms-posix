@@ -13,6 +13,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--border)}
 header h1{font-size:18px;font-weight:600;letter-spacing:.5px}
 header h1 span{color:var(--accent2);font-weight:400}
+.header-actions{display:flex;align-items:center;gap:16px}
+.back-link{display:inline-flex;align-items:center;min-height:32px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;font-weight:600;letter-spacing:.5px;text-decoration:none;text-transform:uppercase;transition:border-color .2s,color .2s,background .2s}
+.back-link:hover,.back-link:focus-visible{border-color:var(--accent2);background:rgba(139,92,246,.12);color:var(--accent2);outline:none}
 .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;transition:background .3s}
 .status-dot.ok{background:var(--ok);box-shadow:0 0 6px var(--ok)}
 .status-dot.err{background:var(--err);box-shadow:0 0 6px var(--err)}
@@ -96,7 +99,10 @@ footer{background:var(--panel);border-top:1px solid var(--border);padding:8px 20
 <div class="root">
 <header>
   <h1>foxBMS 2 <span>— Battery Management System SIL Demo</span></h1>
-  <div style="display:flex;align-items:center"><span class="status-dot err" id="connDot"></span><span id="connLabel">Disconnected</span></div>
+  <div class="header-actions">
+    <a class="back-link" href="https://taktflow-systems.com/" aria-label="Back to Taktflow Systems main page">&larr; Main site</a>
+    <div style="display:flex;align-items:center"><span class="status-dot err" id="connDot"></span><span id="connLabel">Disconnected</span></div>
+  </div>
 </header>
 <div class="main">
   <!-- Col 1: Battery Physical (Plant Reality) -->
