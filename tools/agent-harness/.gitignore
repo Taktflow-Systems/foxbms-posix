@@ -1,0 +1,6 @@
+# Runtime artifacts of bench runs launched from this package (root logs/ only;
+# skills/*/demo evidence trees contain committed logs/ subdirs)
+/logs/
+# Pilot source tree is fetched by skills/sil-build/pilot/build.sh
+skills/sil-build/pilot/openbsw/
+__pycache__/

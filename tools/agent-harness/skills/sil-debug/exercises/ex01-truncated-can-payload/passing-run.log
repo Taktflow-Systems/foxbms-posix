@@ -1,0 +1,228 @@
+hello
+0: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 1
+0: RefApp: [90mLIFECYCLE[0m: INFO: Initialize runtime
+0: RefApp: [90mLIFECYCLE[0m: INFO: Initialize safety
+0: RefApp: SAFETY: DEBUG: SafetyManager initialized
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize safety done
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize runtime done
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 1 done
+0: RefApp: [90mLIFECYCLE[0m: INFO: Run level 1
+0: RefApp: [90mLIFECYCLE[0m: INFO: Run runtime
+0: RefApp: [90mLIFECYCLE[0m: INFO: Run safety
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Run safety done
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Run runtime done
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 1 done
+0: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 2
+0: RefApp: [90mLIFECYCLE[0m: INFO: Initialize can
+0: RefApp: [90mLIFECYCLE[0m: INFO: Initialize eth
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize eth done
+0: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize can done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 2 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run level 2
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run can
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run eth
+1: RefApp: [35mETHERNET[0m: CRITICAL: TapEthernetDriver start failed!
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run eth done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run can done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 2 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 3
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 3 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run level 3
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 3 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 4
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize transport
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize transport done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 4 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run level 4
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run transport
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run transport done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 4 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 5
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize docan
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize ethernet
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize storage
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize docan done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize ethernet done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize storage done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 5 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run level 5
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run docan
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run ethernet
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run storage
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run docan done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run ethernet done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run storage done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 5 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 6
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize doipServer
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize routing
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize doipServer done
+1: RefApp: [96mROUTING[0m: DEBUG: Adding channel ID 0 of type 1
+1: RefApp: [96mROUTING[0m: DEBUG: Adding CAN channel (ID=0,name=CAN0) to router
+1: RefApp: [96mROUTING[0m: DEBUG: Adding channel ID 1 of type 0
+1: RefApp: [96mROUTING[0m: DEBUG: Adding PDU TP channel (ID=1,name=PDU_TRANSPORT0) to router
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize routing done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 6 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run level 6
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run doipServer
+1: RefApp: [90mLIFECYCLE[0m: INFO: Run routing
+1: RefApp: [36mTCP[0m: INFO: Socket prepared at port 13400
+1: RefApp: [92mDOIP[0m: INFO: DoIp Initialized
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run doipServer done
+1: RefApp: [37mUDP[0m: INFO: DatagramSocket bound to UDP port 2345
+1: RefApp: [37mUDP[0m: INFO: DatagramSocket joined the group
+1: RefApp: [37mUDP[0m: INFO: DatagramSocket bound to UDP port 1234
+1: RefApp: [37mUDP[0m: INFO: DatagramSocket connecting to 239.192.255.253:2345
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run routing done
+1: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 6 done
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 7
+1: RefApp: [90mLIFECYCLE[0m: INFO: Initialize uds
+2: RefApp: [37mUDP[0m: INFO: DatagramSocket bound to UDP port 13400
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x14
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x22
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x22CF01
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x22CF02
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x2E
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x2ECF03
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x31
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x3101
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x3102
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x3103
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x3E
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x10
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x28
+2: RefApp: [93mUDS[0m: DEBUG: Add diag job successfully 0x19
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize uds done
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 7 done
+2: RefApp: [90mLIFECYCLE[0m: INFO: Run level 7
+2: RefApp: [90mLIFECYCLE[0m: INFO: Run uds
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Run uds done
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 7 done
+2: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 8
+2: RefApp: [90mLIFECYCLE[0m: INFO: Initialize sysadmin
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize sysadmin done
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 8 done
+2: RefApp: [90mLIFECYCLE[0m: INFO: Run level 8
+2: RefApp: [90mLIFECYCLE[0m: INFO: Run sysadmin
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Run sysadmin done
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 8 done
+2: RefApp: [90mLIFECYCLE[0m: INFO: Initialize level 9
+2: RefApp: [90mLIFECYCLE[0m: INFO: Initialize demo
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize demo done
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Initialize level 9 done
+2: RefApp: [90mLIFECYCLE[0m: INFO: Run level 9
+2: RefApp: [90mLIFECYCLE[0m: INFO: Run demo
+2: RefApp: [37mUDP[0m: INFO: UDP echo test server initialisation
+2: RefApp: [37mUDP[0m: INFO: DatagramSocket bound to UDP port 49444
+2: RefApp: [37mUDP[0m: INFO: Listening on port 49444.
+2: RefApp: [37mUDP[0m: INFO: DatagramSocket joined the group
+2: RefApp: [37mUDP[0m: INFO: Joined multicast group
+2: RefApp: [37mUDP[0m: INFO: UDP Iperf2 server initialisation
+2: RefApp: [37mUDP[0m: INFO: DatagramSocket bound to UDP port 5001
+2: RefApp: [37mUDP[0m: INFO: Listening on port 5001.
+2: RefApp: [36mTCP[0m: INFO: Socket prepared at port 49555
+2: RefApp: [36mTCP[0m: INFO: Socket prepared at port 5001
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Run demo done
+2: RefApp: [90mLIFECYCLE[0m: DEBUG: Run level 9 done
+12: RefApp: DEMO: DEBUG: Storage read done, result=3, size=5, charParam0=0xA
+13: RefApp: DEMO: DEBUG: Storage write done, result=3
+502: RefApp: [37mUDP[0m: [31;1mERROR[0m: LwipDatagramSocket::send() failed (status:0xfffffffa)!
+1002: RefApp: DEMO: INFO: [Middleware] Foo broadcast sent, fooValue=1
+1002: RefApp: DEMO: INFO: [Middleware] Foo attribute changed, fooValue=1
+1003: RefApp: [37mUDP[0m: [31;1mERROR[0m: LwipDatagramSocket::send() failed (status:0xfffffffa)!
+1012: RefApp: DEMO: DEBUG: Sending frame 0
+1013: RefApp: [94mCAN[0m: DEBUG: [CanDemoListener] CAN frame sent, id=0x558, length=4
+1502: RefApp: [37mUDP[0m: [31;1mERROR[0m: LwipDatagramSocket::send() failed (status:0xfffffffa)!
+2002: RefApp: DEMO: INFO: [Middleware] Foo broadcast sent, fooValue=2
+2002: RefApp: DEMO: INFO: [Middleware] Foo attribute changed, fooValue=2
+2002: RefApp: DEMO: INFO: [Middleware] Foo get response, fooValue=2
+2012: RefApp: DEMO: DEBUG: Sending frame 1
+2013: RefApp: [94mCAN[0m: DEBUG: [CanDemoListener] CAN frame sent, id=0x558, length=4
+3002: RefApp: DEMO: INFO: [Middleware] Foo broadcast sent, fooValue=3
+3002: RefApp: DEMO: INFO: [Middleware] Foo attribute changed, fooValue=3
+3012: RefApp: DEMO: DEBUG: Sending frame 2
+3013: RefApp: [94mCAN[0m: DEBUG: [CanDemoListener] CAN frame sent, id=0x558, length=4
+4002: RefApp: DEMO: INFO: [Middleware] Foo broadcast sent, fooValue=4
+4002: RefApp: DEMO: INFO: [Middleware] Foo attribute changed, fooValue=4
+4002: RefApp: DEMO: INFO: [Middleware] Foo get response, fooValue=4
+4012: RefApp: DEMO: DEBUG: Sending frame 3
+4013: RefApp: [94mCAN[0m: DEBUG: [CanDemoListener] CAN frame sent, id=0x558, length=4
+5002: RefApp: DEMO: INFO: [Middleware] Foo broadcast sent, fooValue=5
+5002: RefApp: DEMO: INFO: [Middleware] Foo attribute changed, fooValue=5
+5012: RefApp: DEMO: DEBUG: Sending frame 4
+5013: RefApp: [94mCAN[0m: DEBUG: [CanDemoListener] CAN frame sent, id=0x558, length=4
+lc poweroff
+ ok
+
+> 5998: RefApp: CONSOLE: INFO: Received console command "lc poweroff"
+5999: RefApp: CONSOLE: INFO: Console command succeeded
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 9
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown demo
+5999: RefApp: [37mUDP[0m: INFO: Closing port 49444.
+5999: RefApp: [37mUDP[0m: INFO: DatagramSocket @ port 49444 closed
+5999: RefApp: [37mUDP[0m: INFO: Closing port 5001.
+5999: RefApp: [37mUDP[0m: INFO: DatagramSocket @ port 5001 closed
+5999: RefApp: [36mTCP[0m: INFO: Socket at port 49555 closed
+5999: RefApp: [36mTCP[0m: INFO: Socket at port 5001 closed
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown demo done
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 9 done
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 8
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown sysadmin
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown sysadmin done
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 8 done
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 7
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown uds
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x14
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x22
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x2E
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x31
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x3E
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x10
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x28
+5999: RefApp: [93mUDS[0m: DEBUG: Remove diag job successfully 0x19
+5999: RefApp: [93mUDS[0m: DEBUG: DiagDispatcher::shutdown()
+5999: RefApp: [93mUDS[0m: DEBUG: DiagDispatcher incoming connection shutdown complete
+5999: RefApp: [93mUDS[0m: DEBUG: DiagDispatcher::connectionManagerShutdownComplete()
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown uds done
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 7 done
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 6
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown doipServer
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown routing
+5999: RefApp: [36mTCP[0m: INFO: Socket at port 13400 closed
+5999: RefApp: [92mDOIP[0m: DEBUG: DoIpServerTransportLayer::closeAllConnections()
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown doipServer done
+5999: RefApp: [37mUDP[0m: INFO: DatagramSocket to 239.192.255.253:2345 disconnected
+5999: RefApp: [37mUDP[0m: INFO: DatagramSocket @ port 1234 closed
+5999: RefApp: [37mUDP[0m: INFO: DatagramSocket @ port 2345 closed
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown routing done
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 6 done
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 5
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown docan
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown ethernet
+5999: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown storage
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown docan done
+5999: RefApp: [92mDOIP[0m: DEBUG: DoIpServerTransportLayer::executeEventClose()
+5999: RefApp: [37mUDP[0m: INFO: DatagramSocket @ port 13400 closed
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown ethernet done
+5999: RefApp: [92mDOIP[0m: DEBUG: DoIpServerTransportLayer::releaseConnections()
+5999: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown storage done
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 5 done
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 4
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown transport
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown transport done
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 4 done
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 3
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 3 done
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 2
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown can
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown eth
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown eth done
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown can done
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 2 done
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown level 1
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown runtime
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Shutdown safety
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown safety done
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown runtime done
+6000: RefApp: [90mLIFECYCLE[0m: DEBUG: Shutdown level 1 done
+6000: RefApp: [90mLIFECYCLE[0m: INFO: Lifecycle shutdown complete

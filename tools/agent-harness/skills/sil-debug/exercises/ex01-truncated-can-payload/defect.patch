@@ -1,0 +1,13 @@
+diff --git a/executables/referenceApp/application/src/systems/DemoSystem.cpp b/executables/referenceApp/application/src/systems/DemoSystem.cpp
+index 34e0c46..c25dd46 100644
+--- a/executables/referenceApp/application/src/systems/DemoSystem.cpp
++++ b/executables/referenceApp/application/src/systems/DemoSystem.cpp
+@@ -189,7 +189,7 @@ void DemoSystem::cyclic()
+         {
+             Logger::debug(DEMO, "Sending frame %d", canSentCount);
+             etl::be_uint32_t canData{canSentCount};
+-            ::can::CANFrame frame(0x558, static_cast<uint8_t*>(canData.data()), 4);
++            ::can::CANFrame frame(0x558, static_cast<uint8_t*>(canData.data()), 3);
+             canTransceiver->write(frame);
+             ++canSentCount;
+         }

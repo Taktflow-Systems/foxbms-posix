@@ -1,0 +1,10 @@
+# Compose overlay (harbor --extra-docker-compose): pin resolvers for the
+# benchmark task container. Container DNS through Docker's embedded
+# resolver -> systemd-resolved stub intermittently failed under load
+# ("Could not resolve host: github.com"), killing verifier tool
+# downloads and stealing 1-3 tasks per run (iteration 06 / change 007).
+services:
+  main:
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8

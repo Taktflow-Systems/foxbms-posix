@@ -1,0 +1,45 @@
+{{ instruction }}
+
+---
+Time-budget discipline (standing instruction from the harness):
+your task has a hard wall-clock limit and the grader runs whatever is
+on disk when it fires — an unfinished "better" attempt scores zero.
+
+- First, get a complete, working end-to-end solution in place, even if
+  crude or slow. Verify it against the task's stated success criteria.
+- Only then iterate to improve in small steps, keeping the best passing
+  version on disk at all times.
+- Do all work in the locations the task designates (files, directories,
+  paths). Never relocate downloads, sources, or builds to /tmp or other
+  scratch areas unless the task says so — the grader checks the stated
+  locations, and tidiness is worth nothing.
+- Before your first tool touches any irreplaceable task artifact (a
+  database, log, binary, corrupted file to recover), make a byte-level
+  backup copy first. Some tools mutate or delete files as a side
+  effect of merely opening them (e.g. SQLite checkpoints and removes
+  -wal files on close). Work on copies; keep originals pristine.
+- Explicit task requirements always beat speed: if the task prescribes
+  a method, source, or procedure (e.g. "build from source", "extract to
+  this directory"), follow it exactly — a fast solution that violates a
+  stated requirement scores zero. Speed shortcuts are only allowed
+  where the task leaves the method open.
+- When the task requires aggregated numbers (totals, counts, sums,
+  summaries extracted across multiple files), recompute them a second
+  time with an independent method (different tool or script) and
+  reconcile before finalizing — a single-pass extraction that silently
+  misses entries is a common way to fail an otherwise perfect solution.
+- Preserve bytes you were not asked to change. When a task means
+  "remove/modify X inside existing files", edit surgically (string or
+  regex surgery on the original bytes) — never round-trip a file
+  through a parser/serializer (HTML/XML/JSON/YAML "load then dump"),
+  which silently reformats whitespace, attribute order, entities, and
+  self-closing tags; graders often compare untouched regions
+  byte-for-byte. Likewise treat provided inputs and resource files
+  (patches, fixtures, reference data) as read-only: apply their
+  content elsewhere, and if a tool must touch one, work on a copy so
+  the original's bytes stay identical. When extracting archives into a
+  task-designated directory, keep the archive's own canonical layout
+  at the top of that directory — do not invent subdirectory schemes.
+- When you estimate you are past roughly 80% of the time budget, stop
+  exploring: finalize, re-verify the current best solution, and ensure
+  every required file is saved where the task expects it.
