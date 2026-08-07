@@ -7,87 +7,88 @@ driving the rig. Do not look for or act on any earlier version.
 ---
 
 You are continuing the debugger-forced reset-type test campaign. State of
-knowledge as of 2026-08-07 (path decision update):
+knowledge as of 2026-08-07 (post detailed-blocker report):
 
-## Established — do not re-derive
+## Campaign status by requirement — do not re-derive
 
-- Debug-port writes into ACCEN-protected space are refused on this hardware
-  (SCU_ACCEN00 live-read 0x66, SMU_ACCEN0 live-read 0x06 - CPU masters
-  only, Cerberus TAG 28 excluded) and every refused write fires ALM7[20]
-  (FSP-enabled) with the full safety cascade. PERMANENT RULE: no debugger
-  writes to SCU/SMU kernel register space. Reads are always processed and
-  remain safe. Plain RAM writes are NOT ACCEN-gated and are allowed.
-- UDS ECUReset: NOT implemented in this firmware at present - path closed.
-  (Durable ask, in parallel: when UDS lands, map hardReset/softReset onto
-  defined RSTCON.SW classes and document it; then the test rides a
-  production feature.)
-- No iLLD linked, no Var.Call-able reset-request function - path closed.
-- Therefore the ONLY remaining bench injection path for system/application
-  resets is a CPU-EXECUTED RAM STUB. Its writes carry a CPU bus-master TAG
-  (passes ACCEN00), and the CPU is running when the reset fires (errata
-  OCDS_TC.H015/H018 avoided). The reset and cause-latching are pure
-  hardware - evidence validity for the decode requirement is unaffected by
-  the trigger being a stub.
-- Empirical note: the failed run held the CPU halted for several seconds
-  with no external-watchdog strike, so brief staging halts are tolerated
-  on this rig. Keep them short anyway.
-- Still open, capture for the record: SCU_RSTCON baseline value in normal
-  operation (settles the vacuous-readback question from the failed run).
-- The warm variant remains untested and ON HOLD.
+- <sysreq-warm> (warm PORST): PASSED on hardware 2026-07-03 (18/18
+  registers). The debugger-forced warm variant is RETIRED unless
+  re-evidence is explicitly requested.
+- <sysreq-system> (system reset): NOT BLOCKED. The firmware writes RSTCON
+  exactly once, in Mcu_Init() from static config, and it statically
+  selects SYSTEM class (RSTCON=0x100, live-confirmed on two rigs). The
+  implemented, proven UDS hardReset (subfunction 0x01) therefore produces
+  a genuine system reset - zero protected writes, no CPU halt. This also
+  closes the old open item: the failed run's RSTCON-readback guard passed
+  vacuously (readback matched because the value was already there).
+- <sysreq-application> (application reset): BLOCKED, Path C, with
+  evidence: no production code path selects a reset class (symbol sweep:
+  Mcu_PerformReset is void/void, only sets SWRSTREQ; UDS layer accepts
+  only 0x01/0x81 and discards the subfunction after validation), the
+  debugger cannot write RSTCON (ACCEN00=0x66, TAG 28 excluded, refusal
+  itself raises a bus-error alarm), and the RAM-stub route is RETIRED -
+  see below. Unblocking requires firmware-side collaboration: either a
+  dedicated CPU-context test hook, or (cheap, recommended ask) a
+  test-build config variant with McuResetCfg set to APPLICATION class so
+  the existing proven UDS reset produces it. Note in evidence that such a
+  build is a test-config variant; the decode logic under test is
+  unchanged.
 
-## Stub qualification ladder — one rung per step, never skip to the top
+## Stub route retired — and a new hard rule
 
-Precheck (read-only, one non-intrusive attach): SMU_AG0..AG11 alarm-clean
-check (not clean -> record and STOP), SCU_RSTCON baseline read.
+- Halting CPU0 while the firmware runs is DESTRUCTIVE on this build:
+  proven live - the halt window latches AG7[17] (XBAR0 bus error) and
+  AG10[17] (RT1 expiry; RT servicing lives on CPU0). Any reset fired from
+  a staging halt carries contaminated cause evidence even if it works.
+- A debugger-placed stub entered from a user-mode RTOS task context traps
+  on the Safety-ENDINIT unlock (supervisor-only); hand-setting PSW is
+  unqualified. Do not attempt stubs or Var.Call on this firmware.
+- HARD RULE: do not halt CPU0 while the DUT is in normal operation. Reads
+  via runtime access only.
 
-1. SCRATCH RAM: identify a safe, unused RAM region from the linker map
-   (not touched by running firmware or DMA). Record the address. All stub
-   staging happens there.
-2. MECHANICS PROOF (harmless): stub = write a magic value to a scratch
-   word, then endless loop. Stage it: Break (brief), download stub, set
-   the core's PC to the stub, disable interrupts for that core (first stub
-   instruction or ICR via debugger while halted), Go. Verify the magic
-   value appeared, re-read AG0..11 (must still be clean), then Break and
-   restore nothing - proceed only if clean. This rung proves: RAM
-   download, PC hijack, execution, and that staging itself latches no
-   alarm.
-3. ENDINIT-CYCLE PROOF (still harmless): stub = Safety-ENDINIT unlock ->
-   relock -> magic write -> loop. Transcribe the unlock sequence from the
-   public iLLD source (IfxScuWdt_clearSafetyEndinit / setSafetyEndinit) -
-   do not invent instruction sequences. Verify magic + AGs clean. This
-   rung proves the password sequence works from the stub context.
-4. LIVE INJECTION - application class FIRST (smaller reset domain), system
-   class on a separate later run. Stub sequence: disable interrupts ->
-   Safety-ENDINIT unlock -> SCU_RSTCON.SW = class -> Safety-ENDINIT
-   relock -> CPU-ENDINIT unlock -> SCU_SWRSTCON.SWRSTREQ = 1 -> loop
-   (never returns; the chip reboots). Execution: stage while briefly
-   halted, Go, then IMMEDIATELY NoDebug so the reset happens with the
-   debugger detached; wait the wake-up time; attach fresh (NoDebug then
-   Attach); read stored cause + full register set.
-   Acceptance: stored reset-cause CHANGES from baseline and decodes to the
-   injected class; live RSTSTAT and all AG groups clear after boot; DUT
-   answers over the normal channel; evidence CSV written. Record the stub
-   bytes, load address, and the exact TRACE32 command log alongside.
-5. If any rung fails or latches an alarm: STOP at that rung, record
-   everything, do not improvise a variant in-session. A failed rung is the
-   slot outcome.
+## This slot, in order
+
+1. PRE-RESET EVIDENCE CAPTURE (reads only - the coming reset erases the
+   latched state): full SMU_AG0..AG11, SMU_STS (RTS/RTME), live
+   SCU_RSTSTAT, stored reset-cause words, plus the session notes of the
+   halt incident. Nothing is cleared by hand - recording first is the
+   whole point.
+2. FIRE UDS hardReset (0x01). Expected: genuine system reset; startup SW
+   clears the latched alarms. This run doubles as (a) a clearing-clause
+   bonus specimen - startup recovery from a heavily-latched alarm state -
+   and (b) a PROVISIONAL <sysreq-system> decode specimen (document that
+   the pre-reset baseline was dirty).
+3. POST-RESET VERIFICATION (attach fresh, reads only): stored cause
+   decodes SYSTEM_RESET; live RSTSTAT cleared; AG0..AG11 all clear; DUT
+   answers; recover to normal operation.
+4. FORMAL <sysreq-system> RUN: repeat the UDS hardReset once more from
+   the now-clean baseline as the formal evidence specimen. Evidence CSV
+   for both runs, before/after register sets, exact commands.
+5. RECORD THE <sysreq-application> ESCALATION as the slot outcome: the
+   firmware-collaboration ask (test hook, or the McuResetCfg=application
+   config variant - the cheap option needing no test-hook code). Do not
+   improvise further injection attempts.
+6. RAISE SEPARATELY (fleet-wide, tangential): the ECUReset-behavior test
+   that uses softReset=3 asserts a timer reset in its step 8, but the
+   firmware rejects subfunction 3 as SUB_FUNCTION_NOT_SUPPORTED - so that
+   step is silently vacuous or failing. Same vacuous-pass family as the
+   RSTCON guard. File it; do not fix in-session.
 
 ## Safety rails
 
-- One non-resetting attach per step; on failure run the probe-health check
-  and STOP. No SYStem.Up, no SYStem.Mode Down, no retry storms.
-- No debugger writes to SCU/SMU kernel space. RAM staging writes and
-  stub-executed writes only.
-- Never clear an alarm or reset-status register before it is recorded.
-- No core may be left halted at any moment a reset can fire.
-- Keep staging halts brief; re-verify AG cleanliness between rungs.
+- Reads only over the debug port; no halting CPU0 in normal operation; no
+  stubs, no Var.Call, no writes to ACCEN-protected space.
+- Never clear an alarm or status register by hand; resets clear state via
+  the startup path, which is itself evidence.
+- One non-resetting attach per step; on failure run the probe-health
+  check and STOP.
 - Leave the DUT in Standby and the probe detached (NoDebug) at the end.
 - Anything unexpected: stop, record, report - do not improvise.
 
 ## Deliverable
 
-Short write-up: RSTCON baseline value and vacuous-readback verdict; per-
-rung results (scratch address, magic checks, AG re-reads); for rung 4 the
-full acceptance evidence and command log; or the failed-rung record. Note
-explicitly that the parallel durable path (UDS ECUReset class mapping when
-implemented) remains the recommended production-grade replacement.
+Short write-up: the pre-reset capture, both hardReset runs' evidence
+(provisional + formal), the post-reset clearing verification, the recorded
+application-class escalation text, and the separately-filed vacuous-test
+finding. If any established fact above is contradicted live, say so loudly
+and stop.
