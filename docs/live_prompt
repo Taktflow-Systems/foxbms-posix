@@ -1,77 +1,85 @@
-# Prompt for the on-rig HIL agent — triage the failed system-reset injection
+# Prompt for the on-rig HIL agent — CURRENT (supersedes all earlier versions)
 
-Copy everything below this line into the agent session driving the rig.
+This file is rewritten in place after every session; it is always the single
+current prompt. Copy everything below this line into the agent session
+driving the rig. Do not look for or act on any earlier version.
 
 ---
 
-You are continuing from the failed `--type system` run of the debugger-forced
-reset-type test. Observed: RSTCON preselect landed (0x00000100, correct),
-stored reset-cause variable identical to the pre-injection baseline, SMU
-alarm groups AG7 and AG10 latched, DUT unresponsive over CAN/UDS immediately
-after, probe healthy throughout, DUT fully recovered after re-running
-normal_operation() (drive-block diagnostic event present, as before).
+You are continuing the debugger-forced reset-type test campaign. State of
+knowledge as of 2026-08-07:
 
-## Working hypothesis (to confirm or refute, not to assume)
+## Established (do not re-derive)
 
-The reset DID fire, but the CPU was halted (Break) when SWRSTREQ was
-triggered. Per TC37x errata OCDS_TC.H018, the startup software restarts and
-then re-halts on the retained DBGSR state before boot completes, so the
-firmware never re-captured the stored reset-cause variable (RAM retains the
-old value across a system reset — "unchanged stored value" cannot
-distinguish no-reset from half-boot). The halted boot then feeds the newly
-enabled recovery timers: RT0's alarm map includes GROUP7_ALARM30 (PFlash
-FLASHCON configuration monitor — plausibly tripped by a boot strangled
-mid-flash-configuration), a halted CPU cannot service the RT, and ~20 ms
-later (RTD=1,000,000 at fBACK/2) it expires into ALM10[16] + FSP error-pin
-activation (ALM10[18]) — killing CAN via the SBC and latching exactly AG7
-and AG10. Related erratum OCDS_TC.H015 (spurious lockstep alarm, would show
-in AG0) apparently did not fire — note if AG0 was clear.
+- The failed `--type system` run is ROOT-CAUSED, no reset ever occurred:
+  the TRACE32 `Data.Set` to SCU_SWRSTCON is a Cerberus/DAP (bus-master
+  TAG 28) write into ACCEN-gated space that authorizes only CPU masters, so
+  it was refused with a bus error. The refusal raised ALM7[20] (SPB Bus
+  Error Event, FSP directly enabled on it), FSP assertion raised ALM10[18]
+  (RT1-mapped), the CPU was left halted (Break with no Go on the success
+  path - a confirmed script bug), so RT1 was never serviced and expired
+  into ALM10[17] (~20 ms at default prescaler). Captured live:
+  SMU_AG7=0x00100000, SMU_AG10=0x00060000, contactors/CAN knocked out by
+  the safety reaction, stored reset-cause unchanged because nothing
+  rebooted. The RSTCON preselect write is NOT affected (ENDINIT-only
+  protection, TRACE32 auto-override handles it; readback-confirmed live).
+- PROHIBITED from now on: any debug-port write to SCU_SWRSTCON, and any
+  debug-port write into ACCEN-protected space generally. Every attempt
+  fires ALM7[20]+FSP and drops the DUT. This includes "retry once to
+  check".
+- The warm variant remains untested and ON HOLD - not this slot.
 
-## Tasks, in order — evidence first, target interaction last
+## Open verification items (close these first, they are cheap)
 
-1. HARVEST (no target interaction). From the failed run's evidence CSV and
-   step notes, extract and report verbatim:
-   - SCU_RSTSTAT_live (a set SW bit = the reset fired; 0x0 = either no reset
-     or the half-boot got far enough to clear it)
-   - stored rstStat and wStat (before and after rows)
-   - all twelve AG words. Decode AG7 and AG10 bit by bit. Specifically:
-     AG7 bit 30 (FLASHCON monitor, RT0-mapped), AG10 bit 16 (RT0 timeout),
-     bit 17 (RT1 timeout), bit 18 (FSP error-pin activation), bit 22
-     (access-enable error). State which hypothesis bits are present/absent.
-2. SESSION-LOG CHECK (no target interaction). In the TRACE32/RCL log of the
-   failed run: at the post-injection attach, was any core reported halted?
-   Where was the PC (SSW/boot range vs application)? Any "stopped" or
-   emulation-state messages. This is the H018 smoking gun.
-3. LIVE READ (one non-intrusive attach: NoDebug then Attach, no Up/Down, no
-   Go/Break). Read and record: SMU_RTC, SMU_RTAC00/01/10/11 (live RT
-   mappings), SMU_STS (RTS0/1, RTME0/1), SMU_AG0..AG11, SCU_RSTSTAT,
-   DBGSR of every CPU, and the TRACE32 settings SYStem.Option.DOWNMODE and
-   SYStem.Option.EndInitProtectionOverride. Then NoDebug and detach.
-4. CONTROLLED RE-TEST (only if 1-3 are captured and the DUT is in normal
-   operation): repeat the system-reset injection with ONE change — after the
-   RSTCON preselect/readback, issue Go and only then trigger
-   SWRSTCON.SWRSTREQ as a runtime write (DUALPORT is ON), so no core is
-   halted when the reset fires. Prediction if the hypothesis is right:
-   stored cause updates to SYSTEM_RESET, AG7/AG10 stay clear, CAN stays up.
-   Record the same evidence set either way.
+1. One non-intrusive attach (NoDebug then Attach). Live-read and record:
+   - SCU_ACCEN0 (0xF00363FC) - expected 0x66 (TAG 1,2,5,6 = CPU masters
+     only; TAG 28 absent). This closes the last inferred link.
+   - SMU_ACCEN0 - same question for the earlier SMU_AG8 bus error.
+   - SMU_AG0..AG11 (confirm the rig is alarm-clean before any new work;
+     if not clean, record and STOP - do not clear before recording).
+   - SMU_RTC, SMU_RTAC00/01/10/11, SMU_STS (RTS/RTME bits).
+   - TRACE32 settings: SYStem.Option.DOWNMODE,
+     SYStem.Option.EndInitProtectionOverride (record, do not change).
+   Then NoDebug. If the attach fails: probe-health check, STOP.
+
+## Redesigned injection for system/application (validate this slot if the
+## DUT is healthy and step 1 is clean)
+
+The trigger must carry a CPU bus-master TAG. Debugger keeps only the roles
+proven to work: RSTCON.SW preselect + readback, and post-reset evidence
+reads. Two candidate paths, in preference order:
+
+A. Firmware-executed trigger via Var.Call: with symbols loaded, call the
+   firmware's own reset-request function (iLLD-style performReset or the
+   project equivalent) so the SWRSTCON write executes on a CPU (passes
+   ACCEN, firmware handles CPU-ENDINIT) and the CPU is RUNNING when the
+   reset fires (avoids errata OCDS_TC.H015/H018). Sequence: preselect
+   RSTCON.SW via debugger, readback, Go (CPU must be running), then
+   Var.Call the trigger, immediately NoDebug, wait wake-up time, attach
+   fresh, read stored cause + register set.
+B. Bench-triggered via UDS ECUReset: preselect RSTCON.SW via debugger,
+   drop to NoDebug BEFORE the trigger, command the reset over UDS, wait,
+   attach fresh, read. Weakest debugger involvement, production trigger
+   path - use this if Var.Call setup is not available this slot.
+
+Acceptance for either path: stored reset-cause changes from baseline and
+decodes to the injected type; live RSTSTAT and all AG groups clear after
+boot; DUT answers UDS; evidence CSV written. Also explicitly record which
+path (A or B) was used.
 
 ## Safety rails
 
-- Do NOT run the warm variant this slot.
-- One non-resetting attach per step; if it fails, run the probe-health check
-  and STOP — do not retry-storm, do not escalate to SYStem.Up or Down.
-- Do not clear any latched alarm or reset-status register before it has been
-  read and recorded.
-- If anything deviates from the expected sequence, stop and report rather
-  than improvising.
+- One non-resetting attach per step; on failure run the probe-health check
+  and STOP. No SYStem.Up, no SYStem.Mode Down, no retry storms.
+- Never clear an alarm or reset-status register before it is recorded.
+- CPU must be RUNNING whenever a reset is expected to fire (H015/H018).
 - Leave the DUT in Standby and the probe detached (NoDebug) at the end.
+- Anything unexpected: stop, record, report - do not improvise.
 
 ## Deliverable
 
-A short write-up: verbatim register values, decoded AG bits vs the
-hypothesis table, H018 verdict (confirmed / refuted / undetermined), whether
-step 4 passed with the Go-before-trigger change, and — if the AG bits match
-the RT maps — an explicit note that this run is incidental live evidence of
-the recovery-timer expiry path (worth its own evidence entry). If the
-hypothesis is refuted, list which observation broke it and the next
-candidate explanation.
+Short write-up: the ACCEN0 values (closes or reopens the root cause), the
+alarm-clean check result, which redesigned path was validated and its full
+register evidence, and any deviation. If ACCEN0 does NOT read 0x66, say so
+loudly - the root-cause chain has one inferred link and that reading is
+its test.
