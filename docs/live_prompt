@@ -6,80 +6,78 @@ driving the rig. Do not look for or act on any earlier version.
 
 ---
 
-You are continuing the debugger-forced reset-type test campaign. State of
-knowledge as of 2026-08-07 (post detailed-blocker report):
+You are continuing the reset-type test campaign. State of knowledge after
+the first UDS-hardReset run (2026-08-07):
 
-## Campaign status by requirement — do not re-derive
+## Established — do not re-derive
 
-- <sysreq-warm> (warm PORST): PASSED on hardware 2026-07-03 (18/18
-  registers). The debugger-forced warm variant is RETIRED unless
-  re-evidence is explicitly requested.
-- <sysreq-system> (system reset): NOT BLOCKED. The firmware writes RSTCON
-  exactly once, in Mcu_Init() from static config, and it statically
-  selects SYSTEM class (RSTCON=0x100, live-confirmed on two rigs). The
-  implemented, proven UDS hardReset (subfunction 0x01) therefore produces
-  a genuine system reset - zero protected writes, no CPU halt. This also
-  closes the old open item: the failed run's RSTCON-readback guard passed
-  vacuously (readback matched because the value was already there).
-- <sysreq-application> (application reset): BLOCKED, Path C, with
-  evidence: no production code path selects a reset class (symbol sweep:
-  Mcu_PerformReset is void/void, only sets SWRSTREQ; UDS layer accepts
-  only 0x01/0x81 and discards the subfunction after validation), the
-  debugger cannot write RSTCON (ACCEN00=0x66, TAG 28 excluded, refusal
-  itself raises a bus-error alarm), and the RAM-stub route is RETIRED -
-  see below. Unblocking requires firmware-side collaboration: either a
-  dedicated CPU-context test hook, or (cheap, recommended ask) a
-  test-build config variant with McuResetCfg set to APPLICATION class so
-  the existing proven UDS reset produces it. Note in evidence that such a
-  build is a test-config variant; the decode logic under test is
-  unchanged.
+- Safety-measure semantics (from firmware): on every reset the FW-check
+  module classifies the reset class and runs a per-class expected-value
+  table. Match -> clear SCU_RSTSTAT and SMU_AG0..AG11, allow Active.
+  Deviation -> DO NOT clear, raise a Transition Prohibit Fault, pack
+  cannot go Active. Clearing is CONDITIONAL - a previous version of this
+  prompt wrongly assumed startup always clears; it does not.
+- RSTCON = 0x00000100 statically (SW reset source = SYSTEM class),
+  confirmed live on all three rigs. UDS ECUReset(hardReset) ->
+  Mcu_PerformReset() -> SWRSTREQ runs entirely in CPU context - no
+  protected debugger writes, no halt. Application class still has no
+  qualified trigger (Path C escalation stands). The debugger-forced warm
+  variant stays retired (probe-wedge history); the warm requirement
+  already passed 2026-07-03.
+- The rewritten test now carries a reboot witness (stored cause must
+  CHANGE across the reset) - it worked: today's run failed honestly
+  instead of false-passing.
+- TODAY'S RESULT (dirty-baseline run, alarms latched pre-reset): the
+  reset fired and hardware classified it correctly, but firmware never
+  stored the new cause and never cleared RSTSTAT -> reboot witness
+  failed. OPEN FORK, do not assume either side:
+  (i) deviation branch working as designed - the dirty pre-reset state
+      deviated from the SYSTEM expected-value table, so firmware
+      correctly refused to clear and (expected) raised Transition
+      Prohibit;
+  (ii) defect in the UDS-reset -> FW-check path - store/clear silently
+      skipped with no prohibit raised.
+- HARD RULES unchanged: no debugger writes to ACCEN-protected space; do
+  not halt CPU0 in normal operation (latches AG7[17]+AG10[17]); reads
+  only over the debug port; never clear anything by hand.
 
-## Stub route retired — and a new hard rule
+## This slot — resolve the fork
 
-- Halting CPU0 while the firmware runs is DESTRUCTIVE on this build:
-  proven live - the halt window latches AG7[17] (XBAR0 bus error) and
-  AG10[17] (RT1 expiry; RT servicing lives on CPU0). Any reset fired from
-  a staging halt carries contaminated cause evidence even if it works.
-- A debugger-placed stub entered from a user-mode RTOS task context traps
-  on the Safety-ENDINIT unlock (supervisor-only); hand-setting PSW is
-  unqualified. Do not attempt stubs or Var.Call on this firmware.
-- HARD RULE: do not halt CPU0 while the DUT is in normal operation. Reads
-  via runtime access only.
-
-## This slot, in order
-
-1. PRE-RESET EVIDENCE CAPTURE (reads only - the coming reset erases the
-   latched state): full SMU_AG0..AG11, SMU_STS (RTS/RTME), live
-   SCU_RSTSTAT, stored reset-cause words, plus the session notes of the
-   halt incident. Nothing is cleared by hand - recording first is the
-   whole point.
-2. FIRE UDS hardReset (0x01). Expected: genuine system reset; startup SW
-   clears the latched alarms. This run doubles as (a) a clearing-clause
-   bonus specimen - startup recovery from a heavily-latched alarm state -
-   and (b) a PROVISIONAL <sysreq-system> decode specimen (document that
-   the pre-reset baseline was dirty).
-3. POST-RESET VERIFICATION (attach fresh, reads only): stored cause
-   decodes SYSTEM_RESET; live RSTSTAT cleared; AG0..AG11 all clear; DUT
-   answers; recover to normal operation.
-4. FORMAL <sysreq-system> RUN: repeat the UDS hardReset once more from
-   the now-clean baseline as the formal evidence specimen. Evidence CSV
-   for both runs, before/after register sets, exact commands.
-5. RECORD THE <sysreq-application> ESCALATION as the slot outcome: the
-   firmware-collaboration ask (test hook, or the McuResetCfg=application
-   config variant - the cheap option needing no test-hook code). Do not
-   improvise further injection attempts.
-6. RAISE SEPARATELY (fleet-wide, tangential): the ECUReset-behavior test
-   that uses softReset=3 asserts a timer reset in its step 8, but the
-   firmware rejects subfunction 3 as SUB_FUNCTION_NOT_SUPPORTED - so that
-   step is silently vacuous or failing. Same vacuous-pass family as the
-   RSTCON guard. File it; do not fix in-session.
+1. POST-BOOT CAPTURE (reads only, non-intrusive attach): live
+   SCU_RSTSTAT, SMU_AG0..AG11, the stored reset-cause copy, and the
+   Transition-Prohibit / drive-block status. The prohibit status is the
+   primary discriminator: PRESENT -> hypothesis (i); ABSENT while
+   store/clear were skipped -> hypothesis (ii).
+2. TABLE DIFF: identify which expected-value entries deviated - diff the
+   captured registers against the per-class expected table for SYSTEM
+   (firmware source or the self-check's own constants). Record the exact
+   mismatching entries.
+3. RECOVERY BY POWER CYCLE (the designed path back to clean): full power
+   cycle of the DUT. Cold boot should match the cold table, letting
+   firmware clear and reach a clean baseline. Do NOT fire repeated
+   hardResets from the prohibited state - the deviation branch will keep
+   refusing, by design.
+4. CLEAN-BASELINE FORMAL RUN: verify alarm-clean + RSTSTAT-clean +
+   prohibit absent, then fire UDS hardReset once. Expected: stored cause
+   changes and decodes SYSTEM_RESET, RSTSTAT and AGs cleared by firmware,
+   DUT reaches Active-capable state.
+   - If it PASSES: formal <sysreq-system> specimen secured, AND today's
+     dirty run is retroactively a live specimen of the deviation branch
+     (do-not-clear + prohibit) - record it as such; that is bonus
+     safety-measure evidence, not a failure.
+   - If it FAILS from a clean baseline: genuine firmware defect in the
+     UDS-reset -> FW-check path on this build - stop, write it up with
+     both runs' evidence, escalate. Do not retry-loop.
+5. Keep recording the <sysreq-application> escalation ask (test hook, or
+   McuResetCfg=application config-variant build riding the proven UDS
+   path) and the separately-filed vacuous ECUReset-behavior test finding.
 
 ## Safety rails
 
 - Reads only over the debug port; no halting CPU0 in normal operation; no
   stubs, no Var.Call, no writes to ACCEN-protected space.
-- Never clear an alarm or status register by hand; resets clear state via
-  the startup path, which is itself evidence.
+- Never clear an alarm or status register by hand - the conditional-clear
+  behavior IS the mechanism under observation.
 - One non-resetting attach per step; on failure run the probe-health
   check and STOP.
 - Leave the DUT in Standby and the probe detached (NoDebug) at the end.
@@ -87,8 +85,9 @@ knowledge as of 2026-08-07 (post detailed-blocker report):
 
 ## Deliverable
 
-Short write-up: the pre-reset capture, both hardReset runs' evidence
-(provisional + formal), the post-reset clearing verification, the recorded
-application-class escalation text, and the separately-filed vacuous-test
-finding. If any established fact above is contradicted live, say so loudly
-and stop.
+Short write-up: the post-boot capture with the prohibit-status verdict
+(fork resolved to (i) or (ii)); the exact deviating table entries; the
+power-cycle recovery record; the clean-baseline run evidence (or the
+defect escalation with both runs attached); status of the application-
+class ask. If any established fact above is contradicted live, say so
+loudly and stop.
