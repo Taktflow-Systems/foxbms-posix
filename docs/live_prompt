@@ -7,79 +7,94 @@ driving the rig. Do not look for or act on any earlier version.
 ---
 
 You are continuing the debugger-forced reset-type test campaign. State of
-knowledge as of 2026-08-07:
+knowledge as of 2026-08-07 (evening update after a documentation check
+against AURIX TC3xx Part1 UM v2.00 and TC37x Appendix UM v2.00):
 
 ## Established (do not re-derive)
 
-- The failed `--type system` run is ROOT-CAUSED, no reset ever occurred:
-  the TRACE32 `Data.Set` to SCU_SWRSTCON is a Cerberus/DAP (bus-master
-  TAG 28) write into ACCEN-gated space that authorizes only CPU masters, so
-  it was refused with a bus error. The refusal raised ALM7[20] (SPB Bus
-  Error Event, FSP directly enabled on it), FSP assertion raised ALM10[18]
-  (RT1-mapped), the CPU was left halted (Break with no Go on the success
-  path - a confirmed script bug), so RT1 was never serviced and expired
-  into ALM10[17] (~20 ms at default prescaler). Captured live:
-  SMU_AG7=0x00100000, SMU_AG10=0x00060000, contactors/CAN knocked out by
-  the safety reaction, stored reset-cause unchanged because nothing
-  rebooted. The RSTCON preselect write is NOT affected (ENDINIT-only
-  protection, TRACE32 auto-override handles it; readback-confirmed live).
-- PROHIBITED from now on: any debug-port write to SCU_SWRSTCON, and any
-  debug-port write into ACCEN-protected space generally. Every attempt
-  fires ALM7[20]+FSP and drops the DUT. This includes "retry once to
-  check".
+- The failed `--type system` run: no reset ever occurred. The TRACE32
+  `Data.Set` to SCU_SWRSTCON (Cerberus/DAP, bus-master TAG 28) was refused
+  in ACCEN-protected space; the refusal raised ALM7[20] (officially "SBCU:
+  SPB Bus Error Event", FSP enabled on it), FSP assertion raised ALM10[18]
+  (RT1-mapped), the CPU had been left halted (Break with no Go on the
+  success path - confirmed script bug), so RT1 was unserviced and expired
+  into ALM10[17]. Captured live: SMU_AG7=0x00100000, SMU_AG10=0x00060000,
+  contactors/CAN dropped by the safety reaction, stored reset-cause
+  unchanged. Note: AG10FSP's silicon reset value already enables FSP for
+  the RT timeout alarms (0x00030000) - the escalation is by design.
+- UM-verified register facts: SCU_SWRSTCON write access is "SV,E,P0";
+  SCU_RSTCON write access is "SV,SE,P0". BOTH are ACCEN00-gated (P0 =
+  write only for masters enabled in SCU_ACCEN00, offset 0x3FC). Refused
+  writes are error-acknowledged; READS ARE ALWAYS PROCESSED (reads are
+  safe). TAG IDs 1,2,5,6 = CPU0/CPU1 DMI (safe + non-safe); TAG 28 =
+  Cerberus (DAP, JTAG). ACCEN00 = 0x66 means CPUs only, debugger excluded.
+- REVISED, IMPORTANT: the earlier conclusion "the RSTCON preselect write
+  landed" is now SUSPECT. Since RSTCON also carries P0, if ACCEN00
+  excludes TAG 28 that write was refused as well - and the readback of
+  0x00000100 passes vacuously if the firmware already leaves RSTCON.SW=01
+  as its normal-operation value. Two live hypotheses, discriminated by the
+  reads below:
+  (i) ACCEN00=0x66: ALL debugger SCU writes refused; the "landed"
+      preselect was an artifact of a pre-existing value.
+  (ii) ACCEN00 admits TAG 28: RSTCON genuinely landed and the SWRSTCON
+      refusal has a different cause (e.g. its E-class ENDINIT handling).
+- PROHIBITED until ACCEN00 is live-read and says otherwise: ANY debugger
+  write into SCU or other ACCEN-protected space - including the RSTCON
+  preselect that was previously believed safe. Every refused write fires
+  ALM7[20]+FSP and drops the DUT. Debug-port reads remain allowed.
 - The warm variant remains untested and ON HOLD - not this slot.
 
-## Open verification items (close these first, they are cheap)
+## Verification reads (do these first - all reads, all safe)
 
-1. One non-intrusive attach (NoDebug then Attach). Live-read and record:
-   - SCU_ACCEN0 (0xF00363FC) - expected 0x66 (TAG 1,2,5,6 = CPU masters
-     only; TAG 28 absent). This closes the last inferred link.
-   - SMU_ACCEN0 - same question for the earlier SMU_AG8 bus error.
-   - SMU_AG0..AG11 (confirm the rig is alarm-clean before any new work;
-     if not clean, record and STOP - do not clear before recording).
-   - SMU_RTC, SMU_RTAC00/01/10/11, SMU_STS (RTS/RTME bits).
-   - TRACE32 settings: SYStem.Option.DOWNMODE,
-     SYStem.Option.EndInitProtectionOverride (record, do not change).
-   Then NoDebug. If the attach fails: probe-health check, STOP.
+One non-intrusive attach (NoDebug then Attach). Read and record:
+1. SCU_ACCEN00 (0xF00363FC). 0x66 confirms hypothesis (i); anything with
+   bit 28 set confirms (ii). This single read is the decider.
+2. SCU_RSTCON live value in normal operation. If it already reads
+   0x00000100, the failed run's "preselect landed" readback was vacuous.
+3. SMU_ACCEN0 (same question for the earlier SMU_AG8 bus error).
+4. SMU_AG0..AG11 - confirm the rig is alarm-clean before any new work; if
+   not clean, record and STOP - do not clear before recording.
+5. SMU_RTC, SMU_RTAC00/01/10/11, SMU_STS (RTS/RTME bits).
+6. TRACE32 settings: SYStem.Option.DOWNMODE and
+   SYStem.Option.EndInitProtectionOverride (record only, do not change).
+Then NoDebug. If the attach fails: probe-health check, then STOP.
 
-## Redesigned injection for system/application (validate this slot if the
-## DUT is healthy and step 1 is clean)
+## Redesigned injection for system/application (only if the DUT is healthy
+## and the reads above are recorded)
 
-The trigger must carry a CPU bus-master TAG. Debugger keeps only the roles
-proven to work: RSTCON.SW preselect + readback, and post-reset evidence
-reads. Two candidate paths, in preference order:
+The trigger - and now also the RSTCON preselect - must execute with a CPU
+bus-master TAG. The debugger's remaining safe roles: reads, symbols, and
+post-reset evidence collection.
 
-A. Firmware-executed trigger via Var.Call: with symbols loaded, call the
-   firmware's own reset-request function (iLLD-style performReset or the
-   project equivalent) so the SWRSTCON write executes on a CPU (passes
-   ACCEN, firmware handles CPU-ENDINIT) and the CPU is RUNNING when the
-   reset fires (avoids errata OCDS_TC.H015/H018). Sequence: preselect
-   RSTCON.SW via debugger, readback, Go (CPU must be running), then
-   Var.Call the trigger, immediately NoDebug, wait wake-up time, attach
-   fresh, read stored cause + register set.
-B. Bench-triggered via UDS ECUReset: preselect RSTCON.SW via debugger,
-   drop to NoDebug BEFORE the trigger, command the reset over UDS, wait,
-   attach fresh, read. Weakest debugger involvement, production trigger
-   path - use this if Var.Call setup is not available this slot.
+A. Firmware-executed preselect + trigger via one Var.Call: call the
+   firmware's own reset-request function (iLLD-style performReset(type) or
+   the project equivalent), which writes RSTCON.SW and SWRSTCON.SWRSTREQ
+   on a CPU with proper ENDINIT handling. Sequence: symbols loaded, CPU
+   RUNNING (issue Go if ever halted - errata OCDS_TC.H015/H018), Var.Call
+   the function, immediately NoDebug, wait wake-up time, attach fresh,
+   read stored cause + full register set.
+B. Bench-triggered via UDS ECUReset with the debugger in NoDebug before
+   the trigger; attach fresh after reboot and read. Use if Var.Call setup
+   is unavailable this slot.
 
 Acceptance for either path: stored reset-cause changes from baseline and
 decodes to the injected type; live RSTSTAT and all AG groups clear after
-boot; DUT answers UDS; evidence CSV written. Also explicitly record which
-path (A or B) was used.
+boot; DUT answers UDS; evidence CSV written; record which path was used.
 
 ## Safety rails
 
 - One non-resetting attach per step; on failure run the probe-health check
   and STOP. No SYStem.Up, no SYStem.Mode Down, no retry storms.
+- No debugger writes to ACCEN-protected space. Reads only.
 - Never clear an alarm or reset-status register before it is recorded.
-- CPU must be RUNNING whenever a reset is expected to fire (H015/H018).
+- CPU must be RUNNING whenever a reset is expected to fire.
 - Leave the DUT in Standby and the probe detached (NoDebug) at the end.
 - Anything unexpected: stop, record, report - do not improvise.
 
 ## Deliverable
 
-Short write-up: the ACCEN0 values (closes or reopens the root cause), the
-alarm-clean check result, which redesigned path was validated and its full
-register evidence, and any deviation. If ACCEN0 does NOT read 0x66, say so
-loudly - the root-cause chain has one inferred link and that reading is
-its test.
+Short write-up: ACCEN00/SMU_ACCEN0 values and which hypothesis they
+select; the live RSTCON value and the vacuous-readback verdict; the
+alarm-clean check; which redesigned path was validated with full register
+evidence; any deviation. If ACCEN00 reads something other than 0x66, say
+so loudly and re-open the root-cause chain before touching anything else.
