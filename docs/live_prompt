@@ -6,88 +6,90 @@ driving the rig. Do not look for or act on any earlier version.
 
 ---
 
-You are continuing the reset-type test campaign. State of knowledge after
-the first UDS-hardReset run (2026-08-07):
+You are continuing the reset-type test campaign — hypothesis-resolution
+phase for "UDS hardReset fired, hardware classified correctly, stored copy
+and RSTSTAT untouched" (2026-08-07).
 
 ## Established — do not re-derive
 
-- Safety-measure semantics (from firmware): on every reset the FW-check
-  module classifies the reset class and runs a per-class expected-value
-  table. Match -> clear SCU_RSTSTAT and SMU_AG0..AG11, allow Active.
-  Deviation -> DO NOT clear, raise a Transition Prohibit Fault, pack
-  cannot go Active. Clearing is CONDITIONAL - a previous version of this
-  prompt wrongly assumed startup always clears; it does not.
-- RSTCON = 0x00000100 statically (SW reset source = SYSTEM class),
-  confirmed live on all three rigs. UDS ECUReset(hardReset) ->
-  Mcu_PerformReset() -> SWRSTREQ runs entirely in CPU context - no
-  protected debugger writes, no halt. Application class still has no
-  qualified trigger (Path C escalation stands). The debugger-forced warm
-  variant stays retired (probe-wedge history); the warm requirement
-  already passed 2026-07-03.
-- The rewritten test now carries a reboot witness (stored cause must
-  CHANGE across the reset) - it worked: today's run failed honestly
-  instead of false-passing.
-- TODAY'S RESULT (dirty-baseline run, alarms latched pre-reset): the
-  reset fired and hardware classified it correctly, but firmware never
-  stored the new cause and never cleared RSTSTAT -> reboot witness
-  failed. OPEN FORK, do not assume either side:
-  (i) deviation branch working as designed - the dirty pre-reset state
-      deviated from the SYSTEM expected-value table, so firmware
-      correctly refused to clear and (expected) raised Transition
-      Prohibit;
-  (ii) defect in the UDS-reset -> FW-check path - store/clear silently
-      skipped with no prohibit raised.
-- HARD RULES unchanged: no debugger writes to ACCEN-protected space; do
-  not halt CPU0 in normal operation (latches AG7[17]+AG10[17]); reads
-  only over the debug port; never clear anything by hand.
+- H7 (per-rig Mcu config difference) is DEAD: the engineer confirms the
+  rig configs are identical except contactor-open code, and harder still,
+  RSTCON=0x100 was live-read identical on all three rigs.
+- The test's logic and oracle are exonerated (source-settled); the reboot
+  witness worked and refused to false-pass.
+- Hard rules unchanged: no debugger writes to ACCEN-protected space; do
+  not halt CPU0 in normal operation; never clear anything by hand; reads
+  only over the debug port.
 
-## This slot — resolve the fork
+## Corrections to the current hypothesis tree — apply before running
 
-1. POST-BOOT CAPTURE (reads only, non-intrusive attach): live
-   SCU_RSTSTAT, SMU_AG0..AG11, the stored reset-cause copy, and the
-   Transition-Prohibit / drive-block status. The prohibit status is the
-   primary discriminator: PRESENT -> hypothesis (i); ABSENT while
-   store/clear were skipped -> hypothesis (ii).
-2. TABLE DIFF: identify which expected-value entries deviated - diff the
-   captured registers against the per-class expected table for SYSTEM
-   (firmware source or the self-check's own constants). Record the exact
-   mismatching entries.
-3. RECOVERY BY POWER CYCLE (the designed path back to clean): full power
-   cycle of the DUT. Cold boot should match the cold table, letting
-   firmware clear and reach a clean baseline. Do NOT fire repeated
-   hardResets from the prohibited state - the deviation branch will keep
-   refusing, by design.
-4. CLEAN-BASELINE FORMAL RUN: verify alarm-clean + RSTSTAT-clean +
-   prohibit absent, then fire UDS hardReset once. Expected: stored cause
-   changes and decodes SYSTEM_RESET, RSTSTAT and AGs cleared by firmware,
-   DUT reaches Active-capable state.
-   - If it PASSES: formal <sysreq-system> specimen secured, AND today's
-     dirty run is retroactively a live specimen of the deviation branch
-     (do-not-clear + prohibit) - record it as such; that is bonus
-     safety-measure evidence, not a failure.
-   - If it FAILS from a clean baseline: genuine firmware defect in the
-     UDS-reset -> FW-check path on this build - stop, write it up with
-     both runs' evidence, escalate. Do not retry-loop.
-5. Keep recording the <sysreq-application> escalation ask (test hook, or
-   McuResetCfg=application config-variant build riding the proven UDS
-   path) and the separately-filed vacuous ECUReset-behavior test finding.
+- The fleet-wide ECUReset-behavior test is SESSIONLESS. A positive result
+  (timer resets -> DUT reboots on UDS reset) kills H9 ONLY. It does NOT
+  kill H8: H8's mechanism is session-presence-dependent (OCDS suppressing
+  reset propagation while a debug session exists, even in NoDebug), and a
+  sessionless success actually sharpens H8 - same trigger, works bare,
+  failed with a session present.
+- H10 (D-cache staleness) can only explain the stored-copy RAM read. It
+  CANNOT explain live SCU_RSTSTAT reading uncleared - SFR reads over DAP
+  are cache-irrelevant. Use this asymmetry.
+- The DEVIATION-BRANCH family is missing from the tree: "CPU0 restarted,
+  FW-check ran, expected-value table deviated -> deliberately no store,
+  no clear, Transition Prohibit raised." It predicts BOTH observed
+  symptoms at once. It must be explicitly killed by the captured
+  prohibit status, not forgotten.
+
+## This slot, in order
+
+1. DESK CHECK FIRST (no rig time - existing captures only):
+   a. Live SCU_RSTSTAT from the run in question: cleared or not?
+      - Uncleared -> H10 alone cannot be the full explanation.
+   b. Transition-Prohibit / drive-block status from the post-run capture:
+      - PRESENT -> deviation branch confirmed; the run becomes a live
+        deviation-branch specimen; jump to step 5 (recovery + clean rerun).
+      - ABSENT -> deviation branch dead; continue.
+2. RUN the fleet-wide ECUReset-behavior test (sessionless, rig idle).
+   Interpretation per the correction above: positive kills H9; negative
+   kills Family 2 (H10) and leaves H8/H9. Known caveat: its step 8 uses
+   the soft-reset subfunction this firmware rejects - ignore that step,
+   the earlier steps are the informative ones.
+3. FULLY-DISCONNECTED INJECTION: from a clean, power-cycled baseline,
+   fire the UDS hardReset with TRACE32 closed entirely (no session, not
+   merely NoDebug). Attach fresh only after reboot; read stored copy +
+   live RSTSTAT + AGs.
+   - Stored copy updated and RSTSTAT cleared -> H8 confirmed (session
+     suppressed propagation): write it up; the injection procedure must
+     mandate full disconnect during reset from now on.
+   - Stored copy STILL stale while RSTSTAT cleared -> H10 confirmed
+     (measurement artifact): the test's stored-copy read needs a
+     cache-safe method.
+4. OPTIONAL H10 CLINCHER (one attach, no rerun): if this probe/license
+   supports TC3xx cache visibility, inspect CPU0's D-cache for the line
+   holding the stored-copy variable. A dirty line holding the new value
+   against stale main memory proves H10 directly.
+5. RECOVERY + FORMAL RUN: power-cycle to a clean baseline (cold boot
+   matches the cold table; repeated SW resets from a prohibited state
+   cannot converge, by design), verify alarm-clean + prohibit absent,
+   then one formal system-reset specimen with whatever injection
+   procedure the fork selected. Evidence CSV, before/after registers,
+   exact commands, session-presence state recorded explicitly.
+6. Keep recording the application-class escalation ask (test hook, or
+   McuResetCfg=application config-variant build) and the separately-filed
+   vacuous ECUReset-behavior step-8 finding.
 
 ## Safety rails
 
-- Reads only over the debug port; no halting CPU0 in normal operation; no
-  stubs, no Var.Call, no writes to ACCEN-protected space.
-- Never clear an alarm or status register by hand - the conditional-clear
-  behavior IS the mechanism under observation.
 - One non-resetting attach per step; on failure run the probe-health
   check and STOP.
-- Leave the DUT in Standby and the probe detached (NoDebug) at the end.
+- No stubs, no Var.Call, no halting CPU0 in normal operation, no writes
+  to ACCEN-protected space, no hand-clearing of alarms or status.
+- Leave the DUT in Standby and the probe detached (or fully closed, per
+  step 3) at the end.
 - Anything unexpected: stop, record, report - do not improvise.
 
 ## Deliverable
 
-Short write-up: the post-boot capture with the prohibit-status verdict
-(fork resolved to (i) or (ii)); the exact deviating table entries; the
-power-cycle recovery record; the clean-baseline run evidence (or the
-defect escalation with both runs attached); status of the application-
-class ask. If any established fact above is contradicted live, say so
-loudly and stop.
+Short write-up: desk-check verdicts (RSTSTAT cleared?, prohibit
+present?), the sessionless-test result with the corrected inference, the
+fully-disconnected run result and which hypothesis survived, optional
+cache-inspection evidence, and the formal specimen or the escalation. If
+any established fact above is contradicted live, say so loudly and stop.
