@@ -6,90 +6,142 @@ driving the rig. Do not look for or act on any earlier version.
 
 ---
 
-You are continuing the reset-type test campaign — hypothesis-resolution
-phase for "UDS hardReset fired, hardware classified correctly, stored copy
-and RSTSTAT untouched" (2026-08-07).
+You are continuing the PFM fault-injection test (program-flow monitoring:
+logical sequence + alive supervision of the seven supervised entities) on
+this rig. Goal of this slot: get the REACTION half of the chain (SBC
+functional-watchdog failure -> MCU reset) observed, or prove with register
+evidence exactly which link is missing. "The rig can't show it" is not an
+allowed conclusion until step 4 below has been run.
 
 ## Established — do not re-derive
 
-- H7 (per-rig Mcu config difference) is DEAD: the engineer confirms the
-  rig configs are identical except contactor-open code, and harder still,
-  RSTCON=0x100 was live-read identical on all three rigs.
-- The test's logic and oracle are exonerated (source-settled); the reboot
-  witness worked and refused to false-pass.
-- Hard rules unchanged: no debugger writes to ACCEN-protected space; do
-  not halt CPU0 in normal operation; never clear anything by hand; reads
-  only over the debug port.
+- Detection half is PROVEN on the PR build (S1, twice): latch in 110 ms,
+  mPfmAggregatedFaultState=0x0010, mProgramFlowMonitoringHealthy=false,
+  smLatestCycleSignature 0x67 -> 0x4c, contactors open at 5.5 s.
+- Mask path is real: one SbcDriver.c, this rig's project define selects
+  the HW_HIGH branch, mask compiled in; live isFWDEnabled=1,
+  fwdRefreshDisable=0, watchdogControlReq=1.
+- Withholding the FWD response entirely on the master build for 257 s
+  (three times, incl. via --fwd-selftest) produced NO reset. Every one of
+  those runs had a TRACE32 session open on the DUT.
+- The rig is currently on MASTER (reflashed prematurely). The PR build
+  must be reflashed before the formal S1/S2 runs (step 5).
+- S2 has never run. Rule stands: S2 only after S1 passes.
+- Hard rules unchanged: no Var.Call, no stubs, do not halt CPU0 in
+  normal operation, no debugger writes to ACCEN-protected space or to any
+  SBC register, never clear anything by hand. The ONLY permitted debugger
+  write is the injection variable (cpBeginPending / refTimestampMs).
 
-## Corrections to the current hypothesis tree — apply before running
+## Correction to the conclusion — apply before running
 
-- The fleet-wide ECUReset-behavior test is SESSIONLESS. A positive result
-  (timer resets -> DUT reboots on UDS reset) kills H9 ONLY. It does NOT
-  kill H8: H8's mechanism is session-presence-dependent (OCDS suppressing
-  reset propagation while a debug session exists, even in NoDebug), and a
-  sessionless success actually sharpens H8 - same trigger, works bare,
-  failed with a session present.
-- H10 (D-cache staleness) can only explain the stored-copy RAM read. It
-  CANNOT explain live SCU_RSTSTAT reading uncleared - SFR reads over DAP
-  are cache-irrelevant. Use this asymmetry.
-- The DEVIATION-BRANCH family is missing from the tree: "CPU0 restarted,
-  FW-check ran, expected-value table deviated -> deliberately no store,
-  no clear, Transition Prohibit raised." It predicts BOTH observed
-  symptoms at once. It must be explicitly killed by the captured
-  prohibit status, not forgotten.
+What was established is "no reset observed while a debug session was
+present", NOT "the rig cannot show the reaction". Three families are
+alive and the runs so far do not separate them:
+
+- F1  SBC is not evaluating / not configured to reset. The driver's
+      variables say FWD is enabled; the SBC's own registers were never
+      read. Candidates: FWD not enabled at silicon level, SBC not in the
+      state where watchdogs run (INIT/SLEEP vs NORMAL), error-counter
+      threshold never reached, or threshold configured to safe-state
+      outputs only with no reset.
+- F2  SBC reacts, reset does not reach the core. Two sub-cases:
+      (a) OCDS session suppresses reset propagation — the SAME mechanism
+          as H8 in the reset-type campaign (UDS hardReset, session
+          present, no reboot). Two campaigns now show this shape.
+      (b) board/HIL wiring: SBC reset output not connected to the MCU
+          reset input on this rig, or a bench override holding it.
+- F3  The wrong/withheld response never reaches the SPI (driver retry or
+      timing masks it). Least likely after full withholding; kill it with
+      the error-counter read in step 3, not by assumption.
+
+Every step below must say which family it kills.
 
 ## This slot, in order
 
-1. DESK CHECK FIRST (no rig time - existing captures only):
-   a. Live SCU_RSTSTAT from the run in question: cleared or not?
-      - Uncleared -> H10 alone cannot be the full explanation.
-   b. Transition-Prohibit / drive-block status from the post-run capture:
-      - PRESENT -> deviation branch confirmed; the run becomes a live
-        deviation-branch specimen; jump to step 5 (recovery + clean rerun).
-      - ABSENT -> deviation branch dead; continue.
-2. RUN the fleet-wide ECUReset-behavior test (sessionless, rig idle).
-   Interpretation per the correction above: positive kills H9; negative
-   kills Family 2 (H10) and leaves H8/H9. Known caveat: its step 8 uses
-   the soft-reset subfunction this firmware rejects - ignore that step,
-   the earlier steps are the informative ones.
-3. FULLY-DISCONNECTED INJECTION: from a clean, power-cycled baseline,
-   fire the UDS hardReset with TRACE32 closed entirely (no session, not
-   merely NoDebug). Attach fresh only after reboot; read stored copy +
-   live RSTSTAT + AGs.
-   - Stored copy updated and RSTSTAT cleared -> H8 confirmed (session
-     suppressed propagation): write it up; the injection procedure must
-     mandate full disconnect during reset from now on.
-   - Stored copy STILL stale while RSTSTAT cleared -> H10 confirmed
-     (measurement artifact): the test's stored-copy read needs a
-     cache-safe method.
-4. OPTIONAL H10 CLINCHER (one attach, no rerun): if this probe/license
-   supports TC3xx cache visibility, inspect CPU0's D-cache for the line
-   holding the stored-copy variable. A dirty line holding the new value
-   against stale main memory proves H10 directly.
-5. RECOVERY + FORMAL RUN: power-cycle to a clean baseline (cold boot
-   matches the cold table; repeated SW resets from a prohibited state
-   cannot converge, by design), verify alarm-clean + prohibit absent,
-   then one formal system-reset specimen with whatever injection
-   procedure the fork selected. Evidence CSV, before/after registers,
-   exact commands, session-presence state recorded explicitly.
-6. Keep recording the application-class escalation ask (test hook, or
-   McuResetCfg=application config-variant build) and the separately-filed
-   vacuous ECUReset-behavior step-8 finding.
+1. DESK CHECK (no rig time). From SbcDriver.c and the SBC datasheet
+   write down, with register and bit names:
+   a. which bit enables the FWD, which register holds the FWD error
+      counter, what threshold triggers the reaction, and WHAT the
+      configured reaction is on this build (reset to INIT vs safe-state
+      outputs only);
+   b. which SBC device state the watchdogs run in, and every condition
+      under which the SBC stops or ignores them;
+   c. every variable where the driver stores a READBACK of SBC status /
+      config registers (device state, WD failure flags, error counter) —
+      these are what step 3 reads. If the driver never reads back, say so:
+      that alone is a finding (software belief with no silicon witness).
+   d. from the board schematic / HIL wiring: which MCU reset input the
+      SBC reset output drives, and whether the HIL bench has any jumper,
+      relay, or DIO that overrides it. Also whether the SBC safe-state
+      outputs are observable on the bench (DIO, scope, DMM).
+   Output: a table "belief vs witness" — each F1/F2 claim with the
+   observable that would decide it.
+
+2. ONE NON-RESETTING ATTACH, READS ONLY — silicon truth on master.
+   Read the readback variables from 1c: SBC device state, FWD enable,
+   error counter, failure flags. Baseline while healthy.
+   - Enable not set, or state not NORMAL -> F1 confirmed; record values,
+     STOP, report. Do not proceed to injection.
+
+3. ERROR-COUNTER PROBE (session still open, reads only). Trigger the
+   withheld response via --fwd-selftest for ONE window period only, then
+   poll the error counter / failure flags from 1c.
+   - Counter does not move -> SBC not evaluating (F1) or response still
+     arriving (F3): dump the SPI TX buffer contents for that window to
+     tell them apart. STOP, report.
+   - Counter increments and reaches threshold, no reset -> F1 (safe-state
+     only) or F2. Continue.
+   Detach cleanly, leave DUT in Standby.
+
+4. SESSIONLESS REACTION TEST — the discriminator that has never run.
+   TRACE32 CLOSED entirely (not NoDebug, no session). Rig idle, master
+   build. Trigger the withheld response via --fwd-selftest. First confirm
+   --fwd-selftest can be triggered with NO debug session; if it needs
+   TRACE32, say so and instead use step 5's inject-then-detach procedure
+   here. Witness WITHOUT the debugger: CAN silence / alive-counter
+   restart / uptime rollover, UDS default-session drop, and the SBC
+   safe-state outputs on the bench if 1d found them observable. Wait at
+   most 60 s (a real threshold reaction is a few window periods, not
+   minutes).
+   Then attach fresh, non-resetting, read SCU_RSTSTAT and the stored
+   reset-reason copy.
+   - Reset observed -> F2(a) CONFIRMED: the debug session suppresses the
+     reaction, on this test AND on the reset-type campaign's H8. Write
+     that up as one finding. The PFM test procedure must close the
+     session during the reaction window from now on.
+   - No reset, safe-state outputs DID toggle -> F2(b) wiring/override:
+     record what toggled, STOP, escalate with the schematic reference
+     from 1d.
+   - No reset, safe-state outputs did NOT toggle -> F1 (SBC never
+     reacts): report with the step-2/3 register values. STOP.
+
+5. FORMAL RUN, only if step 4 produced a reset. Reflash the PR build.
+   S1 procedure: bring DUT to Drive, contactors closed, attach without
+   reset, read healthy baseline, write cpBeginPending=1, confirm the latch
+   (bit, healthy false, signature) — then CLOSE THE SESSION IMMEDIATELY
+   and let the bench witness the reaction window (contactors open at
+   ~5.5 s, reset expected shortly after). Re-attach non-resetting after
+   the reboot: SCU_RSTSTAT changed, PFM healthy again.
+   S1 passes -> run S2 (rewind refTimestampMs) with the same
+   inject-then-detach procedure. Evidence CSV, before/after registers,
+   exact commands, session-presence state recorded per step.
 
 ## Safety rails
 
 - One non-resetting attach per step; on failure run the probe-health
   check and STOP.
-- No stubs, no Var.Call, no halting CPU0 in normal operation, no writes
-  to ACCEN-protected space, no hand-clearing of alarms or status.
-- Leave the DUT in Standby and the probe detached (or fully closed, per
-  step 3) at the end.
-- Anything unexpected: stop, record, report - do not improvise.
+- Never write SBC registers or config from the debugger; never change
+  the SBC driver's configuration to "make it reset".
+- Recovery from any stuck state is a POWER CYCLE, not a hand-clear.
+- Leave the DUT in Standby and the probe fully closed at the end.
+- Anything unexpected: stop, record, report — do not improvise.
 
 ## Deliverable
 
-Short write-up: desk-check verdicts (RSTSTAT cleared?, prohibit
-present?), the sessionless-test result with the corrected inference, the
-fully-disconnected run result and which hypothesis survived, optional
-cache-inspection evidence, and the formal specimen or the escalation. If
-any established fact above is contradicted live, say so loudly and stop.
+Short write-up: the belief-vs-witness table from step 1, the register
+values from steps 2 and 3, the sessionless result from step 4 with the
+family it confirmed, and either the formal S1/S2 evidence or the exact
+missing link with the escalation it needs. If step 4 confirms F2(a),
+state explicitly that it also resolves H8 of the reset-type campaign.
+If any established fact above is contradicted live, say so loudly and
+stop.
