@@ -8,130 +8,121 @@ driving the rig. Do not look for or act on any earlier version.
 
 You are continuing the PFM fault-injection test (program-flow monitoring:
 logical sequence + alive supervision of the seven supervised entities) on
-this rig. Your revised read-only order is APPROVED. Proceed on it. Do not
-go looking for the SBC datasheet first — the product's own self-test is the
-operative witness and the reads are cheap.
+this rig. Your blocking question on C142 is answered below (SPLIT route).
+Everything in this prompt is pre-approved by the engineer; do not ask
+again unless an established fact is contradicted live.
 
 ## Established — do not re-derive
 
-- Detection half is PROVEN on the PR build (S1, twice): latch in 110 ms,
-  mPfmAggregatedFaultState=0x0010, mProgramFlowMonitoringHealthy=false,
-  smLatestCycleSignature 0x67 -> 0x4c, contactors open at 5.5 s.
-- Mask path is real: one SbcDriver.c, this rig's project define selects
-  the HW_HIGH branch, mask compiled in; live isFWDEnabled=1,
-  watchdogControlReq=1.
-- SBC config as compiled: WDCFG0=0x54 (FWDEN=1), WDCFG1=0x05 (FWDETHR=5,
-  config comment: two consecutive failures -> safe state), FWDCFG=0x0E
-  (heartbeat 75 ms). Expected reaction latency after the response goes
-  wrong: ~150 ms, not seconds.
-- The rig is on MASTER. The PR build must be reflashed for the formal
-  S1/S2 runs (step 4). S2 has never run; S2 only after S1 passes.
+- Step 1 baseline (Drive, master): fwdMonStatus=2 (SELFTEST_PASSED),
+  isFWDEnabled=1, RWDCFG0.FWDEN=1 (silicon agrees with compiled
+  WDCFG0=0x54), fwdRefreshDisable=0, FWDECNT=0, SAFESTATE=1. The earlier
+  257 s controls were valid.
+- Step 2 (withheld response, master): FWDECNT 0 -> 2 -> 4 -> 6,
+  SAFESTATE LOW at t=0.226 s (= 75 ms heartbeat x FWDETHR=5), recovery
+  SAFESTATE HIGH at +1.01 s, FWDECNT back to 0, DUT never reset.
+  F1 CONFIRMED (mechanism works, reaction is safe state), F3 DEAD.
+  Achieved poll resolution 56 ms (PRINT / get_message bound); accept it,
+  do not chase 10 ms.
+- Step 3: SS1/SS2 HIGH is what allows the SW to close the contactors
+  (SbcDriver.c:4204) — safe state removes the contactor enable in
+  HARDWARE. The bench framework has no reader for the safe-state pin;
+  SAFESTATE is observable only via the MCU's own P10.7 through the
+  debugger. That is ACCEPTABLE: no reset is designed, so debugger
+  presence during the reaction window is not a confound. Keep the
+  session attached for the whole reaction window.
+- Detection half proven on the PR build (S1, twice): latch 110 ms, bit
+  0x0010, healthy false, signature 0x67 -> 0x4c, "contactors open" at
+  5.5 s. SAFESTATE and FWDECNT were NOT sampled in those runs.
+- DUT is on master (firmware build 26 with its matching parameter
+  config). The PR ELF is on the rig; its matching parameter config is
+  NOT (the PR's S3 job is gone). Branch tip is b4fc7641f0; the tested
+  commit is 836c2dbfc (orphaned).
 - Hard rules unchanged: no Var.Call, no stubs, do not halt CPU0 in
   normal operation, no debugger writes to ACCEN-protected space or to any
-  SBC register, never clear anything by hand. The ONLY permitted debugger
+  SBC register, never clear anything by hand, never write
+  fwdRefreshDisable / fwdMonStatus by hand. The ONLY permitted debugger
   writes are the injection variables (cpBeginPending / refTimestampMs).
 
-## Corrections — apply before running
+## C142 decision — SPLIT route (approved)
 
-- THE DESIGNED REACTION IS SAFE STATE, NOT AN MCU RESET. The product's
-  latent-point self-test (SbcDriverLocal_performFwdMonDiagnostics, the
-  ESM_FWD_MON measure) lowers the threshold, provokes an FWD failure,
-  expects DIGITAL_IO_CH_SAFESTATE == DIO_LOW within 100 ms, then
-  RECOVERS. A reset at threshold would make that recovery impossible.
-  So the PR comment in functionalWatchdogRefresh() ("watchdog fail-safe
-  reset takes over") is a WRONG COMMENT, and the test's step-8 oracle
-  (SCU_RSTSTAT changed) is wrong BY DESIGN, not unobservable. File both
-  as findings: one against the PR comment, one against the test oracle.
-- Therefore: the F2(a) branch (debug session suppressing a reset) is
-  VOID for this test, and its link to H8 of the reset-type campaign is
-  withdrawn. Do not run a sessionless reset test. Do not mention H8 in
-  the write-up except to say the link is withdrawn.
-- YOUR THREE CONTROL RUNS ARE UNVALIDATED. fwdRefreshDisable is owned by
-  the self-test state machine (writes at :4985 and :5009; stops touching
-  it only when fwdMonStatus == SELFTEST_PASSED, :5153). You never read
-  fwdMonStatus. Until step 1 below shows SELFTEST_PASSED, "withheld the
-  response for 257 s" is an assumption, not a fact. Say so in the
-  write-up either way.
-- The 5.5 s contactor opening is a SOFTWARE reaction (application path
-  on healthy=false), separate from the hardware safe state. The two must
-  be timestamped independently; do not merge them into one "reaction".
-- Remaining families: F1 = mechanism works and the reaction is safe
-  state (expected, by design); F3 = the wrong/withheld response never
-  reaches the SPI (killed by FWDECNT moving). F2 now means only: SBC
-  enters safe state but the safe-state signal is not visible/wired on
-  this rig (DIO stuck, or bench override).
+- EXPLORATORY run now: flash the PR ELF ONLY, leave master's parameter
+  config (build 26) on the DUT. Label every artifact from this run
+  "EXPLORATORY — C142 deviation: firmware = PR ELF, parameter config =
+  master build 26". Record the deviation explicitly in the evidence
+  header. This run answers the mask question; it is NOT the formal
+  specimen.
+- FORMAL evidence only from a CI job with matching firmware + config.
+  Kick that off FIRST (step 0) so it builds while you run the
+  exploratory. Prefer building the exact tested commit 836c2dbfc; if the
+  pipeline can only build the branch tip, build b4fc7641f0 AND include
+  `git diff --stat 836c2dbfc..b4fc7641f0` in the write-up — if that diff
+  touches nothing under the PFM module or SbcDriver.c, the tip is an
+  acceptable formal specimen; if it does, say so and stop before the
+  formal run.
+- Do not improvise a third route. If the CI rebuild cannot be triggered,
+  say so and still complete the exploratory run.
+
+## The open question the exploratory run must settle
+
+Withholding drives SAFESTATE low. Whether PFM's XOR MASK does is still
+unmeasured — and there is a tension: "contactors open at 5.5 s" is far
+too late for a ~226 ms hardware safe state. Resolve it by sampling, with
+one timestamp column each, relative to the injection write:
+  latch bit, healthy flag, signature, FWDECNT, SAFESTATE (P10.7),
+  physical contactor feedback (whatever line the driver reads back),
+  software contactor state.
+State explicitly which of the last two the earlier "5.5 s" observation
+was. Expected if the mask reaches the SPI: FWDECNT climbing within one
+heartbeat of the signature change, SAFESTATE LOW at ~226 ms, physical
+contactor enable removed then, software contactor state following at
+~5.5 s. Expected if it does NOT: FWDECNT flat, SAFESTATE HIGH, only the
+5.5 s software path — that is a PR DEFECT (mask never reaches the SPI
+write) and the single most important result this test can produce.
+Report it as such; do not soften it.
 
 ## This slot, in order
 
-1. BASELINE READS (one non-resetting attach, reads only, master build,
-   DUT healthy in Standby or Drive as the test needs):
-   fwdMonStatus, fwdRefreshDisable, RWDCFG0.bits.FWDEN (isFwdEnabled),
-   FWDSTAT1.bits.FWDECNT, FWDCNT / any FWD status flags the driver reads
-   back, and DIGITAL_IO_CH_SAFESTATE (must read HIGH while healthy —
-   if it reads LOW at baseline the DIO is stuck or inverted: STOP,
-   report, nothing downstream is interpretable).
-   - fwdMonStatus != SELFTEST_PASSED -> your controls were invalid;
-     record it, continue (step 2 is the valid control).
-   - FWDEN readback != 1 -> stop, report (silicon disagrees with config).
-
-2. VALID CONTROL (session open, reads only, master build): withhold the
-   response via --fwd-selftest and poll FWDECNT + SAFESTATE at <=10 ms
-   resolution for 2 s. Record: time of first FWDECNT change, count at
-   which SAFESTATE goes LOW, and whether the SBC recovers after the
-   withholding stops (SAFESTATE back HIGH, FWDECNT decaying).
-   - FWDECNT climbs AND SAFESTATE LOW at threshold -> F1 confirmed:
-     mechanism works, reaction is safe state. This is the reaction
-     witness the test needs. Continue to step 3.
-   - FWDECNT climbs, SAFESTATE stays HIGH beyond 500 ms -> F2 (signal
-     not visible on this rig): check what SS1/SS2 physically drive on
-     this board from the schematic / bench wiring (contactor supply?
-     MCU input only?), STOP, report with the trace.
-   - FWDECNT does not move -> F3 or the control is still invalid: dump
-     fwdRefreshDisable and the SPI TX buffer for that window, STOP,
-     report.
-
-3. HARDWARE MEANING OF SAFE STATE (desk, from schematic / bench wiring):
-   what SS1 and SS2 gate on this rig (contactor drive, supply rails,
-   anything to the MCU), and whether the HIL bench can observe them
-   directly (DIO/scope) independently of the MCU's own DIO read. One
-   paragraph; needed for the oracle wording in step 5.
-
-4. FORMAL RUN, only after step 2 confirmed F1. Reflash the PR build.
-   S1: bring DUT to Drive, contactors closed, attach without reset, read
-   healthy baseline (incl. SAFESTATE HIGH, FWDECNT), write
-   cpBeginPending=1, then poll at <=10 ms: latch (bit, healthy false,
-   signature), FWDECNT climbing, SAFESTATE LOW (expect ~150 ms after
-   the signature change), contactors open (expect ~5.5 s, software
-   path). Keep polling 30 s: SAFESTATE must STAY LOW (mask stays
-   nonzero while the latch persists) and the DUT must NOT reset by
-   itself (SCU_RSTSTAT unchanged is now the EXPECTED result).
-   Recovery: power cycle (not hand-clear), then confirm PFM healthy,
-   SAFESTATE HIGH, fwdMonStatus == SELFTEST_PASSED.
-   S1 passes -> S2 (rewind refTimestampMs) with the identical oracle.
-   Evidence CSV with one timestamp column per observable, before/after
-   registers, exact commands.
-
-5. TEST-CASE FINDINGS (write-up only — do NOT change the test's pass/fail
-   logic without engineer approval): proposed replacement wording for
-   step 7 (decode) and step 8 (oracle = SAFESTATE LOW within X ms of
-   signature change, persists, no self-reset; X from step 2 data), plus
-   the PR-comment correction.
+0. Trigger the CI rebuild per the C142 decision. Note the job id.
+1. Reflash: PR ELF only. Confirm on attach: PR symbols load, master
+   config still present (record its identity), fwdMonStatus=2,
+   SAFESTATE=1, FWDECNT=0, PFM healthy, signature at its healthy value.
+2. EXPLORATORY S1: Drive, contactors closed, attach without reset,
+   healthy baseline of all columns above, write cpBeginPending=1, poll
+   all columns for 30 s. SAFESTATE must STAY LOW while the latch persists
+   and the DUT must NOT reset (SCU_RSTSTAT unchanged is EXPECTED).
+   Recovery: power cycle, then confirm PFM healthy, SAFESTATE HIGH,
+   fwdMonStatus=2.
+3. EXPLORATORY S2 only if S1 showed the mask reaching the SPI: rewind
+   refTimestampMs, identical columns and oracle, identical recovery.
+4. If the CI job from step 0 is ready with matching config: flash
+   firmware + config from that job, repeat S1 and S2 as the FORMAL
+   specimens with the identical procedure. If not ready, stop after
+   step 3 and say so — the formal runs are the next slot.
+5. Write-up only (do NOT change the test's pass/fail logic without
+   engineer approval): proposed wording for step 7 (decode) and step 8
+   (oracle = SAFESTATE LOW within ~300 ms of signature change, persists
+   while latched, no self-reset; contactor software state at ~5.5 s as
+   a separate check), the PR-comment correction in
+   functionalWatchdogRefresh(), and — if step 2 found the mask never
+   reaches the SPI — the defect, with the trace.
 
 ## Safety rails
 
 - One non-resetting attach per step; on failure run the probe-health
   check and STOP.
-- Never write SBC registers or config from the debugger; never write
-  fwdRefreshDisable or fwdMonStatus by hand again — use --fwd-selftest.
+- Never write SBC registers or config from the debugger; use
+  --fwd-selftest only for control runs, never during S1/S2.
 - Recovery from safe state is a POWER CYCLE, not a hand-clear.
-- Leave the DUT in Standby and the probe detached at the end.
+- Leave the DUT in Standby and the probe detached at the end; state
+  which firmware and which config are on the DUT when you stop.
 - Anything unexpected: stop, record, report — do not improvise.
 
 ## Deliverable
 
-Short write-up: step-1 baseline values (state plainly whether the
-earlier 257 s controls were valid), the step-2 trace with FWDECNT and
-SAFESTATE timestamps and the family it confirmed, the step-3 paragraph,
-the formal S1/S2 evidence or the exact stop point, and the two findings
-(PR comment, test oracle) with proposed wording. If any established fact
-above is contradicted live, say so loudly and stop.
+Short write-up: CI job id and which commit it builds (plus the diff
+check if it is the tip), the exploratory S1 (and S2) trace with all
+columns and the verdict "mask reaches SPI: yes/no", the formal specimens
+if run, the C142 deviation statement, and the test-case / PR findings
+with proposed wording. If any established fact above is contradicted
+live, say so loudly and stop.
