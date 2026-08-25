@@ -1,8 +1,12 @@
 # Prompt for the on-rig HIL agent — CURRENT (supersedes all earlier versions)
 
+VERSION: 2026-08-25 / slot 3 — "C142 split route + mask-vs-SAFESTATE"
+(previous: 2026-08-25 / slot 2 — "safe state not reset"; slot 1 — "F1/F2/F3 families")
+
 This file is rewritten in place after every session; it is always the single
 current prompt. Copy everything below this line into the agent session
-driving the rig. Do not look for or act on any earlier version.
+driving the rig. Do not look for or act on any earlier version. If the
+VERSION line above matches what you already ran, there is nothing new.
 
 ---
 
