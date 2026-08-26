@@ -125,3 +125,5 @@ procedure. Rig part: the formal S1 (and S2) evidence with provenance
 header, the SAFESTATE-vs-physical-contactor timestamps, or the exact
 stop point. If any established fact above is contradicted live, say so
 loudly and stop.
+
+<!-- push-test 2026-08-26: WSL clone write/commit/push check; no operational change to the prompt above -->
