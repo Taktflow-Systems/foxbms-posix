@@ -127,3 +127,102 @@ stop point. If any established fact above is contradicted live, say so
 loudly and stop.
 
 <!-- push-test 2026-08-26: WSL clone write/commit/push check; no operational change to the prompt above -->
+
+---
+
+# Appendix: memdb memory-layer architecture (current, 2026-08-31)
+
+Reference for any agent session on this project. This describes the
+cross-host memory system the sessions record into and read from. It is
+maintenance-free from the rig agent's point of view: read it so you know
+where session memory comes from and how to record into it.
+
+## Design: log-first, projection-derived
+
+- The SYSTEM OF RECORD is a per-host, append-only, hash-chained event
+  journal: `~/.claude/memory/journal/journal/<host>/events.jsonl`. Every
+  event carries `(host, seq, type, payload, ts, prev-hash)`; the chain
+  hash makes tampering and truncation detectable (`verify` proves it).
+- The SQLite DB (`$MEMDB_PATH`, default `~/.claude/memory/mem.db`) is a
+  DISPOSABLE PROJECTION. `rebuild` reproduces it from journals alone;
+  `verify` replays the journals and proves the live DB matches the
+  canonical replay (`projection_match`) and every host chain is intact.
+  Never edit journal files or the DB by hand.
+- Host identity comes from `~/.claude/memory/host-id` (or `$MEMDB_HOST`);
+  writes refuse to run without it. Current hosts: `workstation`,
+  `laptop`, `pi`.
+- Replication is git-based: one branch per host journal, hub on a
+  self-hosted private remote. `sync/memdb_sync.sh` commits this host's
+  journal branch, pushes, ingests the other hosts' journals, rebuilds
+  and verifies. Records get a stable cross-host uid `<host>:<seq>`
+  (episode children `<host>:<seq>/<n>`); local integer ids are
+  reassigned by every rebuild and must never be used for addressing.
+
+## Tool
+
+`<memdb-repo>/memdb/mem.py` — Python 3 stdlib only. Subcommands:
+`init`, `add`, `get`, `search`, `supersede`, `close`, `record-episode`,
+`render-handoff`, `digest`, `export`, `consolidate`, `rebuild`,
+`verify`, `doctor`, `redact-check`.
+
+## Data model (schema v3)
+
+One `records` table; memory type is the `kind` column:
+
+- `episode` — one completed job (achievement / decisions / state /
+  blockers / next steps as JSON payload; full raw text FTS-indexed at
+  low rank weight).
+- `decision`, `blocker`, `state` — auto-extracted children of an
+  episode (`record-episode` parses the JSON doc); blockers named in a
+  later episode's achievements auto-close.
+- `goal`, `constraint`, `preference` — durable semantic records; the
+  `core-setup` part holds session-start invariants (tool paths,
+  hazards, standing preferences).
+- `runbook` — NEW in v3: a proven-good command for a task.
+  `subject` = task slug, `body` = the exact command that ran
+  successfully, optional `rationale` = cwd/date/notes.
+
+Write gating (`add` and episode children): same
+`(project, kind, subject)` open record with the same normalized body →
+re-confirm (bump `last_confirmed_at`); different body → insert new and
+supersede all open matches; episodes are never superseded (close only).
+Status lifecycle: `open` → `closed` or `superseded`. FTS5 index over
+subject/body/rationale/fulltext with bm25 weights 5/1/1/0.5.
+
+## Retrieval
+
+- `digest --project <slug> [--part <part>]` — token-budgeted context
+  (default 1500). Pinned, never trimmed: goals/constraints/preferences
+  (project + `global`), and the runbook section "Proven commands (run
+  these first, exactly)". Runbooks are project-wide, NOT part-scoped,
+  so they surface in the session-start `--part core-setup` digest.
+  Trimmable tail: open blockers, live decisions, current state, last 3
+  episodes.
+- `search --query ...` — summary lines (uid, subject, snippet); expand
+  a hit with `get <uid>`. Never default to `--full`.
+
+## Runbook usage (the "run exact command first" contract)
+
+Record a command that ran successfully:
+
+    mem add --kind runbook --project <slug> --part <part> \
+      --subject "<task-slug>" --body "<exact command>" \
+      [--rationale "<cwd/notes/date>"]
+
+Re-recording the same command re-confirms it (floats up, newest
+confirmation first); a changed command supersedes the old one. A later
+session sees pinned runbooks in its digest and runs them FIRST, exactly
+as recorded, before deriving anything new.
+
+CROSS-HOST HAZARD: `runbook` events replay only on hosts running
+schema-v3 memdb code (older CHECK constraints reject the kind). Update
+the memdb code on every host BEFORE syncing/ingesting a journal that
+contains runbook events, then `rebuild`.
+
+## Privacy model
+
+Journals and DB are the PRIVATE memory domain (user machines + the
+self-hosted hub): capture is full-fidelity, never pre-redacted.
+Redaction happens at the publish boundary at full strength: anything
+leaving the private domain must pass `mem redact-check <file>` (exit 2
++ span report on hits). This appendix is itself redacted accordingly.
