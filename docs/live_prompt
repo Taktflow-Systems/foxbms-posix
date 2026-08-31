@@ -1,141 +1,20 @@
-# Prompt for the on-rig HIL agent — CURRENT (supersedes all earlier versions)
+# Prompt appendix for agent sessions — CURRENT (supersedes all earlier versions)
 
-VERSION: 2026-08-25 / slot 4 — "mask YES; wait for CI job; formal S1/S2 in Drive"
-(previous: slot 3 — "C142 split route + mask-vs-SAFESTATE"; slot 2 — "safe
-state not reset"; slot 1 — "F1/F2/F3 families")
+VERSION: 2026-08-31 / slot 5 — "memdb memory-layer architecture"
+(previous: slot 4 — "mask YES; wait for CI job; formal S1/S2 in Drive" —
+retired; recover any earlier slot from git history if needed)
 
 This file is rewritten in place after every session; it is always the single
-current prompt. Copy everything below this line into the agent session
-driving the rig. Do not look for or act on any earlier version. If the
-VERSION line above matches what you already ran, there is nothing new.
+current prompt. Copy everything below this line into the agent session.
+Do not look for or act on any earlier version. If the VERSION line above
+matches what you already ran, there is nothing new.
 
 ---
 
-You are continuing the PFM fault-injection test (program-flow monitoring:
-logical sequence + alive supervision of the seven supervised entities) on
-this rig. The exploratory run is CLOSED with a clear verdict. This slot
-has a desk part you do now and a rig part you do ONLY after the engineer
-hands you a CI job id. Everything here is pre-approved; do not ask again
-unless an established fact is contradicted live.
-
-## Established — do not re-derive
-
-- MASK REACHES THE SPI: YES. Exploratory S1 on PR ELF 1.26.35.0.17.1 /
-  836c2db1 (master parameter config build 26 / ConfigID 29, C142
-  deviation recorded): at +50 us healthy=false, signature 0x67 -> 0x4c,
-  FWDECNT=2; at +143 ms latch bit set, SAFESTATE LOW; SAFESTATE held LOW
-  for 30 s while latched, FWDECNT cycling 0->2->4; SCU_RSTSTAT 0x0 -> 0x0
-  (unchanged, as designed); DUT alive on CAN throughout; recovery by
-  power cycle clean. The PR's reaction chain is proven end to end.
-- The tested commit is 836c2db1 (the "836c2dbfc" in slot 3 was a typo in
-  this file, not on the rig). Branch tip is b4fc7641f0. 836c2db1 is
-  orphaned either way.
-- That run is NOT a valid S1 specimen: DUT never reached Drive
-  (physical contactor closed at start = False, sbsState=0 throughout;
-  the "contactor open at 3.06 s" is a first-sample artifact). Cause:
-  go_to_drive() needs the parameter artifacts for the firmware version
-  and the PR's S3 job is gone ("Patch 0 not found in available patches").
-  This is C142 observed live, not a rig fault.
-- S2 not run (S1 gate not met). CI rebuild cannot be triggered from the
-  rig or the host (no CI/repo credentials there); the ENGINEER triggers
-  it and gives you the job id.
-- SAFESTATE and FWDECNT do not depend on contactor state; the mask
-  verdict stands regardless of Drive. Still UNPROVEN and needed for the
-  formal specimen: SAFESTATE holding LOW with contactors closed, and the
-  physical-contactor timestamp relative to SAFESTATE.
-- Rig now: firmware = PR ELF 1.26.35.0.17.1 / 836c2db1, parameter
-  config = master build 26 / ConfigID 29. DUT in Standby, probe
-  detached. Leave it that way until the rig part starts.
-- Hard rules unchanged: no Var.Call, no stubs, do not halt CPU0 in
-  normal operation, no debugger writes to ACCEN-protected space or to any
-  SBC register, never clear anything by hand, never write
-  fwdRefreshDisable / fwdMonStatus by hand, --fwd-selftest only for
-  control runs. The ONLY permitted debugger writes are the injection
-  variables (cpBeginPending / refTimestampMs). Do NOT work around the
-  artifact download (no pointing the harness at build-26 artifacts, no
-  hand-edited patch lists): a Drive run on mismatched provenance has
-  zero formal value and is the exact hazard C142 exists for.
-
-## Desk part — do now, no rig time
-
-1. FINDINGS WRITE-UP (proposed wording only; the test's pass/fail logic
-   and the PR are not edited by you):
-   a. PR comment in functionalWatchdogRefresh() ("watchdog fail-safe
-      reset takes over") is wrong: the SBC reaction at threshold is safe
-      state (SS1/SS2 LOW), no MCU reset. Cite the product self-test
-      (SbcDriverLocal_performFwdMonDiagnostics) and the slot-2 and
-      exploratory traces.
-   b. Test step 8 oracle (SCU_RSTSTAT changed) is wrong by design.
-      Proposed replacement: SAFESTATE LOW within 300 ms of the signature
-      change, held LOW while the latch persists, no self-reset
-      (SCU_RSTSTAT unchanged), DUT alive on CAN; contactor software
-      state open at ~5.5 s as a SEPARATE check with its own timestamp.
-   c. Test step 7 (decode) wording per your earlier analysis.
-   d. OPEN DESIGN QUESTION for the engineer, not a verdict: SS1/SS2 LOW
-      "removes the permission to close" (SbcDriver.c:4204) — whether it
-      also FORCES closed contactors open in hardware is unproven; the
-      earlier runs suggest physical opening only at ~5.5 s via software.
-      State it as a question with the observable that will answer it
-      (rig part step 3, physical contactor feedback vs SAFESTATE).
-2. FORMAL PROCEDURE, written out ready to execute (commands, columns,
-   expected values), so the rig part is a copy-run with no thinking
-   left in it.
-
-## Rig part — ONLY after the engineer gives you a CI job id
-
-The job must contain firmware AND parameter config from the same build.
-Record its id and commit in the evidence header. If the job builds the
-tip (b4fc7641f0) rather than 836c2db1, include `git diff --stat
-836c2db1..b4fc7641f0` in the write-up; the tip is an acceptable formal
-specimen only if that diff touches neither the PFM module nor
-SbcDriver.c — otherwise say so and stop.
-
-1. Flash firmware + config from the job. Confirm on attach: symbols
-   load, config identity matches the job, fwdMonStatus=2, SAFESTATE=1,
-   FWDECNT=0, PFM healthy, signature at its healthy value.
-2. FORMAL S1: go_to_drive() must COMPLETE (physical contactor closed =
-   True, sbsState = Drive) — if it does not, stop and report; do not
-   inject. Attach without reset, healthy baseline of all columns, write
-   cpBeginPending=1, poll for 30 s with one timestamp column each:
-   latch bit, healthy flag, signature, FWDECNT, SAFESTATE (P10.7),
-   physical contactor feedback, software contactor state, SCU_RSTSTAT.
-   Oracle = 1b above. Recovery: power cycle, then confirm PFM healthy,
-   SAFESTATE HIGH, fwdMonStatus=2.
-3. Record explicitly, from the S1 trace: the physical-contactor
-   timestamp relative to SAFESTATE LOW. This answers 1d. Do not
-   interpret it beyond stating the two timestamps.
-4. FORMAL S2 only if S1 passed: rewind refTimestampMs, identical
-   columns, oracle and recovery.
-5. Evidence CSV per run, before/after registers, exact commands,
-   provenance header (job id, commit, config id, firmware version).
-
-## Safety rails
-
-- One non-resetting attach per step; on failure run the probe-health
-  check and STOP.
-- Recovery from safe state is a POWER CYCLE, not a hand-clear.
-- Leave the DUT in Standby and the probe detached at the end; state
-  which firmware and which config are on the DUT when you stop.
-- Anything unexpected: stop, record, report — do not improvise.
-
-## Deliverable
-
-Desk part: the findings write-up (1a-1d) and the ready-to-run formal
-procedure. Rig part: the formal S1 (and S2) evidence with provenance
-header, the SAFESTATE-vs-physical-contactor timestamps, or the exact
-stop point. If any established fact above is contradicted live, say so
-loudly and stop.
-
-<!-- push-test 2026-08-26: WSL clone write/commit/push check; no operational change to the prompt above -->
-
----
-
-# Appendix: memdb memory-layer architecture (current, 2026-08-31)
+# memdb memory-layer architecture (current, 2026-08-31)
 
 Reference for any agent session on this project. This describes the
-cross-host memory system the sessions record into and read from. It is
-maintenance-free from the rig agent's point of view: read it so you know
-where session memory comes from and how to record into it.
+cross-host memory system the sessions record into and read from.
 
 ## Design: log-first, projection-derived
 
@@ -225,4 +104,4 @@ Journals and DB are the PRIVATE memory domain (user machines + the
 self-hosted hub): capture is full-fidelity, never pre-redacted.
 Redaction happens at the publish boundary at full strength: anything
 leaving the private domain must pass `mem redact-check <file>` (exit 2
-+ span report on hits). This appendix is itself redacted accordingly.
++ span report on hits). This file is itself redacted accordingly.
