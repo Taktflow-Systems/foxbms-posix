@@ -1,8 +1,8 @@
 # Prompt appendix for agent sessions — CURRENT (supersedes all earlier versions)
 
-VERSION: 2026-08-31 / slot 5 — "memdb memory-layer architecture"
-(previous: slot 4 — "mask YES; wait for CI job; formal S1/S2 in Drive" —
-retired; recover any earlier slot from git history if needed)
+VERSION: 2026-08-31 / slot 6 — "memdb architecture, full detail (post-scalability)"
+(previous: slot 5 — first memdb architecture; slot 4 and earlier — rig
+prompts; recover any earlier slot from git history if needed)
 
 This file is rewritten in place after every session; it is always the single
 current prompt. Copy everything below this line into the agent session.
@@ -13,95 +13,183 @@ matches what you already ran, there is nothing new.
 
 # memdb memory-layer architecture (current, 2026-08-31)
 
-Reference for any agent session on this project. This describes the
-cross-host memory system the sessions record into and read from.
+Reference for any agent session on this project. memdb is the cross-host,
+log-first memory system sessions record into and read from. Everything
+below is generic: it assumes one or more machines ("hosts"), each with a
+short slug; nothing depends on any particular fleet.
 
-## Design: log-first, projection-derived
+## 1. Design: log-first, projection-derived
 
-- The SYSTEM OF RECORD is a per-host, append-only, hash-chained event
-  journal: `~/.claude/memory/journal/journal/<host>/events.jsonl`. Every
-  event carries `(host, seq, type, payload, ts, prev-hash)`; the chain
-  hash makes tampering and truncation detectable (`verify` proves it).
-- The SQLite DB (`$MEMDB_PATH`, default `~/.claude/memory/mem.db`) is a
-  DISPOSABLE PROJECTION. `rebuild` reproduces it from journals alone;
-  `verify` replays the journals and proves the live DB matches the
-  canonical replay (`projection_match`) and every host chain is intact.
+- SYSTEM OF RECORD: a per-host, append-only, hash-chained event journal
+  at `<journal-root>/journal/<host>/events.jsonl` (default root
+  `~/.claude/memory/journal`, override `$MEMDB_JOURNAL`). Every event is
+  one canonical JSON line carrying `(v, host, seq, ts, type, prev,
+  payload)`: `seq` is a per-host monotonic counter, `prev` is the
+  SHA-256 of the previous event's canonical line, so truncation,
+  reordering, or mutation is mechanically detectable.
+- PROJECTION: the SQLite DB (`$MEMDB_PATH`, default
+  `~/.claude/memory/mem.db`) is DISPOSABLE. `rebuild` reproduces it from
+  journals alone; `verify` proves the live DB equals a canonical replay
+  and every chain is intact. Losing or corrupting the DB loses nothing.
   Never edit journal files or the DB by hand.
-- Host identity comes from `~/.claude/memory/host-id` (or `$MEMDB_HOST`);
-  writes refuse to run without it. Current hosts: `workstation`,
-  `laptop`, `pi`.
-- Replication is git-based: one branch per host journal, hub on a
-  self-hosted private remote. `sync/memdb_sync.sh` commits this host's
-  journal branch, pushes, ingests the other hosts' journals, rebuilds
-  and verifies. Records get a stable cross-host uid `<host>:<seq>`
-  (episode children `<host>:<seq>/<n>`); local integer ids are
-  reassigned by every rebuild and must never be used for addressing.
+- Host identity: `~/.claude/memory/host-id` (or `$MEMDB_HOST`); writes
+  refuse to run without it.
+- Canonical event order across hosts: sort by (running-max ts per host,
+  host, seq). The running-max key means an event never sorts before its
+  own host's predecessors even if its wall-clock ts is older.
+- Stable addressing: uid `<host>:<seq>` (episode children
+  `<host>:<seq>/<n>`). Local integer ids are reassigned by every rebuild
+  and must never be used across sessions.
+- Concurrency: one cross-process file lock per journal root serializes
+  all writes (append and DB apply happen under the same lock hold);
+  reads (digest, search, get) are lock-free by contract - session start
+  must never block behind a rebuild. The projection swap is a single
+  atomic replace, retried on Windows sharing violations.
 
-## Tool
+## 2. Tool
 
 `<memdb-repo>/memdb/mem.py` — Python 3 stdlib only. Subcommands:
-`init`, `add`, `get`, `search`, `supersede`, `close`, `record-episode`,
-`render-handoff`, `digest`, `export`, `consolidate`, `rebuild`,
-`verify`, `doctor`, `redact-check`.
+`init, add, get, search, supersede, close, record-episode,
+render-handoff, digest, export, consolidate, rebuild, verify, snapshot,
+doctor, redact-check`.
 
-## Data model (schema v3)
+## 3. Data model (schema v3)
 
-One `records` table; memory type is the `kind` column:
+One `records` table; the `kind` column is the memory type:
 
-- `episode` — one completed job (achievement / decisions / state /
-  blockers / next steps as JSON payload; full raw text FTS-indexed at
-  low rank weight).
-- `decision`, `blocker`, `state` — auto-extracted children of an
-  episode (`record-episode` parses the JSON doc); blockers named in a
-  later episode's achievements auto-close.
-- `goal`, `constraint`, `preference` — durable semantic records; the
-  `core-setup` part holds session-start invariants (tool paths,
-  hazards, standing preferences).
-- `runbook` — NEW in v3: a proven-good command for a task.
-  `subject` = task slug, `body` = the exact command that ran
-  successfully, optional `rationale` = cwd/date/notes.
+- `episode` — one completed job (achievement / decisions / current_state
+  / blockers / next_steps as JSON payload; raw text FTS-indexed at low
+  rank weight). Episodes are born closed and are never superseded.
+- `decision`, `blocker`, `state` — children auto-extracted from an
+  episode doc by `record-episode`. Blockers whose subject slug appears
+  in a later episode's achievements/state text auto-close, project-wide.
+- `goal`, `constraint`, `preference` — durable semantic anchors. The
+  `core-setup` part holds session-start invariants (tool paths, hazards,
+  standing preferences); project `global` applies everywhere.
+- `runbook` — a proven-good command for a task: `subject` = task slug,
+  `body` = the exact command that ran successfully, `rationale` =
+  cwd/date/notes.
 
-Write gating (`add` and episode children): same
-`(project, kind, subject)` open record with the same normalized body →
-re-confirm (bump `last_confirmed_at`); different body → insert new and
-supersede all open matches; episodes are never superseded (close only).
-Status lifecycle: `open` → `closed` or `superseded`. FTS5 index over
-subject/body/rationale/fulltext with bm25 weights 5/1/1/0.5.
+Write gating (`add` and episode children): an open record with the same
+`(project, kind, subject)` and same normalized body -> re-confirm (bump
+`last_confirmed_at`); different body -> insert new and supersede all
+open matches (link row records the supersede edge); no match -> insert.
+Status lifecycle: `open -> closed | superseded`. Gating matches project
+CASE-SENSITIVELY (replay determinism); read paths are case-insensitive
+(section 6). FTS5 over subject/body/rationale/fulltext, bm25 weights
+5/1/1/0.5.
 
-## Retrieval
+## 4. Fast-path machinery (scalability layer, 2026-08-31)
 
-- `digest --project <slug> [--part <part>]` — token-budgeted context
-  (default 1500). Pinned, never trimmed: goals/constraints/preferences
-  (project + `global`), and the runbook section "Proven commands (run
-  these first, exactly)". Runbooks are project-wide, NOT part-scoped,
-  so they surface in the session-start `--part core-setup` digest.
-  Trimmable tail: open blockers, live decisions, current state, last 3
-  episodes.
-- `search --query ...` — summary lines (uid, subject, snippet); expand
-  a hit with `get <uid>`. Never default to `--full`.
+All fast paths are disposable caches over the journal; every one
+self-heals or falls back LOUDLY to the slow, always-correct path.
 
-## Runbook usage (the "run exact command first" contract)
+- HEAD SIDECAR (`<journal-root>/derived/<host>/head.json`): O(1) append.
+  Stores `{seq, hash, start, end}` of the tail line; validated by
+  re-reading and re-hashing exactly those bytes before trust; any
+  mismatch -> one full rescan. Written after the fsynced append, so a
+  crash between the two leaves a detectably-stale sidecar, never a
+  wrong seq/prev. `derived/` lives OUTSIDE `journal/` so replication
+  can never pick it up.
+- VERIFIED-HEAD ANCHORS (`derived/<host>/verified-head.json`): suffix
+  verification. Chain walks start from the last VERIFIED head instead
+  of seq 1; the anchor's bytes are re-validated first; stale/invalid ->
+  full walk. Anchors advance only after a successful verify, never on
+  failure. Trust boundary: tampering below a valid anchor is caught by
+  the scheduled full walk and by witnesses.
+- WITNESSES (`journal/<host>/witness-heads.json`): each host commits its
+  verified view `{other-host: {seq, hash}}` on its own branch. During
+  any chain walk, a traversed seq whose hash differs from a witnessed
+  value fails verification ("split view or rewritten line") - the
+  transparency-log witness property over the existing replication.
+- SNAPSHOT (`mem.db.snapshot` + `.manifest.json`): O(tail) rebuild.
+  The manifest records schema version, per-host tail anchors +
+  running-max ts, the globally last merge key (`max_key`), and the
+  snapshot file's SHA-256. Routine `rebuild`/`verify` copy the snapshot
+  and replay only events past each host's anchor THROUGH THE SAME fold
+  function a full replay uses - that identity is what keeps
+  snapshot-derived state provably equal to full replay. Guards:
+  schema mismatch / file-hash mismatch / stale anchor -> loud fallback
+  to full replay; any tail event whose merge key sorts at/before
+  `max_key` (a rewound clock would reorder history) -> loud fallback;
+  chain damage -> FAILURE, never fallback. Every successful full replay
+  refreshes the snapshot. `--full` on rebuild/verify forces the oracle.
+- Verification comparison is streamed row-by-row over uid-ordered
+  cursors (O(1) memory), not by building whole-DB dumps.
 
-Record a command that ran successfully:
+Measured envelope (100k events / ~105 MB journal / ~240 MB DB): append
+~18 ms steady-state (one-time self-heal ~0.5 s), snapshot rebuild ~1 s
+vs ~90 s full replay, suffix chain verify ~15 ms. Budgets enforced by
+`tests/bench_scale.py`; see `docs/perf-budgets.md`.
 
-    mem add --kind runbook --project <slug> --part <part> \
-      --subject "<task-slug>" --body "<exact command>" \
-      [--rationale "<cwd/notes/date>"]
+## 5. Replication (any number of hosts)
 
-Re-recording the same command re-confirms it (floats up, newest
-confirmation first); a changed command supersedes the old one. A later
-session sees pinned runbooks in its digest and runs them FIRST, exactly
-as recorded, before deriving anything new.
+Git, hub-and-spoke: the journal root is a git clone; each host commits
+ONLY `journal/<host>/` on its own branch `<host>/journal` and pushes to
+a private hub; other hosts' journals are materialized read-only from
+origin refs, never merged. `sync/memdb_sync.sh` per run: commit own
+journal -> push (never --force) -> fetch -> for every other host's ref,
+assert FAST-FORWARD against the last-seen ref (a non-FF ref means a
+rewritten journal or two writers claiming one host id: the sync STOPS
+and reports, it never auto-resolves) -> materialize -> `rebuild
+--verify` (snapshot fast path). On a cadence (default weekly, or
+`MEMDB_FULL_VERIFY=1`) the full oracle runs instead: whole-chain walk +
+from-scratch replay comparison, bounding every trust window. Shallow
+clones are refused (cannot verify a chain below the shallow boundary).
+Hub requirements (see `docs/hub-config.md`): `gc.pruneExpire` >= 2
+weeks, no auto/aggressive gc racing pushes.
 
-CROSS-HOST HAZARD: `runbook` events replay only on hosts running
-schema-v3 memdb code (older CHECK constraints reject the kind). Update
-the memdb code on every host BEFORE syncing/ingesting a journal that
-contains runbook events, then `rebuild`.
+## 6. Retrieval
 
-## Privacy model
+- `digest --project <slug> [--part <p>] [--budget-tokens N]` (default
+  1500). PINNED, never trimmed: goals/constraints/preferences (project +
+  global) and "Proven commands (run these first, exactly)" (runbooks,
+  project-wide regardless of --part, newest confirmation first). If the
+  pinned block alone reaches the budget, the budget extends by a fixed
+  tail reserve so the handoff layer is never starved to zero. Trimmable
+  tail, in order: Recent episodes (3, rendered FIRST - the strongest
+  continuity signal), open blockers, live decisions, current state -
+  capped at 15 items per section (newest first); every omission is
+  counted in an explicit "[digest trimmed: N records omitted]" notice.
+- `search --query ... [--project] [--part] [--kind] [--status]` emits
+  summary lines (uid, subject, snippet); expand a promising hit with
+  `get <uid>`. Never default to `--full`.
+- Project matching on ALL read paths is case-insensitive (historical
+  slug case-splits must not hide records); always WRITE the canonical
+  slug. SQLite hazard for maintainers: `(col=? COLLATE NOCASE OR
+  col='x')` silently loses its collation to the OR optimization
+  (observed 3.50.4); use `col COLLATE NOCASE IN (...)`.
+- SessionStart hook (`hooks/session_start.sh`): injects the digest for
+  the project derived from cwd basename; never blocks session start;
+  failure and emptiness are visible states, not silence.
+
+## 7. Session workflow contract
+
+- Task start: `digest --project <slug> --part core-setup` first, then
+  the work part's digest; `search` for specific priors.
+- Runbooks ("run exact command first"): after a command runs
+  successfully, record it - `mem add --kind runbook --project <slug>
+  --part <part> --subject "<task-slug>" --body "<exact command>"`.
+  Re-recording the same command re-confirms it (floats up); a changed
+  command supersedes the old one. A later session runs pinned runbooks
+  FIRST, exactly as recorded, before deriving anything new.
+- End of job: write the episode JSON and `record-episode`; durable
+  facts stated mid-job get `add` (kind goal/constraint/preference,
+  part core-setup) immediately. Close finished goals/blockers; never
+  delete - supersede.
+- Hygiene: `consolidate` merges duplicate open records and flags
+  contradictions; `consolidate --expire-states DAYS` (opt-in) closes
+  open `state` records unconfirmed in DAYS days - states only, by
+  design: blockers never age out (age does not fix broken things) and
+  decisions keep their rationale. All of it flows through journaled
+  events, so it replays deterministically.
+- Health: `doctor` (chains, heads, anchors, snapshot, FTS probe);
+  `rebuild` is always safe (the DB is a projection).
+
+## 8. Privacy model
 
 Journals and DB are the PRIVATE memory domain (user machines + the
 self-hosted hub): capture is full-fidelity, never pre-redacted.
-Redaction happens at the publish boundary at full strength: anything
-leaving the private domain must pass `mem redact-check <file>` (exit 2
-+ span report on hits). This file is itself redacted accordingly.
+Redaction guards the publish boundary at full strength: anything leaving
+the private domain must pass `mem redact-check <file>` (exit 2 + span
+report on hits). This file is itself redacted accordingly.
