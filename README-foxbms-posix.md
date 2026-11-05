@@ -1,26 +1,16 @@
 # foxBMS POSIX vECU — Virtual Battery Management System
 
-## What Is This?
+## Scope
 
-This project takes **foxBMS 2** — a production-grade, open-source Battery Management System (BMS) written in C — and runs it entirely on a standard Linux PC instead of the original embedded hardware (TMS570 microcontroller).
+This project ports the foxBMS 2 firmware from the TMS570 target to a Linux virtual ECU (vECU). A simulated battery supplies voltage, current and temperature measurements over SocketCAN. The software-in-the-loop (SIL) setup lets engineers reproduce faults and observe the BMS state machine, diagnostics and contactor commands.
 
-**In plain terms:** a real BMS that normally runs on a tiny chip inside an electric vehicle battery pack now runs as a desktop application, talking to a simulated battery over virtual CAN bus. You can inject faults, watch the BMS react in real time, and verify every safety requirement — all without touching any hardware.
-
-### Why Does This Matter?
-
-| If you are… | This project shows… |
-|---|---|
-| **An interviewer** | End-to-end embedded systems competence: C firmware, CAN protocols, ISO 26262 safety analysis, ASPICE process discipline, Docker deployment, and a live web dashboard — all in one repo |
-| **A beginner** | How a real automotive BMS works from the inside: state machines, fault detection, contactor control, and how the industry tests safety-critical software |
-| **An engineer** | A reusable pattern for SIL (Software-in-the-Loop) testing of any embedded C project — stub the hardware, simulate the plant, test at full speed |
+SIL results apply to the model and host build. Tests on target hardware are needed to assess physical I/O, timing and electrical behavior.
 
 ### Live Demo
 
-Try it right now — no setup needed:
-
-- **Dashboard**: [sil.taktflow-systems.com/bms/](https://sil.taktflow-systems.com/bms/) — live BMS with fault injection controls
-- **Documentation**: [sil.taktflow-systems.com/bms-docs/](https://sil.taktflow-systems.com/bms-docs/) — full 60-page portfolio
-- **Demo Guide**: [SIL Demo Guide](https://sil.taktflow-systems.com/bms-docs/sil-demo-guide.html) — step-by-step walkthrough
+- [SIL dashboard](https://sil.taktflow-systems.com/bms/) with fault injection controls
+- [Documentation index](https://taktflow-systems.com/bms-docs/)
+- [SIL demo guide](https://taktflow-systems.com/bms-docs/sil-demo-guide.html)
 
 ---
 
@@ -144,7 +134,7 @@ xdg-open docs/site/index.html           # Linux
 start docs/site/index.html              # Windows
 ```
 
-Every requirement ID (e.g., SYS-REQ-020, SW-REQ-001) is a **colored link**. Hover to see upstream/downstream traces. Click to navigate.
+Linked requirement IDs show upstream and downstream references on hover or keyboard focus. The Traceability Explorer can filter by requirement ID or level.
 
 ### Documentation Map
 

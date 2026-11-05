@@ -4,198 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SYS.1 Stakeholder Reqs — foxBMS POSIX vECU</title>
-<style>
-:root {
-    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
-    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
-    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
-    --green: #3fb950; --red: #f85149; --yellow: #d29922;
-    --sidebar-w: 280px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'Consolas', 'Fira Code', monospace;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
-
-/* Sidebar */
-nav.sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
-    background: var(--bg2); border-right: 1px solid var(--border);
-    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
-}
-.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
-.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
-nav.sidebar h3 {
-    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
-    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
-}
-nav.sidebar a {
-    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
-    text-decoration: none; border-left: 2px solid transparent;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
-nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
-#search {
-    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-size: 12px; outline: none;
-}
-#search:focus { border-color: var(--accent); }
-.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
-
-/* Main */
-main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
-
-/* Breadcrumb */
-.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
-.breadcrumb a { color: var(--accent); text-decoration: none; }
-.breadcrumb a:hover { text-decoration: underline; }
-
-/* Content */
-.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
-.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
-.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
-.content p { margin: 8px 0; }
-.content a { color: var(--accent); text-decoration: none; }
-.content a:hover { text-decoration: underline; }
-.content strong { color: var(--heading); }
-.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
-.content li { margin: 3px 0; }
-.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
-.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
-.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
-.content tr:hover td { background: var(--bg2); }
-.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
-.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
-.content pre code { background: none; padding: 0; color: var(--text); }
-.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
-
-/* Trace badges */
-.trace-id { position: relative; display: inline; }
-.trace-badges {
-    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 10px; min-width: 200px; max-width: 400px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
-}
-.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
-.trace-badges .tb-section { margin-bottom: 4px; }
-.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-.trace-badges a.tb-link {
-    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
-    font-family: var(--mono); font-size: 11px; text-decoration: none;
-    border: 1px solid var(--border); transition: all 0.15s;
-}
-.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
-.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
-.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
-
-/* Index page cards */
-.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
-.card {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px; transition: border-color 0.15s;
-}
-.card:hover { border-color: var(--accent); }
-.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
-.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
-.card a:hover { color: var(--accent); }
-.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
-
-/* Nav buttons */
-.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
-.nav-buttons a {
-    color: var(--accent); text-decoration: none; font-size: 13px;
-    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
-    background: var(--bg2);
-}
-.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
-
-@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
-</style>
+<link rel="stylesheet" href="docs.css">
 </head>
 <body>
-<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
-<input type="text" id="search" placeholder="Search...">
-<a href="index.html" >Home</a>
-<h3>Project Overview</h3>
-<a href="readme.html" >README</a>
-<a href="status.html" >STATUS</a>
-<a href="plan.html" >PLAN</a>
-<a href="sil-demo-guide.html" >SIL Demo Guide</a>
-<h3>Project Documentation</h3>
-<a href="gap-analysis.html" >Gap Analysis</a>
-<a href="coverage-matrix.html" >Coverage Matrix</a>
-<a href="troubleshooting.html" >Troubleshooting</a>
-<a href="build-guide.html" >Build Guide</a>
-<a href="integration-notes.html" >Integration Notes</a>
-<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
-<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
-<a href="lessons-learned.html" >Lessons Learned</a>
-<h3>ASPICE CL2 — Assessment</h3>
-<a href="assessment-scope.html" >Assessment Scope</a>
-<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
-<a href="traceability-guide.html" >Traceability Guide</a>
-<a href="traceability-matrix.html" >Traceability Matrix</a>
-<h3>ASPICE CL2 — Management</h3>
-<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
-<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
-<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
-<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
-<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
-<h3>ASPICE CL2 — System</h3>
-<a href="sys-1-stakeholder-reqs.html" class="active">SYS.1 Stakeholder Reqs</a>
-<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
-<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
-<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
-<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
-<h3>ASPICE CL2 — Software</h3>
-<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
-<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
-<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
-<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
-<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
-<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
-<h3>ISO 26262 — Safety</h3>
-<a href="part-3-hara.html" >Part 3: HARA</a>
-<a href="part-4-fsc.html" >Part 4: FSC</a>
-<a href="part-4-tsc.html" >Part 4: TSC</a>
-<a href="part-5-hsi.html" >Part 5: HSI</a>
-<a href="part-5-fmea.html" >Part 5: FMEA</a>
-<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
-<a href="part-6-ftti.html" >Part 6: FTTI</a>
-<a href="part-8-traceability.html" >Part 8: Traceability</a>
-<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
-<h3>foxBMS Reference</h3>
-<a href="foxbms-index.html" >foxBMS Index</a>
-<a href="aspice-extraction.html" >ASPICE Extraction</a>
-<a href="modules-index.html" >Modules Index</a>
-<a href="bms-state-machine.html" >BMS State Machine</a>
-<a href="diag-handler.html" >DIAG Handler</a>
-<a href="database.html" >Database</a>
-<a href="can-module.html" >CAN Module</a>
-<a href="ftask.html" >FTASK</a>
-<a href="soa.html" >SOA</a>
-<a href="balancing.html" >Balancing</a>
-<a href="sbc.html" >SBC</a>
-<a href="precharging.html" >Precharging</a>
-<a href="interlock.html" >Interlock</a>
-<a href="dbc-signals.html" >DBC Signals</a>
-<h3>Business & Service</h3>
-<a href="reusable-pipeline.html" >Reusable Pipeline</a>
-<a href="ml-integration.html" >ML Integration</a>
-<a href="ml-feasibility.html" >ML Feasibility</a>
-<a href="hil-data-plan.html" >HIL Data Plan</a>
-<div class="stats">59 documents</div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="docs-layout">
+<details class="sidebar" open>
+<summary>Browse documentation</summary>
+<nav aria-label="Documentation"><span class="logo">foxBMS POSIX vECU</span>
+<label for="search">Filter documents</label>
+<input type="search" id="search">
+<a href="index.html">Documentation index</a>
+<div class="sidebar-group"><h2>Project Overview</h2>
+<a href="readme.html">README</a>
+<a href="status.html">STATUS</a>
+<a href="plan.html">PLAN</a>
+<a href="sil-demo-guide.html">SIL Demo Guide</a>
+</div>
+<div class="sidebar-group"><h2>Project Documentation</h2>
+<a href="gap-analysis.html">Gap Analysis</a>
+<a href="coverage-matrix.html">Coverage Matrix</a>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="build-guide.html">Build Guide</a>
+<a href="integration-notes.html">Integration Notes</a>
+<a href="10-role-audit-v1.html">10-Role Audit v1</a>
+<a href="10-role-audit-v2.html">10-Role Audit v2</a>
+<a href="lessons-learned.html">Lessons Learned</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Assessment</h2>
+<a href="assessment-scope.html">Assessment Scope</a>
+<a href="cl2-gap-assessment.html">CL2 Gap Assessment</a>
+<a href="traceability-guide.html">Traceability Guide</a>
+<a href="traceability-matrix.html">Traceability Matrix</a>
+<a href="traceability.html">Traceability Explorer</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Management</h2>
+<a href="man-3-project-plan.html">MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html">SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html">SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html">SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html">SUP.10 Change Request</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — System</h2>
+<a href="sys-1-stakeholder-reqs.html" aria-current="page">SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html">SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html">SYS.3 System Architecture</a>
+<a href="sys3-portfolio.html">SYS.3 Architecture Views</a>
+<a href="sys-4-system-integration-test.html">SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html">SYS.5 System Qualification</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Software</h2>
+<a href="swe-1-software-reqs.html">SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html">SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html">SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html">SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html">SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html">SWE.6 Qualification Tests</a>
+</div>
+<div class="sidebar-group"><h2>ISO 26262 — Safety</h2>
+<a href="part-3-hara.html">Part 3: HARA</a>
+<a href="part-4-fsc.html">Part 4: FSC</a>
+<a href="part-4-tsc.html">Part 4: TSC</a>
+<a href="part-5-hsi.html">Part 5: HSI</a>
+<a href="part-5-fmea.html">Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html">Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html">Part 6: FTTI</a>
+<a href="part-8-traceability.html">Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html">Part 9: ASIL Decomp</a>
+</div>
+<div class="sidebar-group"><h2>foxBMS Reference</h2>
+<a href="foxbms-index.html">foxBMS Index</a>
+<a href="aspice-extraction.html">ASPICE Extraction</a>
+<a href="modules-index.html">Modules Index</a>
+<a href="bms-state-machine.html">BMS State Machine</a>
+<a href="diag-handler.html">DIAG Handler</a>
+<a href="database.html">Database</a>
+<a href="can-module.html">CAN Module</a>
+<a href="ftask.html">FTASK</a>
+<a href="soa.html">SOA</a>
+<a href="balancing.html">Balancing</a>
+<a href="sbc.html">SBC</a>
+<a href="precharging.html">Precharging</a>
+<a href="interlock.html">Interlock</a>
+<a href="dbc-signals.html">DBC Signals</a>
+</div>
+<div class="sidebar-group"><h2>Business &amp; Service</h2>
+<a href="reusable-pipeline.html">Reusable Pipeline</a>
+<a href="ml-integration.html">ML Integration</a>
+<a href="ml-feasibility.html">ML Feasibility</a>
+<a href="hil-data-plan.html">HIL Data Plan</a>
+</div>
+<p class="search-status" id="search-status" role="status"></p>
 </nav>
-<main>
-<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — System / SYS.1 Stakeholder Reqs</div>
+</details>
+<main class="docs-main" id="main" tabindex="-1">
+<nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Docs</a> / ASPICE CL2 — System / <span aria-current="page">SYS.1 Stakeholder Reqs</span></nav>
 <div class="content"><h1 id="stakeholder-requirements-specification">Stakeholder Requirements Specification</h1>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Document ID</th>
@@ -212,9 +117,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Confidential</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="revision-history">Revision History</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Rev</th>
@@ -233,13 +138,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Initial release</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="1-purpose">1. Purpose</h2>
 <p>This document captures the stakeholder requirements for the foxBMS 2 POSIX vECU project in accordance with ASPICE SYS.1 (Stakeholder Requirements Analysis). It identifies the key stakeholders, elicits their needs, and formalizes them into traceable requirements that drive the system and software specifications.</p>
 <h2 id="2-scope">2. Scope</h2>
 <p>All stakeholder requirements for the POSIX SIL adaptation of foxBMS 2 v1.10.0, covering the vECU, plant model, test infrastructure, and documentation.</p>
 <h2 id="3-references">3. References</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -260,7 +165,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>foxBMS POSIX vECU Gap Analysis</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="4-stakeholder-identification">4. Stakeholder Identification</h2>
 <h3 id="41-stakeholder-1-hil-test-engineer">4.1 Stakeholder 1: HIL Test Engineer</h3>
 <p><strong>Role</strong>: Primary end-user of the SIL system. Uses the vECU to pre-validate BMS test cases before executing them on the physical HIL bench.</p>
@@ -288,7 +193,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 - Modify and experiment without risk of bricking hardware</p>
 <h2 id="5-stakeholder-requirements">5. Stakeholder Requirements</h2>
 <h3 id="51-build-and-setup">5.1 Build and Setup</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -328,9 +233,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-004</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-004">STKH-REQ-004</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-010">IT-010</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-063">SW-REQ-063</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-042">UT-042</a></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="52-bms-functional-behavior">5.2 BMS Functional Behavior</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -370,9 +275,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-030</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-008">STKH-REQ-008</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-036">IT-036</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-004">QT-004</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-003">SSR-003</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-010">SW-REQ-010</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-016">UT-016</a></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="53-safety-and-diagnostics">5.3 Safety and Diagnostics</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -419,9 +324,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-042</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-013">STKH-REQ-013</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-034">IT-034</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-005">QT-005</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-007">SSR-007</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-022">SW-REQ-022</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-020">UT-020</a></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="54-test-automation">5.4 Test Automation</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -461,9 +366,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-063</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-007">STKH-REQ-007</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-001">IT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-007">IT-007</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-006">QT-006</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-040">SSR-040</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-095">SW-REQ-095</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-09b">SW-REQ-09B</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-110">SW-REQ-110</a></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="55-documentation-and-usability">5.5 Documentation and Usability</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -496,10 +401,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-072</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-020">STKH-REQ-020</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#it-021">IT-021</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-041">SW-REQ-041</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-109">SW-REQ-109</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-031">UT-031</a></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="6-requirements-analysis">6. Requirements Analysis</h2>
 <h3 id="61-prioritization">6.1 Prioritization</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Priority</th>
@@ -519,9 +424,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Important for usability and completeness</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="62-conflicts-and-trade-offs">6.2 Conflicts and Trade-offs</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Conflict</th>
@@ -542,13 +447,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>setup.sh caches submodule; incremental builds take &lt;10s</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="63-traceability">6.3 Traceability</h3>
 <p>All STKH-REQ-xxx requirements trace forward to SYS-REQ-xxx in the System Requirements Specification (SYS.2-001). The bidirectional traceability matrix in ISO26262-part8-traceability.md provides the complete mapping chain from stakeholder requirements through system requirements, software requirements, detailed design, and test cases.</p>
 <h3 id="57-traceability-stkh-req-sys-req-complete">5.7 Traceability: STKH-REQ → SYS-REQ (Complete)</h3>
 <p>This table provides the complete bidirectional mapping between all 20 STKH-REQs and all 100 SYS-REQs.</p>
 <h4 id="571-forward-trace-stkh-req-sys-req">5.7.1 Forward Trace: STKH-REQ → SYS-REQ</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>STKH-REQ</th>
@@ -658,9 +563,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-150</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-001">STKH-REQ-001</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-002">STKH-REQ-002</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-003">STKH-REQ-003</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-004">STKH-REQ-004</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-013">STKH-REQ-013</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-014">STKH-REQ-014</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-015">STKH-REQ-015</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-018">STKH-REQ-018</a><span style="color:var(--text2)"> +1 more</span></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-129">SW-REQ-129</a><a class="tb-link tb-down" href="swe-1-software-reqs.html#sw-req-12a">SW-REQ-12A</a></div></span></span>..156</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="572-reverse-trace-sys-req-stkh-req">5.7.2 Reverse Trace: SYS-REQ → STKH-REQ</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>SYS-REQ Range</th>
@@ -770,7 +675,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-001</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-062">SW-REQ-062</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-001">SYS-REQ-001</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-150">SYS-REQ-150</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-151">SYS-REQ-151</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-152">SYS-REQ-152</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-153">SYS-REQ-153</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-154">SYS-REQ-154</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-155">SYS-REQ-155</a><span style="color:var(--text2)"> +1 more</span></div></span></span>..004, <span class="trace-id" style="border-bottom:1px dashed #9b59b6;cursor:help"><a href="traceability.html" style="color:#9b59b6;text-decoration:none">STKH-REQ-020</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#ssr-051">SSR-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-041">SW-REQ-041</a><a class="tb-link tb-down" href="part-8-traceability.html#sys-req-072">SYS-REQ-072</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-150">SYS-REQ-150</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-151">SYS-REQ-151</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-152">SYS-REQ-152</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-153">SYS-REQ-153</a><a class="tb-link tb-down" href="sys-2-system-reqs.html#sys-req-154">SYS-REQ-154</a><span style="color:var(--text2)"> +2 more</span></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="7-acceptance-criteria">7. Acceptance Criteria</h2>
 <p>Each stakeholder requirement is considered fulfilled when:</p>
 <ol>
@@ -778,20 +683,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li>Test evidence demonstrates the requirement is met (test_smoke.py, test_integration.py, or test_asil.py)</li>
 <li>The GAP-ANALYSIS.md entry (if any) is marked FIXED or ACCEPTED with documented rationale</li>
 </ol></div>
-<div class="nav-buttons"><a href="sup-10-change-request.html">&larr; SUP.10 Change Request</a><a href="sys-2-system-reqs.html">SYS.2 System Reqs &rarr;</a></div>
+<nav class="nav-buttons" aria-label="Adjacent documents"><a href="sup-10-change-request.html">&larr; SUP.10 Change Request</a><a href="sys-2-system-reqs.html">SYS.2 System Reqs &rarr;</a></nav>
 </main>
-<script>
-document.getElementById('search')?.addEventListener('input', function(e) {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
-        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
-    });
-    document.querySelectorAll('nav.sidebar h3').forEach(h => {
-        let el = h.nextElementSibling, any = false;
-        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
-        h.style.display = any || q === '' ? '' : 'none';
-    });
-});
-</script>
+</div>
+<script src="docs.js"></script>
 </body>
 </html>

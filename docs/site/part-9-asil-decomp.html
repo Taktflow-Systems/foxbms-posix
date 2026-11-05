@@ -4,198 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Part 9: ASIL Decomp — foxBMS POSIX vECU</title>
-<style>
-:root {
-    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
-    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
-    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
-    --green: #3fb950; --red: #f85149; --yellow: #d29922;
-    --sidebar-w: 280px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'Consolas', 'Fira Code', monospace;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
-
-/* Sidebar */
-nav.sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
-    background: var(--bg2); border-right: 1px solid var(--border);
-    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
-}
-.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
-.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
-nav.sidebar h3 {
-    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
-    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
-}
-nav.sidebar a {
-    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
-    text-decoration: none; border-left: 2px solid transparent;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
-nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
-#search {
-    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-size: 12px; outline: none;
-}
-#search:focus { border-color: var(--accent); }
-.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
-
-/* Main */
-main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
-
-/* Breadcrumb */
-.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
-.breadcrumb a { color: var(--accent); text-decoration: none; }
-.breadcrumb a:hover { text-decoration: underline; }
-
-/* Content */
-.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
-.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
-.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
-.content p { margin: 8px 0; }
-.content a { color: var(--accent); text-decoration: none; }
-.content a:hover { text-decoration: underline; }
-.content strong { color: var(--heading); }
-.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
-.content li { margin: 3px 0; }
-.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
-.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
-.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
-.content tr:hover td { background: var(--bg2); }
-.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
-.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
-.content pre code { background: none; padding: 0; color: var(--text); }
-.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
-
-/* Trace badges */
-.trace-id { position: relative; display: inline; }
-.trace-badges {
-    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 10px; min-width: 200px; max-width: 400px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
-}
-.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
-.trace-badges .tb-section { margin-bottom: 4px; }
-.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-.trace-badges a.tb-link {
-    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
-    font-family: var(--mono); font-size: 11px; text-decoration: none;
-    border: 1px solid var(--border); transition: all 0.15s;
-}
-.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
-.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
-.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
-
-/* Index page cards */
-.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
-.card {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px; transition: border-color 0.15s;
-}
-.card:hover { border-color: var(--accent); }
-.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
-.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
-.card a:hover { color: var(--accent); }
-.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
-
-/* Nav buttons */
-.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
-.nav-buttons a {
-    color: var(--accent); text-decoration: none; font-size: 13px;
-    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
-    background: var(--bg2);
-}
-.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
-
-@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
-</style>
+<link rel="stylesheet" href="docs.css">
 </head>
 <body>
-<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
-<input type="text" id="search" placeholder="Search...">
-<a href="index.html" >Home</a>
-<h3>Project Overview</h3>
-<a href="readme.html" >README</a>
-<a href="status.html" >STATUS</a>
-<a href="plan.html" >PLAN</a>
-<a href="sil-demo-guide.html" >SIL Demo Guide</a>
-<h3>Project Documentation</h3>
-<a href="gap-analysis.html" >Gap Analysis</a>
-<a href="coverage-matrix.html" >Coverage Matrix</a>
-<a href="troubleshooting.html" >Troubleshooting</a>
-<a href="build-guide.html" >Build Guide</a>
-<a href="integration-notes.html" >Integration Notes</a>
-<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
-<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
-<a href="lessons-learned.html" >Lessons Learned</a>
-<h3>ASPICE CL2 — Assessment</h3>
-<a href="assessment-scope.html" >Assessment Scope</a>
-<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
-<a href="traceability-guide.html" >Traceability Guide</a>
-<a href="traceability-matrix.html" >Traceability Matrix</a>
-<h3>ASPICE CL2 — Management</h3>
-<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
-<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
-<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
-<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
-<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
-<h3>ASPICE CL2 — System</h3>
-<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
-<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
-<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
-<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
-<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
-<h3>ASPICE CL2 — Software</h3>
-<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
-<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
-<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
-<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
-<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
-<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
-<h3>ISO 26262 — Safety</h3>
-<a href="part-3-hara.html" >Part 3: HARA</a>
-<a href="part-4-fsc.html" >Part 4: FSC</a>
-<a href="part-4-tsc.html" >Part 4: TSC</a>
-<a href="part-5-hsi.html" >Part 5: HSI</a>
-<a href="part-5-fmea.html" >Part 5: FMEA</a>
-<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
-<a href="part-6-ftti.html" >Part 6: FTTI</a>
-<a href="part-8-traceability.html" >Part 8: Traceability</a>
-<a href="part-9-asil-decomp.html" class="active">Part 9: ASIL Decomp</a>
-<h3>foxBMS Reference</h3>
-<a href="foxbms-index.html" >foxBMS Index</a>
-<a href="aspice-extraction.html" >ASPICE Extraction</a>
-<a href="modules-index.html" >Modules Index</a>
-<a href="bms-state-machine.html" >BMS State Machine</a>
-<a href="diag-handler.html" >DIAG Handler</a>
-<a href="database.html" >Database</a>
-<a href="can-module.html" >CAN Module</a>
-<a href="ftask.html" >FTASK</a>
-<a href="soa.html" >SOA</a>
-<a href="balancing.html" >Balancing</a>
-<a href="sbc.html" >SBC</a>
-<a href="precharging.html" >Precharging</a>
-<a href="interlock.html" >Interlock</a>
-<a href="dbc-signals.html" >DBC Signals</a>
-<h3>Business & Service</h3>
-<a href="reusable-pipeline.html" >Reusable Pipeline</a>
-<a href="ml-integration.html" >ML Integration</a>
-<a href="ml-feasibility.html" >ML Feasibility</a>
-<a href="hil-data-plan.html" >HIL Data Plan</a>
-<div class="stats">59 documents</div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="docs-layout">
+<details class="sidebar" open>
+<summary>Browse documentation</summary>
+<nav aria-label="Documentation"><span class="logo">foxBMS POSIX vECU</span>
+<label for="search">Filter documents</label>
+<input type="search" id="search">
+<a href="index.html">Documentation index</a>
+<div class="sidebar-group"><h2>Project Overview</h2>
+<a href="readme.html">README</a>
+<a href="status.html">STATUS</a>
+<a href="plan.html">PLAN</a>
+<a href="sil-demo-guide.html">SIL Demo Guide</a>
+</div>
+<div class="sidebar-group"><h2>Project Documentation</h2>
+<a href="gap-analysis.html">Gap Analysis</a>
+<a href="coverage-matrix.html">Coverage Matrix</a>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="build-guide.html">Build Guide</a>
+<a href="integration-notes.html">Integration Notes</a>
+<a href="10-role-audit-v1.html">10-Role Audit v1</a>
+<a href="10-role-audit-v2.html">10-Role Audit v2</a>
+<a href="lessons-learned.html">Lessons Learned</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Assessment</h2>
+<a href="assessment-scope.html">Assessment Scope</a>
+<a href="cl2-gap-assessment.html">CL2 Gap Assessment</a>
+<a href="traceability-guide.html">Traceability Guide</a>
+<a href="traceability-matrix.html">Traceability Matrix</a>
+<a href="traceability.html">Traceability Explorer</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Management</h2>
+<a href="man-3-project-plan.html">MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html">SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html">SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html">SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html">SUP.10 Change Request</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — System</h2>
+<a href="sys-1-stakeholder-reqs.html">SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html">SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html">SYS.3 System Architecture</a>
+<a href="sys3-portfolio.html">SYS.3 Architecture Views</a>
+<a href="sys-4-system-integration-test.html">SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html">SYS.5 System Qualification</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Software</h2>
+<a href="swe-1-software-reqs.html">SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html">SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html">SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html">SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html">SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html">SWE.6 Qualification Tests</a>
+</div>
+<div class="sidebar-group"><h2>ISO 26262 — Safety</h2>
+<a href="part-3-hara.html">Part 3: HARA</a>
+<a href="part-4-fsc.html">Part 4: FSC</a>
+<a href="part-4-tsc.html">Part 4: TSC</a>
+<a href="part-5-hsi.html">Part 5: HSI</a>
+<a href="part-5-fmea.html">Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html">Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html">Part 6: FTTI</a>
+<a href="part-8-traceability.html">Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html" aria-current="page">Part 9: ASIL Decomp</a>
+</div>
+<div class="sidebar-group"><h2>foxBMS Reference</h2>
+<a href="foxbms-index.html">foxBMS Index</a>
+<a href="aspice-extraction.html">ASPICE Extraction</a>
+<a href="modules-index.html">Modules Index</a>
+<a href="bms-state-machine.html">BMS State Machine</a>
+<a href="diag-handler.html">DIAG Handler</a>
+<a href="database.html">Database</a>
+<a href="can-module.html">CAN Module</a>
+<a href="ftask.html">FTASK</a>
+<a href="soa.html">SOA</a>
+<a href="balancing.html">Balancing</a>
+<a href="sbc.html">SBC</a>
+<a href="precharging.html">Precharging</a>
+<a href="interlock.html">Interlock</a>
+<a href="dbc-signals.html">DBC Signals</a>
+</div>
+<div class="sidebar-group"><h2>Business &amp; Service</h2>
+<a href="reusable-pipeline.html">Reusable Pipeline</a>
+<a href="ml-integration.html">ML Integration</a>
+<a href="ml-feasibility.html">ML Feasibility</a>
+<a href="hil-data-plan.html">HIL Data Plan</a>
+</div>
+<p class="search-status" id="search-status" role="status"></p>
 </nav>
-<main>
-<div class="breadcrumb"><a href="index.html">Home</a> / ISO 26262 — Safety / Part 9: ASIL Decomp</div>
+</details>
+<main class="docs-main" id="main" tabindex="-1">
+<nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Docs</a> / ISO 26262 — Safety / <span aria-current="page">Part 9: ASIL Decomp</span></nav>
 <div class="content"><h1 id="iso-26262-9-asil-decomposition-analysis">ISO 26262-9: ASIL Decomposition Analysis</h1>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Field</th>
@@ -232,7 +137,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>FOX-SAF-HARA-001, FOX-SAF-FSC-001, FOX-SAF-TSC-001, FOX-SAF-FMEA-001</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <hr />
 <h2 id="1-scope">1  Scope</h2>
 <p>This document analyzes how the foxBMS 2 three-tier diagnostic system (MOL/RSL/MSL) implements ASIL decomposition per ISO 26262-9, Clause 5. The analysis covers:</p>
@@ -252,7 +157,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li>A dependent failure analysis demonstrates freedom from common-cause failures</li>
 </ol>
 <h3 id="22-allowed-asil-decomposition-iso-26262-9-table-2">2.2  Allowed ASIL Decomposition (ISO 26262-9, Table 2)</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Original ASIL</th>
@@ -277,13 +182,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>ASIL A(A), QM(A) + QM(A) — not recommended</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p>The notation X(Y) means "element developed to ASIL X, contributing to a safety goal of ASIL Y."</p>
 <hr />
 <h2 id="3-three-tier-diagnostic-architecture-as-asil-decomposition">3  Three-Tier Diagnostic Architecture as ASIL Decomposition</h2>
 <h3 id="31-architecture-overview">3.1  Architecture Overview</h3>
 <p>The foxBMS 2 diagnostic system implements three monitoring levels for each battery safety parameter:</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Tier</th>
@@ -316,9 +221,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Primary safety mechanism</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="32-asil-allocation-per-tier">3.2  ASIL Allocation per Tier</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Tier</th>
@@ -343,10 +248,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Informational function. Provides driver notification only. No autonomous safety action. Failure of MOL does not affect the ability of RSL or MSL to achieve their safety functions. No ASIL requirement.</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="33-decomposition-compliance-for-each-safety-goal">3.3  Decomposition Compliance for Each Safety Goal</h3>
 <h4 id="sg-01-cell-overvoltage-asil-d"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>: Cell Overvoltage (ASIL D)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Element</th>
@@ -376,10 +281,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>IVT pack voltage vs. AFE cell sum → DIAG_ID_PLAUSIBILITY_PACK_VOLTAGE → independent detection path</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Decomposition:</strong> ASIL D = ASIL D(D) [MSL] + ASIL B(D) [RSL + Plausibility]. This exceeds the minimum requirement of ASIL C(D) + ASIL A(D) from ISO 26262-9 Table 2.</p>
 <h4 id="sg-02-cell-undervoltage-asil-c"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-02">FSR-02</a><a class="tb-link tb-down" href="part-3-hara.html#hz-02">HZ-02</a></div></span></span>: Cell Undervoltage (ASIL C)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Element</th>
@@ -404,10 +309,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>AFE → SOA (&lt; MOL threshold) → CAN warning</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Decomposition:</strong> ASIL C = ASIL C(C) [MSL] + ASIL A(C) [RSL]. Compliant.</p>
 <h4 id="sg-04sg-05-overcurrent-dischargecharge-asil-bc"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-04</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-04">FSR-04</a><a class="tb-link tb-down" href="part-3-hara.html#hz-04">HZ-04</a></div></span></span>/<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-05</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-05">FSR-05</a><a class="tb-link tb-down" href="part-3-hara.html#hz-05">HZ-05</a></div></span></span>: Overcurrent Discharge/Charge (ASIL B/C)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Element</th>
@@ -432,10 +337,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>IVT → SOA (&gt;RSL threshold) → current limit via CAN</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Two-level MSL:</strong> The dual cell-level and string-level overcurrent detection provides two independent MSL thresholds. Even if one level fails, the other provides protection.</p>
 <h4 id="sg-06-overtemperature-asil-c"><span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-06">FSR-06</a><a class="tb-link tb-down" href="part-3-hara.html#hz-06">HZ-06</a></div></span></span>: Overtemperature (ASIL C)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Element</th>
@@ -465,14 +370,14 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>NTC/AFE → SOA (&gt;MOL threshold) → CAN warning</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Decomposition:</strong> ASIL C = ASIL C(C) [MSL] + ASIL A(C) [RSL]. Compliant.</p>
 <hr />
 <h2 id="4-independence-analysis">4  Independence Analysis</h2>
 <h3 id="41-independence-between-msl-and-rsl-tiers">4.1  Independence Between MSL and RSL Tiers</h3>
 <p>For ASIL decomposition to be valid, sufficient independence between the decomposed elements must be demonstrated. The analysis considers:</p>
 <h4 id="411-shared-elements-potential-dependent-failures">4.1.1  Shared Elements (Potential Dependent Failures)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Shared Element</th>
@@ -513,9 +418,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>No concern</strong> — MSL does not depend on CAN</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="412-independence-assessment">4.1.2  Independence Assessment</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Criterion (ISO 26262-9, Clause 7)</th>
@@ -540,11 +445,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MSL does not use CAN for its safety reaction. RSL depends on CAN. Loss of CAN affects only RSL.</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Conclusion:</strong> Sufficient independence exists between MSL and RSL reactions. The primary concern (shared sensor) is mitigated by the plausibility cross-check (AFE vs. IVT) for voltage measurements.</p>
 <h3 id="42-independence-between-primary-and-secondary-detection-paths">4.2  Independence Between Primary and Secondary Detection Paths</h3>
 <p>For ASIL D safety goals (<span class="trace-id" style="border-bottom:1px dashed #e74c3c;cursor:help"><a href="traceability.html" style="color:#e74c3c;text-decoration:none">SG-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-4-fsc.html#fsr-01">FSR-01</a><a class="tb-link tb-down" href="part-3-hara.html#hz-01">HZ-01</a></div></span></span>: overvoltage), a secondary detection path is required:</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Path</th>
@@ -577,9 +482,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MCU reset → contactor open</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="421-independence-demonstration">4.2.1  Independence Demonstration</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Factor</th>
@@ -626,14 +531,14 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Software hang</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Independence verdict:</strong> The three paths satisfy the cascaded independence requirement for ASIL D. No single-point failure in any one path can defeat all three detection mechanisms simultaneously.</p>
 <hr />
 <h2 id="5-dependent-failure-analysis-dfa">5  Dependent Failure Analysis (DFA)</h2>
 <h3 id="51-common-cause-failures-ccf">5.1  Common-Cause Failures (CCF)</h3>
 <p>ISO 26262-9 Clause 7 requires analysis of common-cause failures that could defeat multiple independent safety mechanisms simultaneously.</p>
 <h4 id="ccf-01-microcontroller-failure">CCF-01: Microcontroller Failure</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Parameter</th>
@@ -662,9 +567,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Lockstep CPU and SBC watchdog provide independent detection. Fail-safe contactor design ensures safe state on total MCU loss. <strong>Adequately mitigated.</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="ccf-02-power-supply-failure">CCF-02: Power Supply Failure</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Parameter</th>
@@ -693,9 +598,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Fail-safe contactor design ensures safe state on total power loss. <strong>Adequately mitigated.</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="ccf-03-emc-disturbance">CCF-03: EMC Disturbance</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Parameter</th>
@@ -724,9 +629,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Threshold filtering and CRC checks provide robust protection against transient disturbances. Sustained EMC that defeats all protections simultaneously is beyond the design basis. <strong>Adequately mitigated for automotive EMC levels.</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="ccf-04-software-systematic-fault">CCF-04: Software Systematic Fault</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Parameter</th>
@@ -755,9 +660,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Software systematic faults are addressed by development process, not runtime detection. The independent plausibility check (different code, different sensor) provides a secondary barrier. <strong>Residual risk acceptable for ASIL D with plausibility check.</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="ccf-05-afe-hardware-common-cause">CCF-05: AFE Hardware Common-Cause</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Parameter</th>
@@ -786,9 +691,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Plausibility check provides independent detection of AFE systematic offset. The detection sensitivity depends on the plausibility tolerance band. A small AFE drift within the tolerance band may go undetected. <strong>Acceptable residual risk — drift within tolerance band is insufficient to cause hazard.</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h4 id="ccf-06-contactor-common-cause-multiple-welding">CCF-06: Contactor Common-Cause (Multiple Welding)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Parameter</th>
@@ -817,9 +722,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Multiple simultaneous welding requires a common high-current event. Precharge limits inrush, and external fuse provides backup. <strong>Recommendation: Add pyro-fuse for ASIL D applications to eliminate this residual risk.</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="52-cascading-failures">5.2  Cascading Failures</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Initiating Failure</th>
@@ -854,14 +759,14 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>DIAG_ID_SBC_RSTB_ERROR + DIAG_ID_ALERT_MODE. TMS570 lockstep provides independent hang detection for CPU faults.</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <hr />
 <h2 id="6-architectural-metrics">6  Architectural Metrics</h2>
 <h3 id="61-single-point-fault-metric-spfm">6.1  Single-Point Fault Metric (SPFM)</h3>
 <p>Per ISO 26262-5, the SPFM measures the coverage of single-point and residual faults:</p>
 <pre><code>SPFM = 1 - (λ_SPF + λ_RF) / λ_total
 </code></pre>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Element</th>
@@ -922,14 +827,14 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>87%</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>System-level SPFM estimate: &gt;93%</strong> — exceeds ASIL D requirement of &gt;99% for hardware elements, but additional analysis with detailed FIT rates from component datasheets is required for formal compliance.</p>
 <p>Note: These FIT values are estimates for illustrative purposes. Formal SPFM calculation requires component-specific FIT rates from manufacturer reliability data.</p>
 <h3 id="62-latent-fault-metric-lfm">6.2  Latent Fault Metric (LFM)</h3>
 <p>Per ISO 26262-5, the LFM measures the coverage of latent (multi-point) faults:</p>
 <pre><code>LFM = 1 - λ_MPF_latent / (λ_total - λ_SPF - λ_RF)
 </code></pre>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Element</th>
@@ -970,12 +875,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>95%</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>System-level LFM estimate: &gt;77%</strong> — meets ASIL C requirement (&gt;80% target) but falls short of ASIL D requirement (&gt;90%). Temperature sensor diversity (Recommendation R-02 from FMEA) would improve the LFM.</p>
 <hr />
 <h2 id="7-asil-decomposition-summary">7  ASIL Decomposition Summary</h2>
 <h3 id="71-decomposition-validity-assessment">7.1  Decomposition Validity Assessment</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Safety Goal</th>
@@ -1110,7 +1015,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>VALID</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="72-key-findings">7.2  Key Findings</h3>
 <ol>
 <li>
@@ -1131,7 +1036,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 </ol>
 <hr />
 <h2 id="8-recommendations-for-asil-d-compliance-enhancement">8  Recommendations for ASIL D Compliance Enhancement</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -1171,10 +1076,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>LFM improvement</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <hr />
 <h2 id="9-references">9  References</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Ref</th>
@@ -1215,23 +1120,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>foxBMS v1.10.0 <code>src/app/engine/diag/diag_cfg.c</code></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <hr />
 <p><em>End of Document FOX-SAF-ASIL-DEC-001</em></p></div>
-<div class="nav-buttons"><a href="part-8-traceability.html">&larr; Part 8: Traceability</a><a href="foxbms-index.html">foxBMS Index &rarr;</a></div>
+<nav class="nav-buttons" aria-label="Adjacent documents"><a href="part-8-traceability.html">&larr; Part 8: Traceability</a><a href="foxbms-index.html">foxBMS Index &rarr;</a></nav>
 </main>
-<script>
-document.getElementById('search')?.addEventListener('input', function(e) {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
-        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
-    });
-    document.querySelectorAll('nav.sidebar h3').forEach(h => {
-        let el = h.nextElementSibling, any = false;
-        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
-        h.style.display = any || q === '' ? '' : 'none';
-    });
-});
-</script>
+</div>
+<script src="docs.js"></script>
 </body>
 </html>

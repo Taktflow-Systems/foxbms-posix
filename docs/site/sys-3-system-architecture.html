@@ -4,199 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SYS.3 System Architecture — foxBMS POSIX vECU</title>
-<style>
-:root {
-    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
-    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
-    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
-    --green: #3fb950; --red: #f85149; --yellow: #d29922;
-    --sidebar-w: 280px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'Consolas', 'Fira Code', monospace;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
-
-/* Sidebar */
-nav.sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
-    background: var(--bg2); border-right: 1px solid var(--border);
-    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
-}
-.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
-.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
-nav.sidebar h3 {
-    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
-    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
-}
-nav.sidebar a {
-    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
-    text-decoration: none; border-left: 2px solid transparent;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
-nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
-#search {
-    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-size: 12px; outline: none;
-}
-#search:focus { border-color: var(--accent); }
-.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
-
-/* Main */
-main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
-
-/* Breadcrumb */
-.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
-.breadcrumb a { color: var(--accent); text-decoration: none; }
-.breadcrumb a:hover { text-decoration: underline; }
-
-/* Content */
-.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
-.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
-.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
-.content p { margin: 8px 0; }
-.content a { color: var(--accent); text-decoration: none; }
-.content a:hover { text-decoration: underline; }
-.content strong { color: var(--heading); }
-.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
-.content li { margin: 3px 0; }
-.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
-.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
-.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
-.content tr:hover td { background: var(--bg2); }
-.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
-.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
-.content pre code { background: none; padding: 0; color: var(--text); }
-.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
-
-/* Trace badges */
-.trace-id { position: relative; display: inline; }
-.trace-badges {
-    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 10px; min-width: 200px; max-width: 400px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
-}
-.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
-.trace-badges .tb-section { margin-bottom: 4px; }
-.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-.trace-badges a.tb-link {
-    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
-    font-family: var(--mono); font-size: 11px; text-decoration: none;
-    border: 1px solid var(--border); transition: all 0.15s;
-}
-.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
-.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
-.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
-
-/* Index page cards */
-.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
-.card {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px; transition: border-color 0.15s;
-}
-.card:hover { border-color: var(--accent); }
-.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
-.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
-.card a:hover { color: var(--accent); }
-.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
-
-/* Nav buttons */
-.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
-.nav-buttons a {
-    color: var(--accent); text-decoration: none; font-size: 13px;
-    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
-    background: var(--bg2);
-}
-.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
-
-@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
-</style>
+<link rel="stylesheet" href="docs.css">
 </head>
 <body>
-<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
-<input type="text" id="search" placeholder="Search...">
-<a href="index.html" >Home</a>
-<h3>Project Overview</h3>
-<a href="readme.html" >README</a>
-<a href="status.html" >STATUS</a>
-<a href="plan.html" >PLAN</a>
-<a href="sil-demo-guide.html" >SIL Demo Guide</a>
-<h3>Project Documentation</h3>
-<a href="gap-analysis.html" >Gap Analysis</a>
-<a href="coverage-matrix.html" >Coverage Matrix</a>
-<a href="troubleshooting.html" >Troubleshooting</a>
-<a href="build-guide.html" >Build Guide</a>
-<a href="integration-notes.html" >Integration Notes</a>
-<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
-<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
-<a href="lessons-learned.html" >Lessons Learned</a>
-<h3>ASPICE CL2 — Assessment</h3>
-<a href="assessment-scope.html" >Assessment Scope</a>
-<a href="cl2-gap-assessment.html" >CL2 Gap Assessment</a>
-<a href="traceability-guide.html" >Traceability Guide</a>
-<a href="traceability-matrix.html" >Traceability Matrix</a>
-<h3>ASPICE CL2 — Management</h3>
-<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
-<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
-<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
-<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
-<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
-<h3>ASPICE CL2 — System</h3>
-<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
-<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
-<a href="sys-3-system-architecture.html" class="active">SYS.3 System Architecture</a>
-<a href="sys3-portfolio.html" >SYS.3 Portfolio &amp; Views</a>
-<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
-<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
-<h3>ASPICE CL2 — Software</h3>
-<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
-<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
-<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
-<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
-<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
-<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
-<h3>ISO 26262 — Safety</h3>
-<a href="part-3-hara.html" >Part 3: HARA</a>
-<a href="part-4-fsc.html" >Part 4: FSC</a>
-<a href="part-4-tsc.html" >Part 4: TSC</a>
-<a href="part-5-hsi.html" >Part 5: HSI</a>
-<a href="part-5-fmea.html" >Part 5: FMEA</a>
-<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
-<a href="part-6-ftti.html" >Part 6: FTTI</a>
-<a href="part-8-traceability.html" >Part 8: Traceability</a>
-<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
-<h3>foxBMS Reference</h3>
-<a href="foxbms-index.html" >foxBMS Index</a>
-<a href="aspice-extraction.html" >ASPICE Extraction</a>
-<a href="modules-index.html" >Modules Index</a>
-<a href="bms-state-machine.html" >BMS State Machine</a>
-<a href="diag-handler.html" >DIAG Handler</a>
-<a href="database.html" >Database</a>
-<a href="can-module.html" >CAN Module</a>
-<a href="ftask.html" >FTASK</a>
-<a href="soa.html" >SOA</a>
-<a href="balancing.html" >Balancing</a>
-<a href="sbc.html" >SBC</a>
-<a href="precharging.html" >Precharging</a>
-<a href="interlock.html" >Interlock</a>
-<a href="dbc-signals.html" >DBC Signals</a>
-<h3>Business & Service</h3>
-<a href="reusable-pipeline.html" >Reusable Pipeline</a>
-<a href="ml-integration.html" >ML Integration</a>
-<a href="ml-feasibility.html" >ML Feasibility</a>
-<a href="hil-data-plan.html" >HIL Data Plan</a>
-<div class="stats">59 documents</div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="docs-layout">
+<details class="sidebar" open>
+<summary>Browse documentation</summary>
+<nav aria-label="Documentation"><span class="logo">foxBMS POSIX vECU</span>
+<label for="search">Filter documents</label>
+<input type="search" id="search">
+<a href="index.html">Documentation index</a>
+<div class="sidebar-group"><h2>Project Overview</h2>
+<a href="readme.html">README</a>
+<a href="status.html">STATUS</a>
+<a href="plan.html">PLAN</a>
+<a href="sil-demo-guide.html">SIL Demo Guide</a>
+</div>
+<div class="sidebar-group"><h2>Project Documentation</h2>
+<a href="gap-analysis.html">Gap Analysis</a>
+<a href="coverage-matrix.html">Coverage Matrix</a>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="build-guide.html">Build Guide</a>
+<a href="integration-notes.html">Integration Notes</a>
+<a href="10-role-audit-v1.html">10-Role Audit v1</a>
+<a href="10-role-audit-v2.html">10-Role Audit v2</a>
+<a href="lessons-learned.html">Lessons Learned</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Assessment</h2>
+<a href="assessment-scope.html">Assessment Scope</a>
+<a href="cl2-gap-assessment.html">CL2 Gap Assessment</a>
+<a href="traceability-guide.html">Traceability Guide</a>
+<a href="traceability-matrix.html">Traceability Matrix</a>
+<a href="traceability.html">Traceability Explorer</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Management</h2>
+<a href="man-3-project-plan.html">MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html">SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html">SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html">SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html">SUP.10 Change Request</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — System</h2>
+<a href="sys-1-stakeholder-reqs.html">SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html">SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html" aria-current="page">SYS.3 System Architecture</a>
+<a href="sys3-portfolio.html">SYS.3 Architecture Views</a>
+<a href="sys-4-system-integration-test.html">SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html">SYS.5 System Qualification</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Software</h2>
+<a href="swe-1-software-reqs.html">SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html">SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html">SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html">SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html">SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html">SWE.6 Qualification Tests</a>
+</div>
+<div class="sidebar-group"><h2>ISO 26262 — Safety</h2>
+<a href="part-3-hara.html">Part 3: HARA</a>
+<a href="part-4-fsc.html">Part 4: FSC</a>
+<a href="part-4-tsc.html">Part 4: TSC</a>
+<a href="part-5-hsi.html">Part 5: HSI</a>
+<a href="part-5-fmea.html">Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html">Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html">Part 6: FTTI</a>
+<a href="part-8-traceability.html">Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html">Part 9: ASIL Decomp</a>
+</div>
+<div class="sidebar-group"><h2>foxBMS Reference</h2>
+<a href="foxbms-index.html">foxBMS Index</a>
+<a href="aspice-extraction.html">ASPICE Extraction</a>
+<a href="modules-index.html">Modules Index</a>
+<a href="bms-state-machine.html">BMS State Machine</a>
+<a href="diag-handler.html">DIAG Handler</a>
+<a href="database.html">Database</a>
+<a href="can-module.html">CAN Module</a>
+<a href="ftask.html">FTASK</a>
+<a href="soa.html">SOA</a>
+<a href="balancing.html">Balancing</a>
+<a href="sbc.html">SBC</a>
+<a href="precharging.html">Precharging</a>
+<a href="interlock.html">Interlock</a>
+<a href="dbc-signals.html">DBC Signals</a>
+</div>
+<div class="sidebar-group"><h2>Business &amp; Service</h2>
+<a href="reusable-pipeline.html">Reusable Pipeline</a>
+<a href="ml-integration.html">ML Integration</a>
+<a href="ml-feasibility.html">ML Feasibility</a>
+<a href="hil-data-plan.html">HIL Data Plan</a>
+</div>
+<p class="search-status" id="search-status" role="status"></p>
 </nav>
-<main>
-<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — System / SYS.3 System Architecture</div>
+</details>
+<main class="docs-main" id="main" tabindex="-1">
+<nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Docs</a> / ASPICE CL2 — System / <span aria-current="page">SYS.3 System Architecture</span></nav>
 <div class="content"><h1 id="system-architecture-description">System Architecture Description</h1>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Document ID</th>
@@ -213,9 +117,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Confidential</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="revision-history">Revision History</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Rev</th>
@@ -248,7 +152,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Fix ball assignments (E-02/E-05), ADC accuracy, plausibility threshold. Add ⚠TBV markers for unverified pins.</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="1-purpose">1. Purpose</h2>
 <p>This document describes the system architecture of the foxBMS 2 POSIX port BMS. It
 decomposes the system into layers, tasks, and communication interfaces, satisfying
@@ -257,7 +161,7 @@ ASPICE SYS.3 base practices and ISO 26262 Part 4 system design requirements.</p>
 <p>The architecture covers the full BMS software stack from application-level algorithms
 down to the hardware abstraction layer, including the POSIX-specific adaptations.</p>
 <h2 id="3-references">3. References</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -278,7 +182,7 @@ down to the hardware abstraction layer, including the POSIX-specific adaptations
 <td>Hardware-Software Interface Specification</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="4-system-context">4. System Context</h2>
 <p>The BMS manages a single battery string (18s1p) connected to a vehicle load via three
 contactors (string+, string-, precharge). External interfaces are:</p>
@@ -293,7 +197,7 @@ contactors (string+, string-, precharge). External interfaces are:</p>
 <p>The BMS system is decomposed into the following elements per ASPICE SYS.3 BP.1.
 Each element has a unique ID for traceability to system requirements (§4b).</p>
 <h3 id="hardware-elements">Hardware Elements</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -394,9 +298,9 @@ Each element has a unique ID for traceability to system requirements (§4b).</p>
 <td>—</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="software-elements">Software Elements</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -465,7 +369,7 @@ Each element has a unique ID for traceability to system requirements (§4b).</p>
 <td>—</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="element-boundary-diagram">Element Boundary Diagram</h3>
 <pre><code>External:  Vehicle Controller ←─ CAN2 ─→ ┌──────────────────────────────────────┐
            IVT (SE-004) ←────── CAN1 ──→ │                                      │
@@ -497,7 +401,7 @@ Each element has a unique ID for traceability to system requirements (§4b).</p>
 <h2 id="4b-requirements-allocation-aspice-sys3-bp2">4b. Requirements Allocation (ASPICE SYS.3 BP.2)</h2>
 <p>Each system requirement is allocated to one or more system elements. Full allocation
 matrix is maintained in the traceability tool. Summary by element:</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Element</th>
@@ -567,9 +471,9 @@ matrix is maintained in the traceability tool. Summary by element:</p>
 <td>AFE communication</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="4c-architecture-alternatives-analysis-aspice-sys3-bp5">4c. Architecture Alternatives Analysis (ASPICE SYS.3 BP.5)</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Decision</th>
@@ -616,7 +520,7 @@ matrix is maintained in the traceability tool. Summary by element:</p>
 <td>foxBMS reference design. Integrated current sensing for feedback. MOSFET driver handles inductive kickback. UVLO provides hardware fail-safe.</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="5-system-block-diagram">5. System Block Diagram</h2>
 <pre><code>+-------------------------------------------------------------------+
 |                     APPLICATION LAYER                              |
@@ -662,7 +566,7 @@ matrix is maintained in the traceability tool. Summary by element:</p>
 <h3 id="61-application-layer">6.1 Application Layer</h3>
 <p>The Application layer implements the BMS functional logic. It is hardware-independent
 and operates exclusively through the Engine and Driver layer APIs.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Module</th>
@@ -702,10 +606,10 @@ and operates exclusively through the Engine and Driver layer APIs.</p>
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-050</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-007">QT-007</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-010">QT-010</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-011">QT-011</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-012">QT-012</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-014">QT-014</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><span style="color:var(--text2)"> +3 more</span></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="62-engine-layer">6.2 Engine Layer</h3>
 <p>The Engine layer provides core services to the Application layer.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Module</th>
@@ -730,10 +634,10 @@ and operates exclusively through the Engine and Driver layer APIs.</p>
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-070</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-016">STKH-REQ-016</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-018">STKH-REQ-018</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-020">IT-020</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-050">SW-REQ-050</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-053">SW-REQ-053</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-100">SW-REQ-100</a></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="63-driver-layer">6.3 Driver Layer</h3>
 <p>The Driver layer abstracts hardware peripherals into software-callable interfaces.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Module</th>
@@ -783,9 +687,9 @@ and operates exclusively through the Engine and Driver layer APIs.</p>
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-050</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-009">STKH-REQ-009</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-011">STKH-REQ-011</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-012">STKH-REQ-012</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-017">STKH-REQ-017</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#it-040">IT-040</a><a class="tb-link tb-down" href="part-8-traceability.html#it-060">IT-060</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-007">QT-007</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-010">QT-010</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-011">QT-011</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-012">QT-012</a><a class="tb-link tb-down" href="swe-6-qualification-tests.html#qt-014">QT-014</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-030">SSR-030</a><span style="color:var(--text2)"> +3 more</span></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="64-hardware-abstraction-layer">6.4 Hardware Abstraction Layer</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Variant</th>
@@ -805,10 +709,10 @@ and operates exclusively through the Engine and Driver layer APIs.</p>
 <td><span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-080</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-005">STKH-REQ-005</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-006">STKH-REQ-006</a><a class="tb-link tb-up" href="sys-1-stakeholder-reqs.html#stkh-req-019">STKH-REQ-019</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="part-8-traceability.html#qt-008">QT-008</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-050">SW-REQ-050</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-051">SW-REQ-051</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-123">SW-REQ-123</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-100">UT-100</a></div></span></span> to <span class="trace-id" style="border-bottom:1px dashed #3498db;cursor:help"><a href="traceability.html" style="color:#3498db;text-decoration:none">SYS-REQ-086</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-8-traceability.html#qt-001">QT-001</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-090">SW-REQ-090</a><a class="tb-link tb-down" href="swe-5-integration-tests.html#sw-req-122">SW-REQ-122</a><a class="tb-link tb-down" href="swe-4-unit-tests.html#ut-112">UT-112</a></div></span></span></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="7-task-architecture">7. Task Architecture</h2>
 <h3 id="71-freertos-tasks-production-target">7.1 FreeRTOS Tasks (Production Target)</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Task</th>
@@ -861,7 +765,7 @@ and operates exclusively through the Engine and Driver layer APIs.</p>
 <td>SOC, SOE, SOH computation</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="72-posix-cooperative-loop-sil-target">7.2 POSIX Cooperative Loop (SIL Target)</h3>
 <p>The FreeRTOS scheduler is replaced by a single-threaded cooperative main loop that
 calls each task function in sequence. The loop executes in the order listed in
@@ -980,7 +884,7 @@ Managed by <code>SYS_Trigger()</code> in the Engine task.</p>
                (Total FTTI: 750 ms for TSR-01)
 </code></pre>
 <h3 id="7a4-task-scheduling-timing">7a.4 Task Scheduling Timing</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Task</th>
@@ -1041,7 +945,7 @@ Managed by <code>SYS_Trigger()</code> in the Engine task.</p>
 <td>SOC, SOE, SOH estimation</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated CPU load: ~94%</strong> (conservative worst-case). Margin: ~6%.</p>
 <p><strong>POSIX SIL variant</strong>: All tasks execute sequentially in a cooperative loop (<code>usleep(1000)</code> between
 iterations). No preemption, no priority inversion, deterministic ordering.</p>
@@ -1080,7 +984,7 @@ Contactor Driver --&gt; Actuate contactors
 </code></pre>
 <h2 id="9-can-interface-specification">9. CAN Interface Specification</h2>
 <h3 id="91-transmit-messages">9.1 Transmit Messages</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>CAN ID</th>
@@ -1163,9 +1067,9 @@ Contactor Driver --&gt; Actuate contactors
 <td>AFE slave status</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="92-receive-messages">9.2 Receive Messages</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>CAN ID</th>
@@ -1225,7 +1129,7 @@ Contactor Driver --&gt; Actuate contactors
 <td>Charge counter</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="10-safety-architecture-summary">10. Safety Architecture Summary</h2>
 <p>The safety concept follows a defense-in-depth approach:</p>
 <ol>
@@ -1241,7 +1145,7 @@ connector-pin-signal level, as required for SYS.4 HIL test probe mapping and nee
 bed adapter design. All data sourced from foxBMS hardware schematics v1.2.2 (master),
 v1.1.3 (slave 18-cell), and v1.0.3 (interface).</p>
 <p><strong>Source Schematics</strong> (in <code>hardware/schematics/</code> — not duplicated here to avoid 42 MB bloat):</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>File</th>
@@ -1282,9 +1186,9 @@ v1.1.3 (slave 18-cell), and v1.0.3 (interface).</p>
 <td>v1.2.3</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Pinout CSVs</strong> (in foxBMS upstream repo <code>D:/workspace_ccstheia/foxbms-2/docs/hardware/</code>):</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>CSV</th>
@@ -1354,12 +1258,12 @@ v1.1.3 (slave 18-cell), and v1.0.3 (interface).</p>
 <td>2</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>HalCoGen Pin Mux</strong> (MCU ball assignments):
 - Source: <code>D:/workspace_ccstheia/foxbms-2/conf/hcg/source/HL_pinmux.c</code>
 - Header: <code>D:/workspace_ccstheia/foxbms-2/conf/hcg/include/HL_pinmux.h</code></p>
 <p><strong>Visual Diagrams</strong> (self-contained HTML):</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>File</th>
@@ -1376,7 +1280,7 @@ v1.1.3 (slave 18-cell), and v1.0.3 (interface).</p>
 <td>SVG wiring diagram with connectors, MCU balls, colored signal paths</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="111-system-board-topology">11.1 System Board Topology</h3>
 <pre><code>                    ┌──────────────────────────┐
                     │      MASTER BOARD        │
@@ -1396,7 +1300,7 @@ v1.1.3 (slave 18-cell), and v1.0.3 (interface).</p>
 <p>All MCU ball assignments from HalCoGen <code>HL_pinmux.c</code> (foxBMS v1.10.0).
 Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code> base.</p>
 <p><strong>CAN Interfaces:</strong></p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -1489,9 +1393,9 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>pex.c</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>SPI1 → AFE (Cell Voltage + Temperature, ASIL D):</strong></p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -1626,9 +1530,9 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>pex.c (LTC6820 en/mst)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>SPI2 → SPS + SBC (Contactor Control + Watchdog, shared bus — CONSTRAINT-001):</strong></p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -1743,9 +1647,9 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>sbc.c</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>SPI3 → FRAM (Diagnostic Data Persistence):</strong></p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -1800,9 +1704,9 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>fram.c</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Interlock (Safety Loop):</strong></p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -1877,9 +1781,9 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>interlock.c</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>IMD (Insulation Monitoring):</strong></p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -1934,9 +1838,9 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>bender_iso165c.c</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Contactor Feedback (via I2C Port Expander):</strong></p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -1977,9 +1881,9 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>sps_cfg.c (NO_FB!)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="1112-slave-board-io-ltc6813-1-aec-q100-grade-1">11.1.2 Slave Board I/O (LTC6813-1, AEC-Q100 Grade 1)</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -2054,11 +1958,11 @@ Register addresses are the last 4 hex digits of the full <code>0xFFF7xxxx</code>
 <td>to next slave</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>NOTE</strong>: Cell connector uses interleaved pinout — even cells on row 1 (pins 2-11),
 odd cells on row 2 (pins 14-22). Cell emulator wiring must match.</p>
 <h3 id="1113-interface-board-io-ltc6820-4-channels">11.1.3 Interface Board I/O (LTC6820 × 4 channels)</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>MCU Ball</th>
@@ -2103,10 +2007,10 @@ odd cells on row 2 (pins 14-22). Cell emulator wiring must match.</p>
 <td>2s watchdog</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="112-master-board-connectors-v122">11.2 Master Board Connectors (v1.2.2)</h3>
 <h4 id="1121-supply-connector-j2009-8-pin-micro-fit">11.2.1 Supply Connector — J2009 (8-pin Micro-Fit)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2165,10 +2069,10 @@ odd cells on row 2 (pins 14-22). Cell emulator wiring must match.</p>
 <td></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Electrical</strong>: Automotive 12V supply. CLAMP15 is logic-level ignition signal.</p>
 <h4 id="1122-can1-connector-j2021-4-pin-micro-fit">11.2.2 CAN1 Connector — J2021 (4-pin Micro-Fit)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2203,11 +2107,11 @@ odd cells on row 2 (pins 14-22). Cell emulator wiring must match.</p>
 <td>canREG1 (0xFFF7DC00)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Function</strong>: IVT current sensor (RX: 0x521-0x527), external communication.
 <strong>Not isolated</strong> — direct connection to TMS570 DCAN1 via CAN transceiver.</p>
 <h4 id="1123-can2-connector-j2024-4-pin-micro-fit">11.2.3 CAN2 Connector — J2024 (4-pin Micro-Fit)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2242,11 +2146,11 @@ odd cells on row 2 (pins 14-22). Cell emulator wiring must match.</p>
 <td>canREG2 (0xFFF7DE00)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Function</strong>: Vehicle controller interface (state request RX: 0x210, BMS status TX: 0x220-0x260).
 <strong>Galvanically isolated</strong> — transformer-coupled CAN transceiver for HV isolation.</p>
 <h4 id="1124-sps-connectors-j2000-j2002-j2004-j2006-j2008-j2010-4-pin-micro-fit-each-8">11.2.4 SPS Connectors — J2000, J2002-J2004, J2006-J2008, J2010 (4-pin Micro-Fit each, ×8)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2281,7 +2185,7 @@ odd cells on row 2 (pins 14-22). Cell emulator wiring must match.</p>
 <td>Ground reference</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>MCU Peripheral</strong>: spiREG2 (0xFFF7F600) → SPS IC, with software CS on hetREG2 pin 1.
 <strong>NOTE</strong>: J9002 schematic labels these pins as "MCU_SPI3" but the foxBMS software drives
 <code>spiREG2</code> for SPS. This is a naming convention difference between the board schematic
@@ -2302,7 +2206,7 @@ and the TMS570 peripheral numbering. Verified via <code>spi_cfg.c</code> line 30
 This is a known foxBMS design choice — precharge welding is detected indirectly via
 current-on-open-string (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-15</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-08">HZ-08</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-14">FM-14</a></div></span></span>) or precharge timeout.</p>
 <h4 id="1125-interlock-connector-j2033-2-pin-micro-fit">11.2.5 Interlock Connector — J2033 (2-pin Micro-Fit)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2325,14 +2229,14 @@ current-on-open-string (<span class="trace-id" style="border-bottom:1px dashed #
 <td>hetREG1 (0xFFF7B800)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Function</strong>: Physical safety loop. Current flows through INTERLOCK_HIGH, through external loop
 (connectors, service disconnect), returns via INTERLOCK_LOW. Loop open = fault.
 <strong>MCU pins</strong>: Feedback (IL_STATE) = hetREG1 pin 29 (input), HS enable = hetREG1 pin 30 (output).
 <strong>ADC channels</strong>: IL_HS_VS (ch2), IL_LS_VS (ch3), IL_HS_CS (ch4), IL_LS_CS (ch5).
 <strong>DIAG ID</strong>: DIAG_ID_INTERLOCK_FEEDBACK (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-13</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-10">HZ-10</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a></div></span></span>, FTTI 250 ms).</p>
 <h4 id="1126-insulation-monitoring-j2034-4-pin-micro-fit">11.2.6 Insulation Monitoring — J2034 (4-pin Micro-Fit)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2367,7 +2271,7 @@ current-on-open-string (<span class="trace-id" style="border-bottom:1px dashed #
 <td>IMD measurement (PWM-encoded resistance)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Function</strong>: Bender-type insulation monitoring device. Two variants supported:
   - <strong>IR155 (PWM-based)</strong>: OK/NOK on hetREG1 pin 27, PWM on hetREG2 pin 27, supply enable hetREG1 pin 25.
   - <strong>iso165C (CAN-based)</strong>: Communicates on CAN1 (canREG1), RX IDs 0x37 (info) and 0x23 (response), little-endian.
@@ -2375,7 +2279,7 @@ current-on-open-string (<span class="trace-id" style="border-bottom:1px dashed #
 <strong>OPEN ITEM</strong>: IR155 PWM pin assignment has an unresolved <code>TODO</code> comment in <code>bender_ir155_cfg.h</code>
 line 155 (<code>hetREG2</code> pin 27) — developer was uncertain. Needs schematic verification before HIL.</p>
 <h4 id="1127-rs485-connector-j2013-6-pin-micro-fit">11.2.7 RS485 Connector — J2013 (6-pin Micro-Fit)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2415,10 +2319,10 @@ line 155 (<code>hetREG2</code> pin 27) — developer was uncertain. Needs schema
 <td>Ground</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Function</strong>: Secondary communication channel. Not used in default foxBMS configuration.</p>
 <h4 id="1128-interface-board-connector-j9000-40-pin-samtec">11.2.8 Interface Board Connector — J9000 (40-pin Samtec)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2555,7 +2459,7 @@ line 155 (<code>hetREG2</code> pin 27) — developer was uncertain. Needs schema
 <td>—</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>MCU Registers</strong>: spiREG1 (0xFFF7F400) for SPI1, spiREG4 (0xFFF7FA00) for SPI4.
 <strong>Safety-critical</strong>: This is the primary path for all cell voltage and temperature data (<span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-01">HZ-01</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-01">FM-01</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-02">HZ-02</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-03">FM-03</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-06">HZ-06</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span>, <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-10</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-09">FM-09</a></div></span></span>).</p>
 <h4 id="1129-debug-connector-j3008-38-pin-mictor">11.2.9 Debug Connector — J3008 (38-pin Mictor)</h4>
@@ -2565,7 +2469,7 @@ line 155 (<code>hetREG2</code> pin 27) — developer was uncertain. Needs schema
 <p>Dual-port Ethernet (TX1/RX1, TX2/RX2) with LED indicators. Not used in default BMS configuration.</p>
 <h3 id="113-slave-board-connectors-18-cell-ltc6813-1-v113">11.3 Slave Board Connectors (18-cell LTC6813-1, v1.1.3)</h3>
 <h4 id="1131-cell-voltage-sense-connector-24-pin">11.3.1 Cell Voltage Sense Connector (24-pin)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2714,14 +2618,14 @@ line 155 (<code>hetREG2</code> pin 27) — developer was uncertain. Needs schema
 <td>—</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Electrical ratings</strong>: Cell voltage range 0–5V, module voltage 16–90V.
 <strong>ADC</strong>: LTC6813 internal 16-bit ADC, ~0.1 mV/LSB, total error ±2.2 mV (7kHz, 25°C).
 <strong>Safety-critical</strong>: Direct measurement path for <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-01</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-01">HZ-01</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-01">FM-01</a><a class="tb-link tb-down" href="part-5-fmea.html#fm-18">FM-18</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (OV, ASIL D) and <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-02</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-02">HZ-02</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-03">FM-03</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (UV, ASIL C).</p>
 <p><strong>NOTE</strong>: Pins are NOT sequential — even-numbered cells on pins 2-11 (row 1), odd-numbered
 cells on pins 14-22 (row 2). Cell emulator wiring must account for this interleaved layout.</p>
 <h4 id="1132-temperature-sensor-connector-16-pin">11.3.2 Temperature Sensor Connector (16-pin)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2786,11 +2690,11 @@ cells on pins 14-22 (row 2). Cell emulator wiring must account for this interlea
 <td>NTC sensor return (all share VBAT-)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Electrical</strong>: NTC nominal 10 kΩ. Measured via LTC6813 GPIO/ADC multiplexer.
 <strong>Safety-critical</strong>: Measurement path for <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-06</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2191; Traces Up</span><br><a class="tb-link tb-up" href="part-3-hara.html#hz-06">HZ-06</a></div><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (OT, ASIL C) and <span class="trace-id" style="border-bottom:1px dashed #e67e22;cursor:help"><a href="traceability.html" style="color:#e67e22;text-decoration:none">TSR-07</a><span class="trace-badges"><div class="tb-section"><span class="tb-label">&#x2193; Traces Down</span><br><a class="tb-link tb-down" href="part-5-fmea.html#fm-04">FM-04</a><a class="tb-link tb-down" href="part-8-traceability.html#ssr-033">SSR-033</a></div></span></span> (UT, ASIL B).</p>
 <h4 id="1133-daisy-chain-connectors-2-pin-each">11.3.3 Daisy Chain Connectors (2-pin each)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Connector</th>
@@ -2813,7 +2717,7 @@ cells on pins 14-22 (row 2). Cell emulator wiring must account for this interlea
 <td>isoSPI to next slave in chain</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Isolation</strong>: Transformer-coupled differential signaling. Galvanic isolation between
 master-side (low-voltage) and slave-side (high-voltage battery domain).</p>
 <h4 id="1134-analog-inputs-connector-18-pin">11.3.4 Analog Inputs Connector (18-pin)</h4>
@@ -2825,7 +2729,7 @@ Used for GPIO expansion. Not in primary safety path.</p>
 <h3 id="114-interface-board-connectors-ltc6820-v103">11.4 Interface Board Connectors (LTC6820, v1.0.3)</h3>
 <h4 id="1141-master-connector-40-pin-mates-with-j9000">11.4.1 Master Connector (40-pin, mates with J9000)</h4>
 <p>The interface board connects to the master board via J9000. Key signal mapping:</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Master J9000 Pin</th>
@@ -2880,11 +2784,11 @@ Used for GPIO expansion. Not in primary safety path.</p>
 <td>LTC6820 ch2 MASTER select</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>NOTE</strong>: GPIO pins 24-31 go through an I2C port expander on the interface board, not
 direct GPIO from TMS570. The port expander is accessed via I2C from the master.</p>
 <h4 id="1142-isospi-connectors-2-pin-each">11.4.2 isoSPI Connectors (2-pin each)</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Pin</th>
@@ -2904,7 +2808,7 @@ direct GPIO from TMS570. The port expander is accessed via I2C from the master.<
 <td>isoSPI negative (differential)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p>One connector per daisy chain direction. The LTC6820 converts SPI (single-ended, master domain)
 to isoSPI (differential, transformer-coupled, battery domain).</p>
 <h3 id="115-critical-signal-paths-tsr-physical-path-probe-points">11.5 Critical Signal Paths (TSR → Physical Path → Probe Points)</h3>
@@ -3050,7 +2954,7 @@ Test via: deliberate watchdog miss (software fault injection) or SBC FS0B pin ma
 bypassing the feedback detection, or external fault path).</p>
 <h3 id="116-probe-point-map-for-needle-bed-hil-adapter">11.6 Probe Point Map for Needle Bed / HIL Adapter</h3>
 <p>This table maps every testable signal to its physical access point and the TSRs it covers.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>ID</th>
@@ -3235,7 +3139,7 @@ bypassing the feedback detection, or external fault path).</p>
 <td>Verify 120Ω between H/L</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CAN termination note</strong>: The foxBMS master board includes internal 120Ω termination resistors
 on both CAN1 and CAN2. The HIL bench CAN interface (PCAN, python-can adapter) typically also
 has internal termination. With both endpoints terminated, the bus has 60Ω differential
@@ -3267,7 +3171,7 @@ not galvanically isolated on the master board. The IVT itself provides isolation
 harness design. Each references a lesson ID from the lesson registry at
 <code>foxbms-posix/docs/lessons-learned/embedded/foxbms-integration.md</code> (28 lessons total).
 Full HIL signal path analysis: <code>docs/lessons-learned/embedded/foxbms-hil-signal-path-analysis.md</code>.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -3335,14 +3239,14 @@ Full HIL signal path analysis: <code>docs/lessons-learned/embedded/foxbms-hil-si
 <td><code>killall -9 foxbms-vecu</code> before each HIL test run; verify CAN bus is clean before stimulus</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Impact on SYS.4 test design</strong>: Gotchas 1-6 are <strong>test-blocking</strong> — if not addressed in the plant
 model or test harness, the affected test cases will produce false results (either false pass or
 false fail). Gotcha 4 is particularly dangerous because a single-cell OV test would appear to
 pass (no fault triggered) when in fact the plausibility check is silently rejecting the stimulus.</p>
 <h3 id="119-cross-check-verification-status">11.9 Cross-Check Verification Status</h3>
 <p>Agent cross-check performed 2026-03-23 against foxBMS v1.10.0 source code.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Signal Path</th>
@@ -3419,7 +3323,7 @@ pass (no fault triggered) when in fact the plausibility check is silently reject
 <td>Unresolved TODO on PWM pin in source code</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Open items requiring resolution before Phase 3 (SYS.4 test cases):</strong>
 1. IR155 PWM pin assignment — verify hetREG2 pin 27 against master board schematic
 2. Precharge contactor has no feedback monitoring — document as accepted gap in test coverage</p>
@@ -3427,7 +3331,7 @@ pass (no fault triggered) when in fact the plausibility check is silently reject
 <h2 id="12-register-to-connector-cross-reference">12. Register-to-Connector Cross-Reference</h2>
 <p>This table maps MCU peripheral register bases to their physical connectors, enabling
 software-hardware traceability for HIL test verification.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>MCU Peripheral</th>
@@ -3544,7 +3448,7 @@ software-hardware traceability for HIL test verification.</p>
 <td>Error signaling</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Bus sharing note (CONSTRAINT-001):</strong> spiREG2 is shared between SPS IC and NXP FS8x SBC.
 Both use software chip selects on separate hetREG2 pins ([D8] ch01 for SPS, SBC CS TBV).
 SPS_Ctrl() must execute before SBC_Trigger() in the 10ms task. A hardware fault on SPI2
@@ -3557,20 +3461,9 @@ These require schematic cross-reference for final verification.</p>
 <p><em>End of Document</em></p>
 <blockquote><strong>Interactive Views:</strong> <a href="sys3-portfolio.html">Open SYS.3 Portfolio &amp; Views</a> — wiring diagrams, ECU pin mapping, state machines, test cases, and full traceability matrix.</blockquote>
 </div>
-<div class="nav-buttons"><a href="sys-2-system-reqs.html">&larr; SYS.2 System Reqs</a><a href="sys-4-system-integration-test.html">SYS.4 System Integration Test &rarr;</a></div>
+<nav class="nav-buttons" aria-label="Adjacent documents"><a href="sys-2-system-reqs.html">&larr; SYS.2 System Reqs</a><a href="sys3-portfolio.html">SYS.3 Architecture Views &rarr;</a></nav>
 </main>
-<script>
-document.getElementById('search')?.addEventListener('input', function(e) {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
-        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
-    });
-    document.querySelectorAll('nav.sidebar h3').forEach(h => {
-        let el = h.nextElementSibling, any = false;
-        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
-        h.style.display = any || q === '' ? '' : 'none';
-    });
-});
-</script>
+</div>
+<script src="docs.js"></script>
 </body>
 </html>

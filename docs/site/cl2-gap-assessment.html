@@ -4,198 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CL2 Gap Assessment — foxBMS POSIX vECU</title>
-<style>
-:root {
-    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
-    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
-    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
-    --green: #3fb950; --red: #f85149; --yellow: #d29922;
-    --sidebar-w: 280px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'Consolas', 'Fira Code', monospace;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
-
-/* Sidebar */
-nav.sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
-    background: var(--bg2); border-right: 1px solid var(--border);
-    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
-}
-.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
-.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
-nav.sidebar h3 {
-    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
-    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
-}
-nav.sidebar a {
-    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
-    text-decoration: none; border-left: 2px solid transparent;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
-nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
-#search {
-    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-size: 12px; outline: none;
-}
-#search:focus { border-color: var(--accent); }
-.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
-
-/* Main */
-main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
-
-/* Breadcrumb */
-.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
-.breadcrumb a { color: var(--accent); text-decoration: none; }
-.breadcrumb a:hover { text-decoration: underline; }
-
-/* Content */
-.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
-.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
-.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
-.content p { margin: 8px 0; }
-.content a { color: var(--accent); text-decoration: none; }
-.content a:hover { text-decoration: underline; }
-.content strong { color: var(--heading); }
-.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
-.content li { margin: 3px 0; }
-.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
-.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
-.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
-.content tr:hover td { background: var(--bg2); }
-.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
-.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
-.content pre code { background: none; padding: 0; color: var(--text); }
-.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
-
-/* Trace badges */
-.trace-id { position: relative; display: inline; }
-.trace-badges {
-    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 10px; min-width: 200px; max-width: 400px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
-}
-.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
-.trace-badges .tb-section { margin-bottom: 4px; }
-.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-.trace-badges a.tb-link {
-    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
-    font-family: var(--mono); font-size: 11px; text-decoration: none;
-    border: 1px solid var(--border); transition: all 0.15s;
-}
-.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
-.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
-.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
-
-/* Index page cards */
-.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
-.card {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px; transition: border-color 0.15s;
-}
-.card:hover { border-color: var(--accent); }
-.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
-.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
-.card a:hover { color: var(--accent); }
-.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
-
-/* Nav buttons */
-.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
-.nav-buttons a {
-    color: var(--accent); text-decoration: none; font-size: 13px;
-    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
-    background: var(--bg2);
-}
-.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
-
-@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
-</style>
+<link rel="stylesheet" href="docs.css">
 </head>
 <body>
-<nav class="sidebar"><div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>
-<input type="text" id="search" placeholder="Search...">
-<a href="index.html" >Home</a>
-<h3>Project Overview</h3>
-<a href="readme.html" >README</a>
-<a href="status.html" >STATUS</a>
-<a href="plan.html" >PLAN</a>
-<a href="sil-demo-guide.html" >SIL Demo Guide</a>
-<h3>Project Documentation</h3>
-<a href="gap-analysis.html" >Gap Analysis</a>
-<a href="coverage-matrix.html" >Coverage Matrix</a>
-<a href="troubleshooting.html" >Troubleshooting</a>
-<a href="build-guide.html" >Build Guide</a>
-<a href="integration-notes.html" >Integration Notes</a>
-<a href="10-role-audit-v1.html" >10-Role Audit v1</a>
-<a href="10-role-audit-v2.html" >10-Role Audit v2</a>
-<a href="lessons-learned.html" >Lessons Learned</a>
-<h3>ASPICE CL2 — Assessment</h3>
-<a href="assessment-scope.html" >Assessment Scope</a>
-<a href="cl2-gap-assessment.html" class="active">CL2 Gap Assessment</a>
-<a href="traceability-guide.html" >Traceability Guide</a>
-<a href="traceability-matrix.html" >Traceability Matrix</a>
-<h3>ASPICE CL2 — Management</h3>
-<a href="man-3-project-plan.html" >MAN.3 Project Plan</a>
-<a href="sup-1-qa-plan.html" >SUP.1 QA Plan</a>
-<a href="sup-8-cm-plan.html" >SUP.8 CM Plan</a>
-<a href="sup-9-problem-resolution.html" >SUP.9 Problem Resolution</a>
-<a href="sup-10-change-request.html" >SUP.10 Change Request</a>
-<h3>ASPICE CL2 — System</h3>
-<a href="sys-1-stakeholder-reqs.html" >SYS.1 Stakeholder Reqs</a>
-<a href="sys-2-system-reqs.html" >SYS.2 System Reqs</a>
-<a href="sys-3-system-architecture.html" >SYS.3 System Architecture</a>
-<a href="sys-4-system-integration-test.html" >SYS.4 System Integration Test</a>
-<a href="sys-5-system-qualification.html" >SYS.5 System Qualification</a>
-<h3>ASPICE CL2 — Software</h3>
-<a href="swe-1-software-reqs.html" >SWE.1 Software Reqs</a>
-<a href="swe-2-sw-architecture.html" >SWE.2 SW Architecture</a>
-<a href="swe-3-detailed-design.html" >SWE.3 Detailed Design</a>
-<a href="swe-4-unit-tests.html" >SWE.4 Unit Tests</a>
-<a href="swe-5-integration-tests.html" >SWE.5 Integration Tests</a>
-<a href="swe-6-qualification-tests.html" >SWE.6 Qualification Tests</a>
-<h3>ISO 26262 — Safety</h3>
-<a href="part-3-hara.html" >Part 3: HARA</a>
-<a href="part-4-fsc.html" >Part 4: FSC</a>
-<a href="part-4-tsc.html" >Part 4: TSC</a>
-<a href="part-5-hsi.html" >Part 5: HSI</a>
-<a href="part-5-fmea.html" >Part 5: FMEA</a>
-<a href="part-6-safety-reqs.html" >Part 6: Safety Reqs</a>
-<a href="part-6-ftti.html" >Part 6: FTTI</a>
-<a href="part-8-traceability.html" >Part 8: Traceability</a>
-<a href="part-9-asil-decomp.html" >Part 9: ASIL Decomp</a>
-<h3>foxBMS Reference</h3>
-<a href="foxbms-index.html" >foxBMS Index</a>
-<a href="aspice-extraction.html" >ASPICE Extraction</a>
-<a href="modules-index.html" >Modules Index</a>
-<a href="bms-state-machine.html" >BMS State Machine</a>
-<a href="diag-handler.html" >DIAG Handler</a>
-<a href="database.html" >Database</a>
-<a href="can-module.html" >CAN Module</a>
-<a href="ftask.html" >FTASK</a>
-<a href="soa.html" >SOA</a>
-<a href="balancing.html" >Balancing</a>
-<a href="sbc.html" >SBC</a>
-<a href="precharging.html" >Precharging</a>
-<a href="interlock.html" >Interlock</a>
-<a href="dbc-signals.html" >DBC Signals</a>
-<h3>Business & Service</h3>
-<a href="reusable-pipeline.html" >Reusable Pipeline</a>
-<a href="ml-integration.html" >ML Integration</a>
-<a href="ml-feasibility.html" >ML Feasibility</a>
-<a href="hil-data-plan.html" >HIL Data Plan</a>
-<div class="stats">59 documents</div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="docs-layout">
+<details class="sidebar" open>
+<summary>Browse documentation</summary>
+<nav aria-label="Documentation"><span class="logo">foxBMS POSIX vECU</span>
+<label for="search">Filter documents</label>
+<input type="search" id="search">
+<a href="index.html">Documentation index</a>
+<div class="sidebar-group"><h2>Project Overview</h2>
+<a href="readme.html">README</a>
+<a href="status.html">STATUS</a>
+<a href="plan.html">PLAN</a>
+<a href="sil-demo-guide.html">SIL Demo Guide</a>
+</div>
+<div class="sidebar-group"><h2>Project Documentation</h2>
+<a href="gap-analysis.html">Gap Analysis</a>
+<a href="coverage-matrix.html">Coverage Matrix</a>
+<a href="troubleshooting.html">Troubleshooting</a>
+<a href="build-guide.html">Build Guide</a>
+<a href="integration-notes.html">Integration Notes</a>
+<a href="10-role-audit-v1.html">10-Role Audit v1</a>
+<a href="10-role-audit-v2.html">10-Role Audit v2</a>
+<a href="lessons-learned.html">Lessons Learned</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Assessment</h2>
+<a href="assessment-scope.html">Assessment Scope</a>
+<a href="cl2-gap-assessment.html" aria-current="page">CL2 Gap Assessment</a>
+<a href="traceability-guide.html">Traceability Guide</a>
+<a href="traceability-matrix.html">Traceability Matrix</a>
+<a href="traceability.html">Traceability Explorer</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Management</h2>
+<a href="man-3-project-plan.html">MAN.3 Project Plan</a>
+<a href="sup-1-qa-plan.html">SUP.1 QA Plan</a>
+<a href="sup-8-cm-plan.html">SUP.8 CM Plan</a>
+<a href="sup-9-problem-resolution.html">SUP.9 Problem Resolution</a>
+<a href="sup-10-change-request.html">SUP.10 Change Request</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — System</h2>
+<a href="sys-1-stakeholder-reqs.html">SYS.1 Stakeholder Reqs</a>
+<a href="sys-2-system-reqs.html">SYS.2 System Reqs</a>
+<a href="sys-3-system-architecture.html">SYS.3 System Architecture</a>
+<a href="sys3-portfolio.html">SYS.3 Architecture Views</a>
+<a href="sys-4-system-integration-test.html">SYS.4 System Integration Test</a>
+<a href="sys-5-system-qualification.html">SYS.5 System Qualification</a>
+</div>
+<div class="sidebar-group"><h2>ASPICE CL2 — Software</h2>
+<a href="swe-1-software-reqs.html">SWE.1 Software Reqs</a>
+<a href="swe-2-sw-architecture.html">SWE.2 SW Architecture</a>
+<a href="swe-3-detailed-design.html">SWE.3 Detailed Design</a>
+<a href="swe-4-unit-tests.html">SWE.4 Unit Tests</a>
+<a href="swe-5-integration-tests.html">SWE.5 Integration Tests</a>
+<a href="swe-6-qualification-tests.html">SWE.6 Qualification Tests</a>
+</div>
+<div class="sidebar-group"><h2>ISO 26262 — Safety</h2>
+<a href="part-3-hara.html">Part 3: HARA</a>
+<a href="part-4-fsc.html">Part 4: FSC</a>
+<a href="part-4-tsc.html">Part 4: TSC</a>
+<a href="part-5-hsi.html">Part 5: HSI</a>
+<a href="part-5-fmea.html">Part 5: FMEA</a>
+<a href="part-6-safety-reqs.html">Part 6: Safety Reqs</a>
+<a href="part-6-ftti.html">Part 6: FTTI</a>
+<a href="part-8-traceability.html">Part 8: Traceability</a>
+<a href="part-9-asil-decomp.html">Part 9: ASIL Decomp</a>
+</div>
+<div class="sidebar-group"><h2>foxBMS Reference</h2>
+<a href="foxbms-index.html">foxBMS Index</a>
+<a href="aspice-extraction.html">ASPICE Extraction</a>
+<a href="modules-index.html">Modules Index</a>
+<a href="bms-state-machine.html">BMS State Machine</a>
+<a href="diag-handler.html">DIAG Handler</a>
+<a href="database.html">Database</a>
+<a href="can-module.html">CAN Module</a>
+<a href="ftask.html">FTASK</a>
+<a href="soa.html">SOA</a>
+<a href="balancing.html">Balancing</a>
+<a href="sbc.html">SBC</a>
+<a href="precharging.html">Precharging</a>
+<a href="interlock.html">Interlock</a>
+<a href="dbc-signals.html">DBC Signals</a>
+</div>
+<div class="sidebar-group"><h2>Business &amp; Service</h2>
+<a href="reusable-pipeline.html">Reusable Pipeline</a>
+<a href="ml-integration.html">ML Integration</a>
+<a href="ml-feasibility.html">ML Feasibility</a>
+<a href="hil-data-plan.html">HIL Data Plan</a>
+</div>
+<p class="search-status" id="search-status" role="status"></p>
 </nav>
-<main>
-<div class="breadcrumb"><a href="index.html">Home</a> / ASPICE CL2 — Assessment / CL2 Gap Assessment</div>
+</details>
+<main class="docs-main" id="main" tabindex="-1">
+<nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Docs</a> / ASPICE CL2 — Assessment / <span aria-current="page">CL2 Gap Assessment</span></nav>
 <div class="content"><h1 id="aspice-capability-level-2-gap-assessment">ASPICE Capability Level 2 Gap Assessment</h1>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Document ID</th>
@@ -212,9 +117,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Confidential</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="revision-history">Revision History</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Rev</th>
@@ -233,7 +138,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Initial release</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h2 id="1-purpose">1. Purpose</h2>
 <p>This document provides a detailed gap assessment of the foxBMS 2 POSIX vECU project against Automotive SPICE v3.1 Capability Level 2 (CL2). For each process area in scope, it evaluates:</p>
 <ol>
@@ -250,7 +155,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li>CL2 achieved when CL1 is achieved AND GP 2.1 and GP 2.2 are both rated F or L</li>
 </ul>
 <h2 id="3-summary-of-current-evidence">3. Summary of Current Evidence</h2>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Evidence</th>
@@ -291,13 +196,13 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>24 folders with assessor-facing structure</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <hr />
 <h2 id="4-process-area-assessments">4. Process Area Assessments</h2>
 <hr />
 <h3 id="41-man3-project-management">4.1 MAN.3 -- Project Management</h3>
 <h4 id="cl1-base-practices">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -379,10 +284,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No schedule variance tracking</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong> -- All base practices have evidence, but several lack formal documentation rigor.</p>
 <h4 id="cl2-generic-practices">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -464,10 +369,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No review meeting minutes or sign-off records</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong> -- Performance management lacks monitoring data and adjustment records. Work product management lacks formal review records.</p>
 <h4 id="actions-for-cl2">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -508,12 +413,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 10h</strong></p>
 <hr />
 <h3 id="42-sys1-stakeholder-requirements-analysis">4.2 SYS.1 -- Stakeholder Requirements Analysis</h3>
 <h4 id="cl1-base-practices_1">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -560,10 +465,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No distribution record or stakeholder acknowledgment</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_1">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -589,10 +494,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No review record; no formal baseline; no change history tracking</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_1">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -627,12 +532,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 5h</strong></p>
 <hr />
 <h3 id="43-sys2-system-requirements-analysis">4.3 SYS.2 -- System Requirements Analysis</h3>
 <h4 id="cl1-base-practices_2">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -686,10 +591,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No consistency check record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_2">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -715,10 +620,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal review record; no baseline approval</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: L (Largely achieved)</strong> -- Close to CL2; needs review records and baseline.</p>
 <h4 id="actions-for-cl2_2">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -747,12 +652,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 3h</strong></p>
 <hr />
 <h3 id="44-sys3-system-architectural-design">4.4 SYS.3 -- System Architectural Design</h3>
 <h4 id="cl1-base-practices_3">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -813,10 +718,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal consistency review</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_3">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -842,10 +747,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal review record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: L (Largely achieved)</strong></p>
 <h4 id="actions-for-cl2_3">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -874,12 +779,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>LOW</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 4h</strong></p>
 <hr />
 <h3 id="45-sys4-system-integration-test">4.5 SYS.4 -- System Integration Test</h3>
 <h4 id="cl1-base-practices_4">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -933,10 +838,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal test report document</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_4">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -962,10 +867,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_4">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -994,12 +899,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 4h</strong></p>
 <hr />
 <h3 id="46-sys5-system-qualification-test">4.6 SYS.5 -- System Qualification Test</h3>
 <h4 id="cl1-base-practices_5">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1053,10 +958,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal qualification test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_5">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1082,10 +987,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_5">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1114,12 +1019,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 4h</strong></p>
 <hr />
 <h3 id="47-swe1-software-requirements-analysis">4.7 SWE.1 -- Software Requirements Analysis</h3>
 <h4 id="cl1-base-practices_6">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1180,10 +1085,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No distribution record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: F (Fully achieved)</strong></p>
 <h4 id="cl2-generic-practices_6">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1209,10 +1114,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal review record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: L (Largely achieved)</strong></p>
 <h4 id="actions-for-cl2_6">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1235,12 +1140,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 1.5h</strong></p>
 <hr />
 <h3 id="48-swe2-software-architectural-design">4.8 SWE.2 -- Software Architectural Design</h3>
 <h4 id="cl1-base-practices_7">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1301,10 +1206,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No consistency check record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: F (Fully achieved)</strong></p>
 <h4 id="cl2-generic-practices_7">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1330,10 +1235,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal review record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: L (Largely achieved)</strong></p>
 <h4 id="actions-for-cl2_7">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1356,12 +1261,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>LOW</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 2h</strong></p>
 <hr />
 <h3 id="49-swe3-software-detailed-design-and-unit-construction">4.9 SWE.3 -- Software Detailed Design and Unit Construction</h3>
 <h4 id="cl1-base-practices_8">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1415,10 +1320,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No consistency check record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: F (Fully achieved)</strong></p>
 <h4 id="cl2-generic-practices_8">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1444,10 +1349,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No review record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: L (Largely achieved)</strong></p>
 <h4 id="actions-for-cl2_8">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1464,12 +1369,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 1h</strong></p>
 <hr />
 <h3 id="410-swe4-software-unit-verification">4.10 SWE.4 -- Software Unit Verification</h3>
 <h4 id="cl1-base-practices_9">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1523,10 +1428,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal unit test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_9">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1552,10 +1457,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_9">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1590,12 +1495,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 10h</strong></p>
 <hr />
 <h3 id="411-swe5-software-integration-and-integration-test">4.11 SWE.5 -- Software Integration and Integration Test</h3>
 <h4 id="cl1-base-practices_10">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1649,10 +1554,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal integration test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_10">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1678,10 +1583,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_10">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1710,12 +1615,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 4h</strong></p>
 <hr />
 <h3 id="412-swe6-software-qualification-test">4.12 SWE.6 -- Software Qualification Test</h3>
 <h4 id="cl1-base-practices_11">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1769,10 +1674,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal qualification test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_11">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1798,10 +1703,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal test report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_11">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1830,12 +1735,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 4h</strong></p>
 <hr />
 <h3 id="413-sup1-quality-assurance">4.13 SUP.1 -- Quality Assurance</h3>
 <h4 id="cl1-base-practices_12">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -1896,10 +1801,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal improvement register</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_12">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -1925,10 +1830,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No audit records, no review records</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_12">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -1963,12 +1868,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 8h</strong></p>
 <hr />
 <h3 id="414-sup8-configuration-management">4.14 SUP.8 -- Configuration Management</h3>
 <h4 id="cl1-base-practices_13">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -2029,10 +1934,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal configuration audit</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_13">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -2058,10 +1963,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal baseline records; no configuration audit report</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: L (Largely achieved)</strong></p>
 <h4 id="actions-for-cl2_13">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -2090,12 +1995,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 5h</strong></p>
 <hr />
 <h3 id="415-sup9-problem-resolution-management">4.15 SUP.9 -- Problem Resolution Management</h3>
 <h4 id="cl1-base-practices_14">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -2156,10 +2061,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No trend analysis over time</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: F (Fully achieved)</strong> -- All 33 problems tracked to closure with evidence.</p>
 <h4 id="cl2-generic-practices_14">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -2185,10 +2090,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No trend analysis; no review record</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: L (Largely achieved)</strong></p>
 <h4 id="actions-for-cl2_14">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -2211,12 +2116,12 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 2h</strong></p>
 <hr />
 <h3 id="416-sup10-change-request-management">4.16 SUP.10 -- Change Request Management</h3>
 <h4 id="cl1-base-practices_15">CL1 Base Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>BP</th>
@@ -2270,10 +2175,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal CR status tracking</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL1 Rating: L (Largely achieved)</strong></p>
 <h4 id="cl2-generic-practices_15">CL2 Generic Practices</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>GP</th>
@@ -2299,10 +2204,10 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>No formal CR forms or register</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>CL2 Rating: P (Partially achieved)</strong></p>
 <h4 id="actions-for-cl2_15">Actions for CL2</h4>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -2331,7 +2236,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>Total estimated effort: 6h</strong></p>
 <hr />
 <h2 id="5-cross-cutting-cl2-gaps">5. Cross-Cutting CL2 Gaps</h2>
@@ -2339,7 +2244,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <h3 id="51-review-records-affects-all-process-areas">5.1 Review Records (affects all process areas)</h3>
 <p><strong>Current state</strong>: All work products are self-reviewed but no formal review records exist (no reviewer name, date, findings, disposition).</p>
 <p><strong>Action</strong>: Create a review record template and generate review records for all 18 ASPICE documents and key work products.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Effort</th>
@@ -2352,11 +2257,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH (blocks CL2 for GP 2.2 across all areas)</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="52-baseline-records-affects-sys1-5-swe1-6-sup8">5.2 Baseline Records (affects SYS.1-5, SWE.1-6, SUP.8)</h3>
 <p><strong>Current state</strong>: Git tags exist for phases but no formal baseline record documents (list of CIs, versions, approval).</p>
 <p><strong>Action</strong>: Create baseline record template and document baselines for Phase 1, 2, 2.5, 3.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Effort</th>
@@ -2369,11 +2274,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="53-measurement-data-affects-man3-sup1">5.3 Measurement Data (affects MAN.3, SUP.1)</h3>
 <p><strong>Current state</strong>: ASPICE criteria count (94/112) is tracked but no regular measurement data collection (schedule variance, defect density, test coverage percentage).</p>
 <p><strong>Action</strong>: Collect and document measurement data retrospectively for each phase.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Effort</th>
@@ -2386,11 +2291,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>MEDIUM</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="54-test-reports-affects-sys4-5-swe4-6">5.4 Test Reports (affects SYS.4-5, SWE.4-6)</h3>
 <p><strong>Current state</strong>: Test scripts produce pass/fail output but no formal test report documents exist.</p>
 <p><strong>Action</strong>: Create test report template and generate reports for unit, integration, ASIL, smoke, and qualification tests.</p>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Effort</th>
@@ -2403,11 +2308,11 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>HIGH</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <hr />
 <h2 id="6-overall-cl2-readiness-summary">6. Overall CL2 Readiness Summary</h2>
 <h3 id="61-process-area-ratings">6.1 Process Area Ratings</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>#</th>
@@ -2548,9 +2453,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>NO</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="62-summary">6.2 Summary</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Status</th>
@@ -2590,9 +2495,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>SUP.8</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="63-total-effort-to-cl2">6.3 Total Effort to CL2</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Category</th>
@@ -2625,9 +2530,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td><strong>63h</strong></td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <h3 id="64-priority-roadmap">6.4 Priority Roadmap</h3>
-<table>
+<div class="table-scroll"><table>
 <thead>
 <tr>
 <th>Priority</th>
@@ -2662,7 +2567,7 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <td>Completes all areas</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 <p><strong>With 63 hours of focused effort (approximately 2 weeks full-time), the project can achieve CL2 across all 16 in-scope process areas.</strong></p>
 <hr />
 <h2 id="7-strengths">7. Strengths</h2>
@@ -2686,20 +2591,9 @@ main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 4
 <li><strong>Retroactive documentation</strong>: Many process documents were created during the assessment, not maintained from project start</li>
 <li><strong>Single resource</strong>: Bus factor of 1; no independent reviews possible without external reviewer</li>
 </ol></div>
-<div class="nav-buttons"><a href="assessment-scope.html">&larr; Assessment Scope</a><a href="traceability-guide.html">Traceability Guide &rarr;</a></div>
+<nav class="nav-buttons" aria-label="Adjacent documents"><a href="assessment-scope.html">&larr; Assessment Scope</a><a href="traceability-guide.html">Traceability Guide &rarr;</a></nav>
 </main>
-<script>
-document.getElementById('search')?.addEventListener('input', function(e) {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
-        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
-    });
-    document.querySelectorAll('nav.sidebar h3').forEach(h => {
-        let el = h.nextElementSibling, any = false;
-        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
-        h.style.display = any || q === '' ? '' : 'none';
-    });
-});
-</script>
+</div>
+<script src="docs.js"></script>
 </body>
 </html>

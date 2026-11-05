@@ -3,17 +3,20 @@
 Build multi-page HTML documentation site from foxbms-posix markdown files.
 
 Generates one HTML per document + an index page with navigation.
-All pages share a common sidebar and dark theme.
+Reference pages share a sidebar and stylesheet.
 
 Usage:
     python scripts/build-html.py                    # Default: docs/site/
     python scripts/build-html.py --output path/     # Custom output dir
+    python scripts/build-html.py --refresh-layout   # Keep published document bodies
 """
 
 import argparse
+from html import escape
 import re
 from pathlib import Path
 from collections import defaultdict
+from shutil import copyfile
 
 import markdown
 from markdown.extensions.tables import TableExtension
@@ -88,7 +91,7 @@ TRACE_GRAPH = None
 
 SECTIONS = [
     ("Project Overview", [
-        ("README", ROOT / "README.md"),
+        ("README", ROOT / "README-foxbms-posix.md"),
         ("STATUS", ROOT / "STATUS.md"),
         ("PLAN", ROOT / "PLAN.md"),
         ("SIL Demo Guide", DOCS_DIR / "SIL-DEMO-GUIDE.md"),
@@ -109,6 +112,7 @@ SECTIONS = [
         ("CL2 Gap Assessment", DOCS_DIR / "aspice-cl2" / "00-assessment" / "cl2-gap-assessment.md"),
         ("Traceability Guide", DOCS_DIR / "aspice-cl2" / "00-assessment" / "traceability-guide.md"),
         ("Traceability Matrix", DOCS_DIR / "aspice-cl2" / "00-assessment" / "traceability-matrix-generated.md"),
+        ("Traceability Explorer", DEFAULT_OUTPUT / "traceability.html"),
     ]),
     ("ASPICE CL2 — Management", [
         ("MAN.3 Project Plan", DOCS_DIR / "aspice-cl2" / "01-MAN.3-project-management" / "project-plan.md"),
@@ -121,6 +125,7 @@ SECTIONS = [
         ("SYS.1 Stakeholder Reqs", DOCS_DIR / "aspice-cl2" / "03-SYS.1-stakeholder-requirements" / "stakeholder-requirements.md"),
         ("SYS.2 System Reqs", DOCS_DIR / "aspice-cl2" / "04-SYS.2-system-requirements" / "SYS.2-system-requirements.md"),
         ("SYS.3 System Architecture", DOCS_DIR / "aspice-cl2" / "05-SYS.3-system-architecture" / "SYS.3-system-architecture.md"),
+        ("SYS.3 Architecture Views", DEFAULT_OUTPUT / "sys3-portfolio.html"),
         ("SYS.4 System Integration Test", DOCS_DIR / "aspice-cl2" / "06-SYS.4-system-integration-test" / "system-integration-test-spec.md"),
         ("SYS.5 System Qualification", DOCS_DIR / "aspice-cl2" / "07-SYS.5-system-qualification-test" / "system-qualification-test-spec.md"),
     ]),
@@ -167,133 +172,7 @@ SECTIONS = [
     ]),
 ]
 
-CSS = """
-:root {
-    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
-    --text: #c9d1d9; --text2: #8b949e; --heading: #f0f6fc;
-    --accent: #58a6ff; --accent2: #79c0ff; --border: #30363d;
-    --green: #3fb950; --red: #f85149; --yellow: #d29922;
-    --sidebar-w: 280px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'Consolas', 'Fira Code', monospace;
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; display: flex; min-height: 100vh; }
 
-/* Sidebar */
-nav.sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
-    background: var(--bg2); border-right: 1px solid var(--border);
-    overflow-y: auto; padding: 0; z-index: 100; font-size: 13px;
-}
-.logo { padding: 16px; font-size: 15px; font-weight: 700; color: var(--heading); border-bottom: 1px solid var(--border); }
-.logo small { display: block; font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 2px; }
-nav.sidebar h3 {
-    color: var(--accent); font-size: 11px; padding: 12px 14px 4px;
-    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
-}
-nav.sidebar a {
-    display: block; padding: 3px 14px 3px 22px; color: var(--text2);
-    text-decoration: none; border-left: 2px solid transparent;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-nav.sidebar a:hover { color: var(--text); background: var(--bg3); border-left-color: var(--accent); }
-nav.sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); }
-#search {
-    width: calc(100% - 24px); margin: 10px 12px; padding: 6px 10px;
-    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-size: 12px; outline: none;
-}
-#search:focus { border-color: var(--accent); }
-.stats { padding: 8px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); }
-
-/* Main */
-main { margin-left: var(--sidebar-w); flex: 1; max-width: 920px; padding: 32px 48px 80px; }
-
-/* Breadcrumb */
-.breadcrumb { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
-.breadcrumb a { color: var(--accent); text-decoration: none; }
-.breadcrumb a:hover { text-decoration: underline; }
-
-/* Content */
-.content h1 { color: var(--heading); font-size: 26px; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.content h2 { color: var(--heading); font-size: 20px; margin: 18px 0 10px; }
-.content h3 { color: var(--heading); font-size: 16px; margin: 14px 0 8px; }
-.content h4 { color: var(--heading); font-size: 14px; margin: 10px 0 6px; }
-.content p { margin: 8px 0; }
-.content a { color: var(--accent); text-decoration: none; }
-.content a:hover { text-decoration: underline; }
-.content strong { color: var(--heading); }
-.content ul, .content ol { padding-left: 24px; margin: 8px 0; }
-.content li { margin: 3px 0; }
-.content blockquote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 12px 0; background: var(--bg2); border-radius: 0 6px 6px 0; color: var(--text2); }
-.content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.content th { background: var(--bg3); color: var(--heading); padding: 7px 10px; text-align: left; border: 1px solid var(--border); font-weight: 600; }
-.content td { padding: 5px 10px; border: 1px solid var(--border); vertical-align: top; }
-.content tr:hover td { background: var(--bg2); }
-.content code { font-family: var(--mono); font-size: 13px; background: var(--bg3); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
-.content pre { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
-.content pre code { background: none; padding: 0; color: var(--text); }
-.hitl-lock { border-left: 3px solid var(--yellow); background: rgba(210,153,34,0.05); padding: 3px 10px; margin: 6px 0; font-size: 11px; color: var(--yellow); }
-
-/* Trace badges */
-.trace-id { position: relative; display: inline; }
-.trace-badges {
-    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 8px 10px; min-width: 200px; max-width: 400px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4); font-size: 12px; line-height: 1.8;
-}
-.trace-id:hover .trace-badges, .trace-badges:hover { display: block; }
-.trace-badges .tb-section { margin-bottom: 4px; }
-.trace-badges .tb-label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-.trace-badges a.tb-link {
-    display: inline-block; padding: 1px 6px; margin: 1px 2px; border-radius: 3px;
-    font-family: var(--mono); font-size: 11px; text-decoration: none;
-    border: 1px solid var(--border); transition: all 0.15s;
-}
-.trace-badges a.tb-link:hover { border-color: var(--accent); color: var(--accent); }
-.trace-badges a.tb-up { border-left: 2px solid #3498db; color: #79c0ff; }
-.trace-badges a.tb-down { border-left: 2px solid #2ecc71; color: #7ee8a8; }
-
-/* Index page cards */
-.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
-.card {
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px; transition: border-color 0.15s;
-}
-.card:hover { border-color: var(--accent); }
-.card h3 { color: var(--accent); font-size: 14px; margin-bottom: 8px; }
-.card a { color: var(--text); text-decoration: none; display: block; padding: 2px 0; font-size: 13px; }
-.card a:hover { color: var(--accent); }
-.card .count { font-size: 11px; color: var(--text2); margin-top: 6px; }
-
-/* Nav buttons */
-.nav-buttons { display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); }
-.nav-buttons a {
-    color: var(--accent); text-decoration: none; font-size: 13px;
-    padding: 8px 16px; border: 1px solid var(--border); border-radius: 6px;
-    background: var(--bg2);
-}
-.nav-buttons a:hover { background: var(--bg3); border-color: var(--accent); }
-
-@media print { nav.sidebar { display: none; } main { margin-left: 0; max-width: 100%; } }
-"""
-
-JS_SEARCH = """
-document.getElementById('search')?.addEventListener('input', function(e) {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('nav.sidebar a[href]').forEach(a => {
-        a.style.display = a.textContent.toLowerCase().includes(q) || q === '' ? '' : 'none';
-    });
-    document.querySelectorAll('nav.sidebar h3').forEach(h => {
-        let el = h.nextElementSibling, any = false;
-        while (el && el.tagName === 'A') { if (el.style.display !== 'none') any = true; el = el.nextElementSibling; }
-        h.style.display = any || q === '' ? '' : 'none';
-    });
-});
-"""
 
 
 def slugify(text):
@@ -381,46 +260,79 @@ def render_md(text, page_lookup=None):
     return html
 
 
-def build_sidebar(sections, all_pages, current_slug=None):
-    html = '<div class="logo">foxBMS POSIX vECU<small>Documentation Site</small></div>\n'
-    html += '<input type="text" id="search" placeholder="Search...">\n'
-    html += f'<a href="index.html" {"class=active" if current_slug is None else ""}>Home</a>\n'
-    for group_name, docs in sections:
-        html += f'<h3>{group_name}</h3>\n'
-        for title, filepath in docs:
-            slug = slugify(title)
-            if not filepath.exists():
-                continue
-            active = 'class="active"' if slug == current_slug else ''
-            html += f'<a href="{slug}.html" {active}>{title}</a>\n'
-    html += f'<div class="stats">{len(all_pages)} documents</div>\n'
+def page_slug(title, path):
+    return path.stem if path.suffix == '.html' else slugify(title)
+
+
+def doc_link(title, slug, current_slug=None):
+    active = ' aria-current="page"' if slug == current_slug else ''
+    return f'<a href="{slug}.html"{active}>{escape(title)}</a>'
+
+
+def build_sidebar(groups, current_slug):
+    html = '<span class="logo">foxBMS POSIX vECU</span>\n'
+    html += '<label for="search">Filter documents</label>\n<input type="search" id="search">\n'
+    html += doc_link('Documentation index', 'index', current_slug) + '\n'
+    for group_name, docs in groups:
+        html += f'<div class="sidebar-group"><h2>{escape(group_name)}</h2>\n'
+        html += '\n'.join(doc_link(title, slug, current_slug) for title, _, slug, _ in docs)
+        html += '\n</div>\n'
+    html += '<p class="search-status" id="search-status" role="status"></p>\n'
+    return html
+
+
+def build_index(groups):
+    html = '''<h1>foxBMS POSIX documentation</h1>
+<p>The POSIX port runs foxBMS 2 v1.10.0 as a virtual ECU on Linux. A battery model sends simulated measurements over SocketCAN. Use the SIL environment to exercise BMS states, CAN interfaces and fault responses.</p>
+<p>The engineering records include Automotive SPICE work products, ISO 26262 safety analyses and test specifications. The SIL evidence covers simulated behavior; target hardware and production safety validation are outside its scope.</p>
+<nav class="start-links" aria-label="Start here">
+<a href="build-guide.html">Build and run locally</a>
+<a href="sil-demo-guide.html">SIL demo guide</a>
+<a href="https://sil.taktflow-systems.com/bms/">Open SIL demo</a>
+<a href="https://github.com/Taktflow-Systems/foxbms-posix">Source repository</a>
+</nav>
+<h2>Document index</h2>
+'''
+    for group_name, docs in groups:
+        html += f'<section class="doc-group"><h3>{escape(group_name)}</h3><ul>\n'
+        html += '\n'.join(f'<li>{doc_link(title, slug)}</li>' for title, _, slug, _ in docs)
+        html += '\n</ul></section>\n'
     return html
 
 
 def page_html(title, sidebar, body, breadcrumb="", prev_link="", next_link=""):
     nav_buttons = ""
     if prev_link or next_link:
-        nav_buttons = '<div class="nav-buttons">'
+        nav_buttons = '<nav class="nav-buttons" aria-label="Adjacent documents">'
         nav_buttons += f'<a href="{prev_link[1]}">&larr; {prev_link[0]}</a>' if prev_link else '<span></span>'
         nav_buttons += f'<a href="{next_link[1]}">{next_link[0]} &rarr;</a>' if next_link else '<span></span>'
-        nav_buttons += '</div>'
+        nav_buttons += '</nav>'
+
+    body = re.sub(r'<table(?=[\s>])', '<div class="table-scroll"><table', body)
+    body = body.replace('</table>', '</table></div>')
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{title} — foxBMS POSIX vECU</title>
-<style>{CSS}</style>
+<title>{escape(title)} — foxBMS POSIX vECU</title>
+<link rel="stylesheet" href="docs.css">
 </head>
 <body>
-<nav class="sidebar">{sidebar}</nav>
-<main>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="docs-layout">
+<details class="sidebar" open>
+<summary>Browse documentation</summary>
+<nav aria-label="Documentation">{sidebar}</nav>
+</details>
+<main class="docs-main" id="main" tabindex="-1">
 {breadcrumb}
 <div class="content">{body}</div>
 {nav_buttons}
 </main>
-<script>{JS_SEARCH}</script>
+</div>
+<script src="docs.js"></script>
 </body>
 </html>"""
 
@@ -430,69 +342,63 @@ def build():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', default=str(DEFAULT_OUTPUT))
+    parser.add_argument('--refresh-layout', action='store_true',
+                        help='Rebuild the index and page layout while retaining published document bodies')
     args = parser.parse_args()
 
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
-
-    # Build traceability graph
-    print("Building traceability graph...")
-    TRACE_GRAPH = build_trace_graph()
-    print(f"  {len(TRACE_GRAPH)} requirement IDs, {sum(len(v['up'])+len(v['down']) for v in TRACE_GRAPH.values())//2} links")
+    if out.resolve() != DEFAULT_OUTPUT.resolve():
+        for asset in ('docs.css', 'docs.js', 'sys3-portfolio.html', 'traceability.html'):
+            copyfile(DEFAULT_OUTPUT / asset, out / asset)
 
     # Collect all pages in order
-    all_pages = []
+    groups = []
     for group_name, docs in SECTIONS:
-        for title, filepath in docs:
-            if filepath.exists():
-                all_pages.append((title, filepath, slugify(title), group_name))
+        pages = [(title, path, page_slug(title, path), group_name) for title, path in docs if path.exists()]
+        if pages:
+            groups.append((group_name, pages))
+    all_pages = [page for _, pages in groups for page in pages]
 
     # Build page lookup: requirement ID → which HTML page contains it
     # Scan each page's markdown for IDs defined in it (first column of tables)
     page_lookup = {}
-    for title, filepath, slug, group in all_pages:
-        text = filepath.read_text(encoding='utf-8', errors='replace')
-        for line in text.split("\n"):
-            if "|" not in line:
+    if not args.refresh_layout:
+        TRACE_GRAPH = build_trace_graph()
+        print(f"  {len(TRACE_GRAPH)} requirement IDs, {sum(len(v['up'])+len(v['down']) for v in TRACE_GRAPH.values())//2} links")
+        for _, filepath, slug, _ in all_pages:
+            if filepath.suffix == '.html':
                 continue
-            cells = [c.strip() for c in line.split("|")]
-            if len(cells) >= 3:
-                # Check first non-empty cell for a requirement ID
-                for cell in cells[1:3]:
-                    m = ALL_ID_RE.match(cell.strip())
-                    if m:
-                        page_lookup[m.group(1)] = f"{slug}.html#{slugify(m.group(1))}"
-                        break
-    # Fallback: any ID not found gets linked to traceability.html
-    print(f"  {len(page_lookup)} IDs mapped to pages")
+            for line in filepath.read_text(encoding='utf-8').splitlines():
+                if "|" not in line:
+                    continue
+                cells = line.split("|")
+                if len(cells) >= 3:
+                    for cell in cells[1:3]:
+                        m = ALL_ID_RE.match(cell.strip())
+                        if m:
+                            page_lookup[m.group(1)] = f"{slug}.html#{slugify(m.group(1))}"
+                            break
+        print(f"  {len(page_lookup)} IDs mapped to pages")
 
     # Build index page
-    sidebar = build_sidebar(SECTIONS, all_pages, current_slug=None)
-    index_body = '<h1>foxBMS POSIX vECU — Documentation</h1>\n'
-    index_body += '<p>A production-grade Battery Management System (foxBMS 2 v1.10.0) running entirely on a Linux PC '
-    index_body += 'instead of embedded hardware — with virtual CAN bus, fault injection, and a live web dashboard. '
-    index_body += f'{len(all_pages)} documents covering ASPICE CL2 process compliance, ISO 26262 ASIL-D safety analysis, '
-    index_body += 'and full bidirectional requirement traceability.</p>\n'
-    index_body += '<div class="card-grid">\n'
-    for group_name, docs in SECTIONS:
-        valid = [(t, p) for t, p in docs if p.exists()]
-        if not valid:
-            continue
-        index_body += f'<div class="card"><h3>{group_name}</h3>\n'
-        for title, filepath in valid:
-            slug = slugify(title)
-            index_body += f'<a href="{slug}.html">{title}</a>\n'
-        index_body += f'<div class="count">{len(valid)} documents</div></div>\n'
-    index_body += '</div>\n'
-
-    (out / "index.html").write_text(page_html("Home", sidebar, index_body), encoding='utf-8')
+    sidebar = build_sidebar(groups, 'index')
+    (out / "index.html").write_text(page_html("Documentation index", sidebar, build_index(groups)), encoding='utf-8')
 
     # Build each document page
     for i, (title, filepath, slug, group) in enumerate(all_pages):
-        sidebar = build_sidebar(SECTIONS, all_pages, current_slug=slug)
-        text = filepath.read_text(encoding='utf-8', errors='replace')
-        body = render_md(text, page_lookup=page_lookup)
-        bc = f'<div class="breadcrumb"><a href="index.html">Home</a> / {group} / {title}</div>'
+        if filepath.suffix == '.html':
+            continue
+        sidebar = build_sidebar(groups, slug)
+        if args.refresh_layout:
+            existing = (out / f"{slug}.html").read_text(encoding='utf-8')
+            content = re.search(r'<div class="content">(.*?)</div>\s*(?:<(?:div|nav) class="nav-buttons"|</main>)', existing, re.S)
+            if not content:
+                parser.error(f'Could not find the published document body in {slug}.html')
+            body = re.sub(r'<div class="table-scroll">(<table[\s\S]*?</table>)</div>', r'\1', content[1])
+        else:
+            body = render_md(filepath.read_text(encoding='utf-8'), page_lookup=page_lookup)
+        bc = f'<nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Docs</a> / {escape(group)} / <span aria-current="page">{escape(title)}</span></nav>'
 
         prev_link = (all_pages[i - 1][0], f"{all_pages[i - 1][2]}.html") if i > 0 else ""
         next_link = (all_pages[i + 1][0], f"{all_pages[i + 1][2]}.html") if i < len(all_pages) - 1 else ""
